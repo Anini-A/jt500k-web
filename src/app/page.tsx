@@ -5,7 +5,7 @@ import MonthChart from '@/components/MonthChart'
 import ChatWidget from '@/components/ChatWidget'
 import HeaderNav from '@/components/HeaderNav'
 
-interface Stats { currentBalance: number; savingsRate: number; transactionCount: number }
+interface Stats { currentBalance: number; savingsRate: number; transactionCount: number; asOf: string }
 interface Month {
   label: string; income: number; expense: number; savings: number; net: number
   categories: { name: string; total: number }[]
@@ -13,6 +13,9 @@ interface Month {
 
 const money = (n: number) =>
   n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' }) // to cents
+
+const prettyDate = (iso: string) =>
+  iso ? new Date(iso + 'T00:00:00').toLocaleDateString('en-CA', { year: 'numeric', month: 'short', day: 'numeric' }) : ''
 
 export default function Home() {
   const [stats, setStats] = useState<Stats | null>(null)
@@ -44,19 +47,19 @@ export default function Home() {
         <section className="block">
           <div className="card glass hero" style={{ textAlign: 'center' }}>
             <div className="stat-label">💵 Current Balance</div>
-            <div style={{ fontSize: 48, fontWeight: 700, margin: '8px 0', color: bal >= 0 ? 'var(--income)' : 'var(--expense)' }}>
+            <div style={{ fontSize: 48, fontWeight: 700, margin: '8px 0 4px', color: bal >= 0 ? 'var(--income)' : 'var(--expense)' }}>
               {stats ? money(bal) : '—'}
             </div>
-            <p className="lead" style={{ margin: '0 auto' }}>
-              Income − Expenses − Savings set aside
-            </p>
+            <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>
+              {stats?.asOf ? `As of ${prettyDate(stats.asOf)}` : ''}
+            </div>
           </div>
         </section>
 
         {/* This month summary */}
         <section className="block">
-          <h2>📅 {month ? month.label : 'This Month'}</h2>
           <div className="card glass">
+            <h2 style={{ marginTop: 0, marginBottom: 16 }}>📅 {month ? month.label : 'This Month'}</h2>
             <div className="stat-grid">
               <div className="stat-card">
                 <div style={{ fontSize: 24, marginBottom: 8 }}>💰</div>
@@ -80,7 +83,7 @@ export default function Home() {
         {/* Current month expense breakdown */}
         <section className="block">
           <div className="card glass">
-            <h2 style={{ marginTop: 0, marginBottom: 4 }}>🧮 This Month's Spending</h2>
+            <h2 style={{ marginTop: 0, marginBottom: 4 }}>This Month's Spending</h2>
             <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginBottom: 16 }}>
               Expenses by category{month ? ` · ${month.label}` : ''}
             </p>

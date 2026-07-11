@@ -15,12 +15,14 @@ export async function GET() {
   let totalIncome = 0
   let totalExpenses = 0
   let totalSavings = 0
+  let asOf = ''
 
   for (const t of data ?? []) {
     const amt = Number(t.amount) || 0
     if (t.type === 'income') totalIncome += amt
     else if (t.type === 'expense') totalExpenses += amt
     else if (t.type === 'savings') totalSavings += amt
+    if (t.date > asOf) asOf = t.date as string
   }
 
   const savingsRate =
@@ -35,6 +37,7 @@ export async function GET() {
     totalSavings,
     savingsRate,
     currentBalance,
+    asOf,
     transactionCount: data?.length ?? 0,
   })
 }
