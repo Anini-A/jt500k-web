@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
+import { getJSON } from '@/lib/fresh'
 
 interface Cat { id: string; name: string; type: string; color: string | null; count: number; total: number }
 
@@ -23,7 +24,7 @@ export default function CategoryManager() {
   const [busy, setBusy] = useState(false)
 
   const load = useCallback(async () => {
-    const d = await fetch('/api/categories?counts=1').then((r) => r.json()).catch(() => [])
+    const d = await getJSON('/api/categories?counts=1').catch(() => [])
     if (Array.isArray(d)) setCats(d)
     setLoading(false)
   }, [])

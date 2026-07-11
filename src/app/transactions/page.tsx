@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { Trash2, Search, Tag } from 'lucide-react'
 import HeaderNav from '@/components/HeaderNav'
+import { getJSON } from '@/lib/fresh'
 
 interface Txn {
   id: string
@@ -30,14 +31,14 @@ export default function Transactions() {
   const [editId, setEditId] = useState<string | null>(null)
 
   const load = useCallback(async () => {
-    const data = await fetch('/api/data').then((r) => r.json()).catch(() => [])
+    const data = await getJSON('/api/data').catch(() => [])
     if (Array.isArray(data)) setTxns(data.map((t: any) => ({ ...t, amount: Number(t.amount) })))
     setLoading(false)
   }, [])
 
   useEffect(() => {
     load()
-    fetch('/api/categories').then((r) => r.json()).then((d) => Array.isArray(d) && setCats(d)).catch(() => {})
+    getJSON('/api/categories').then((d) => Array.isArray(d) && setCats(d)).catch(() => {})
     window.addEventListener('transaction-added', load)
     return () => window.removeEventListener('transaction-added', load)
   }, [load])

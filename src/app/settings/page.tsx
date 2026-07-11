@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import HeaderNav from '@/components/HeaderNav'
 import CategoryManager from '@/components/CategoryManager'
+import { getJSON } from '@/lib/fresh'
 
 interface Settings {
   name: string
@@ -27,11 +28,10 @@ export default function SettingsPage() {
   const [status, setStatus] = useState<'checking' | 'online' | 'offline'>('checking')
 
   useEffect(() => {
-    fetch('/api/settings').then((r) => r.json()).then((d) => {
+    getJSON('/api/settings').then((d) => {
       if (!d.error) { setS(d); setName(d.name); setGoal(String(d.goalAmount)) }
     })
-    fetch('/api/health')
-      .then((r) => r.json())
+    getJSON('/api/health')
       .then((d) => setStatus(d.connected ? 'online' : 'offline'))
       .catch(() => setStatus('offline'))
   }, [])

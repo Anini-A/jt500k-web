@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import MonthChart from '@/components/MonthChart'
 import ChatWidget from '@/components/ChatWidget'
 import HeaderNav from '@/components/HeaderNav'
+import { getJSON } from '@/lib/fresh'
 
 interface Stats { currentBalance: number; savingsRate: number; transactionCount: number; asOf: string }
 interface Month {
@@ -23,8 +24,8 @@ export default function Home() {
 
   useEffect(() => {
     const load = () => {
-      fetch('/api/stats').then((r) => r.json()).then((d) => !d.error && setStats(d)).catch(() => {})
-      fetch('/api/month').then((r) => r.json()).then((d) => !d.error && !d.empty && setMonth(d)).catch(() => {})
+      getJSON('/api/stats').then((d) => !d.error && setStats(d)).catch(() => {})
+      getJSON('/api/month').then((d) => !d.error && !d.empty && setMonth(d)).catch(() => {})
     }
     load()
     window.addEventListener('transaction-added', load)

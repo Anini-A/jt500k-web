@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Plus } from 'lucide-react'
 import IconPill from './IconPill'
+import { getJSON } from '@/lib/fresh'
 
 interface Category { name: string; type: string }
 
@@ -22,7 +23,7 @@ export default function AddTransactionButton() {
 
   useEffect(() => {
     if (open && cats.length === 0) {
-      fetch('/api/categories').then((r) => r.json()).then((d) => Array.isArray(d) && setCats(d)).catch(() => {})
+      getJSON('/api/categories').then((d) => Array.isArray(d) && setCats(d)).catch(() => {})
     }
   }, [open, cats.length])
 

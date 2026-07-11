@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { getJSON } from '@/lib/fresh'
 
 const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 })
 const short = (n: number) => n >= 1000 ? '$' + Math.round(n / 1000) + 'K' : '$' + n
@@ -9,7 +10,7 @@ export default function GoalTracker({ saved }: { saved: number }) {
   const [goal, setGoal] = useState(500000)
 
   useEffect(() => {
-    fetch('/api/settings').then((r) => r.json()).then((d) => {
+    getJSON('/api/settings').then((d) => {
       if (!d.error && d.goalAmount) setGoal(Number(d.goalAmount))
     }).catch(() => {})
   }, [])

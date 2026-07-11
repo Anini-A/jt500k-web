@@ -5,6 +5,7 @@ import { Wallet, CreditCard, PiggyBank, LineChart, type LucideIcon } from 'lucid
 import GoalTracker from '@/components/GoalTracker'
 import ChatWidget from '@/components/ChatWidget'
 import HeaderNav from '@/components/HeaderNav'
+import { getJSON } from '@/lib/fresh'
 import { MonthlyArea, HBar, Donut, COLORS } from '@/components/DashCharts'
 
 type Tab = 'income' | 'expenses' | 'savings' | 'investments'
@@ -51,7 +52,7 @@ export default function Dashboard() {
   const [tab, setTab] = useState<Tab>('income')
 
   const load = useCallback(async () => {
-    const data = await fetch('/api/data').then((r) => r.json()).catch(() => [])
+    const data = await getJSON('/api/data').catch(() => [])
     if (Array.isArray(data)) setTxns(data.map((t: any) => ({ ...t, amount: Number(t.amount) })))
     setLoading(false)
   }, [])
