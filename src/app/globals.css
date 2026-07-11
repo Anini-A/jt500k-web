@@ -84,7 +84,6 @@ a:hover {
     radial-gradient(560px circle at 88% 12%, rgba(235, 104, 52, 0.2), transparent 60%),
     radial-gradient(620px circle at 18% 88%, rgba(27, 175, 122, 0.18), transparent 60%),
     radial-gradient(600px circle at 90% 82%, rgba(74, 58, 167, 0.16), transparent 60%);
-  filter: blur(20px) saturate(140%);
 }
 
 .wrap {
