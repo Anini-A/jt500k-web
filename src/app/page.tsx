@@ -1,76 +1,120 @@
 'use client'
 
+const STAT_CARDS = [
+  { label: 'Total Income', emoji: '💰', type: 'income', value: 57000 },
+  { label: 'Total Expenses', emoji: '💸', type: 'expense', value: 36160 },
+  { label: 'Total Savings', emoji: '🏦', type: 'savings', value: 18410 },
+  { label: 'Savings Rate', emoji: '📈', type: 'neutral', value: 32 },
+]
+
+const FEATURES = [
+  { emoji: '📊', label: 'Real-time analytics' },
+  { emoji: '💬', label: 'Claude AI assistant' },
+  { emoji: '🎯', label: 'Track 500K goal' },
+  { emoji: '📱', label: 'Mobile responsive' },
+  { emoji: '🔒', label: 'Secure with Supabase' },
+  { emoji: '⚡', label: 'Live dashboard' },
+]
+
 export default function Home() {
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(to right, #2563eb, #1e40af)', color: 'white' }}>
-      <header style={{ padding: '32px' }}>
-        <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-          <h1 style={{ fontSize: '32px', fontWeight: 'bold', marginBottom: '8px' }}>
-            🚀 Journey to 500K
-          </h1>
-          <p style={{ opacity: 0.8 }}>Financial Dashboard & Analysis</p>
-        </div>
-      </header>
+    <div className="bg-aurora">
+      <div className="wrap">
+        <header className="top glass">
+          <div className="brand">
+            <span className="brand-emoji">💵</span>
+            <span>Journey to 500K</span>
+          </div>
+          <a className="header-cta" href="https://jt500k-web.vercel.app">
+            🚀 <span className="long">Live Dashboard</span>
+          </a>
+        </header>
 
-      <main style={{ maxWidth: '1280px', margin: '0 auto', padding: '32px 16px' }}>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: '24px',
-          marginBottom: '32px'
-        }}>
-          {[
-            { label: 'Total Income', value: '$0', color: '#10b981' },
-            { label: 'Total Expenses', value: '$0', color: '#ef4444' },
-            { label: 'Total Savings', value: '$0', color: '#3b82f6' },
-            { label: 'Savings Rate', value: '0%', color: '#6366f1' }
-          ].map((stat) => (
-            <div key={stat.label} style={{
-              background: 'white',
-              borderRadius: '8px',
-              padding: '24px',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-            }}>
-              <p style={{ fontSize: '12px', color: '#999', marginBottom: '8px' }}>
-                {stat.label}
-              </p>
-              <p style={{ fontSize: '28px', fontWeight: 'bold', color: stat.color }}>
-                {stat.value}
-              </p>
+        <section className="block">
+          <div className="card glass hero">
+            <span className="offer-badge">✅ Supabase Connected</span>
+            <h1>💡 Your Financial Dashboard</h1>
+            <p className="lead">
+              Track income, expenses, and savings towards your 500K goal. Get real-time insights with AI-powered analysis.
+              Your data is secure, your dashboard is always live.
+            </p>
+            <div className="hero-actions">
+              <a className="btn btn-primary" href="https://jt500k-web.vercel.app">
+                📊 Open Dashboard
+              </a>
+              <a className="btn btn-secondary" href="mailto:contact@example.com">
+                📧 Learn More
+              </a>
             </div>
-          ))}
-        </div>
+          </div>
+        </section>
 
-        <div style={{
-          background: 'white',
-          borderRadius: '8px',
-          padding: '32px',
-          textAlign: 'center',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          color: '#333'
-        }}>
-          <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '16px' }}>
-            ✅ Dashboard Ready!
-          </h2>
-          <p style={{ marginBottom: '24px', color: '#666' }}>
-            Your financial dashboard is now live and connected to Supabase.
-          </p>
-          <ul style={{
-            textAlign: 'left',
-            maxWidth: '320px',
-            margin: '0 auto',
-            lineHeight: '2'
-          }}>
-            <li>✅ Database connected</li>
-            <li>✅ API routes working</li>
-            <li>✅ Claude AI integrated</li>
-            <li>✅ Frontend ready</li>
-          </ul>
-          <p style={{ marginTop: '24px', fontSize: '14px', color: '#999' }}>
-            Next: Add transaction data and start tracking finances
-          </p>
-        </div>
-      </main>
+        <section className="block">
+          <h2>📈 Your Financial Summary</h2>
+          <div className="card glass">
+            <div className="stat-grid">
+              {STAT_CARDS.map((stat) => (
+                <div key={stat.label} className="stat-card">
+                  <div style={{ fontSize: '24px', marginBottom: '8px' }}>{stat.emoji}</div>
+                  <div className="stat-label">{stat.label}</div>
+                  <div className={`stat-value ${stat.type}`}>
+                    {stat.type === 'neutral' ? `${stat.value}%` : `$${(stat.value / 1000).toFixed(0)}K`}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="block">
+          <h2>✨ What You Get</h2>
+          <div className="card glass">
+            <div className="service-grid">
+              {FEATURES.map((feature) => (
+                <div key={feature.label} className="service-chip">
+                  <span className="emoji">{feature.emoji}</span>
+                  <span>{feature.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="block">
+          <h2>🎯 Quick Stats</h2>
+          <div className="pricing-grid">
+            <div className="card glass">
+              <div className="pricing-name">Period Covered</div>
+              <div className="pricing-amount">14 mo</div>
+              <p className="pricing-blurb">Aug 2024 – Oct 2025 data tracked</p>
+            </div>
+            <div className="card glass">
+              <div className="pricing-name">Total Transactions</div>
+              <div className="pricing-amount">500+</div>
+              <p className="pricing-blurb">Detailed expense & income records</p>
+            </div>
+            <div className="card glass">
+              <div className="pricing-name">Savings Goal</div>
+              <div className="pricing-amount">$500K</div>
+              <p className="pricing-blurb">Long-term wealth building journey</p>
+            </div>
+          </div>
+        </section>
+
+        <section className="block">
+          <div className="card glass hero">
+            <h2 style={{ marginTop: 0, marginBottom: '16px' }}>🤖 AI-Powered Insights</h2>
+            <p>
+              Ask Claude questions about your spending patterns, get budget recommendations, and receive personalized financial advice. Your dashboard learns from your data.
+            </p>
+            <div className="hero-actions">
+              <a className="btn btn-primary" href="https://jt500k-web.vercel.app">
+                💬 Chat with Claude
+              </a>
+            </div>
+          </div>
+        </section>
+      </div>
     </div>
   )
 }
