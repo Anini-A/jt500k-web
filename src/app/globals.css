@@ -20,6 +20,7 @@
   --glass-shadow: 0 8px 32px rgba(30, 30, 25, 0.1);
   --glass-sheen: inset 0 1px 0 rgba(255, 255, 255, 0.7);
   --kpi-bg: rgba(255, 255, 255, 0.4);
+  --header-bg: rgba(249, 249, 247, 0.95);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -45,6 +46,7 @@
     --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
     --glass-sheen: inset 0 1px 0 rgba(255, 255, 255, 0.08);
     --kpi-bg: rgba(255, 255, 255, 0.05);
+    --header-bg: rgba(13, 13, 13, 0.95);
   }
 }
 
@@ -96,20 +98,34 @@ a:hover {
 .wrap {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 24px 32px 64px;
+  padding: 88px 32px 64px; /* top clears the fixed header bar */
 }
 
-/* Header */
+/* Fixed full-width header bar — content scrolls underneath, never shows through */
 header.top {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 24px;
-  padding: 14px 22px;
-  border-radius: 999px;
-  position: sticky;
-  top: 12px;
-  z-index: 10;
+  gap: 12px;
+  padding: 12px max(32px, calc((100vw - 1200px) / 2 + 32px));
+  background: var(--header-bg);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  border-bottom: 1px solid var(--border);
+  box-shadow: none;
+}
+
+header.top .brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 17px;
+  font-weight: 600;
 }
 
 header.top h1 {
@@ -352,7 +368,15 @@ header.top h1 {
 /* Responsive */
 @media (max-width: 640px) {
   .wrap {
-    padding: 16px 20px 48px;
+    padding: 80px 20px 48px;
+  }
+
+  header.top {
+    padding: 10px 16px;
+  }
+
+  header.top .long {
+    display: none; /* keep header compact on phones */
   }
 
   .hero h1 {

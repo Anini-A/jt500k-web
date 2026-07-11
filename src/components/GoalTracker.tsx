@@ -1,16 +1,26 @@
 'use client'
 
-const GOAL = 500000
+import { useEffect, useState } from 'react'
+
 const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 })
+const short = (n: number) => n >= 1000 ? '$' + Math.round(n / 1000) + 'K' : '$' + n
 
 export default function GoalTracker({ saved }: { saved: number }) {
-  const pct = Math.min(100, (saved / GOAL) * 100)
-  const remaining = Math.max(0, GOAL - saved)
+  const [goal, setGoal] = useState(500000)
+
+  useEffect(() => {
+    fetch('/api/settings').then((r) => r.json()).then((d) => {
+      if (!d.error && d.goalAmount) setGoal(Number(d.goalAmount))
+    }).catch(() => {})
+  }, [])
+
+  const pct = Math.min(100, (saved / goal) * 100)
+  const remaining = Math.max(0, goal - saved)
 
   return (
     <div className="card glass hero" style={{ marginBottom: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 8 }}>
-        <h2 style={{ margin: 0 }}>🎯 Journey to $500K</h2>
+        <h2 style={{ margin: 0 }}>🎯 Journey to {short(goal)}</h2>
         <span style={{ fontWeight: 700, color: 'var(--savings)' }}>{pct.toFixed(1)}%</span>
       </div>
 

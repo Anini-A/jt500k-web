@@ -11,6 +11,9 @@ create table if not exists households (
   created_at timestamptz not null default now()
 );
 
+-- Savings goal target (editable in Settings). Safe to run repeatedly.
+alter table households add column if not exists goal_amount numeric not null default 500000;
+
 -- Users within a household
 create table if not exists users (
   id uuid primary key default gen_random_uuid(),

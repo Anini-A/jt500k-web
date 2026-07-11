@@ -96,14 +96,17 @@ export default function Dashboard() {
 
   return (
     <div className="bg-aurora">
+      <header className="top">
+        <div className="brand">
+          <span className="brand-emoji">📊</span>
+          <span>Dashboard</span>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <a className="header-cta" href="/settings" style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}>⚙️ <span className="long">Settings</span></a>
+          <a className="header-cta" href="/">← <span className="long">Home</span></a>
+        </div>
+      </header>
       <div className="wrap">
-        <header className="top glass">
-          <div className="brand">
-            <span className="brand-emoji">📊</span>
-            <span>Dashboard</span>
-          </div>
-          <a className="header-cta" href="/">← Back</a>
-        </header>
 
         <section className="block">
           <h2>💰 Financial Overview</h2>

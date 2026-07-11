@@ -1,119 +1,110 @@
 'use client'
 
-const STAT_CARDS = [
-  { label: 'Total Income', emoji: '💰', type: 'income', value: 57000 },
-  { label: 'Total Expenses', emoji: '💸', type: 'expense', value: 36160 },
-  { label: 'Total Savings', emoji: '🏦', type: 'savings', value: 18410 },
-  { label: 'Savings Rate', emoji: '📈', type: 'neutral', value: 32 },
-]
+import { useEffect, useState } from 'react'
+import MonthChart from '@/components/MonthChart'
 
-const FEATURES = [
-  { emoji: '📊', label: 'Real-time analytics' },
-  { emoji: '💬', label: 'Claude AI assistant' },
-  { emoji: '🎯', label: 'Track 500K goal' },
-  { emoji: '📱', label: 'Mobile responsive' },
-  { emoji: '🔒', label: 'Secure with Supabase' },
-  { emoji: '⚡', label: 'Live dashboard' },
-]
+interface Stats { currentBalance: number; savingsRate: number; transactionCount: number }
+interface Month {
+  label: string; income: number; expense: number; savings: number; net: number
+  categories: { name: string; total: number }[]
+}
+
+const money = (n: number) =>
+  n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' }) // to cents
 
 export default function Home() {
+  const [stats, setStats] = useState<Stats | null>(null)
+  const [month, setMonth] = useState<Month | null>(null)
+
+  useEffect(() => {
+    fetch('/api/stats').then((r) => r.json()).then((d) => !d.error && setStats(d)).catch(() => {})
+    fetch('/api/month').then((r) => r.json()).then((d) => !d.error && !d.empty && setMonth(d)).catch(() => {})
+  }, [])
+
+  const bal = stats?.currentBalance ?? 0
+
   return (
     <div className="bg-aurora">
-      <div className="wrap">
-        <header className="top glass">
-          <div className="brand">
-            <span className="brand-emoji">💵</span>
-            <span>Journey to 500K</span>
-          </div>
-          <a className="header-cta" href="/dashboard">
-            🚀 <span className="long">Live Dashboard</span>
-          </a>
-        </header>
+      <header className="top">
+        <div className="brand">
+          <span className="brand-emoji">💵</span>
+          <span>Journey to 500K</span>
+        </div>
+        <a className="header-cta" href="/settings">
+          ⚙️ <span className="long">Settings</span>
+        </a>
+      </header>
 
+      <div className="wrap">
+        {/* Hero — current balance to the cent */}
         <section className="block">
-          <div className="card glass hero">
-            <span className="offer-badge">✅ Supabase Connected</span>
-            <h1>💡 Your Financial Dashboard</h1>
-            <p className="lead">
-              Track income, expenses, and savings towards your 500K goal. Get real-time insights with AI-powered analysis.
-              Your data is secure, your dashboard is always live.
+          <div className="card glass hero" style={{ textAlign: 'center' }}>
+            <div className="stat-label">💵 Current Balance</div>
+            <div style={{ fontSize: 48, fontWeight: 700, margin: '8px 0', color: bal >= 0 ? 'var(--income)' : 'var(--expense)' }}>
+              {stats ? money(bal) : '—'}
+            </div>
+            <p className="lead" style={{ margin: '0 auto 20px' }}>
+              Income − Expenses − Savings set aside
             </p>
-            <div className="hero-actions">
-              <a className="btn btn-primary" href="/dashboard">
-                📊 Open Dashboard
-              </a>
-              <a className="btn btn-secondary" href="#features">
-                📧 Learn More
-              </a>
+            <div className="hero-actions" style={{ justifyContent: 'center' }}>
+              <a className="btn btn-primary" href="/dashboard">📊 Open Dashboard</a>
             </div>
           </div>
         </section>
 
+        {/* This month summary */}
         <section className="block">
-          <h2>📈 Your Financial Summary</h2>
+          <h2>📅 {month ? month.label : 'This Month'}</h2>
           <div className="card glass">
             <div className="stat-grid">
-              {STAT_CARDS.map((stat) => (
-                <div key={stat.label} className="stat-card">
-                  <div style={{ fontSize: '24px', marginBottom: '8px' }}>{stat.emoji}</div>
-                  <div className="stat-label">{stat.label}</div>
-                  <div className={`stat-value ${stat.type}`}>
-                    {stat.type === 'neutral' ? `${stat.value}%` : `$${(stat.value / 1000).toFixed(0)}K`}
-                  </div>
+              <div className="stat-card">
+                <div style={{ fontSize: 24, marginBottom: 8 }}>💰</div>
+                <div className="stat-label">Income</div>
+                <div className="stat-value income">{month ? money(month.income) : '—'}</div>
+              </div>
+              <div className="stat-card">
+                <div style={{ fontSize: 24, marginBottom: 8 }}>💸</div>
+                <div className="stat-label">Expenses</div>
+                <div className="stat-value expense">{month ? money(month.expense) : '—'}</div>
+              </div>
+              <div className="stat-card">
+                <div style={{ fontSize: 24, marginBottom: 8 }}>🏦</div>
+                <div className="stat-label">Savings</div>
+                <div className="stat-value savings">{month ? money(month.savings) : '—'}</div>
+              </div>
+              <div className="stat-card">
+                <div style={{ fontSize: 24, marginBottom: 8 }}>⚖️</div>
+                <div className="stat-label">Net</div>
+                <div className="stat-value" style={{ color: (month?.net ?? 0) >= 0 ? 'var(--income)' : 'var(--expense)' }}>
+                  {month ? money(month.net) : '—'}
                 </div>
-              ))}
+              </div>
             </div>
           </div>
         </section>
 
+        {/* Current month expense breakdown */}
         <section className="block">
-          <h2>✨ What You Get</h2>
           <div className="card glass">
-            <div className="service-grid">
-              {FEATURES.map((feature) => (
-                <div key={feature.label} className="service-chip">
-                  <span className="emoji">{feature.emoji}</span>
-                  <span>{feature.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="block">
-          <h2>🎯 Quick Stats</h2>
-          <div className="pricing-grid">
-            <div className="card glass">
-              <div className="pricing-name">Period Covered</div>
-              <div className="pricing-amount">14 mo</div>
-              <p className="pricing-blurb">Aug 2024 – Oct 2025 data tracked</p>
-            </div>
-            <div className="card glass">
-              <div className="pricing-name">Total Transactions</div>
-              <div className="pricing-amount">500+</div>
-              <p className="pricing-blurb">Detailed expense & income records</p>
-            </div>
-            <div className="card glass">
-              <div className="pricing-name">Savings Goal</div>
-              <div className="pricing-amount">$500K</div>
-              <p className="pricing-blurb">Long-term wealth building journey</p>
-            </div>
-          </div>
-        </section>
-
-        <section className="block">
-          <div className="card glass hero">
-            <h2 style={{ marginTop: 0, marginBottom: '16px' }}>🤖 AI-Powered Insights</h2>
-            <p>
-              Ask Claude questions about your spending patterns, get budget recommendations, and receive personalized financial advice. Your dashboard learns from your data.
+            <h2 style={{ marginTop: 0, marginBottom: 4 }}>🧮 This Month's Spending</h2>
+            <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginBottom: 16 }}>
+              Expenses by category{month ? ` · ${month.label}` : ''}
             </p>
-            <div className="hero-actions">
-              <a className="btn btn-primary" href="/dashboard">
-                💬 Chat with Claude
-              </a>
-            </div>
+            {month ? <MonthChart categories={month.categories} /> : (
+              <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)' }}>Loading…</div>
+            )}
           </div>
         </section>
+
+        {/* Footer */}
+        <footer style={{ textAlign: 'center', marginTop: 32, paddingBottom: 16 }}>
+          <span className="offer-badge">✅ Supabase Connected</span>
+          {stats && (
+            <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 8 }}>
+              {stats.transactionCount.toLocaleString()} transactions tracked
+            </div>
+          )}
+        </footer>
       </div>
     </div>
   )
