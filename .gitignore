@@ -33,3 +33,11 @@ yarn-error.log*
 .idea/
 *.swp
 *.swo
+
+# personal financial data — never commit
+*.csv
+journey-to-500k.csv
+
+# legacy files that contained secrets
+DEPLOYMENT.md
+migrate-data.js

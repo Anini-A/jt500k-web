@@ -1,33 +1,94 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 
 interface Stats {
   totalIncome: number
   totalExpenses: number
   totalSavings: number
   savingsRate: number
+  transactionCount: number
 }
+
+interface Transaction {
+  id: string
+  date: string
+  description: string | null
+  category: string | null
+  type: string
+  amount: number
+}
+
+interface Category {
+  id: string
+  name: string
+  type: string
+}
+
+const money = (n: number) =>
+  n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 })
 
 export default function Dashboard() {
   const [stats, setStats] = useState<Stats | null>(null)
+  const [txns, setTxns] = useState<Transaction[]>([])
+  const [cats, setCats] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [saving, setSaving] = useState(false)
+
+  const [form, setForm] = useState({
+    date: new Date().toISOString().slice(0, 10),
+    type: 'expense',
+    category: '',
+    amount: '',
+    description: '',
+  })
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const [s, t, c] = await Promise.all([
+        fetch('/api/stats').then((r) => r.json()),
+        fetch('/api/transactions?limit=15').then((r) => r.json()),
+        fetch('/api/categories').then((r) => r.json()),
+      ])
+      if (!s.error) setStats(s)
+      if (Array.isArray(t)) setTxns(t)
+      if (Array.isArray(c)) setCats(c)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const res = await fetch('/api/stats')
-        const data = await res.json()
-        setStats(data)
-      } catch (error) {
-        console.error('Failed to fetch stats:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
+    load()
+  }, [load])
 
-    fetchStats()
-  }, [])
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSaving(true)
+    try {
+      const res = await fetch('/api/transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...form, amount: parseFloat(form.amount) }),
+      })
+      if (res.ok) {
+        setForm({ ...form, amount: '', description: '' })
+        setShowForm(false)
+        load()
+      } else {
+        const err = await res.json()
+        alert('Error: ' + (err.error || 'could not save'))
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const catsForType = cats.filter((c) => c.type === form.type)
 
   return (
     <div className="bg-aurora">
@@ -37,73 +98,132 @@ export default function Dashboard() {
             <span className="brand-emoji">📊</span>
             <span>Dashboard</span>
           </div>
-          <a className="header-cta" href="/">
-            ← Back
-          </a>
+          <a className="header-cta" href="/">← Back</a>
         </header>
 
         <section className="block">
           <h2>💰 Financial Overview</h2>
           {loading ? (
-            <div className="card glass" style={{ padding: '40px', textAlign: 'center' }}>
-              Loading your data...
-            </div>
-          ) : stats ? (
+            <div className="card glass" style={{ padding: 40, textAlign: 'center' }}>Loading your data…</div>
+          ) : stats && stats.transactionCount > 0 ? (
             <div className="card glass">
               <div className="stat-grid">
                 <div className="stat-card">
-                  <div style={{ fontSize: '24px', marginBottom: '8px' }}>💰</div>
+                  <div style={{ fontSize: 24, marginBottom: 8 }}>💰</div>
                   <div className="stat-label">Total Income</div>
-                  <div className="stat-value income">${(stats.totalIncome / 1000).toFixed(1)}K</div>
+                  <div className="stat-value income">{money(stats.totalIncome)}</div>
                 </div>
                 <div className="stat-card">
-                  <div style={{ fontSize: '24px', marginBottom: '8px' }}>💸</div>
+                  <div style={{ fontSize: 24, marginBottom: 8 }}>💸</div>
                   <div className="stat-label">Total Expenses</div>
-                  <div className="stat-value expense">${(stats.totalExpenses / 1000).toFixed(1)}K</div>
+                  <div className="stat-value expense">{money(stats.totalExpenses)}</div>
                 </div>
                 <div className="stat-card">
-                  <div style={{ fontSize: '24px', marginBottom: '8px' }}>🏦</div>
+                  <div style={{ fontSize: 24, marginBottom: 8 }}>🏦</div>
                   <div className="stat-label">Total Savings</div>
-                  <div className="stat-value savings">${(stats.totalSavings / 1000).toFixed(1)}K</div>
+                  <div className="stat-value savings">{money(stats.totalSavings)}</div>
                 </div>
                 <div className="stat-card">
-                  <div style={{ fontSize: '24px', marginBottom: '8px' }}>📈</div>
+                  <div style={{ fontSize: 24, marginBottom: 8 }}>📈</div>
                   <div className="stat-label">Savings Rate</div>
                   <div className="stat-value">{stats.savingsRate}%</div>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="card glass" style={{ padding: '40px', textAlign: 'center' }}>
-              No data available. Add your first transaction!
+            <div className="card glass" style={{ padding: 40, textAlign: 'center' }}>
+              No data yet. Add your first transaction below to get started!
             </div>
           )}
         </section>
 
         <section className="block">
-          <div className="card glass hero" style={{ marginTop: '32px' }}>
-            <h2 style={{ marginTop: 0, marginBottom: '16px' }}>🤖 AI Financial Assistant</h2>
-            <p>Ask me questions about your spending, get budget recommendations, or receive personalized financial advice.</p>
-            <div className="hero-actions">
-              <button className="btn btn-primary" onClick={() => alert('Chat feature coming soon!')}>
-                💬 Chat with Claude
+          <div className="card glass">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showForm ? 16 : 0 }}>
+              <h2 style={{ margin: 0 }}>➕ Add Transaction</h2>
+              <button className="btn btn-secondary" onClick={() => setShowForm((v) => !v)}>
+                {showForm ? 'Cancel' : 'New'}
               </button>
             </div>
+
+            {showForm && (
+              <form onSubmit={submit} style={{ display: 'grid', gap: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <label style={{ display: 'grid', gap: 4 }}>
+                    <span className="stat-label">Date</span>
+                    <input type="date" required value={form.date}
+                      onChange={(e) => setForm({ ...form, date: e.target.value })} style={inp} />
+                  </label>
+                  <label style={{ display: 'grid', gap: 4 }}>
+                    <span className="stat-label">Type</span>
+                    <select value={form.type}
+                      onChange={(e) => setForm({ ...form, type: e.target.value, category: '' })} style={inp}>
+                      <option value="income">Income</option>
+                      <option value="expense">Expense</option>
+                      <option value="savings">Savings</option>
+                    </select>
+                  </label>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <label style={{ display: 'grid', gap: 4 }}>
+                    <span className="stat-label">Category</span>
+                    <select value={form.category}
+                      onChange={(e) => setForm({ ...form, category: e.target.value })} style={inp}>
+                      <option value="">— select —</option>
+                      {catsForType.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
+                    </select>
+                  </label>
+                  <label style={{ display: 'grid', gap: 4 }}>
+                    <span className="stat-label">Amount</span>
+                    <input type="number" step="0.01" required placeholder="0.00" value={form.amount}
+                      onChange={(e) => setForm({ ...form, amount: e.target.value })} style={inp} />
+                  </label>
+                </div>
+                <label style={{ display: 'grid', gap: 4 }}>
+                  <span className="stat-label">Description</span>
+                  <input type="text" placeholder="e.g. Groceries" value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })} style={inp} />
+                </label>
+                <button className="btn btn-primary" type="submit" disabled={saving}>
+                  {saving ? 'Saving…' : '💾 Save Transaction'}
+                </button>
+              </form>
+            )}
           </div>
         </section>
 
-        <section className="block" style={{ marginBottom: '64px' }}>
-          <div className="card glass hero">
-            <h2 style={{ marginTop: 0, marginBottom: '16px' }}>📊 Add Your First Transaction</h2>
-            <p>Start tracking your income and expenses to see real-time insights on your dashboard.</p>
-            <div className="hero-actions">
-              <button className="btn btn-primary" onClick={() => alert('Transaction form coming soon!')}>
-                ➕ Add Transaction
-              </button>
-            </div>
+        <section className="block" style={{ marginBottom: 64 }}>
+          <h2>🧾 Recent Transactions</h2>
+          <div className="card glass">
+            {txns.length === 0 ? (
+              <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)' }}>No transactions yet.</div>
+            ) : (
+              <div style={{ display: 'grid', gap: 2 }}>
+                {txns.map((t) => (
+                  <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 4px', borderBottom: '1px solid var(--border)' }}>
+                    <div>
+                      <div style={{ fontWeight: 600 }}>{t.description || t.category}</div>
+                      <div className="stat-label">{t.date} · {t.category}</div>
+                    </div>
+                    <div className={`stat-value ${t.type}`} style={{ fontSize: 16 }}>
+                      {t.type === 'income' ? '+' : t.type === 'expense' ? '−' : ''}{money(Number(t.amount))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </section>
       </div>
     </div>
   )
+}
+
+const inp: React.CSSProperties = {
+  padding: '10px 12px',
+  borderRadius: 10,
+  border: '1px solid var(--border)',
+  background: 'var(--kpi-bg)',
+  color: 'var(--text-primary)',
+  fontSize: 14,
 }
