@@ -77,6 +77,24 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(data, { status: 201 })
 }
 
+// PATCH /api/transactions  { id, category }  — re-categorize one transaction
+// (type follows the chosen category)
+export async function PATCH(req: NextRequest) {
+  const { id, category } = await req.json().catch(() => ({}))
+  if (!id || !category) return NextResponse.json({ error: 'id and category required' }, { status: 400 })
+
+  const { data: cat } = await supabaseAdmin
+    .from('categories').select('id, name, type').eq('name', category).maybeSingle()
+  if (!cat) return NextResponse.json({ error: 'Category not found' }, { status: 404 })
+
+  const { error } = await supabaseAdmin
+    .from('transactions')
+    .update({ category: cat.name, category_id: cat.id, type: cat.type })
+    .eq('id', id)
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ ok: true })
+}
+
 // DELETE /api/transactions?id=uuid
 export async function DELETE(req: NextRequest) {
   const { searchParams } = new URL(req.url)

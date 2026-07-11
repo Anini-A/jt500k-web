@@ -1,17 +1,18 @@
 'use client'
 
 import { useEffect, useState, useMemo, useCallback } from 'react'
+import { Wallet, CreditCard, PiggyBank, LineChart, type LucideIcon } from 'lucide-react'
 import GoalTracker from '@/components/GoalTracker'
 import ChatWidget from '@/components/ChatWidget'
 import HeaderNav from '@/components/HeaderNav'
 import { MonthlyArea, HBar, Donut, COLORS } from '@/components/DashCharts'
 
 type Tab = 'income' | 'expenses' | 'savings' | 'investments'
-const TABS: { key: Tab; label: string; emoji: string }[] = [
-  { key: 'income', label: 'Income', emoji: '🟢' },
-  { key: 'expenses', label: 'Expenses', emoji: '🔴' },
-  { key: 'savings', label: 'Savings', emoji: '🟣' },
-  { key: 'investments', label: 'Investments', emoji: '📈' },
+const TABS: { key: Tab; label: string; Icon: LucideIcon }[] = [
+  { key: 'income', label: 'Income', Icon: Wallet },
+  { key: 'expenses', label: 'Expenses', Icon: CreditCard },
+  { key: 'savings', label: 'Savings', Icon: PiggyBank },
+  { key: 'investments', label: 'Investments', Icon: LineChart },
 ]
 
 interface Txn {
@@ -160,12 +161,15 @@ export default function Dashboard() {
         {/* Section tabs */}
         <section className="block" style={{ display: 'flex', justifyContent: 'center' }}>
           <div className="tabs">
-            {TABS.map((t) => (
-              <button key={t.key} onClick={() => setTab(t.key)}
-                className={`tab ${tab === t.key ? 'tab-active' : ''}`}>
-                <span>{t.emoji}</span>{t.label}
-              </button>
-            ))}
+            {TABS.map((t) => {
+              const Icon = t.Icon
+              return (
+                <button key={t.key} onClick={() => setTab(t.key)}
+                  className={`tab ${tab === t.key ? 'tab-active' : ''}`}>
+                  <Icon size={16} />{t.label}
+                </button>
+              )
+            })}
           </div>
         </section>
 

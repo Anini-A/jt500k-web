@@ -332,6 +332,48 @@ header.top h1 {
   border-color: rgba(255, 255, 255, 0.2);
 }
 
+/* Expanding search — magnifying glass that grows into a field on hover/focus */
+.search-expand {
+  display: inline-flex;
+  align-items: center;
+  height: 46px;
+  padding: 0 13px;
+  border-radius: 999px;
+  color: var(--text-primary);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--glass-shadow), var(--glass-sheen);
+  transition: box-shadow 0.2s ease;
+}
+
+.search-expand svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+}
+
+.search-expand input {
+  width: 0;
+  opacity: 0;
+  border: none;
+  background: transparent;
+  outline: none;
+  color: var(--text-primary);
+  font-size: 14px;
+  transition: width 0.3s ease, opacity 0.2s ease, margin-left 0.2s ease;
+}
+
+.search-expand:hover input,
+.search-expand:focus-within input,
+.search-expand.has-value input {
+  width: min(220px, 52vw);
+  opacity: 1;
+  margin-left: 8px;
+}
+
 /* Segmented pill tab control */
 .tabs {
   display: inline-flex;

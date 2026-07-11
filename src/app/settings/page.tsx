@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import HeaderNav from '@/components/HeaderNav'
+import CategoryManager from '@/components/CategoryManager'
 
 interface Settings {
   name: string
@@ -133,6 +134,12 @@ export default function SettingsPage() {
               </div>
             </div>
           </div>
+        </section>
+
+        {/* Category management */}
+        <section className="block">
+          <h2>🏷️ Categories</h2>
+          <CategoryManager />
         </section>
 
         {/* Info */}
