@@ -81,13 +81,13 @@ export default function Transactions() {
 
         {/* Controls */}
         <section className="block">
-          <div className="card glass" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+          <div className="card glass" style={{ display: 'flex', flexWrap: 'nowrap', gap: 8, alignItems: 'center', overflowX: 'auto' }}>
             {TYPES.map((t) => (
-              <button key={t.key} onClick={() => setType(t.key)} className={`chip ${type === t.key ? 'chip-active' : ''}`}>{t.label}</button>
+              <button key={t.key} onClick={() => setType(t.key)} className={`chip ${type === t.key ? 'chip-active' : ''}`} style={{ flexShrink: 0 }}>{t.label}</button>
             ))}
-            <div className={`search-expand ${q ? 'has-value' : ''}`} style={{ height: 38 }}>
+            <div className={`search-expand ${q ? 'has-value' : ''}`} style={{ height: 38, flexShrink: 0 }}>
               <Search />
-              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search description or category…" />
+              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" />
             </div>
           </div>
         </section>
