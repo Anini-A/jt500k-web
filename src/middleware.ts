@@ -10,7 +10,7 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
   // Always allow the login page and the auth endpoint.
-  if (pathname === '/login' || pathname === '/api/auth' || pathname === '/api/debug') {
+  if (pathname === '/login' || pathname === '/api/auth') {
     return NextResponse.next()
   }
 
