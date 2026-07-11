@@ -153,6 +153,10 @@ export default function SettingsPage() {
             >
               🚪 Sign out of this device
             </button>
+            <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 16, marginBottom: 0 }}>
+              Version <code>{(process.env.NEXT_PUBLIC_COMMIT_SHA || 'local').slice(0, 7)}</code>
+              {process.env.NEXT_PUBLIC_BUILD_TIME ? ` · built ${new Date(process.env.NEXT_PUBLIC_BUILD_TIME).toLocaleString()}` : ''}
+            </p>
           </div>
         </section>
       </div>
