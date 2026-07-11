@@ -1,6 +1,9 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import Charts from '@/components/Charts'
+import GoalTracker from '@/components/GoalTracker'
+import ChatWidget from '@/components/ChatWidget'
 
 interface Stats {
   totalIncome: number
@@ -108,6 +111,7 @@ export default function Dashboard() {
             <div className="card glass" style={{ padding: 40, textAlign: 'center' }}>Loading your data…</div>
           ) : stats && stats.transactionCount > 0 ? (
             <>
+            <GoalTracker saved={stats.totalSavings} />
             <div className="card glass hero" style={{ marginBottom: 16, textAlign: 'center' }}>
               <div className="stat-label">💵 Current Balance</div>
               <div className="stat-value" style={{ fontSize: 44, color: stats.currentBalance >= 0 ? 'var(--income)' : 'var(--expense)' }}>
@@ -204,6 +208,12 @@ export default function Dashboard() {
           </div>
         </section>
 
+        {stats && stats.transactionCount > 0 && (
+          <section className="block">
+            <Charts />
+          </section>
+        )}
+
         <section className="block" style={{ marginBottom: 64 }}>
           <h2>🧾 Recent Transactions</h2>
           <div className="card glass">
@@ -227,6 +237,8 @@ export default function Dashboard() {
           </div>
         </section>
       </div>
+
+      <ChatWidget />
     </div>
   )
 }
