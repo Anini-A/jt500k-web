@@ -74,11 +74,18 @@ a:hover {
   text-decoration: underline;
 }
 
-/* Aurora background */
+/* Aurora background — rendered as a fixed layer behind content */
 .bg-aurora {
+  position: relative;
+  min-height: 100vh;
+}
+
+.bg-aurora::before {
+  content: "";
   position: fixed;
   inset: 0;
   z-index: -1;
+  pointer-events: none;
   background:
     radial-gradient(640px circle at 12% 18%, rgba(42, 120, 214, 0.22), transparent 60%),
     radial-gradient(560px circle at 88% 12%, rgba(235, 104, 52, 0.2), transparent 60%),
