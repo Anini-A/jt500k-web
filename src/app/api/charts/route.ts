@@ -51,5 +51,5 @@ export async function GET() {
     .map(([name, total]) => ({ name, total: Math.round(total) }))
     .sort((a, b) => b.total - a.total)
 
-  return NextResponse.json({ monthly, categories })
+  return NextResponse.json({ monthly, categories }, { headers: { 'Cache-Control': 'no-store, max-age=0' } })
 }

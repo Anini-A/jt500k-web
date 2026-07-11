@@ -23,5 +23,5 @@ export async function GET() {
     from += pageSize
   }
 
-  return NextResponse.json(all)
+  return NextResponse.json(all, { headers: { 'Cache-Control': 'no-store, max-age=0' } })
 }

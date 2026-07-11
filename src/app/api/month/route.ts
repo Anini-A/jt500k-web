@@ -49,5 +49,5 @@ export async function GET() {
     savings: Math.round(savings),
     net: Math.round(income - expense - savings),
     categories,
-  })
+  }, { headers: { 'Cache-Control': 'no-store, max-age=0' } })
 }

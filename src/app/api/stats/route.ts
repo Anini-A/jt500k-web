@@ -39,5 +39,5 @@ export async function GET() {
     currentBalance,
     asOf,
     transactionCount: data?.length ?? 0,
-  })
+  }, { headers: { 'Cache-Control': 'no-store, max-age=0' } })
 }

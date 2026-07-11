@@ -20,7 +20,8 @@ export async function GET(req: NextRequest) {
   const { data: cats, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  if (!withCounts) return NextResponse.json(cats)
+  const noStore = { headers: { 'Cache-Control': 'no-store, max-age=0' } }
+  if (!withCounts) return NextResponse.json(cats, noStore)
 
   const { data: txns } = await supabaseAdmin.from('transactions').select('category, amount')
   const count = new Map<string, number>()
@@ -32,7 +33,7 @@ export async function GET(req: NextRequest) {
   }
   return NextResponse.json((cats ?? []).map((c) => ({
     ...c, count: count.get(c.name) || 0, total: Math.round(total.get(c.name) || 0),
-  })))
+  })), noStore)
 }
 
 // POST /api/categories  { action, ... }
