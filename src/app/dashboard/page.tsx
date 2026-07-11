@@ -5,6 +5,7 @@ import { Wallet, CreditCard, PiggyBank, LineChart, type LucideIcon } from 'lucid
 import GoalTracker from '@/components/GoalTracker'
 import ChatWidget from '@/components/ChatWidget'
 import HeaderNav from '@/components/HeaderNav'
+import VersionStamp from '@/components/VersionStamp'
 import { getJSON } from '@/lib/fresh'
 import { MonthlyArea, HBar, Donut, COLORS } from '@/components/DashCharts'
 
@@ -245,6 +246,7 @@ export default function Dashboard() {
           txns={filtered.filter((t) => tabType && t.type === tabType).slice().reverse().slice(0, 12)}
           emptyLabel={tab === 'investments' ? 'No investment transactions yet.' : `No ${TABS.find((t) => t.key === tab)!.label.toLowerCase()} in this period.`}
         />
+        <VersionStamp page="dashboard" />
       </div>
 
       <ChatWidget />

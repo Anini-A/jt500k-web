@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { Trash2, Search, Tag } from 'lucide-react'
 import HeaderNav from '@/components/HeaderNav'
+import VersionStamp from '@/components/VersionStamp'
 import { getJSON } from '@/lib/fresh'
 
 interface Txn {
@@ -135,6 +136,7 @@ export default function Transactions() {
             )}
           </div>
         </section>
+        <VersionStamp page="transactions page" />
       </div>
     </div>
   )
