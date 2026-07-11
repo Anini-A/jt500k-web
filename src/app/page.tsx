@@ -1,11 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Settings } from 'lucide-react'
 import MonthChart from '@/components/MonthChart'
 import ChatWidget from '@/components/ChatWidget'
-import IconPill from '@/components/IconPill'
-import AddTransactionButton from '@/components/AddTransactionButton'
+import HeaderNav from '@/components/HeaderNav'
 
 interface Stats { currentBalance: number; savingsRate: number; transactionCount: number }
 interface Month {
@@ -37,13 +35,9 @@ export default function Home() {
       <div className="wrap">
         <header className="top">
           <div className="brand">
-            <span className="brand-emoji">💵</span>
             <span>Journey to 500K</span>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <AddTransactionButton />
-            <IconPill icon={<Settings />} label="Settings" href="/settings" />
-          </div>
+          <HeaderNav current="home" />
         </header>
 
         {/* Hero — current balance to the cent */}
@@ -53,12 +47,9 @@ export default function Home() {
             <div style={{ fontSize: 48, fontWeight: 700, margin: '8px 0', color: bal >= 0 ? 'var(--income)' : 'var(--expense)' }}>
               {stats ? money(bal) : '—'}
             </div>
-            <p className="lead" style={{ margin: '0 auto 20px' }}>
+            <p className="lead" style={{ margin: '0 auto' }}>
               Income − Expenses − Savings set aside
             </p>
-            <div className="hero-actions" style={{ justifyContent: 'center' }}>
-              <a className="btn btn-primary" href="/dashboard">📊 Open Dashboard</a>
-            </div>
           </div>
         </section>
 

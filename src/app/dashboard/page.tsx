@@ -1,11 +1,9 @@
 'use client'
 
 import { useEffect, useState, useMemo, useCallback } from 'react'
-import { Settings, Home } from 'lucide-react'
 import GoalTracker from '@/components/GoalTracker'
 import ChatWidget from '@/components/ChatWidget'
-import IconPill from '@/components/IconPill'
-import AddTransactionButton from '@/components/AddTransactionButton'
+import HeaderNav from '@/components/HeaderNav'
 import { MonthlyArea, HBar, Donut, COLORS } from '@/components/DashCharts'
 
 type Tab = 'income' | 'expenses' | 'savings' | 'investments'
@@ -106,6 +104,9 @@ export default function Dashboard() {
   }, [filtered])
 
   const allTimeSavings = useMemo(() => txns.filter((t) => t.type === 'savings').reduce((s, t) => s + t.amount, 0), [txns])
+
+  const tabType: 'income' | 'expense' | 'savings' | null =
+    tab === 'income' ? 'income' : tab === 'expenses' ? 'expense' : tab === 'savings' ? 'savings' : null
 
   if (loading) {
     return (
@@ -234,9 +235,12 @@ export default function Dashboard() {
           </section>
         )}
 
-        {/* Recent */}
-        <SectionTitle emoji="🧾" title="Recent" />
-        <RecentList txns={filtered.slice().reverse().slice(0, 12)} />
+        {/* Recent — filtered to the active tab's type */}
+        <SectionTitle emoji="🧾" title={`Recent ${TABS.find((t) => t.key === tab)!.label}`} />
+        <RecentList
+          txns={filtered.filter((t) => tabType && t.type === tabType).slice().reverse().slice(0, 12)}
+          emptyLabel={tab === 'investments' ? 'No investment transactions yet.' : `No ${TABS.find((t) => t.key === tab)!.label.toLowerCase()} in this period.`}
+        />
       </div>
 
       <ChatWidget />
@@ -247,12 +251,8 @@ export default function Dashboard() {
 function DashHeader() {
   return (
     <header className="top">
-      <div className="brand"><span className="brand-emoji">📊</span><span>Dashboard</span></div>
-      <div style={{ display: 'flex', gap: 8 }}>
-        <AddTransactionButton />
-        <IconPill icon={<Settings />} label="Settings" href="/settings" />
-        <IconPill icon={<Home />} label="Home" href="/" />
-      </div>
+      <div className="brand"><span>Dashboard</span></div>
+      <HeaderNav current="dashboard" />
     </header>
   )
 }
@@ -285,12 +285,12 @@ function ChartHead({ title, sub }: { title: string; sub: string }) {
 }
 
 // ---- Recent transactions list (add is handled by the header button) ----
-function RecentList({ txns }: { txns: Txn[] }) {
+function RecentList({ txns, emptyLabel }: { txns: Txn[]; emptyLabel: string }) {
   return (
     <section className="block" style={{ marginBottom: 64 }}>
       <div className="card glass">
         {txns.length === 0 ? (
-          <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)' }}>No transactions in this period.</div>
+          <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)' }}>{emptyLabel}</div>
         ) : (
           <div style={{ display: 'grid', gap: 2 }}>
             {txns.map((t) => (

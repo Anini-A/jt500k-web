@@ -1,9 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Home } from 'lucide-react'
-import IconPill from '@/components/IconPill'
-import AddTransactionButton from '@/components/AddTransactionButton'
+import HeaderNav from '@/components/HeaderNav'
 
 interface Settings {
   name: string
@@ -62,13 +60,9 @@ export default function SettingsPage() {
       <div className="wrap">
         <header className="top">
           <div className="brand">
-            <span className="brand-emoji">⚙️</span>
             <span>Settings</span>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <AddTransactionButton />
-            <IconPill icon={<Home />} label="Home" href="/" />
-          </div>
+          <HeaderNav current="settings" />
         </header>
 
         {/* Connection status */}
