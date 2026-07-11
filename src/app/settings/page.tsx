@@ -107,16 +107,22 @@ export default function SettingsPage() {
 
         {/* Info */}
         <section className="block" style={{ marginBottom: 64 }}>
-          <h2>ℹ️ About Access</h2>
+          <h2>🔐 Access</h2>
           <div className="card glass">
             <p style={{ marginTop: 0 }}>
-              This site has <strong>no login</strong> — anyone with the link can view it. That's fine for sharing
-              privately with your wife. If you'd ever like a shared password gate, it can be added.
+              This site is protected by a <strong>shared password</strong>. It's remembered on each device, so you
+              and your wife only enter it once per device.
             </p>
-            <p style={{ marginBottom: 0, color: 'var(--text-secondary)', fontSize: 14 }}>
+            <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>
               To refresh from your Google Sheet: download it as CSV and re-run the import script. New transactions
               added in the app save instantly to the database.
             </p>
+            <button
+              className="btn btn-secondary"
+              onClick={async () => { await fetch('/api/auth', { method: 'DELETE' }); window.location.href = '/login' }}
+            >
+              🚪 Sign out of this device
+            </button>
           </div>
         </section>
       </div>
