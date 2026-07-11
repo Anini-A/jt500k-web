@@ -25,7 +25,7 @@ export default function Home() {
             <span className="brand-emoji">💵</span>
             <span>Journey to 500K</span>
           </div>
-          <a className="header-cta" href="https://jt500k-web.vercel.app">
+          <a className="header-cta" href="/dashboard">
             🚀 <span className="long">Live Dashboard</span>
           </a>
         </header>
@@ -39,10 +39,10 @@ export default function Home() {
               Your data is secure, your dashboard is always live.
             </p>
             <div className="hero-actions">
-              <a className="btn btn-primary" href="https://jt500k-web.vercel.app">
+              <a className="btn btn-primary" href="/dashboard">
                 📊 Open Dashboard
               </a>
-              <a className="btn btn-secondary" href="mailto:contact@example.com">
+              <a className="btn btn-secondary" href="#features">
                 📧 Learn More
               </a>
             </div>
@@ -108,7 +108,7 @@ export default function Home() {
               Ask Claude questions about your spending patterns, get budget recommendations, and receive personalized financial advice. Your dashboard learns from your data.
             </p>
             <div className="hero-actions">
-              <a className="btn btn-primary" href="https://jt500k-web.vercel.app">
+              <a className="btn btn-primary" href="/dashboard">
                 💬 Chat with Claude
               </a>
             </div>
