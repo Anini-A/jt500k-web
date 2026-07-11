@@ -1,244 +1,208 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
-import Charts from '@/components/Charts'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import GoalTracker from '@/components/GoalTracker'
 import ChatWidget from '@/components/ChatWidget'
+import { MonthlyArea, HBar, Donut, COLORS } from '@/components/DashCharts'
 
-interface Stats {
-  totalIncome: number
-  totalExpenses: number
-  totalSavings: number
-  savingsRate: number
-  currentBalance: number
-  transactionCount: number
-}
-
-interface Transaction {
+interface Txn {
   id: string
   date: string
-  description: string | null
+  type: 'income' | 'expense' | 'savings'
   category: string | null
-  type: string
+  description: string | null
   amount: number
 }
 
-interface Category {
-  id: string
-  name: string
-  type: string
+const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 })
+const money2 = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' })
+
+type Preset = 'all' | 'ytd' | '12m' | '6m' | '3m' | 'custom'
+const PRESETS: { key: Preset; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'ytd', label: 'YTD' },
+  { key: '12m', label: '12M' },
+  { key: '6m', label: '6M' },
+  { key: '3m', label: '3M' },
+]
+
+function subMonths(iso: string, n: number) {
+  const d = new Date(iso)
+  d.setMonth(d.getMonth() - n)
+  return d.toISOString().slice(0, 10)
 }
 
-const money = (n: number) =>
-  n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 })
-
 export default function Dashboard() {
-  const [stats, setStats] = useState<Stats | null>(null)
-  const [txns, setTxns] = useState<Transaction[]>([])
-  const [cats, setCats] = useState<Category[]>([])
+  const [txns, setTxns] = useState<Txn[]>([])
   const [loading, setLoading] = useState(true)
-  const [showForm, setShowForm] = useState(false)
-  const [saving, setSaving] = useState(false)
-
-  const [form, setForm] = useState({
-    date: new Date().toISOString().slice(0, 10),
-    type: 'expense',
-    category: '',
-    amount: '',
-    description: '',
-  })
+  const [preset, setPreset] = useState<Preset>('12m')
+  const [customFrom, setCustomFrom] = useState('')
+  const [customTo, setCustomTo] = useState('')
 
   const load = useCallback(async () => {
-    setLoading(true)
-    try {
-      const [s, t, c] = await Promise.all([
-        fetch('/api/stats').then((r) => r.json()),
-        fetch('/api/transactions?limit=15').then((r) => r.json()),
-        fetch('/api/categories').then((r) => r.json()),
-      ])
-      if (!s.error) setStats(s)
-      if (Array.isArray(t)) setTxns(t)
-      if (Array.isArray(c)) setCats(c)
-    } catch (e) {
-      console.error(e)
-    } finally {
-      setLoading(false)
-    }
+    const data = await fetch('/api/data').then((r) => r.json()).catch(() => [])
+    if (Array.isArray(data)) setTxns(data.map((t: any) => ({ ...t, amount: Number(t.amount) })))
+    setLoading(false)
   }, [])
 
-  useEffect(() => {
-    load()
-  }, [load])
+  useEffect(() => { load() }, [load])
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setSaving(true)
-    try {
-      const res = await fetch('/api/transactions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, amount: parseFloat(form.amount) }),
-      })
-      if (res.ok) {
-        setForm({ ...form, amount: '', description: '' })
-        setShowForm(false)
-        load()
-      } else {
-        const err = await res.json()
-        alert('Error: ' + (err.error || 'could not save'))
-      }
-    } finally {
-      setSaving(false)
+  const maxDate = txns.length ? txns[txns.length - 1].date : new Date().toISOString().slice(0, 10)
+  const minDate = txns.length ? txns[0].date : '2024-01-01'
+
+  // resolve active date range
+  const { from, to } = useMemo(() => {
+    if (preset === 'custom') return { from: customFrom || minDate, to: customTo || maxDate }
+    if (preset === 'all') return { from: minDate, to: maxDate }
+    if (preset === 'ytd') return { from: maxDate.slice(0, 4) + '-01-01', to: maxDate }
+    const n = preset === '12m' ? 12 : preset === '6m' ? 6 : 3
+    return { from: subMonths(maxDate, n), to: maxDate }
+  }, [preset, customFrom, customTo, minDate, maxDate])
+
+  const filtered = useMemo(
+    () => txns.filter((t) => t.date >= from && t.date <= to),
+    [txns, from, to],
+  )
+
+  const agg = useMemo(() => {
+    let income = 0, expense = 0, savings = 0
+    const byMonth = new Map<string, { month: string; income: number; expense: number; savings: number }>()
+    const incomeCat = new Map<string, number>()
+    const expenseCat = new Map<string, number>()
+    const savingsCat = new Map<string, number>()
+
+    for (const t of filtered) {
+      const m = t.date.slice(0, 7)
+      if (!byMonth.has(m)) byMonth.set(m, { month: m, income: 0, expense: 0, savings: 0 })
+      const row = byMonth.get(m)!
+      const cat = t.category || 'Uncategorized'
+      if (t.type === 'income') { income += t.amount; row.income += t.amount; incomeCat.set(cat, (incomeCat.get(cat) || 0) + t.amount) }
+      else if (t.type === 'expense') { expense += t.amount; row.expense += t.amount; expenseCat.set(cat, (expenseCat.get(cat) || 0) + t.amount) }
+      else if (t.type === 'savings') { savings += t.amount; row.savings += t.amount; savingsCat.set(cat, (savingsCat.get(cat) || 0) + t.amount) }
     }
-  }
+    const monthly = [...byMonth.values()].sort((a, b) => a.month.localeCompare(b.month))
+      .map((r) => ({ ...r, income: Math.round(r.income), expense: Math.round(r.expense), savings: Math.round(r.savings) }))
+    const toArr = (m: Map<string, number>) => [...m.entries()].map(([name, total]) => ({ name, total: Math.round(total) })).sort((a, b) => b.total - a.total)
+    return {
+      income, expense, savings, net: income - expense - savings,
+      monthly, incomeCat: toArr(incomeCat), expenseCat: toArr(expenseCat), savingsCat: toArr(savingsCat),
+    }
+  }, [filtered])
 
-  const catsForType = cats.filter((c) => c.type === form.type)
+  const allTimeSavings = useMemo(() => txns.filter((t) => t.type === 'savings').reduce((s, t) => s + t.amount, 0), [txns])
+
+  if (loading) {
+    return (
+      <div className="bg-aurora">
+        <DashHeader />
+        <div className="wrap"><div className="card glass" style={{ padding: 40, textAlign: 'center' }}>Loading your analytics…</div></div>
+      </div>
+    )
+  }
 
   return (
     <div className="bg-aurora">
-      <header className="top">
-        <div className="brand">
-          <span className="brand-emoji">📊</span>
-          <span>Dashboard</span>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <a className="header-cta" href="/settings" style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}>⚙️ <span className="long">Settings</span></a>
-          <a className="header-cta" href="/">← <span className="long">Home</span></a>
-        </div>
-      </header>
+      <DashHeader />
       <div className="wrap">
-
+        {/* Filter bar */}
         <section className="block">
-          <h2>💰 Financial Overview</h2>
-          {loading ? (
-            <div className="card glass" style={{ padding: 40, textAlign: 'center' }}>Loading your data…</div>
-          ) : stats && stats.transactionCount > 0 ? (
-            <>
-            <GoalTracker saved={stats.totalSavings} />
-            <div className="card glass hero" style={{ marginBottom: 16, textAlign: 'center' }}>
-              <div className="stat-label">💵 Current Balance</div>
-              <div className="stat-value" style={{ fontSize: 44, color: stats.currentBalance >= 0 ? 'var(--income)' : 'var(--expense)' }}>
-                {money(stats.currentBalance)}
-              </div>
-              <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>
-                Income − Expenses − Savings set aside
-              </div>
+          <div className="card glass" style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {PRESETS.map((p) => (
+                <button key={p.key} onClick={() => setPreset(p.key)}
+                  className={`chip ${preset === p.key ? 'chip-active' : ''}`}>{p.label}</button>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              <input type="date" value={preset === 'custom' ? (customFrom || minDate) : from} min={minDate} max={maxDate}
+                onChange={(e) => { setPreset('custom'); setCustomFrom(e.target.value) }} className="date-input" />
+              <span className="stat-label">to</span>
+              <input type="date" value={preset === 'custom' ? (customTo || maxDate) : to} min={minDate} max={maxDate}
+                onChange={(e) => { setPreset('custom'); setCustomTo(e.target.value) }} className="date-input" />
+            </div>
+          </div>
+        </section>
+
+        {/* KPIs for the period */}
+        <section className="block">
+          <div className="card glass">
+            <div className="stat-grid">
+              <Kpi emoji="💰" label="Income" value={money(agg.income)} cls="income" />
+              <Kpi emoji="💸" label="Expenses" value={money(agg.expense)} cls="expense" />
+              <Kpi emoji="🏦" label="Savings" value={money(agg.savings)} cls="savings" />
+              <Kpi emoji="⚖️" label="Net" value={money(agg.net)} cls={agg.net >= 0 ? 'income' : 'expense'} />
+            </div>
+            <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 12 }}>
+              {from} → {to} · {filtered.length} transactions
+            </div>
+          </div>
+        </section>
+
+        {/* INCOME SECTION */}
+        <SectionTitle emoji="🟢" title="Income" />
+        <section className="block">
+          <div className="grid-2">
+            <div className="card glass">
+              <ChartHead title="Income Over Time" sub="Monthly income for the selected period" />
+              <MonthlyArea data={agg.monthly} series={[{ key: 'income', name: 'Income', color: COLORS.income }]} />
             </div>
             <div className="card glass">
-              <div className="stat-grid">
-                <div className="stat-card">
-                  <div style={{ fontSize: 24, marginBottom: 8 }}>💰</div>
-                  <div className="stat-label">Total Income</div>
-                  <div className="stat-value income">{money(stats.totalIncome)}</div>
-                </div>
-                <div className="stat-card">
-                  <div style={{ fontSize: 24, marginBottom: 8 }}>💸</div>
-                  <div className="stat-label">Total Expenses</div>
-                  <div className="stat-value expense">{money(stats.totalExpenses)}</div>
-                </div>
-                <div className="stat-card">
-                  <div style={{ fontSize: 24, marginBottom: 8 }}>🏦</div>
-                  <div className="stat-label">Total Savings</div>
-                  <div className="stat-value savings">{money(stats.totalSavings)}</div>
-                </div>
-                <div className="stat-card">
-                  <div style={{ fontSize: 24, marginBottom: 8 }}>📈</div>
-                  <div className="stat-label">Savings Rate</div>
-                  <div className="stat-value">{stats.savingsRate}%</div>
-                </div>
-              </div>
+              <ChartHead title="Income by Source" sub="Where your money comes from" />
+              <HBar data={agg.incomeCat} color={COLORS.income} />
             </div>
-            </>
-          ) : (
-            <div className="card glass" style={{ padding: 40, textAlign: 'center' }}>
-              No data yet. Add your first transaction below to get started!
-            </div>
-          )}
+          </div>
         </section>
 
+        {/* EXPENSES SECTION */}
+        <SectionTitle emoji="🔴" title="Expenses" />
         <section className="block">
-          <div className="card glass">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showForm ? 16 : 0 }}>
-              <h2 style={{ margin: 0 }}>➕ Add Transaction</h2>
-              <button className="btn btn-secondary" onClick={() => setShowForm((v) => !v)}>
-                {showForm ? 'Cancel' : 'New'}
-              </button>
+          <div className="grid-2">
+            <div className="card glass">
+              <ChartHead title="Expenses Over Time" sub="Monthly spending for the selected period" />
+              <MonthlyArea data={agg.monthly} series={[{ key: 'expense', name: 'Expenses', color: COLORS.expense }]} />
             </div>
-
-            {showForm && (
-              <form onSubmit={submit} style={{ display: 'grid', gap: 12 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                  <label style={{ display: 'grid', gap: 4 }}>
-                    <span className="stat-label">Date</span>
-                    <input type="date" required value={form.date}
-                      onChange={(e) => setForm({ ...form, date: e.target.value })} style={inp} />
-                  </label>
-                  <label style={{ display: 'grid', gap: 4 }}>
-                    <span className="stat-label">Type</span>
-                    <select value={form.type}
-                      onChange={(e) => setForm({ ...form, type: e.target.value, category: '' })} style={inp}>
-                      <option value="income">Income</option>
-                      <option value="expense">Expense</option>
-                      <option value="savings">Savings</option>
-                    </select>
-                  </label>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                  <label style={{ display: 'grid', gap: 4 }}>
-                    <span className="stat-label">Category</span>
-                    <select value={form.category}
-                      onChange={(e) => setForm({ ...form, category: e.target.value })} style={inp}>
-                      <option value="">— select —</option>
-                      {catsForType.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
-                    </select>
-                  </label>
-                  <label style={{ display: 'grid', gap: 4 }}>
-                    <span className="stat-label">Amount</span>
-                    <input type="number" step="0.01" required placeholder="0.00" value={form.amount}
-                      onChange={(e) => setForm({ ...form, amount: e.target.value })} style={inp} />
-                  </label>
-                </div>
-                <label style={{ display: 'grid', gap: 4 }}>
-                  <span className="stat-label">Description</span>
-                  <input type="text" placeholder="e.g. Groceries" value={form.description}
-                    onChange={(e) => setForm({ ...form, description: e.target.value })} style={inp} />
-                </label>
-                <button className="btn btn-primary" type="submit" disabled={saving}>
-                  {saving ? 'Saving…' : '💾 Save Transaction'}
-                </button>
-              </form>
-            )}
+            <div className="card glass">
+              <ChartHead title="Spending Breakdown" sub="Share by category" />
+              <Donut data={agg.expenseCat.slice(0, 8)} />
+            </div>
+          </div>
+          <div className="card glass" style={{ marginTop: 16 }}>
+            <ChartHead title="Top Expense Categories" sub="Ranked by total spent" />
+            <HBar data={agg.expenseCat.slice(0, 10)} color={COLORS.expense} />
           </div>
         </section>
 
-        {stats && stats.transactionCount > 0 && (
-          <section className="block">
-            <Charts />
-          </section>
-        )}
-
-        <section className="block" style={{ marginBottom: 64 }}>
-          <h2>🧾 Recent Transactions</h2>
-          <div className="card glass">
-            {txns.length === 0 ? (
-              <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)' }}>No transactions yet.</div>
-            ) : (
-              <div style={{ display: 'grid', gap: 2 }}>
-                {txns.map((t) => (
-                  <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 4px', borderBottom: '1px solid var(--border)' }}>
-                    <div>
-                      <div style={{ fontWeight: 600 }}>{t.description || t.category}</div>
-                      <div className="stat-label">{t.date} · {t.category}</div>
-                    </div>
-                    <div className={`stat-value ${t.type}`} style={{ fontSize: 16 }}>
-                      {t.type === 'income' ? '+' : t.type === 'expense' ? '−' : ''}{money(Number(t.amount))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+        {/* SAVINGS SECTION */}
+        <SectionTitle emoji="🟣" title="Savings" />
+        <section className="block">
+          <GoalTracker saved={allTimeSavings} />
+          <div className="grid-2">
+            <div className="card glass">
+              <ChartHead title="Savings Over Time" sub="Monthly amount set aside" />
+              <MonthlyArea data={agg.monthly} series={[{ key: 'savings', name: 'Savings', color: COLORS.savings }]} />
+            </div>
+            <div className="card glass">
+              <ChartHead title="Savings by Account" sub="Where you're building wealth" />
+              <HBar data={agg.savingsCat} color={COLORS.savings} />
+            </div>
           </div>
         </section>
+
+        {/* INVESTMENTS SECTION (placeholder) */}
+        <SectionTitle emoji="📈" title="Investments" />
+        <section className="block">
+          <div className="card glass" style={{ textAlign: 'center', padding: 40 }}>
+            <div style={{ fontSize: 40, marginBottom: 8 }}>🚧</div>
+            <h3 style={{ margin: '0 0 6px' }}>Coming soon</h3>
+            <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, margin: 0 }}>
+              Portfolio tracking (MSTY, dividends, book value vs market value) will live here.
+            </p>
+          </div>
+        </section>
+
+        {/* TOOLS: add + recent */}
+        <SectionTitle emoji="🧾" title="Manage" />
+        <AddAndRecent txns={filtered.slice().reverse().slice(0, 12)} onAdded={load} />
       </div>
 
       <ChatWidget />
@@ -246,11 +210,126 @@ export default function Dashboard() {
   )
 }
 
-const inp: React.CSSProperties = {
-  padding: '10px 12px',
-  borderRadius: 10,
-  border: '1px solid var(--border)',
-  background: 'var(--kpi-bg)',
-  color: 'var(--text-primary)',
-  fontSize: 14,
+function DashHeader() {
+  return (
+    <header className="top">
+      <div className="brand"><span className="brand-emoji">📊</span><span>Dashboard</span></div>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <a className="header-cta" href="/settings" style={{ background: 'var(--glass-bg)', color: 'var(--accent)', border: '1px solid var(--glass-border)' }}>⚙️ <span className="long">Settings</span></a>
+        <a className="header-cta" href="/">← <span className="long">Home</span></a>
+      </div>
+    </header>
+  )
+}
+
+function Kpi({ emoji, label, value, cls }: { emoji: string; label: string; value: string; cls: string }) {
+  return (
+    <div className="stat-card">
+      <div style={{ fontSize: 24, marginBottom: 8 }}>{emoji}</div>
+      <div className="stat-label">{label}</div>
+      <div className={`stat-value ${cls}`}>{value}</div>
+    </div>
+  )
+}
+
+function SectionTitle({ emoji, title }: { emoji: string; title: string }) {
+  return (
+    <h2 style={{ margin: '28px 0 4px', fontSize: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+      <span>{emoji}</span>{title}
+    </h2>
+  )
+}
+
+function ChartHead({ title, sub }: { title: string; sub: string }) {
+  return (
+    <>
+      <h3 style={{ margin: '0 0 2px', fontSize: 15 }}>{title}</h3>
+      <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginBottom: 14 }}>{sub}</p>
+    </>
+  )
+}
+
+// ---- Add transaction + recent list ----
+function AddAndRecent({ txns, onAdded }: { txns: Txn[]; onAdded: () => void }) {
+  const [show, setShow] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [cats, setCats] = useState<{ name: string; type: string }[]>([])
+  const [form, setForm] = useState({
+    date: new Date().toISOString().slice(0, 10), type: 'expense', category: '', amount: '', description: '',
+  })
+
+  useEffect(() => {
+    fetch('/api/categories').then((r) => r.json()).then((d) => Array.isArray(d) && setCats(d)).catch(() => {})
+  }, [])
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault(); setSaving(true)
+    try {
+      const res = await fetch('/api/transactions', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...form, amount: parseFloat(form.amount) }),
+      })
+      if (res.ok) { setForm({ ...form, amount: '', description: '' }); setShow(false); onAdded() }
+      else alert('Error: ' + ((await res.json()).error || 'could not save'))
+    } finally { setSaving(false) }
+  }
+
+  const inp: React.CSSProperties = { padding: '10px 12px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 14 }
+  const catsForType = cats.filter((c) => c.type === form.type)
+
+  return (
+    <section className="block" style={{ marginBottom: 64 }}>
+      <div className="card glass" style={{ marginBottom: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: show ? 16 : 0 }}>
+          <h3 style={{ margin: 0 }}>➕ Add Transaction</h3>
+          <button className="btn btn-secondary" onClick={() => setShow((v) => !v)}>{show ? 'Cancel' : 'New'}</button>
+        </div>
+        {show && (
+          <form onSubmit={submit} style={{ display: 'grid', gap: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Date</span>
+                <input type="date" required value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} style={inp} /></label>
+              <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Type</span>
+                <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value, category: '' })} style={inp}>
+                  <option value="income">Income</option><option value="expense">Expense</option><option value="savings">Savings</option>
+                </select></label>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Category</span>
+                <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} style={inp}>
+                  <option value="">— select —</option>
+                  {catsForType.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}
+                </select></label>
+              <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Amount</span>
+                <input type="number" step="0.01" required placeholder="0.00" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} style={inp} /></label>
+            </div>
+            <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Description</span>
+              <input type="text" placeholder="e.g. Groceries" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} style={inp} /></label>
+            <button className="btn btn-primary" type="submit" disabled={saving}>{saving ? 'Saving…' : '💾 Save Transaction'}</button>
+          </form>
+        )}
+      </div>
+
+      <div className="card glass">
+        <h3 style={{ marginTop: 0 }}>Recent (in range)</h3>
+        {txns.length === 0 ? (
+          <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)' }}>No transactions in this period.</div>
+        ) : (
+          <div style={{ display: 'grid', gap: 2 }}>
+            {txns.map((t) => (
+              <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 4px', borderBottom: '1px solid var(--border)' }}>
+                <div>
+                  <div style={{ fontWeight: 600 }}>{t.description || t.category}</div>
+                  <div className="stat-label">{t.date} · {t.category}</div>
+                </div>
+                <div className={`stat-value ${t.type}`} style={{ fontSize: 16 }}>
+                  {t.type === 'income' ? '+' : t.type === 'expense' ? '−' : ''}{money2(t.amount)}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  )
 }

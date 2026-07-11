@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import MonthChart from '@/components/MonthChart'
+import ChatWidget from '@/components/ChatWidget'
 
 interface Stats { currentBalance: number; savingsRate: number; transactionCount: number }
 interface Month {
@@ -72,13 +73,6 @@ export default function Home() {
                 <div className="stat-label">Savings</div>
                 <div className="stat-value savings">{month ? money(month.savings) : '—'}</div>
               </div>
-              <div className="stat-card">
-                <div style={{ fontSize: 24, marginBottom: 8 }}>⚖️</div>
-                <div className="stat-label">Net</div>
-                <div className="stat-value" style={{ color: (month?.net ?? 0) >= 0 ? 'var(--income)' : 'var(--expense)' }}>
-                  {month ? money(month.net) : '—'}
-                </div>
-              </div>
             </div>
           </div>
         </section>
@@ -98,14 +92,15 @@ export default function Home() {
 
         {/* Footer */}
         <footer style={{ textAlign: 'center', marginTop: 32, paddingBottom: 16 }}>
-          <span className="offer-badge">✅ Supabase Connected</span>
           {stats && (
-            <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 8 }}>
+            <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>
               {stats.transactionCount.toLocaleString()} transactions tracked
             </div>
           )}
         </footer>
       </div>
+
+      <ChatWidget />
     </div>
   )
 }

@@ -22,12 +22,23 @@ export default function SettingsPage() {
   const [goal, setGoal] = useState('')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [status, setStatus] = useState<'checking' | 'online' | 'offline'>('checking')
 
   useEffect(() => {
     fetch('/api/settings').then((r) => r.json()).then((d) => {
       if (!d.error) { setS(d); setName(d.name); setGoal(String(d.goalAmount)) }
     })
+    fetch('/api/health')
+      .then((r) => r.json())
+      .then((d) => setStatus(d.connected ? 'online' : 'offline'))
+      .catch(() => setStatus('offline'))
   }, [])
+
+  const statusMeta = {
+    checking: { color: 'var(--text-muted)', label: 'Checking…' },
+    online: { color: 'var(--income)', label: 'Connected' },
+    offline: { color: 'var(--expense)', label: 'Offline' },
+  }[status]
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -54,6 +65,25 @@ export default function SettingsPage() {
       </header>
 
       <div className="wrap">
+        {/* Connection status */}
+        <section className="block">
+          <h2>🗄️ Database</h2>
+          <div className="card glass" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{
+              width: 12, height: 12, borderRadius: '50%', background: statusMeta.color,
+              boxShadow: `0 0 0 4px color-mix(in srgb, ${statusMeta.color} 22%, transparent)`,
+              flexShrink: 0,
+              animation: status === 'checking' ? 'pulse 1.2s ease-in-out infinite' : 'none',
+            }} />
+            <div>
+              <div style={{ fontWeight: 600 }}>Supabase — {statusMeta.label}</div>
+              <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>
+                {status === 'online' ? 'Your data is live and syncing.' : status === 'offline' ? 'Cannot reach the database right now.' : 'Testing connection…'}
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Manage */}
         <section className="block">
           <h2>🎯 Goal & Household</h2>
