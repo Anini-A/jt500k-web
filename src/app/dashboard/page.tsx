@@ -151,7 +151,7 @@ export default function Dashboard() {
               <Kpi emoji="💸" label="Expenses" value={money(agg.expense)} cls="expense" />
               <Kpi emoji="🏦" label="Savings" value={money(agg.savings)} cls="savings" />
             </div>
-            <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 12 }}>
+            <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 12, textAlign: 'center' }}>
               {from} → {to} · {filtered.length} transactions
             </div>
           </div>
