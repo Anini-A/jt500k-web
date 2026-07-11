@@ -81,7 +81,7 @@ export default function Transactions() {
 
         {/* Controls */}
         <section className="block">
-          <div className="card glass" style={{ display: 'flex', flexWrap: 'nowrap', gap: 8, alignItems: 'center', overflowX: 'auto' }}>
+          <div className="card glass" style={{ display: 'flex', flexDirection: 'row', flexWrap: 'nowrap', gap: 8, alignItems: 'center', overflowX: 'auto' }}>
             {TYPES.map((t) => (
               <button key={t.key} onClick={() => setType(t.key)} className={`chip ${type === t.key ? 'chip-active' : ''}`} style={{ flexShrink: 0 }}>{t.label}</button>
             ))}

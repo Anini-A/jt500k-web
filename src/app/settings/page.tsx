@@ -69,7 +69,7 @@ export default function SettingsPage() {
         {/* Connection status */}
         <section className="block">
           <h2>🗄️ Database</h2>
-          <div className="card glass" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div className="card glass" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 12 }}>
             <span style={{
               width: 12, height: 12, borderRadius: '50%', background: statusMeta.color,
               boxShadow: `0 0 0 4px color-mix(in srgb, ${statusMeta.color} 22%, transparent)`,

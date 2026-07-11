@@ -59,7 +59,6 @@ export default function Home() {
         {/* This month summary */}
         <section className="block">
           <div className="card glass">
-            <h2 style={{ marginTop: 0, marginBottom: 16 }}>📅 {month ? month.label : 'This Month'}</h2>
             <div className="stat-grid">
               <div className="stat-card">
                 <div style={{ fontSize: 24, marginBottom: 8 }}>💰</div>
@@ -76,6 +75,9 @@ export default function Home() {
                 <div className="stat-label">Savings</div>
                 <div className="stat-value savings">{month ? money(month.savings) : '—'}</div>
               </div>
+            </div>
+            <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, textAlign: 'center', marginTop: 14 }}>
+              {month ? month.label : ''}
             </div>
           </div>
         </section>

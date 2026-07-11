@@ -126,7 +126,7 @@ export default function Dashboard() {
         <DashHeader />
         {/* Filter bar */}
         <section className="block">
-          <div className="card glass" style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between' }}>
+          <div className="card glass" style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               {PRESETS.map((p) => (
                 <button key={p.key} onClick={() => setPreset(p.key)}
