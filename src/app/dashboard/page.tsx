@@ -150,7 +150,6 @@ export default function Dashboard() {
               <Kpi emoji="💰" label="Income" value={money(agg.income)} cls="income" />
               <Kpi emoji="💸" label="Expenses" value={money(agg.expense)} cls="expense" />
               <Kpi emoji="🏦" label="Savings" value={money(agg.savings)} cls="savings" />
-              <Kpi emoji="⚖️" label="Net" value={money(agg.net)} cls={agg.net >= 0 ? 'income' : 'expense'} />
             </div>
             <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 12 }}>
               {from} → {to} · {filtered.length} transactions
