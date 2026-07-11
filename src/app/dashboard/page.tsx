@@ -94,16 +94,18 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div className="bg-aurora">
-        <DashHeader />
-        <div className="wrap"><div className="card glass" style={{ padding: 40, textAlign: 'center' }}>Loading your analytics…</div></div>
+        <div className="wrap">
+          <DashHeader />
+          <div className="card glass" style={{ padding: 40, textAlign: 'center' }}>Loading your analytics…</div>
+        </div>
       </div>
     )
   }
 
   return (
     <div className="bg-aurora">
-      <DashHeader />
       <div className="wrap">
+        <DashHeader />
         {/* Filter bar */}
         <section className="block">
           <div className="card glass" style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between' }}>

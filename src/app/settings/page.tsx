@@ -56,15 +56,15 @@ export default function SettingsPage() {
 
   return (
     <div className="bg-aurora">
-      <header className="top">
-        <div className="brand">
-          <span className="brand-emoji">⚙️</span>
-          <span>Settings</span>
-        </div>
-        <a className="header-cta" href="/">← <span className="long">Home</span></a>
-      </header>
-
       <div className="wrap">
+        <header className="top">
+          <div className="brand">
+            <span className="brand-emoji">⚙️</span>
+            <span>Settings</span>
+          </div>
+          <a className="header-cta" href="/">← <span className="long">Home</span></a>
+        </header>
+
         {/* Connection status */}
         <section className="block">
           <h2>🗄️ Database</h2>

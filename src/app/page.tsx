@@ -26,17 +26,17 @@ export default function Home() {
 
   return (
     <div className="bg-aurora">
-      <header className="top">
-        <div className="brand">
-          <span className="brand-emoji">💵</span>
-          <span>Journey to 500K</span>
-        </div>
-        <a className="header-cta" href="/settings">
-          ⚙️ <span className="long">Settings</span>
-        </a>
-      </header>
-
       <div className="wrap">
+        <header className="top">
+          <div className="brand">
+            <span className="brand-emoji">💵</span>
+            <span>Journey to 500K</span>
+          </div>
+          <a className="header-cta" href="/settings">
+            ⚙️ <span className="long">Settings</span>
+          </a>
+        </header>
+
         {/* Hero — current balance to the cent */}
         <section className="block">
           <div className="card glass hero" style={{ textAlign: 'center' }}>
