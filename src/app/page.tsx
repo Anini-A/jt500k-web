@@ -1,8 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { Settings } from 'lucide-react'
 import MonthChart from '@/components/MonthChart'
 import ChatWidget from '@/components/ChatWidget'
+import IconPill from '@/components/IconPill'
+import AddTransactionButton from '@/components/AddTransactionButton'
 
 interface Stats { currentBalance: number; savingsRate: number; transactionCount: number }
 interface Month {
@@ -18,8 +21,13 @@ export default function Home() {
   const [month, setMonth] = useState<Month | null>(null)
 
   useEffect(() => {
-    fetch('/api/stats').then((r) => r.json()).then((d) => !d.error && setStats(d)).catch(() => {})
-    fetch('/api/month').then((r) => r.json()).then((d) => !d.error && !d.empty && setMonth(d)).catch(() => {})
+    const load = () => {
+      fetch('/api/stats').then((r) => r.json()).then((d) => !d.error && setStats(d)).catch(() => {})
+      fetch('/api/month').then((r) => r.json()).then((d) => !d.error && !d.empty && setMonth(d)).catch(() => {})
+    }
+    load()
+    window.addEventListener('transaction-added', load)
+    return () => window.removeEventListener('transaction-added', load)
   }, [])
 
   const bal = stats?.currentBalance ?? 0
@@ -32,9 +40,10 @@ export default function Home() {
             <span className="brand-emoji">💵</span>
             <span>Journey to 500K</span>
           </div>
-          <a className="header-cta" href="/settings">
-            ⚙️ <span className="long">Settings</span>
-          </a>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <AddTransactionButton />
+            <IconPill icon={<Settings />} label="Settings" href="/settings" />
+          </div>
         </header>
 
         {/* Hero — current balance to the cent */}

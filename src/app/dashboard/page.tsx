@@ -1,9 +1,20 @@
 'use client'
 
 import { useEffect, useState, useMemo, useCallback } from 'react'
+import { Settings, Home } from 'lucide-react'
 import GoalTracker from '@/components/GoalTracker'
 import ChatWidget from '@/components/ChatWidget'
+import IconPill from '@/components/IconPill'
+import AddTransactionButton from '@/components/AddTransactionButton'
 import { MonthlyArea, HBar, Donut, COLORS } from '@/components/DashCharts'
+
+type Tab = 'income' | 'expenses' | 'savings' | 'investments'
+const TABS: { key: Tab; label: string; emoji: string }[] = [
+  { key: 'income', label: 'Income', emoji: '🟢' },
+  { key: 'expenses', label: 'Expenses', emoji: '🔴' },
+  { key: 'savings', label: 'Savings', emoji: '🟣' },
+  { key: 'investments', label: 'Investments', emoji: '📈' },
+]
 
 interface Txn {
   id: string
@@ -38,6 +49,7 @@ export default function Dashboard() {
   const [preset, setPreset] = useState<Preset>('12m')
   const [customFrom, setCustomFrom] = useState('')
   const [customTo, setCustomTo] = useState('')
+  const [tab, setTab] = useState<Tab>('income')
 
   const load = useCallback(async () => {
     const data = await fetch('/api/data').then((r) => r.json()).catch(() => [])
@@ -45,7 +57,11 @@ export default function Dashboard() {
     setLoading(false)
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    load()
+    window.addEventListener('transaction-added', load)
+    return () => window.removeEventListener('transaction-added', load)
+  }, [load])
 
   const maxDate = txns.length ? txns[txns.length - 1].date : new Date().toISOString().slice(0, 10)
   const minDate = txns.length ? txns[0].date : '2024-01-01'
@@ -140,71 +156,87 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* INCOME SECTION */}
-        <SectionTitle emoji="🟢" title="Income" />
-        <section className="block">
-          <div className="grid-2">
-            <div className="card glass">
-              <ChartHead title="Income Over Time" sub="Monthly income for the selected period" />
-              <MonthlyArea data={agg.monthly} series={[{ key: 'income', name: 'Income', color: COLORS.income }]} />
-            </div>
-            <div className="card glass">
-              <ChartHead title="Income by Source" sub="Where your money comes from" />
-              <HBar data={agg.incomeCat} color={COLORS.income} />
-            </div>
+        {/* Section tabs */}
+        <section className="block" style={{ display: 'flex', justifyContent: 'center' }}>
+          <div className="tabs">
+            {TABS.map((t) => (
+              <button key={t.key} onClick={() => setTab(t.key)}
+                className={`tab ${tab === t.key ? 'tab-active' : ''}`}>
+                <span>{t.emoji}</span>{t.label}
+              </button>
+            ))}
           </div>
         </section>
 
-        {/* EXPENSES SECTION */}
-        <SectionTitle emoji="🔴" title="Expenses" />
-        <section className="block">
-          <div className="grid-2">
-            <div className="card glass">
-              <ChartHead title="Expenses Over Time" sub="Monthly spending for the selected period" />
-              <MonthlyArea data={agg.monthly} series={[{ key: 'expense', name: 'Expenses', color: COLORS.expense }]} />
+        {/* INCOME */}
+        {tab === 'income' && (
+          <section className="block">
+            <div className="grid-2">
+              <div className="card glass">
+                <ChartHead title="Income Over Time" sub="Monthly income for the selected period" />
+                <MonthlyArea data={agg.monthly} series={[{ key: 'income', name: 'Income', color: COLORS.income }]} />
+              </div>
+              <div className="card glass">
+                <ChartHead title="Income by Source" sub="Where your money comes from" />
+                <HBar data={agg.incomeCat} color={COLORS.income} />
+              </div>
             </div>
-            <div className="card glass">
-              <ChartHead title="Spending Breakdown" sub="Share by category" />
-              <Donut data={agg.expenseCat.slice(0, 8)} />
-            </div>
-          </div>
-          <div className="card glass" style={{ marginTop: 16 }}>
-            <ChartHead title="Top Expense Categories" sub="Ranked by total spent" />
-            <HBar data={agg.expenseCat.slice(0, 10)} color={COLORS.expense} />
-          </div>
-        </section>
+          </section>
+        )}
 
-        {/* SAVINGS SECTION */}
-        <SectionTitle emoji="🟣" title="Savings" />
-        <section className="block">
-          <GoalTracker saved={allTimeSavings} />
-          <div className="grid-2">
-            <div className="card glass">
-              <ChartHead title="Savings Over Time" sub="Monthly amount set aside" />
-              <MonthlyArea data={agg.monthly} series={[{ key: 'savings', name: 'Savings', color: COLORS.savings }]} />
+        {/* EXPENSES */}
+        {tab === 'expenses' && (
+          <section className="block">
+            <div className="grid-2">
+              <div className="card glass">
+                <ChartHead title="Expenses Over Time" sub="Monthly spending for the selected period" />
+                <MonthlyArea data={agg.monthly} series={[{ key: 'expense', name: 'Expenses', color: COLORS.expense }]} />
+              </div>
+              <div className="card glass">
+                <ChartHead title="Spending Breakdown" sub="Share by category" />
+                <Donut data={agg.expenseCat.slice(0, 8)} />
+              </div>
             </div>
-            <div className="card glass">
-              <ChartHead title="Savings by Account" sub="Where you're building wealth" />
-              <HBar data={agg.savingsCat} color={COLORS.savings} />
+            <div className="card glass" style={{ marginTop: 16 }}>
+              <ChartHead title="Top Expense Categories" sub="Ranked by total spent" />
+              <HBar data={agg.expenseCat.slice(0, 10)} color={COLORS.expense} />
             </div>
-          </div>
-        </section>
+          </section>
+        )}
 
-        {/* INVESTMENTS SECTION (placeholder) */}
-        <SectionTitle emoji="📈" title="Investments" />
-        <section className="block">
-          <div className="card glass" style={{ textAlign: 'center', padding: 40 }}>
-            <div style={{ fontSize: 40, marginBottom: 8 }}>🚧</div>
-            <h3 style={{ margin: '0 0 6px' }}>Coming soon</h3>
-            <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, margin: 0 }}>
-              Portfolio tracking (MSTY, dividends, book value vs market value) will live here.
-            </p>
-          </div>
-        </section>
+        {/* SAVINGS */}
+        {tab === 'savings' && (
+          <section className="block">
+            <GoalTracker saved={allTimeSavings} />
+            <div className="grid-2">
+              <div className="card glass">
+                <ChartHead title="Savings Over Time" sub="Monthly amount set aside" />
+                <MonthlyArea data={agg.monthly} series={[{ key: 'savings', name: 'Savings', color: COLORS.savings }]} />
+              </div>
+              <div className="card glass">
+                <ChartHead title="Savings by Account" sub="Where you're building wealth" />
+                <HBar data={agg.savingsCat} color={COLORS.savings} />
+              </div>
+            </div>
+          </section>
+        )}
 
-        {/* TOOLS: add + recent */}
-        <SectionTitle emoji="🧾" title="Manage" />
-        <AddAndRecent txns={filtered.slice().reverse().slice(0, 12)} onAdded={load} />
+        {/* INVESTMENTS */}
+        {tab === 'investments' && (
+          <section className="block">
+            <div className="card glass" style={{ textAlign: 'center', padding: 40 }}>
+              <div style={{ fontSize: 40, marginBottom: 8 }}>🚧</div>
+              <h3 style={{ margin: '0 0 6px' }}>Coming soon</h3>
+              <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, margin: 0 }}>
+                Portfolio tracking (MSTY, dividends, book value vs market value) will live here.
+              </p>
+            </div>
+          </section>
+        )}
+
+        {/* Recent */}
+        <SectionTitle emoji="🧾" title="Recent" />
+        <RecentList txns={filtered.slice().reverse().slice(0, 12)} />
       </div>
 
       <ChatWidget />
@@ -217,8 +249,9 @@ function DashHeader() {
     <header className="top">
       <div className="brand"><span className="brand-emoji">📊</span><span>Dashboard</span></div>
       <div style={{ display: 'flex', gap: 8 }}>
-        <a className="header-cta" href="/settings" style={{ background: 'var(--glass-bg)', color: 'var(--accent)', border: '1px solid var(--glass-border)' }}>⚙️ <span className="long">Settings</span></a>
-        <a className="header-cta" href="/">← <span className="long">Home</span></a>
+        <AddTransactionButton />
+        <IconPill icon={<Settings />} label="Settings" href="/settings" />
+        <IconPill icon={<Home />} label="Home" href="/" />
       </div>
     </header>
   )
@@ -251,69 +284,11 @@ function ChartHead({ title, sub }: { title: string; sub: string }) {
   )
 }
 
-// ---- Add transaction + recent list ----
-function AddAndRecent({ txns, onAdded }: { txns: Txn[]; onAdded: () => void }) {
-  const [show, setShow] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [cats, setCats] = useState<{ name: string; type: string }[]>([])
-  const [form, setForm] = useState({
-    date: new Date().toISOString().slice(0, 10), type: 'expense', category: '', amount: '', description: '',
-  })
-
-  useEffect(() => {
-    fetch('/api/categories').then((r) => r.json()).then((d) => Array.isArray(d) && setCats(d)).catch(() => {})
-  }, [])
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault(); setSaving(true)
-    try {
-      const res = await fetch('/api/transactions', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, amount: parseFloat(form.amount) }),
-      })
-      if (res.ok) { setForm({ ...form, amount: '', description: '' }); setShow(false); onAdded() }
-      else alert('Error: ' + ((await res.json()).error || 'could not save'))
-    } finally { setSaving(false) }
-  }
-
-  const inp: React.CSSProperties = { padding: '10px 12px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 14 }
-  const catsForType = cats.filter((c) => c.type === form.type)
-
+// ---- Recent transactions list (add is handled by the header button) ----
+function RecentList({ txns }: { txns: Txn[] }) {
   return (
     <section className="block" style={{ marginBottom: 64 }}>
-      <div className="card glass" style={{ marginBottom: 16 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: show ? 16 : 0 }}>
-          <h3 style={{ margin: 0 }}>➕ Add Transaction</h3>
-          <button className="btn btn-secondary" onClick={() => setShow((v) => !v)}>{show ? 'Cancel' : 'New'}</button>
-        </div>
-        {show && (
-          <form onSubmit={submit} style={{ display: 'grid', gap: 12 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Date</span>
-                <input type="date" required value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} style={inp} /></label>
-              <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Type</span>
-                <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value, category: '' })} style={inp}>
-                  <option value="income">Income</option><option value="expense">Expense</option><option value="savings">Savings</option>
-                </select></label>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Category</span>
-                <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} style={inp}>
-                  <option value="">— select —</option>
-                  {catsForType.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}
-                </select></label>
-              <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Amount</span>
-                <input type="number" step="0.01" required placeholder="0.00" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} style={inp} /></label>
-            </div>
-            <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Description</span>
-              <input type="text" placeholder="e.g. Groceries" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} style={inp} /></label>
-            <button className="btn btn-primary" type="submit" disabled={saving}>{saving ? 'Saving…' : '💾 Save Transaction'}</button>
-          </form>
-        )}
-      </div>
-
       <div className="card glass">
-        <h3 style={{ marginTop: 0 }}>Recent (in range)</h3>
         {txns.length === 0 ? (
           <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)' }}>No transactions in this period.</div>
         ) : (
