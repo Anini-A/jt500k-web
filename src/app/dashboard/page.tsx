@@ -7,6 +7,7 @@ interface Stats {
   totalExpenses: number
   totalSavings: number
   savingsRate: number
+  currentBalance: number
   transactionCount: number
 }
 
@@ -106,6 +107,16 @@ export default function Dashboard() {
           {loading ? (
             <div className="card glass" style={{ padding: 40, textAlign: 'center' }}>Loading your data…</div>
           ) : stats && stats.transactionCount > 0 ? (
+            <>
+            <div className="card glass hero" style={{ marginBottom: 16, textAlign: 'center' }}>
+              <div className="stat-label">💵 Current Balance</div>
+              <div className="stat-value" style={{ fontSize: 44, color: stats.currentBalance >= 0 ? 'var(--income)' : 'var(--expense)' }}>
+                {money(stats.currentBalance)}
+              </div>
+              <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>
+                Income − Expenses − Savings set aside
+              </div>
+            </div>
             <div className="card glass">
               <div className="stat-grid">
                 <div className="stat-card">
@@ -130,6 +141,7 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
+            </>
           ) : (
             <div className="card glass" style={{ padding: 40, textAlign: 'center' }}>
               No data yet. Add your first transaction below to get started!

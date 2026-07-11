@@ -26,11 +26,15 @@ export async function GET() {
   const savingsRate =
     totalIncome > 0 ? Math.round((totalSavings / totalIncome) * 100) : 0
 
+  // Cash on hand: money in, minus money spent, minus money moved to savings.
+  const currentBalance = totalIncome - totalExpenses - totalSavings
+
   return NextResponse.json({
     totalIncome,
     totalExpenses,
     totalSavings,
     savingsRate,
+    currentBalance,
     transactionCount: data?.length ?? 0,
   })
 }
