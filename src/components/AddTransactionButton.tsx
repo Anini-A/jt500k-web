@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { Plus, Trash2, ClipboardPaste, PencilLine } from 'lucide-react'
+import { Plus, Trash2, ClipboardPaste, PencilLine, Repeat } from 'lucide-react'
 import IconPill from './IconPill'
 import CategorySelect from './CategorySelect'
 import { getJSON } from '@/lib/fresh'
@@ -57,7 +57,7 @@ function parsePaste(raw: string, cats: Category[]): Row[] {
 // Header "Add Transaction" pill that opens a modal. Works on any page.
 export default function AddTransactionButton() {
   const [open, setOpen] = useState(false)
-  const [mode, setMode] = useState<'single' | 'batch'>('single')
+  const [mode, setMode] = useState<'single' | 'batch' | 'recurring'>('single')
   const [saving, setSaving] = useState(false)
   const [cats, setCats] = useState<Category[]>([])
   const [debts, setDebts] = useState<{ name: string }[]>([])
@@ -66,6 +66,9 @@ export default function AddTransactionButton() {
   })
   const [raw, setRaw] = useState('')
   const [rows, setRows] = useState<Row[] | null>(null)
+  const [recs, setRecs] = useState<any[]>([])
+  const [picked, setPicked] = useState<Set<string>>(new Set())
+  const [recDate, setRecDate] = useState(new Date().toISOString().slice(0, 10))
 
   useEffect(() => {
     if (open && cats.length === 0) {
@@ -74,7 +77,29 @@ export default function AddTransactionButton() {
     }
   }, [open, cats.length])
 
+  useEffect(() => {
+    if (open && mode === 'recurring' && recs.length === 0) {
+      getJSON('/api/recurring').then((d) => {
+        if (Array.isArray(d)) { const active = d.filter((r: any) => r.active); setRecs(active); setPicked(new Set(active.map((r: any) => r.id))) }
+      }).catch(() => {})
+    }
+  }, [open, mode, recs.length])
+
   const close = () => { setOpen(false); setMode('single'); setRaw(''); setRows(null) }
+
+  const logRecurring = async () => {
+    const chosen = recs.filter((r) => picked.has(r.id))
+    if (!chosen.length) return
+    setSaving(true)
+    try {
+      const res = await fetch('/api/transactions', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(chosen.map((r) => ({ date: recDate, type: r.type, category: r.category, amount: Number(r.amount), description: r.description || r.name }))),
+      })
+      if (res.ok) { close(); window.dispatchEvent(new CustomEvent('transaction-added')) }
+      else alert('Error: ' + ((await res.json()).error || 'could not save'))
+    } finally { setSaving(false) }
+  }
 
   const submitSingle = async (e: React.FormEvent) => {
     e.preventDefault(); setSaving(true)
@@ -130,6 +155,9 @@ export default function AddTransactionButton() {
                   </button>
                   <button className={`tab ${mode === 'batch' ? 'tab-active' : ''}`} style={{ padding: '6px 12px', fontSize: 13 }} onClick={() => setMode('batch')}>
                     <ClipboardPaste size={14} /> Paste many
+                  </button>
+                  <button className={`tab ${mode === 'recurring' ? 'tab-active' : ''}`} style={{ padding: '6px 12px', fontSize: 13 }} onClick={() => setMode('recurring')}>
+                    <Repeat size={14} /> Recurring
                   </button>
                 </div>
                 <button className="btn btn-secondary" style={{ padding: '6px 12px' }} onClick={close}>✕</button>
@@ -234,6 +262,43 @@ export default function AddTransactionButton() {
                   onClick={logBatch}>
                   {saving ? 'Logging…' : `💾 Log ${validCount} transaction${validCount !== 1 ? 's' : ''}${invalidCount ? ` (skips ${invalidCount})` : ''}`}
                 </button>
+              </div>
+            )}
+
+            {/* ---------------- RECURRING ---------------- */}
+            {mode === 'recurring' && (
+              <div style={{ display: 'grid', gap: 12 }}>
+                {recs.length === 0 ? (
+                  <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, margin: 0 }}>
+                    No recurring items yet. Add them in <strong>Settings → 🔁 Recurring</strong> (rent, subs, paychecks…), then log them here in one tap.
+                  </p>
+                ) : (
+                  <>
+                    <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+                      <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>Pick what to log, set the date, and add them all at once.</span>
+                      <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}><span className="stat-label">Date</span>
+                        <input type="date" value={recDate} onChange={(e) => setRecDate(e.target.value)} style={{ ...inp, width: 'auto' }} /></label>
+                    </div>
+                    <div style={{ display: 'grid', gap: 2, maxHeight: '46vh', overflowY: 'auto' }}>
+                      {recs.map((r) => {
+                        const on = picked.has(r.id)
+                        return (
+                          <label key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 4px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
+                            <input type="checkbox" checked={on} onChange={() => setPicked((p) => { const n = new Set(p); n.has(r.id) ? n.delete(r.id) : n.add(r.id); return n })} />
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontWeight: 600 }}>{r.name}</div>
+                              <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{r.category}</div>
+                            </div>
+                            <span className={`stat-value ${r.type}`} style={{ fontSize: 15 }}>{Number(r.amount).toLocaleString('en-CA', { style: 'currency', currency: 'CAD' })}</span>
+                          </label>
+                        )
+                      })}
+                    </div>
+                    <button className="btn btn-primary" style={{ justifyContent: 'center' }} disabled={saving || picked.size === 0} onClick={logRecurring}>
+                      {saving ? 'Logging…' : `💾 Log ${picked.size} recurring item${picked.size !== 1 ? 's' : ''} on ${recDate}`}
+                    </button>
+                  </>
+                )}
               </div>
             )}
           </div>

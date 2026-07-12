@@ -130,3 +130,17 @@ create table if not exists net_worth_snapshots (
   unique (household_id, month)
 );
 alter table net_worth_snapshots enable row level security;
+
+-- Recurring transaction templates (rent, subs, paychecks…) for one-click monthly logging.
+create table if not exists recurring (
+  id uuid primary key default gen_random_uuid(),
+  household_id uuid not null references households(id) on delete cascade,
+  name text not null,
+  type text not null,
+  category text not null,
+  amount numeric(12,2) not null,
+  description text,
+  active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+alter table recurring enable row level security;
