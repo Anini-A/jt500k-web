@@ -71,3 +71,15 @@ create table if not exists debts (
   unique (household_id, name)
 );
 alter table debts enable row level security;
+
+-- Budget line items (dashboard Budget tab). Each has a category; the tracker
+-- rolls them up into per-category "envelopes" vs current-month actual spending.
+create table if not exists budgets (
+  id uuid primary key default gen_random_uuid(),
+  household_id uuid not null references households(id) on delete cascade,
+  name text not null,
+  category text not null,
+  amount numeric(12,2) not null,
+  created_at timestamptz not null default now()
+);
+alter table budgets enable row level security;

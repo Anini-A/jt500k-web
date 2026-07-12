@@ -6,6 +6,7 @@ import GoalTracker from '@/components/GoalTracker'
 import ChatWidget from '@/components/ChatWidget'
 import HeaderNav from '@/components/HeaderNav'
 import DebtManager from '@/components/DebtManager'
+import BudgetManager from '@/components/BudgetManager'
 import EditTransactionModal from '@/components/EditTransactionModal'
 import { getJSON } from '@/lib/fresh'
 import { MonthlyArea, HBar, Donut, COLORS } from '@/components/DashCharts'
@@ -18,8 +19,8 @@ const TABS: { key: Tab; label: string; Icon: LucideIcon; soon?: boolean }[] = [
   { key: 'savings', label: 'Savings', Icon: PiggyBank },
   { key: 'debts', label: 'Debts', Icon: Banknote },
   { key: 'investments', label: 'Investments', Icon: LineChart, soon: true },
+  { key: 'budget', label: 'Budget', Icon: Target },
   { key: 'insurance', label: 'Insurance', Icon: Shield, soon: true },
-  { key: 'budget', label: 'Budget', Icon: Target, soon: true },
 ]
 
 interface Txn {
@@ -304,8 +305,9 @@ export default function Dashboard() {
             sub="Track policies and premiums (life, home, auto, health) here." />
         )}
         {tab === 'budget' && (
-          <ComingSoon emoji="🎯" title="Budget — coming soon"
-            sub="Set monthly limits per category and track spending against them." />
+          <section className="block" style={{ marginBottom: 64 }}>
+            <BudgetManager />
+          </section>
         )}
 
         {/* On Debts, the filter sits here (it only reshapes the payments below, not balances) */}
