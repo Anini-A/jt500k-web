@@ -124,7 +124,7 @@ export default function AddTransactionButton() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, gap: 12, flexWrap: 'wrap' }}>
               <h2 style={{ margin: 0, fontSize: 18 }}>➕ Add Transaction</h2>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <div className="tabs" style={{ padding: 3 }}>
+                <div className="tabs" style={{ padding: 3, width: 'auto' }}>
                   <button className={`tab ${mode === 'single' ? 'tab-active' : ''}`} style={{ padding: '6px 12px', fontSize: 13 }} onClick={() => setMode('single')}>
                     <PencilLine size={14} /> Single
                   </button>

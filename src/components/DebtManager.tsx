@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, Pencil, Trash2 } from 'lucide-react'
+import { Plus, Pencil, Trash2, ChevronDown } from 'lucide-react'
 import { getJSON } from '@/lib/fresh'
 
 interface Debt {
@@ -29,6 +29,7 @@ export default function DebtManager() {
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [collapsed, setCollapsed] = useState(false)
 
   const load = useCallback(async () => {
     const d = await getJSON('/api/debts').catch(() => [])
@@ -62,11 +63,18 @@ export default function DebtManager() {
 
   return (
     <div className="card glass">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <h2 style={{ margin: 0 }}>💳 Debt Management</h2>
-        <button className="btn btn-secondary" onClick={() => { setAdding((v) => !v); setEditing(null) }}>
-          <Plus size={16} /> {adding ? 'Cancel' : 'Add Debt'}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, gap: 8 }}>
+        <button onClick={() => setCollapsed((v) => !v)}
+          style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', padding: 0 }}
+          aria-label={collapsed ? 'Expand debts' : 'Collapse debts'} title={collapsed ? 'Expand' : 'Collapse'}>
+          <ChevronDown size={20} style={{ transition: 'transform .2s ease', transform: collapsed ? 'rotate(-90deg)' : 'none', opacity: 0.7 }} />
+          <h2 style={{ margin: 0 }}>💳 Debt Management</h2>
         </button>
+        {!collapsed && (
+          <button className="btn btn-secondary" onClick={() => { setAdding((v) => !v); setEditing(null) }}>
+            <Plus size={16} /> {adding ? 'Cancel' : 'Add Debt'}
+          </button>
+        )}
       </div>
 
       {/* Summary */}
@@ -99,6 +107,7 @@ export default function DebtManager() {
         </div>
       )}
 
+      {!collapsed && (<>
       {/* Add form */}
       {adding && (
         <AddDebtForm busy={busy} onDone={async (p) => { if (await call('POST', p)) setAdding(false) }} />
@@ -159,6 +168,7 @@ export default function DebtManager() {
         💡 A payment counts toward a debt when its category is <strong>Debt Repayment</strong> and its description
         matches the debt name — the Add Transaction form fills this in for you when you pick a debt.
       </p>
+      </>)}
     </div>
   )
 }
