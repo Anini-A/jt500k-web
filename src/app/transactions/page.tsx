@@ -28,6 +28,8 @@ export default function Transactions() {
   const [loading, setLoading] = useState(true)
   const [q, setQ] = useState('')
   const [type, setType] = useState('all')
+  const [from, setFrom] = useState('')
+  const [to, setTo] = useState('')
   const [cats, setCats] = useState<{ name: string; type: string }[]>([])
   const [editId, setEditId] = useState<string | null>(null)
 
@@ -55,14 +57,18 @@ export default function Transactions() {
     } else alert('Could not update category.')
   }
 
+  const minDate = txns.length ? txns[0].date : ''
+  const maxDate = txns.length ? txns[txns.length - 1].date : ''
+
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase()
     return txns
       .filter((t) => type === 'all' || t.type === type)
+      .filter((t) => (!from || t.date >= from) && (!to || t.date <= to))
       .filter((t) => !term || (t.description || '').toLowerCase().includes(term) || (t.category || '').toLowerCase().includes(term))
       .slice()
       .reverse()
-  }, [txns, q, type])
+  }, [txns, q, type, from, to])
 
   const del = async (id: string) => {
     if (!confirm('Delete this transaction?')) return
@@ -83,13 +89,22 @@ export default function Transactions() {
 
         {/* Controls */}
         <section className="block">
-          <div className="card glass" style={{ display: 'flex', flexDirection: 'row', flexWrap: 'nowrap', gap: 8, alignItems: 'center', overflowX: 'auto' }}>
-            {TYPES.map((t) => (
-              <button key={t.key} onClick={() => setType(t.key)} className={`chip ${type === t.key ? 'chip-active' : ''}`} style={{ flexShrink: 0 }}>{t.label}</button>
-            ))}
-            <div className={`search-expand ${q ? 'has-value' : ''}`} style={{ height: 38, flexShrink: 0 }}>
-              <Search />
-              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" />
+          <div className="card glass" style={{ display: 'flex', flexDirection: 'row', flexWrap: 'nowrap', gap: 8, alignItems: 'center', justifyContent: 'space-between', overflowX: 'auto' }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+              {TYPES.map((t) => (
+                <button key={t.key} onClick={() => setType(t.key)} className={`chip ${type === t.key ? 'chip-active' : ''}`} style={{ flexShrink: 0 }}>{t.label}</button>
+              ))}
+              <div className={`search-expand ${q ? 'has-value' : ''}`} style={{ height: 38, flexShrink: 0 }}>
+                <Search />
+                <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+              <input type="date" className="date-input" value={from || minDate} min={minDate} max={maxDate}
+                onChange={(e) => setFrom(e.target.value)} />
+              <span className="stat-label">to</span>
+              <input type="date" className="date-input" value={to || maxDate} min={minDate} max={maxDate}
+                onChange={(e) => setTo(e.target.value)} />
             </div>
           </div>
         </section>
@@ -103,7 +118,7 @@ export default function Transactions() {
             {!loading && filtered.length === 0 ? (
               <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>No matching transactions.</div>
             ) : (
-              <div style={{ display: 'grid', gap: 2 }}>
+              <div style={{ display: 'grid', gap: 2, maxHeight: 1140, overflowY: 'auto', overscrollBehavior: 'contain' }}>
                 {filtered.map((t) => (
                   <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '10px 4px', borderBottom: '1px solid var(--border)' }}>
                     <div style={{ minWidth: 0 }}>

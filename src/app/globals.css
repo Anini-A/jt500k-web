@@ -185,9 +185,8 @@ header.top h1 {
   padding: 32px;
 }
 
-.card:hover {
-  transform: translateY(-1px);
-}
+/* (no hover lift on cards — they aren't clickable, and an untransitioned
+   transform made the whole page feel jumpy) */
 
 .section {
   font-size: 16px;
@@ -428,6 +427,7 @@ header.top h1 {
   align-items: center;
   justify-content: center;
   padding: 20px;
+  animation: backdropIn 0.18s ease;
 }
 
 .modal-card {
@@ -436,6 +436,17 @@ header.top h1 {
   padding: 24px;
   max-height: 90vh;
   overflow-y: auto;
+  animation: modalIn 0.24s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+@keyframes backdropIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 /* Filter chips (glass) */

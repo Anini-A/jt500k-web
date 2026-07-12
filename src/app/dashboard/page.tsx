@@ -29,13 +29,14 @@ interface Txn {
 const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 })
 const money2 = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' })
 
-type Preset = 'all' | 'ytd' | '12m' | '6m' | '3m' | 'custom'
+type Preset = 'all' | 'ytd' | '12m' | '6m' | '3m' | 'mtd' | 'custom'
 const PRESETS: { key: Preset; label: string }[] = [
   { key: 'all', label: 'All' },
   { key: 'ytd', label: 'YTD' },
   { key: '12m', label: '12M' },
   { key: '6m', label: '6M' },
   { key: '3m', label: '3M' },
+  { key: 'mtd', label: 'MTD' },
 ]
 
 function subMonths(iso: string, n: number) {
@@ -72,6 +73,7 @@ export default function Dashboard() {
     if (preset === 'custom') return { from: customFrom || minDate, to: customTo || maxDate }
     if (preset === 'all') return { from: minDate, to: maxDate }
     if (preset === 'ytd') return { from: maxDate.slice(0, 4) + '-01-01', to: maxDate }
+    if (preset === 'mtd') return { from: maxDate.slice(0, 7) + '-01', to: maxDate }
     const n = preset === '12m' ? 12 : preset === '6m' ? 6 : 3
     return { from: subMonths(maxDate, n), to: maxDate }
   }, [preset, customFrom, customTo, minDate, maxDate])
