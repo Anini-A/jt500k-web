@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Home, Receipt, LayoutDashboard, Settings, RefreshCw } from 'lucide-react'
+import { Home, Receipt, LayoutDashboard, Settings, RefreshCw, Landmark } from 'lucide-react'
 import IconPill from './IconPill'
 import AddTransactionButton from './AddTransactionButton'
 import SettingsPanel from './SettingsPanel'
@@ -20,6 +20,7 @@ export default function HeaderNav({ current }: { current: Page }) {
       <AddTransactionButton />
       {current !== 'transactions' && <IconPill icon={<Receipt />} label="All Transactions" href="/transactions" />}
       {current !== 'dashboard' && <IconPill icon={<LayoutDashboard />} label="Dashboard" href="/dashboard" />}
+      <IconPill icon={<Landmark />} label="Wealthsimple" href="https://my.wealthsimple.com/app/login" external />
       {current !== 'settings' && (
         <IconPill icon={<Settings />} label="Settings" onClick={() => setSettingsOpen(true)} />
       )}

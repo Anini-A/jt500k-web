@@ -24,48 +24,58 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(data)
 }
 
-// POST /api/transactions  { date, description, category, type, amount }
+// POST /api/transactions
+//   single: { date, description, category, type, amount }
+//   bulk:   [ {…}, {…} ]  → inserts many at once
 export async function POST(req: NextRequest) {
   const body = await req.json()
-  const { date, description, category, type, amount } = body
 
-  if (!date || !type || amount == null) {
-    return NextResponse.json(
-      { error: 'date, type and amount are required' },
-      { status: 400 },
-    )
-  }
-
-  // Attach to the first household + matching category (single-household app)
   const { data: household } = await supabaseAdmin
-    .from('households')
-    .select('id')
-    .limit(1)
-    .single()
-
+    .from('households').select('id').limit(1).single()
   if (!household) {
-    return NextResponse.json(
-      { error: 'No household found. Run the import first.' },
-      { status: 400 },
-    )
+    return NextResponse.json({ error: 'No household found. Run the import first.' }, { status: 400 })
   }
 
-  let categoryId: string | null = null
-  if (category) {
-    const { data: cat } = await supabaseAdmin
-      .from('categories')
-      .select('id')
-      .eq('household_id', household.id)
-      .eq('name', category)
-      .maybeSingle()
-    categoryId = cat?.id ?? null
+  // resolve category name → id + type
+  const { data: cats } = await supabaseAdmin
+    .from('categories').select('id, name, type').eq('household_id', household.id)
+  const catByName = new Map((cats ?? []).map((c) => [c.name, c]))
+
+  // ---- bulk ----
+  if (Array.isArray(body)) {
+    const rows = []
+    for (const r of body) {
+      if (!r.date || r.amount == null || isNaN(Number(r.amount))) {
+        return NextResponse.json({ error: `Invalid row: ${JSON.stringify(r)}` }, { status: 400 })
+      }
+      const cat = r.category ? catByName.get(r.category) : undefined
+      rows.push({
+        household_id: household.id,
+        category_id: cat?.id ?? null,
+        date: r.date,
+        description: (r.description ?? '').trim() || null,
+        category: r.category ?? null,
+        type: cat?.type ?? r.type ?? 'expense',
+        amount: Number(r.amount),
+      })
+    }
+    const { error } = await supabaseAdmin.from('transactions').insert(rows)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ ok: true, inserted: rows.length }, { status: 201 })
   }
+
+  // ---- single ----
+  const { date, description, category, type, amount } = body
+  if (!date || !type || amount == null) {
+    return NextResponse.json({ error: 'date, type and amount are required' }, { status: 400 })
+  }
+  const cat = category ? catByName.get(category) : undefined
 
   const { data, error } = await supabaseAdmin
     .from('transactions')
     .insert({
       household_id: household.id,
-      category_id: categoryId,
+      category_id: cat?.id ?? null,
       date,
       description: description ?? null,
       category: category ?? null,
