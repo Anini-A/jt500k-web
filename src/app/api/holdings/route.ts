@@ -21,14 +21,21 @@ export async function GET() {
     quantity: Number(h.quantity), market_price: Number(h.market_price),
     book_value_cad: Number(h.book_value_cad), market_value_cad: Number(h.market_value_cad),
   }))
-  const totalValue = rows.reduce((s, h) => s + h.market_value_cad, 0)
-  const totalCost = rows.reduce((s, h) => s + h.book_value_cad, 0)
+  // manually-added assets (chequing, options, …) — count toward AUM
+  const { data: assetsRaw } = await supabaseAdmin.from('manual_assets').select('*')
+  const assets = (assetsRaw ?? []).map((a) => ({ ...a, value_cad: Number(a.value_cad) }))
+  const assetsTotal = assets.reduce((s, a) => s + a.value_cad, 0)
+
+  const totalValue = rows.reduce((s, h) => s + h.market_value_cad, 0) + assetsTotal
+  const totalCost = rows.reduce((s, h) => s + h.book_value_cad, 0) + assetsTotal
   const ownerTotals: Record<string, number> = {}
   for (const h of rows) ownerTotals[h.owner] = (ownerTotals[h.owner] || 0) + h.market_value_cad
+  for (const a of assets) ownerTotals[a.owner] = (ownerTotals[a.owner] || 0) + a.value_cad
   const asOf = rows.reduce((mx, h) => (h.as_of && h.as_of > mx ? h.as_of : mx), '')
 
   return NextResponse.json({
     rows,
+    assets,
     totalValue: Math.round(totalValue * 100) / 100,
     totalCost: Math.round(totalCost * 100) / 100,
     ownerTotals,

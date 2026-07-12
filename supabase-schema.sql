@@ -104,3 +104,15 @@ create table if not exists holdings (
   unique (household_id, account_number, symbol)
 );
 alter table holdings enable row level security;
+
+-- Manually-added assets (stock options, chequing, etc.) that also count toward AUM.
+create table if not exists manual_assets (
+  id uuid primary key default gen_random_uuid(),
+  household_id uuid not null references households(id) on delete cascade,
+  owner text not null,
+  name text not null,
+  kind text,
+  value_cad numeric(12,2) not null,
+  created_at timestamptz not null default now()
+);
+alter table manual_assets enable row level security;

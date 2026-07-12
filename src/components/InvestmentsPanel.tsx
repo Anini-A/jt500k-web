@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { ChevronDown, Upload, RefreshCw } from 'lucide-react'
+import { ChevronDown, Upload, RefreshCw, Plus, Pencil, Trash2 } from 'lucide-react'
 import { Donut } from './DashCharts'
 import { getJSON } from '@/lib/fresh'
 
@@ -11,10 +11,29 @@ interface Holding {
   symbol: string; name: string | null; currency: string
   quantity: number; market_price: number; book_value_cad: number; market_value_cad: number; as_of: string | null
 }
+interface Asset { id: string; owner: string; name: string; kind: string | null; value_cad: number }
 
 const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 })
 const money2 = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' })
 const OWNER_ORDER = ['Jean', 'Henriette', 'Joint', 'Noah']
+const OWNERS = ['Jean', 'Henriette', 'Joint', 'Noah']
+
+const OWNER_COLOR: Record<string, { fg: string; bg: string }> = {
+  Jean: { fg: 'var(--accent)', bg: 'var(--accent-soft)' },
+  Henriette: { fg: 'var(--savings)', bg: 'var(--savings-soft)' },
+  Noah: { fg: 'var(--income)', bg: 'var(--income-soft)' },
+  Joint: { fg: '#b7791f', bg: 'rgba(224,161,43,0.16)' },
+}
+function OwnerPill({ owner }: { owner: string }) {
+  const c = OWNER_COLOR[owner] || { fg: 'var(--text-secondary)', bg: 'var(--kpi-bg)' }
+  return <span style={{ background: c.bg, color: c.fg, padding: '2px 9px', borderRadius: 999, fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap' }}>{owner}</span>
+}
+
+const inp: React.CSSProperties = {
+  height: 40, padding: '0 10px', borderRadius: 10, border: '1px solid var(--border)',
+  background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 14, width: '100%',
+  fontFamily: 'inherit', boxSizing: 'border-box',
+}
 
 // ---- Wealthsimple CSV parser ----
 function parseCSVLine(line: string): string[] {
@@ -62,7 +81,7 @@ function parseHoldingsCSV(text: string) {
 }
 
 export default function InvestmentsPanel() {
-  const [data, setData] = useState<{ rows: Holding[]; totalValue: number; totalCost: number; ownerTotals: Record<string, number>; asOf: string | null } | null>(null)
+  const [data, setData] = useState<{ rows: Holding[]; assets: Asset[]; totalValue: number; totalCost: number; ownerTotals: Record<string, number>; asOf: string | null } | null>(null)
   const [loading, setLoading] = useState(true)
   const [person, setPerson] = useState('Household')
   const [openAcct, setOpenAcct] = useState<Set<string>>(new Set())
@@ -93,13 +112,18 @@ export default function InvestmentsPanel() {
   }
 
   const rows = data?.rows ?? []
-  const owners = useMemo(() => OWNER_ORDER.filter((o) => rows.some((r) => r.owner === o)), [rows])
+  const assets = data?.assets ?? []
+  const owners = useMemo(() => OWNER_ORDER.filter((o) => rows.some((r) => r.owner === o) || assets.some((a) => a.owner === o)), [rows, assets])
   const shown = person === 'Household' ? rows : rows.filter((r) => r.owner === person)
+  const shownAssets = person === 'Household' ? assets : assets.filter((a) => a.owner === person)
 
-  const value = shown.reduce((s, h) => s + h.market_value_cad, 0)
-  const cost = shown.reduce((s, h) => s + h.book_value_cad, 0)
-  const gain = value - cost
-  const gainPct = cost > 0 ? (gain / cost) * 100 : 0
+  const holdingsValue = shown.reduce((s, h) => s + h.market_value_cad, 0)
+  const holdingsCost = shown.reduce((s, h) => s + h.book_value_cad, 0)
+  const assetsValue = shownAssets.reduce((s, a) => s + a.value_cad, 0)
+  const value = holdingsValue + assetsValue
+  const cost = holdingsCost + assetsValue
+  const gain = holdingsValue - holdingsCost
+  const gainPct = holdingsCost > 0 ? (gain / holdingsCost) * 100 : 0
 
   // group by account
   const accounts = useMemo(() => {
@@ -113,10 +137,17 @@ export default function InvestmentsPanel() {
   }, [shown])
 
   const donut = accounts.map((a) => ({ name: a.label, total: Math.round(a.value) }))
+  if (assetsValue > 0) donut.push({ name: 'Other Assets', total: Math.round(assetsValue) })
+
+  const changeAsset = async (method: string, body?: any, qs = '') => {
+    const res = await fetch('/api/assets' + qs, { method, ...(body ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}) })
+    if (res.ok) { await load(); window.dispatchEvent(new CustomEvent('transaction-added')) }
+    else alert('Error: ' + ((await res.json()).error || 'failed'))
+  }
 
   if (loading) return <div className="card glass" style={{ padding: 40, textAlign: 'center' }}>Loading portfolio…</div>
 
-  if (rows.length === 0) {
+  if (rows.length === 0 && assets.length === 0) {
     return (
       <div className="card glass" style={{ textAlign: 'center', padding: 40 }}>
         <div style={{ fontSize: 40, marginBottom: 8 }}>📈</div>
@@ -188,7 +219,7 @@ export default function InvestmentsPanel() {
                     style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', padding: '8px 2px' }}>
                     <ChevronDown size={15} style={{ transition: 'transform .2s ease', transform: open ? 'none' : 'rotate(-90deg)', opacity: 0.55, flexShrink: 0 }} />
                     <span style={{ fontWeight: 600 }}>{a.label}</span>
-                    {person === 'Household' && <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>· {a.owner}</span>}
+                    {person === 'Household' && <OwnerPill owner={a.owner} />}
                     <span style={{ marginLeft: 'auto', textAlign: 'right' }}>
                       <div style={{ fontWeight: 600 }}>{money(a.value)}</div>
                       <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, color: g >= 0 ? 'var(--income)' : 'var(--expense)' }}>{g >= 0 ? '+' : ''}{money(g)}</div>
@@ -226,8 +257,91 @@ export default function InvestmentsPanel() {
         </div>
       </div>
 
+      {/* Other manual assets */}
+      <OtherAssets assets={shownAssets} showOwner={person === 'Household'}
+        onChange={changeAsset} defaultOwner={person !== 'Household' ? person : 'Jean'} />
+
       {importing && <ImportModal onClose={() => setImporting(false)} onDone={() => { setImporting(false); load(); window.dispatchEvent(new CustomEvent('transaction-added')) }} />}
     </>
+  )
+}
+
+const iconBtn: React.CSSProperties = {
+  display: 'inline-flex', padding: 6, borderRadius: 8, border: '1px solid var(--border)',
+  background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer',
+}
+
+// ---- Other (manual) assets card ----
+function OtherAssets({ assets, showOwner, onChange, defaultOwner }: {
+  assets: Asset[]; showOwner: boolean; defaultOwner: string
+  onChange: (method: string, body?: any, qs?: string) => Promise<void>
+}) {
+  const [adding, setAdding] = useState(false)
+  const [editing, setEditing] = useState<string | null>(null)
+  return (
+    <div className="card glass" style={{ marginTop: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 8 }}>
+        <h3 style={{ margin: 0, fontSize: 15 }}>🏦 Other Assets <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>· cash, options, etc.</span></h3>
+        <button className="btn btn-secondary" onClick={() => { setAdding((v) => !v); setEditing(null) }}><Plus size={15} /> {adding ? 'Cancel' : 'Add'}</button>
+      </div>
+      {adding && <AssetForm defaultOwner={defaultOwner} onDone={async (p) => { await onChange('POST', p); setAdding(false) }} onCancel={() => setAdding(false)} />}
+      {assets.length === 0 && !adding ? (
+        <div style={{ padding: 16, textAlign: 'center', color: 'var(--text-muted)' }}>No manual assets yet — add a chequing account, stock options, etc. (they count toward your AUM).</div>
+      ) : (
+        <div style={{ display: 'grid', gap: 2 }}>
+          {assets.map((a) => editing === a.id ? (
+            <AssetForm key={a.id} asset={a} defaultOwner={a.owner}
+              onDone={async (p) => { await onChange('PATCH', { id: a.id, ...p }); setEditing(null) }}
+              onDelete={async () => { if (confirm(`Delete "${a.name}"?`)) { await onChange('DELETE', undefined, `?id=${a.id}`); setEditing(null) } }}
+              onCancel={() => setEditing(null)} />
+          ) : (
+            <div key={a.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '10px 4px', borderBottom: '1px solid var(--border)' }}>
+              <div style={{ minWidth: 0, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <span style={{ fontWeight: 600 }}>{a.name}</span>
+                {a.kind && <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{a.kind}</span>}
+                {showOwner && <OwnerPill owner={a.owner} />}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                <span style={{ fontWeight: 600 }}>{money2(a.value_cad)}</span>
+                <button onClick={() => { setEditing(a.id); setAdding(false) }} aria-label="Edit" style={iconBtn}><Pencil size={15} /></button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function AssetForm({ asset, defaultOwner, onDone, onDelete, onCancel }: {
+  asset?: Asset; defaultOwner: string
+  onDone: (p: { owner: string; name: string; kind: string; value: number }) => void
+  onDelete?: () => void; onCancel?: () => void
+}) {
+  const [name, setName] = useState(asset?.name ?? '')
+  const [kind, setKind] = useState(asset?.kind ?? '')
+  const [owner, setOwner] = useState(asset?.owner ?? defaultOwner)
+  const [value, setValue] = useState(asset ? String(asset.value_cad) : '')
+  return (
+    <div className="card" style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', display: 'grid', gap: 10, margin: asset ? '4px 0' : '0 0 12px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr 1fr', gap: 8 }}>
+        <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Name</span>
+          <input style={inp} value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Chequing" /></label>
+        <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Kind</span>
+          <input style={inp} value={kind} onChange={(e) => setKind(e.target.value)} placeholder="Cash / Options" /></label>
+        <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Owner</span>
+          <select style={inp} value={owner} onChange={(e) => setOwner(e.target.value)}>
+            {OWNERS.map((o) => <option key={o} value={o}>{o}</option>)}
+          </select></label>
+        <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Value ($)</span>
+          <input style={inp} type="number" step="0.01" value={value} onChange={(e) => setValue(e.target.value)} placeholder="0.00" /></label>
+      </div>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <button className="btn btn-primary" disabled={!name.trim() || !parseFloat(value)} onClick={() => onDone({ owner, name: name.trim(), kind, value: parseFloat(value) })}>💾 {asset ? 'Save' : 'Add asset'}</button>
+        {onCancel && <button className="btn btn-secondary" onClick={onCancel}>Cancel</button>}
+        {onDelete && <button className="btn btn-secondary" style={{ color: 'var(--expense)', borderColor: 'var(--expense)' }} onClick={onDelete}><Trash2 size={14} /> Delete</button>}
+      </div>
+    </div>
   )
 }
 
