@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { Gauge, Wallet, CreditCard, PiggyBank, LineChart, Banknote, Shield, Target, Pencil, Trash2, type LucideIcon } from 'lucide-react'
-import GoalTracker from '@/components/GoalTracker'
 import ChatWidget from '@/components/ChatWidget'
 import HeaderNav from '@/components/HeaderNav'
 import DebtManager from '@/components/DebtManager'
@@ -114,7 +113,6 @@ export default function Dashboard() {
     }
   }, [filtered])
 
-  const allTimeSavings = useMemo(() => txns.filter((t) => t.type === 'savings').reduce((s, t) => s + t.amount, 0), [txns])
 
   const tabType: 'income' | 'expense' | 'savings' | null =
     tab === 'income' ? 'income' : tab === 'expenses' ? 'expense' : tab === 'savings' ? 'savings' : null
@@ -200,7 +198,6 @@ export default function Dashboard() {
                 </div>
               </div>
             </section>
-            <section className="block"><GoalTracker saved={allTimeSavings} /></section>
             <section className="block">
               <div className="card glass">
                 <ChartHead title="Money Flow" sub="Income vs Expenses vs Savings over time" />
@@ -272,7 +269,6 @@ export default function Dashboard() {
               { emoji: '🏆', label: 'Top Account', value: topSaving ? money(topSaving.total) : '—', sub: topSaving?.name },
               { emoji: '📈', label: 'Savings Rate', value: `${savingsRate}%`, sub: 'of income' },
             ]} />
-            <section className="block"><GoalTracker saved={allTimeSavings} /></section>
             <section className="block">
               <div className="grid-2">
                 <div className="card glass">

@@ -4,9 +4,10 @@ import { useEffect, useState } from 'react'
 import MonthChart from '@/components/MonthChart'
 import ChatWidget from '@/components/ChatWidget'
 import HeaderNav from '@/components/HeaderNav'
+import GoalTracker from '@/components/GoalTracker'
 import { getJSON } from '@/lib/fresh'
 
-interface Stats { currentBalance: number; savingsRate: number; transactionCount: number; asOf: string }
+interface Stats { currentBalance: number; savingsRate: number; transactionCount: number; asOf: string; totalSavings: number }
 interface Month {
   label: string; income: number; expense: number; savings: number; net: number
   categories: { name: string; total: number }[]
@@ -56,6 +57,13 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        {/* 500K goal */}
+        {stats && (
+          <section className="block">
+            <GoalTracker saved={stats.totalSavings} />
+          </section>
+        )}
 
         {/* This month summary */}
         <section className="block">
