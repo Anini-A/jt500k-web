@@ -12,8 +12,9 @@ const DEFAULT_COLOR: Record<string, string> = { income: '#1baf7a', expense: '#eb
 const money = (n: number) => '$' + Math.round(n).toLocaleString()
 
 const inp: React.CSSProperties = {
-  padding: '9px 11px', borderRadius: 10, border: '1px solid var(--border)',
+  height: 44, padding: '0 11px', borderRadius: 10, border: '1px solid var(--border)',
   background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 14,
+  fontFamily: 'inherit', boxSizing: 'border-box',
 }
 
 export default function CategoryManager() {
@@ -102,7 +103,7 @@ function AddForm({ onDone, busy }: { onDone: (p: any) => void; busy: boolean }) 
             <option value="income">Income</option><option value="expense">Expense</option><option value="savings">Savings</option>
           </select></label>
         <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Color</span>
-          <input type="color" value={color} onChange={(e) => setColor(e.target.value)} style={{ ...inp, padding: 4, width: 48, height: 40 }} /></label>
+          <input type="color" value={color} onChange={(e) => setColor(e.target.value)} style={{ ...inp, padding: 4, width: 48 }} /></label>
       </div>
       <button className="btn btn-primary" disabled={busy || !name.trim()} onClick={() => onDone({ name, type, color })}>Add category</button>
     </div>
@@ -128,7 +129,7 @@ function EditRow({ cat, others, busy, onSave, onReassign, onDelete, onCancel }: 
             <option value="income">Income</option><option value="expense">Expense</option><option value="savings">Savings</option>
           </select></label>
         <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Color</span>
-          <input type="color" value={color} onChange={(e) => setColor(e.target.value)} style={{ ...inp, padding: 4, width: 48, height: 40 }} /></label>
+          <input type="color" value={color} onChange={(e) => setColor(e.target.value)} style={{ ...inp, padding: 4, width: 48 }} /></label>
       </div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <button className="btn btn-primary" disabled={busy} onClick={() => onSave({ name, type, color })}>💾 Save</button>

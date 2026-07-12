@@ -14,8 +14,9 @@ interface Settings {
 }
 
 const inp: React.CSSProperties = {
-  padding: '10px 12px', borderRadius: 10, border: '1px solid var(--border)',
+  height: 44, padding: '0 12px', borderRadius: 10, border: '1px solid var(--border)',
   background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 14, width: '100%',
+  fontFamily: 'inherit', boxSizing: 'border-box',
 }
 
 // All settings content — used by the /settings page and the header popup.

@@ -477,7 +477,10 @@ header.top h1 {
 }
 
 .date-input {
-  padding: 8px 10px;
+  height: 38px;
+  box-sizing: border-box;
+  font-family: inherit;
+  padding: 0 10px;
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--kpi-bg);
