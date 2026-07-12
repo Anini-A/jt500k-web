@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { Plus } from 'lucide-react'
 import IconPill from './IconPill'
 import { getJSON } from '@/lib/fresh'
@@ -51,7 +52,7 @@ export default function AddTransactionButton() {
     <>
       <IconPill icon={<Plus />} label="Add Transaction" accent onClick={() => setOpen(true)} />
 
-      {open && (
+      {open && createPortal(
         <div className="modal-backdrop" onClick={() => setOpen(false)}>
           <div className="modal-card glass" onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -83,7 +84,8 @@ export default function AddTransactionButton() {
               </button>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   )
