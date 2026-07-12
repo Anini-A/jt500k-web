@@ -7,4 +7,10 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY as string
 
 export const supabaseAdmin = createClient(url, serviceKey, {
   auth: { persistSession: false, autoRefreshToken: false },
+  global: {
+    // CRITICAL: Next.js patches server-side fetch and caches GET responses in
+    // its Data Cache — which froze our Supabase reads at an old snapshot.
+    // Force every Supabase request to bypass that cache.
+    fetch: (input, init) => fetch(input, { ...init, cache: 'no-store' }),
+  },
 })
