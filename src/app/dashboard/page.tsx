@@ -1,19 +1,21 @@
 'use client'
 
 import { useEffect, useState, useMemo, useCallback } from 'react'
-import { Wallet, CreditCard, PiggyBank, LineChart, type LucideIcon } from 'lucide-react'
+import { Wallet, CreditCard, PiggyBank, LineChart, Banknote, type LucideIcon } from 'lucide-react'
 import GoalTracker from '@/components/GoalTracker'
 import ChatWidget from '@/components/ChatWidget'
 import HeaderNav from '@/components/HeaderNav'
 import VersionStamp from '@/components/VersionStamp'
+import DebtManager from '@/components/DebtManager'
 import { getJSON } from '@/lib/fresh'
 import { MonthlyArea, HBar, Donut, COLORS } from '@/components/DashCharts'
 
-type Tab = 'income' | 'expenses' | 'savings' | 'investments'
+type Tab = 'income' | 'expenses' | 'savings' | 'debts' | 'investments'
 const TABS: { key: Tab; label: string; Icon: LucideIcon }[] = [
   { key: 'income', label: 'Income', Icon: Wallet },
   { key: 'expenses', label: 'Expenses', Icon: CreditCard },
   { key: 'savings', label: 'Savings', Icon: PiggyBank },
+  { key: 'debts', label: 'Debts', Icon: Banknote },
   { key: 'investments', label: 'Investments', Icon: LineChart },
 ]
 
@@ -229,6 +231,13 @@ export default function Dashboard() {
           </section>
         )}
 
+        {/* DEBTS */}
+        {tab === 'debts' && (
+          <section className="block">
+            <DebtManager />
+          </section>
+        )}
+
         {/* INVESTMENTS */}
         {tab === 'investments' && (
           <section className="block">
@@ -244,9 +253,15 @@ export default function Dashboard() {
 
         {/* Recent — filtered to the active tab's type */}
         <RecentList
-          title={`🧾 Recent ${TABS.find((t) => t.key === tab)!.label}`}
-          txns={filtered.filter((t) => tabType && t.type === tabType).slice().reverse().slice(0, 12)}
-          emptyLabel={tab === 'investments' ? 'No investment transactions yet.' : `No ${TABS.find((t) => t.key === tab)!.label.toLowerCase()} in this period.`}
+          title={tab === 'debts' ? '🧾 Recent Debt Payments' : `🧾 Recent ${TABS.find((t) => t.key === tab)!.label}`}
+          txns={filtered
+            .filter((t) => tab === 'debts' ? t.category === 'Debt Repayment' : (tabType && t.type === tabType))
+            .slice().reverse().slice(0, 12)}
+          emptyLabel={
+            tab === 'investments' ? 'No investment transactions yet.'
+            : tab === 'debts' ? 'No debt payments in this period.'
+            : `No ${TABS.find((t) => t.key === tab)!.label.toLowerCase()} in this period.`
+          }
         />
         <VersionStamp page="dashboard" />
       </div>

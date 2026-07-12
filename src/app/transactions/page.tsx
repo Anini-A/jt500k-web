@@ -170,6 +170,13 @@ function EditModal({ tx, cats, onClose, onSaved }: {
     description: tx.description || '',
   })
   const [saving, setSaving] = useState(false)
+  const [debts, setDebts] = useState<{ name: string }[]>([])
+
+  useEffect(() => {
+    if (form.category === 'Debt Repayment' && debts.length === 0) {
+      getJSON('/api/debts').then((d) => Array.isArray(d) && setDebts(d)).catch(() => {})
+    }
+  }, [form.category, debts.length])
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -207,6 +214,14 @@ function EditModal({ tx, cats, onClose, onSaved }: {
           </div>
           <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Category</span>
             <CategorySelect value={form.category} onChange={(v) => setForm({ ...form, category: v })} cats={cats} /></label>
+          {form.category === 'Debt Repayment' && debts.length > 0 && (
+            <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Which debt?</span>
+              <select value={debts.some((d) => d.name === form.description) ? form.description : ''}
+                onChange={(e) => setForm({ ...form, description: e.target.value })} style={inp}>
+                <option value="">— pick a debt (fills description) —</option>
+                {debts.map((d) => <option key={d.name} value={d.name}>{d.name}</option>)}
+              </select></label>
+          )}
           <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Description</span>
             <input type="text" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} style={inp} /></label>
           <button className="btn btn-primary" type="submit" disabled={saving} style={{ justifyContent: 'center' }}>

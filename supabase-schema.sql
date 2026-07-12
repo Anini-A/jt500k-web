@@ -59,3 +59,15 @@ alter table households   enable row level security;
 alter table users        enable row level security;
 alter table categories   enable row level security;
 alter table transactions enable row level security;
+
+-- Debts (for the dashboard Debt Management tab). A "Debt Repayment"
+-- transaction counts toward a debt when its description matches the debt name.
+create table if not exists debts (
+  id uuid primary key default gen_random_uuid(),
+  household_id uuid not null references households(id) on delete cascade,
+  name text not null,
+  amount numeric(12,2) not null,
+  created_at timestamptz not null default now(),
+  unique (household_id, name)
+);
+alter table debts enable row level security;

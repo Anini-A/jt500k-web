@@ -431,7 +431,7 @@ header.top h1 {
 }
 
 .modal-card {
-  width: min(440px, 100%);
+  width: min(600px, 100%);
   border-radius: 22px;
   padding: 24px;
   max-height: 90vh;

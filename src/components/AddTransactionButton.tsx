@@ -20,6 +20,7 @@ export default function AddTransactionButton() {
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [cats, setCats] = useState<Category[]>([])
+  const [debts, setDebts] = useState<{ name: string }[]>([])
   const [form, setForm] = useState({
     date: new Date().toISOString().slice(0, 10), type: 'expense', category: '', amount: '', description: '',
   })
@@ -27,6 +28,7 @@ export default function AddTransactionButton() {
   useEffect(() => {
     if (open && cats.length === 0) {
       getJSON('/api/categories').then((d) => Array.isArray(d) && setCats(d)).catch(() => {})
+      getJSON('/api/debts').then((d) => Array.isArray(d) && setDebts(d)).catch(() => {})
     }
   }, [open, cats.length])
 
@@ -76,6 +78,14 @@ export default function AddTransactionButton() {
                 <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Amount</span>
                   <input type="number" step="0.01" required placeholder="0.00" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} style={inp} /></label>
               </div>
+              {form.category === 'Debt Repayment' && debts.length > 0 && (
+                <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Which debt?</span>
+                  <select value={debts.some((d) => d.name === form.description) ? form.description : ''}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })} style={inp}>
+                    <option value="">— pick a debt (fills description) —</option>
+                    {debts.map((d) => <option key={d.name} value={d.name}>{d.name}</option>)}
+                  </select></label>
+              )}
               <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Description</span>
                 <input type="text" placeholder="e.g. Groceries" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} style={inp} /></label>
               <button className="btn btn-primary" type="submit" disabled={saving} style={{ justifyContent: 'center' }}>
