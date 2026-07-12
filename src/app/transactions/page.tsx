@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState, useMemo, useCallback } from 'react'
-import { Trash2, Search, Tag } from 'lucide-react'
+import { createPortal } from 'react-dom'
+import { Trash2, Search, Pencil } from 'lucide-react'
 import HeaderNav from '@/components/HeaderNav'
 import VersionStamp from '@/components/VersionStamp'
 import { getJSON } from '@/lib/fresh'
@@ -31,7 +32,7 @@ export default function Transactions() {
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
   const [cats, setCats] = useState<{ name: string; type: string }[]>([])
-  const [editId, setEditId] = useState<string | null>(null)
+  const [editTx, setEditTx] = useState<Txn | null>(null)
 
   const load = useCallback(async () => {
     const data = await getJSON('/api/data').catch(() => [])
@@ -45,17 +46,6 @@ export default function Transactions() {
     window.addEventListener('transaction-added', load)
     return () => window.removeEventListener('transaction-added', load)
   }, [load])
-
-  const recategorize = async (id: string, category: string) => {
-    const cat = cats.find((c) => c.name === category)
-    const res = await fetch('/api/transactions', {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, category }),
-    })
-    if (res.ok) {
-      setTxns((prev) => prev.map((t) => t.id === id ? { ...t, category, type: (cat?.type as any) || t.type } : t))
-      setEditId(null)
-    } else alert('Could not update category.')
-  }
 
   const minDate = txns.length ? txns[0].date : ''
   const maxDate = txns.length ? txns[txns.length - 1].date : ''
@@ -123,22 +113,15 @@ export default function Transactions() {
                   <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '10px 4px', borderBottom: '1px solid var(--border)' }}>
                     <div style={{ minWidth: 0 }}>
                       <div style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.description || t.category}</div>
-                      {editId === t.id ? (
-                        <select autoFocus value={t.category || ''} onChange={(e) => recategorize(t.id, e.target.value)} onBlur={() => setEditId(null)}
-                          style={{ marginTop: 4, padding: '4px 8px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 12 }}>
-                          {cats.map((c) => <option key={c.name} value={c.name}>{c.name} ({c.type})</option>)}
-                        </select>
-                      ) : (
-                        <div className="stat-label">{t.date} · {t.category}</div>
-                      )}
+                      <div className="stat-label">{t.date} · {t.category}</div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
                       <span className={`stat-value ${t.type}`} style={{ fontSize: 16 }}>
                         {t.type === 'income' ? '+' : t.type === 'expense' ? '−' : ''}{money(t.amount)}
                       </span>
-                      <button onClick={() => setEditId(editId === t.id ? null : t.id)} aria-label="Change category" title="Change category"
+                      <button onClick={() => setEditTx(t)} aria-label="Edit" title="Edit"
                         style={{ display: 'inline-flex', padding: 6, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                        <Tag size={16} />
+                        <Pencil size={16} />
                       </button>
                       <button onClick={() => del(t.id)} aria-label="Delete" title="Delete"
                         style={{ display: 'inline-flex', padding: 6, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}>
@@ -153,6 +136,86 @@ export default function Transactions() {
         </section>
         <VersionStamp page="transactions page" />
       </div>
+
+      {editTx && (
+        <EditModal
+          tx={editTx}
+          cats={cats}
+          onClose={() => setEditTx(null)}
+          onSaved={() => { setEditTx(null); load() }}
+        />
+      )}
     </div>
+  )
+}
+
+// ---- Edit transaction modal ----
+const inp: React.CSSProperties = {
+  height: 44, padding: '0 12px', borderRadius: 10, border: '1px solid var(--border)',
+  background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 14, width: '100%',
+  fontFamily: 'inherit', boxSizing: 'border-box',
+}
+
+function EditModal({ tx, cats, onClose, onSaved }: {
+  tx: Txn
+  cats: { name: string; type: string }[]
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const [form, setForm] = useState({
+    date: tx.date,
+    category: tx.category || '',
+    amount: String(tx.amount),
+    description: tx.description || '',
+  })
+  const [saving, setSaving] = useState(false)
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSaving(true)
+    try {
+      const res = await fetch('/api/transactions', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: tx.id,
+          date: form.date,
+          category: form.category || undefined,
+          amount: parseFloat(form.amount),
+          description: form.description,
+        }),
+      })
+      if (res.ok) onSaved()
+      else alert('Error: ' + ((await res.json()).error || 'could not save'))
+    } finally { setSaving(false) }
+  }
+
+  return createPortal(
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal-card glass" onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <h2 style={{ margin: 0, fontSize: 18 }}>✏️ Edit Transaction</h2>
+          <button className="btn btn-secondary" style={{ padding: '6px 12px' }} onClick={onClose}>✕</button>
+        </div>
+        <form onSubmit={submit} style={{ display: 'grid', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Date</span>
+              <input type="date" required value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} style={inp} /></label>
+            <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Amount</span>
+              <input type="number" step="0.01" required value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} style={inp} /></label>
+          </div>
+          <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Category</span>
+            <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} style={inp}>
+              {cats.map((c) => <option key={c.name} value={c.name}>{c.name} ({c.type})</option>)}
+            </select></label>
+          <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Description</span>
+            <input type="text" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} style={inp} /></label>
+          <button className="btn btn-primary" type="submit" disabled={saving} style={{ justifyContent: 'center' }}>
+            {saving ? 'Saving…' : '💾 Save Changes'}
+          </button>
+        </form>
+      </div>
+    </div>,
+    document.body
   )
 }

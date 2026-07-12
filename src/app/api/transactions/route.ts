@@ -79,20 +79,29 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(data, { status: 201 })
 }
 
-// PATCH /api/transactions  { id, category }  — re-categorize one transaction
-// (type follows the chosen category)
+// PATCH /api/transactions  { id, date?, description?, amount?, category? }
+// Edit any field of one transaction. Type follows the chosen category.
 export async function PATCH(req: NextRequest) {
-  const { id, category } = await req.json().catch(() => ({}))
-  if (!id || !category) return NextResponse.json({ error: 'id and category required' }, { status: 400 })
+  const { id, date, description, amount, category } = await req.json().catch(() => ({}))
+  if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
 
-  const { data: cat } = await supabaseAdmin
-    .from('categories').select('id, name, type').eq('name', category).maybeSingle()
-  if (!cat) return NextResponse.json({ error: 'Category not found' }, { status: 404 })
+  const patch: Record<string, unknown> = {}
+  if (date) patch.date = date
+  if (description !== undefined) patch.description = String(description).trim() || null
+  if (amount != null && !isNaN(Number(amount)) && Number(amount) >= 0) patch.amount = Number(amount)
+  if (category) {
+    const { data: cat } = await supabaseAdmin
+      .from('categories').select('id, name, type').eq('name', category).maybeSingle()
+    if (!cat) return NextResponse.json({ error: 'Category not found' }, { status: 404 })
+    patch.category = cat.name
+    patch.category_id = cat.id
+    patch.type = cat.type
+  }
+  if (Object.keys(patch).length === 0) {
+    return NextResponse.json({ error: 'Nothing to update' }, { status: 400 })
+  }
 
-  const { error } = await supabaseAdmin
-    .from('transactions')
-    .update({ category: cat.name, category_id: cat.id, type: cat.type })
-    .eq('id', id)
+  const { error } = await supabaseAdmin.from('transactions').update(patch).eq('id', id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ ok: true })
 }
