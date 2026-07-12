@@ -1,15 +1,16 @@
 'use client'
 
 import { useEffect, useState, useMemo, useCallback } from 'react'
-import { Gauge, Wallet, CreditCard, PiggyBank, LineChart, Banknote, Shield, type LucideIcon } from 'lucide-react'
+import { Gauge, Wallet, CreditCard, PiggyBank, LineChart, Banknote, Shield, Target, Pencil, Trash2, type LucideIcon } from 'lucide-react'
 import GoalTracker from '@/components/GoalTracker'
 import ChatWidget from '@/components/ChatWidget'
 import HeaderNav from '@/components/HeaderNav'
 import DebtManager from '@/components/DebtManager'
+import EditTransactionModal from '@/components/EditTransactionModal'
 import { getJSON } from '@/lib/fresh'
 import { MonthlyArea, HBar, Donut, COLORS } from '@/components/DashCharts'
 
-type Tab = 'overview' | 'income' | 'expenses' | 'savings' | 'debts' | 'investments' | 'insurance'
+type Tab = 'overview' | 'income' | 'expenses' | 'savings' | 'debts' | 'investments' | 'insurance' | 'budget'
 const TABS: { key: Tab; label: string; Icon: LucideIcon; soon?: boolean }[] = [
   { key: 'overview', label: 'Overview', Icon: Gauge },
   { key: 'income', label: 'Income', Icon: Wallet },
@@ -18,6 +19,7 @@ const TABS: { key: Tab; label: string; Icon: LucideIcon; soon?: boolean }[] = [
   { key: 'debts', label: 'Debts', Icon: Banknote },
   { key: 'investments', label: 'Investments', Icon: LineChart, soon: true },
   { key: 'insurance', label: 'Insurance', Icon: Shield, soon: true },
+  { key: 'budget', label: 'Budget', Icon: Target, soon: true },
 ]
 
 interface Txn {
@@ -127,6 +129,29 @@ export default function Dashboard() {
   const topSaving = agg.savingsCat[0]
   const savingsRate = agg.income > 0 ? Math.round((agg.savings / agg.income) * 100) : 0
 
+  const filterBar = (
+    <section className="block">
+      <div className="card glass" style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {PRESETS.map((p) => (
+            <button key={p.key} onClick={() => setPreset(p.key)}
+              className={`chip ${preset === p.key ? 'chip-active' : ''}`}>{p.label}</button>
+          ))}
+        </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <input type="date" value={preset === 'custom' ? (customFrom || minDate) : from} min={minDate} max={maxDate}
+            onChange={(e) => { setPreset('custom'); setCustomFrom(e.target.value) }} className="date-input" />
+          <span className="stat-label">to</span>
+          <input type="date" value={preset === 'custom' ? (customTo || maxDate) : to} min={minDate} max={maxDate}
+            onChange={(e) => { setPreset('custom'); setCustomTo(e.target.value) }} className="date-input" />
+        </div>
+      </div>
+      <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 8, textAlign: 'center' }}>
+        {from} → {to} · {filtered.length} transactions
+      </div>
+    </section>
+  )
+
   if (loading) {
     return (
       <div className="bg-aurora">
@@ -159,29 +184,8 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* Time-range filter (hidden on coming-soon tabs) */}
-        {tab !== 'investments' && tab !== 'insurance' && (
-          <section className="block">
-            <div className="card glass" style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                {PRESETS.map((p) => (
-                  <button key={p.key} onClick={() => setPreset(p.key)}
-                    className={`chip ${preset === p.key ? 'chip-active' : ''}`}>{p.label}</button>
-                ))}
-              </div>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                <input type="date" value={preset === 'custom' ? (customFrom || minDate) : from} min={minDate} max={maxDate}
-                  onChange={(e) => { setPreset('custom'); setCustomFrom(e.target.value) }} className="date-input" />
-                <span className="stat-label">to</span>
-                <input type="date" value={preset === 'custom' ? (customTo || maxDate) : to} min={minDate} max={maxDate}
-                  onChange={(e) => { setPreset('custom'); setCustomTo(e.target.value) }} className="date-input" />
-              </div>
-            </div>
-            <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 8, textAlign: 'center' }}>
-              {from} → {to} · {filtered.length} transactions
-            </div>
-          </section>
-        )}
+        {/* Time-range filter — top of data tabs (on Debts it sits above Recent instead) */}
+        {(tab === 'overview' || tab === 'income' || tab === 'expenses' || tab === 'savings') && filterBar}
 
         {/* OVERVIEW */}
         {tab === 'overview' && (
@@ -299,6 +303,13 @@ export default function Dashboard() {
           <ComingSoon emoji="🛡️" title="Insurance — coming soon"
             sub="Track policies and premiums (life, home, auto, health) here." />
         )}
+        {tab === 'budget' && (
+          <ComingSoon emoji="🎯" title="Budget — coming soon"
+            sub="Set monthly limits per category and track spending against them." />
+        )}
+
+        {/* On Debts, the filter sits here (it only reshapes the payments below, not balances) */}
+        {tab === 'debts' && filterBar}
 
         {/* Recent — only on the transaction-backed tabs */}
         {(tab === 'income' || tab === 'expenses' || tab === 'savings' || tab === 'debts') && (
@@ -372,8 +383,23 @@ function ChartHead({ title, sub }: { title: string; sub: string }) {
   )
 }
 
-// ---- Recent transactions list (add is handled by the header button) ----
+// ---- Recent transactions list (edit + delete inline) ----
+const iconBtn: React.CSSProperties = {
+  display: 'inline-flex', padding: 6, borderRadius: 8, border: '1px solid var(--border)',
+  background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer',
+}
+
 function RecentList({ title, txns, emptyLabel }: { title: string; txns: Txn[]; emptyLabel: string }) {
+  const [editTx, setEditTx] = useState<Txn | null>(null)
+
+  const refresh = () => window.dispatchEvent(new CustomEvent('transaction-added'))
+  const del = async (id: string) => {
+    if (!confirm('Delete this transaction?')) return
+    const res = await fetch(`/api/transactions?id=${id}`, { method: 'DELETE' })
+    if (res.ok) refresh()
+    else alert('Could not delete.')
+  }
+
   return (
     <section className="block" style={{ marginBottom: 64 }}>
       <div className="card glass">
@@ -383,19 +409,28 @@ function RecentList({ title, txns, emptyLabel }: { title: string; txns: Txn[]; e
         ) : (
           <div style={{ display: 'grid', gap: 2 }}>
             {txns.map((t) => (
-              <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 4px', borderBottom: '1px solid var(--border)' }}>
-                <div>
-                  <div style={{ fontWeight: 600 }}>{t.description || t.category}</div>
+              <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '10px 4px', borderBottom: '1px solid var(--border)' }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.description || t.category}</div>
                   <div className="stat-label">{t.date} · {t.category}</div>
                 </div>
-                <div className={`stat-value ${t.type}`} style={{ fontSize: 16 }}>
-                  {t.type === 'income' ? '+' : t.type === 'expense' ? '−' : ''}{money2(t.amount)}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                  <span className={`stat-value ${t.type}`} style={{ fontSize: 16 }}>
+                    {t.type === 'income' ? '+' : t.type === 'expense' ? '−' : ''}{money2(t.amount)}
+                  </span>
+                  <button onClick={() => setEditTx(t)} aria-label="Edit" title="Edit" style={iconBtn}><Pencil size={16} /></button>
+                  <button onClick={() => del(t.id)} aria-label="Delete" title="Delete" style={iconBtn}><Trash2 size={16} /></button>
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {editTx && (
+        <EditTransactionModal tx={editTx} onClose={() => setEditTx(null)}
+          onSaved={() => { setEditTx(null); refresh() }} />
+      )}
     </section>
   )
 }
