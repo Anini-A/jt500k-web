@@ -18,8 +18,8 @@ export default function HeaderNav({ current }: { current: Page }) {
     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
       {current !== 'home' && <IconPill icon={<Home />} label="Home" href="/" />}
       <AddTransactionButton />
-      {current !== 'transactions' && <IconPill icon={<Receipt />} label="All Transactions" href="/transactions" />}
       {current !== 'dashboard' && <IconPill icon={<LayoutDashboard />} label="Dashboard" href="/dashboard" />}
+      {current !== 'transactions' && <IconPill icon={<Receipt />} label="All Transactions" href="/transactions" />}
       <IconPill icon={<Landmark />} label="Wealthsimple" href="https://my.wealthsimple.com/app/login" external />
       {current !== 'settings' && (
         <IconPill icon={<Settings />} label="Settings" onClick={() => setSettingsOpen(true)} />
