@@ -41,3 +41,6 @@ journey-to-500k.csv
 # legacy files that contained secrets
 DEPLOYMENT.md
 migrate-data.js
+
+# backups (financial data)
+backups/

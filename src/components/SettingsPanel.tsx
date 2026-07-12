@@ -136,6 +136,17 @@ export default function SettingsPanel() {
         <CategoryManager />
       </section>
 
+      {/* Backup */}
+      <section className="block">
+        <div className="card glass">
+          <h2 style={{ marginTop: 0, marginBottom: 14 }}>🛟 Backup</h2>
+          <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 0, marginBottom: 14 }}>
+            Download a complete snapshot of everything — transactions, categories, budgets, debts, and holdings — as a single JSON file. Keep it in your Google Drive; it's your safety net before any big change.
+          </p>
+          <BackupButton />
+        </div>
+      </section>
+
       {/* Info */}
       <section className="block" style={{ marginBottom: 8 }}>
         <div className="card glass">
@@ -161,5 +172,31 @@ export default function SettingsPanel() {
         </div>
       </section>
     </>
+  )
+}
+
+function BackupButton() {
+  const [busy, setBusy] = useState(false)
+  const [done, setDone] = useState(false)
+  const download = async () => {
+    setBusy(true); setDone(false)
+    try {
+      const res = await fetch('/api/export', { cache: 'no-store' })
+      const data = await res.json()
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `jt500k-backup-${new Date().toISOString().slice(0, 10)}.json`
+      document.body.appendChild(a); a.click(); a.remove()
+      URL.revokeObjectURL(url)
+      setDone(true); setTimeout(() => setDone(false), 3000)
+    } finally { setBusy(false) }
+  }
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+      <button className="btn btn-primary" onClick={download} disabled={busy}>{busy ? 'Preparing…' : '⬇️ Download backup'}</button>
+      {done && <span style={{ color: 'var(--income)', fontWeight: 600 }}>✓ Downloaded</span>}
+    </div>
   )
 }
