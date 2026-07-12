@@ -224,6 +224,8 @@ export default function AddTransactionButton() {
                 </div>
 
                 {/* header */}
+                <div style={{ overflowX: 'auto' }}>
+                <div style={{ minWidth: 620 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '130px 1fr 150px 100px 32px', gap: 8, padding: '0 2px' }}>
                   {['Date', 'Description', 'Category', 'Amount', ''].map((h) => <span key={h} className="stat-label">{h}</span>)}
                 </div>
@@ -256,6 +258,8 @@ export default function AddTransactionButton() {
                       </div>
                     )
                   })}
+                </div>
+                </div>
                 </div>
 
                 <button className="btn btn-primary" style={{ justifyContent: 'center' }} disabled={saving || validCount === 0}

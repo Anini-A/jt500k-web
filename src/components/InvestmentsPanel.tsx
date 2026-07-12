@@ -324,7 +324,7 @@ function AssetForm({ asset, defaultOwner, onDone, onDelete, onCancel }: {
   const [value, setValue] = useState(asset ? String(asset.value_cad) : '')
   return (
     <div className="card" style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', display: 'grid', gap: 10, margin: asset ? '4px 0' : '0 0 12px' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr 1fr', gap: 8 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 8 }}>
         <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Name</span>
           <input style={inp} value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Chequing" /></label>
         <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Kind</span>

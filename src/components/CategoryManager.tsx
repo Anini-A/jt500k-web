@@ -117,7 +117,7 @@ function AddForm({ onDone, busy }: { onDone: (p: any) => void; busy: boolean }) 
   const [color, setColor] = useState(DEFAULT_COLOR.expense)
   return (
     <div className="card" style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', display: 'grid', gap: 10 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 8, alignItems: 'end' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: 8, alignItems: 'end' }}>
         <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Name</span>
           <input style={inp} value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Bank Fees" /></label>
         <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Type</span>
@@ -143,7 +143,7 @@ function EditRow({ cat, others, busy, onSave, onReassign, onDelete, onCancel }: 
 
   return (
     <div className="card" style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', display: 'grid', gap: 10, marginBottom: 6 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 8, alignItems: 'end' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: 8, alignItems: 'end' }}>
         <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Name</span>
           <input style={inp} value={name} onChange={(e) => setName(e.target.value)} /></label>
         <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Type</span>

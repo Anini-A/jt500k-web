@@ -201,7 +201,7 @@ function ItemForm({ cats, busy, item, onDone, onDelete, onCancel }: {
   const [amount, setAmount] = useState(item ? String(item.amount) : '')
   return (
     <div className="card" style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', display: 'grid', gap: 10, margin: item ? '4px 0' : '0 0 16px' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1.4fr 1fr', gap: 8 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 8 }}>
         <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Item</span>
           <input style={inp} value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Mortgage" /></label>
         <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Category</span>
