@@ -59,6 +59,10 @@
   50% { opacity: 0.35; }
 }
 
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 html {
   height: 100%;
 }

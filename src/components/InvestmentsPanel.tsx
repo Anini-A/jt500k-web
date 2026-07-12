@@ -67,6 +67,8 @@ export default function InvestmentsPanel() {
   const [person, setPerson] = useState('Household')
   const [openAcct, setOpenAcct] = useState<Set<string>>(new Set())
   const [importing, setImporting] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+  const [refreshMsg, setRefreshMsg] = useState('')
 
   const load = useCallback(async () => {
     const d = await getJSON('/api/holdings').catch(() => null)
@@ -74,6 +76,21 @@ export default function InvestmentsPanel() {
     setLoading(false)
   }, [])
   useEffect(() => { load() }, [load])
+
+  const refresh = async () => {
+    setRefreshing(true); setRefreshMsg('')
+    try {
+      const r = await fetch('/api/holdings/refresh', { method: 'POST' })
+      const d = await r.json()
+      if (!r.ok) { setRefreshMsg('Refresh failed — showing last import.'); return }
+      await load()
+      window.dispatchEvent(new CustomEvent('transaction-added'))
+      const failed = d.failed?.length ? ` · ${d.failed.length} kept from CSV (${d.failed.join(', ')})` : ''
+      setRefreshMsg(d.updated ? `Live prices updated: ${d.updated} holding${d.updated !== 1 ? 's' : ''}${failed}` : 'Could not reach the price feed — showing last import.')
+    } catch {
+      setRefreshMsg('Refresh failed — showing last import.')
+    } finally { setRefreshing(false) }
+  }
 
   const rows = data?.rows ?? []
   const owners = useMemo(() => OWNER_ORDER.filter((o) => rows.some((r) => r.owner === o)), [rows])
@@ -120,8 +137,14 @@ export default function InvestmentsPanel() {
             <button key={o} className={`chip ${person === o ? 'chip-active' : ''}`} onClick={() => setPerson(o)}>{o}</button>
           ))}
         </div>
-        <button className="btn btn-secondary" onClick={() => setImporting(true)}><Upload size={15} /> Update Holdings</button>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button className="btn btn-secondary" onClick={refresh} disabled={refreshing}>
+            <RefreshCw size={15} style={{ animation: refreshing ? 'spin 0.8s linear infinite' : 'none' }} /> {refreshing ? 'Refreshing…' : 'Refresh Prices'}
+          </button>
+          <button className="btn btn-secondary" onClick={() => setImporting(true)}><Upload size={15} /> Update Holdings</button>
+        </div>
       </div>
+      {refreshMsg && <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: -8, marginBottom: 16, textAlign: 'center' }}>{refreshMsg}</div>}
 
       {/* Hero */}
       <div className="card glass" style={{ marginBottom: 16 }}>
