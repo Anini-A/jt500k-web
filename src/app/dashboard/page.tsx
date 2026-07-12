@@ -6,6 +6,7 @@ import ChatWidget from '@/components/ChatWidget'
 import HeaderNav from '@/components/HeaderNav'
 import DebtManager from '@/components/DebtManager'
 import BudgetManager from '@/components/BudgetManager'
+import InvestmentsPanel from '@/components/InvestmentsPanel'
 import EditTransactionModal from '@/components/EditTransactionModal'
 import { getJSON } from '@/lib/fresh'
 import { MonthlyArea, HBar, Donut, COLORS } from '@/components/DashCharts'
@@ -17,7 +18,7 @@ const TABS: { key: Tab; label: string; Icon: LucideIcon; soon?: boolean }[] = [
   { key: 'expenses', label: 'Expenses', Icon: CreditCard },
   { key: 'savings', label: 'Savings', Icon: PiggyBank },
   { key: 'debts', label: 'Debts', Icon: Banknote },
-  { key: 'investments', label: 'Investments', Icon: LineChart, soon: true },
+  { key: 'investments', label: 'Investments', Icon: LineChart },
   { key: 'budget', label: 'Budget', Icon: Target },
   { key: 'insurance', label: 'Insurance', Icon: Shield, soon: true },
 ]
@@ -291,10 +292,11 @@ export default function Dashboard() {
           </section>
         )}
 
-        {/* INVESTMENTS / INSURANCE — coming soon */}
+        {/* INVESTMENTS */}
         {tab === 'investments' && (
-          <ComingSoon emoji="📈" title="Investments — coming soon"
-            sub="Portfolio tracking (MSTY, dividends, book value vs market value) will live here." />
+          <section className="block" style={{ marginBottom: 64 }}>
+            <InvestmentsPanel />
+          </section>
         )}
         {tab === 'insurance' && (
           <ComingSoon emoji="🛡️" title="Insurance — coming soon"

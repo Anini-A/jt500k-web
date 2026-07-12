@@ -6,7 +6,7 @@ import { getJSON } from '@/lib/fresh'
 const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 })
 const short = (n: number) => n >= 1000 ? '$' + Math.round(n / 1000) + 'K' : '$' + n
 
-export default function GoalTracker({ saved }: { saved: number }) {
+export default function GoalTracker({ saved, label = 'Saved so far' }: { saved: number; label?: string }) {
   const [goal, setGoal] = useState(500000)
 
   useEffect(() => {
@@ -35,7 +35,7 @@ export default function GoalTracker({ saved }: { saved: number }) {
 
       <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
         <div>
-          <div className="stat-label">Saved so far</div>
+          <div className="stat-label">{label}</div>
           <div style={{ fontWeight: 700, fontSize: 20, color: 'var(--savings)' }}>{money(saved)}</div>
         </div>
         <div style={{ textAlign: 'right' }}>

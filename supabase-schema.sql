@@ -83,3 +83,24 @@ create table if not exists budgets (
   created_at timestamptz not null default now()
 );
 alter table budgets enable row level security;
+
+-- Investment holdings (Investments tab). Keyed on account_number+symbol so
+-- re-uploads and a spouse's joint accounts dedupe (counted once).
+create table if not exists holdings (
+  id uuid primary key default gen_random_uuid(),
+  household_id uuid not null references households(id) on delete cascade,
+  owner text not null,               -- Jean | Henriette | Joint | Noah
+  account_type text not null,        -- TFSA, RRSP, RESP, LIRA, Crypto, Group TFSA
+  account_number text not null,
+  symbol text not null,
+  name text,
+  currency text,
+  quantity numeric,
+  market_price numeric,
+  book_value_cad numeric,
+  market_value_cad numeric,
+  as_of date,
+  created_at timestamptz not null default now(),
+  unique (household_id, account_number, symbol)
+);
+alter table holdings enable row level security;
