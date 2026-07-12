@@ -19,7 +19,10 @@ export async function POST() {
     let data: any = null
     try { data = JSON.parse(text) } catch { /* Apps Script may return HTML on error */ }
     if (!res.ok || !data?.ok) {
-      return NextResponse.json({ error: data?.error || `Apps Script returned ${res.status}` }, { status: 502 })
+      const looksHtml = /<html|<!doctype/i.test(text)
+      const hint = data?.error
+        || (looksHtml ? 'Web app returned a login page — set its access to "Anyone" and use the /exec URL.' : `Apps Script returned ${res.status}`)
+      return NextResponse.json({ error: hint }, { status: 502 })
     }
     return NextResponse.json({ ok: true, file: data.file || null })
   } catch (e: any) {
