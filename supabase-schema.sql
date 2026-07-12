@@ -116,3 +116,17 @@ create table if not exists manual_assets (
   created_at timestamptz not null default now()
 );
 alter table manual_assets enable row level security;
+
+-- Monthly net-worth snapshots (Investments + Cash − Debts) for the trend line.
+create table if not exists net_worth_snapshots (
+  id uuid primary key default gen_random_uuid(),
+  household_id uuid not null references households(id) on delete cascade,
+  month text not null,          -- YYYY-MM
+  investments numeric,          -- holdings + manual assets
+  cash numeric,                 -- (kept for future split; currently folded into investments)
+  debts numeric,
+  net_worth numeric,
+  created_at timestamptz not null default now(),
+  unique (household_id, month)
+);
+alter table net_worth_snapshots enable row level security;

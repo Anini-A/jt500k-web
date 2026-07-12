@@ -7,6 +7,7 @@ import HeaderNav from '@/components/HeaderNav'
 import DebtManager from '@/components/DebtManager'
 import BudgetManager from '@/components/BudgetManager'
 import InvestmentsPanel from '@/components/InvestmentsPanel'
+import NetWorthCard from '@/components/NetWorthCard'
 import EditTransactionModal from '@/components/EditTransactionModal'
 import { getJSON } from '@/lib/fresh'
 import { MonthlyArea, HBar, Donut, COLORS } from '@/components/DashCharts'
@@ -190,6 +191,7 @@ export default function Dashboard() {
         {/* OVERVIEW */}
         {tab === 'overview' && (
           <>
+            <NetWorthCard />
             <section className="block">
               <div className="card glass">
                 <div className="stat-grid">

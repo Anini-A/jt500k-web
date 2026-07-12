@@ -22,13 +22,13 @@ const prettyDate = (iso: string) =>
 export default function Home() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [month, setMonth] = useState<Month | null>(null)
-  const [aum, setAum] = useState(0)
+  const [netWorth, setNetWorth] = useState(0)
 
   useEffect(() => {
     const load = () => {
       getJSON('/api/stats').then((d) => !d.error && setStats(d)).catch(() => {})
       getJSON('/api/month').then((d) => !d.error && !d.empty && setMonth(d)).catch(() => {})
-      getJSON('/api/holdings').then((d) => !d.error && setAum(Number(d.totalValue) || 0)).catch(() => {})
+      getJSON('/api/networth').then((d) => !d.error && setNetWorth(Number(d.netWorth) || 0)).catch(() => {})
     }
     load()
     window.addEventListener('transaction-added', load)
@@ -64,8 +64,8 @@ export default function Home() {
         {stats && (
           <section className="block">
             <GoalTracker
-              saved={aum > 0 ? aum : stats.totalSavings}
-              label={aum > 0 ? 'Portfolio value' : 'Saved so far'}
+              saved={netWorth > 0 ? netWorth : stats.totalSavings}
+              label={netWorth > 0 ? 'Net worth' : 'Saved so far'}
             />
           </section>
         )}
