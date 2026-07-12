@@ -14,12 +14,12 @@ import { MonthlyArea, HBar, Donut, COLORS } from '@/components/DashCharts'
 type Tab = 'overview' | 'income' | 'expenses' | 'savings' | 'debts' | 'investments' | 'insurance' | 'budget'
 const TABS: { key: Tab; label: string; Icon: LucideIcon; soon?: boolean }[] = [
   { key: 'overview', label: 'Overview', Icon: Gauge },
+  { key: 'budget', label: 'Budget', Icon: Target },
   { key: 'income', label: 'Income', Icon: Wallet },
   { key: 'expenses', label: 'Expenses', Icon: CreditCard },
   { key: 'savings', label: 'Savings', Icon: PiggyBank },
   { key: 'debts', label: 'Debts', Icon: Banknote },
   { key: 'investments', label: 'Investments', Icon: LineChart },
-  { key: 'budget', label: 'Budget', Icon: Target },
   { key: 'insurance', label: 'Insurance', Icon: Shield, soon: true },
 ]
 
