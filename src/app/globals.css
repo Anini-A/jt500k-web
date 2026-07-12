@@ -449,6 +449,34 @@ header.top h1 {
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
+/* Custom category dropdown options */
+.cat-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 9px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s ease;
+}
+
+.cat-option:hover {
+  background: var(--kpi-bg);
+}
+
+.cat-option-active,
+.cat-option-active:hover {
+  background: var(--accent-soft);
+}
+
 /* Filter chips (glass) */
 .chip {
   padding: 7px 16px;

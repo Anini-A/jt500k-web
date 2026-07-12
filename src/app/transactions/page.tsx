@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import { Trash2, Search, Pencil } from 'lucide-react'
 import HeaderNav from '@/components/HeaderNav'
 import VersionStamp from '@/components/VersionStamp'
+import CategorySelect from '@/components/CategorySelect'
 import { getJSON } from '@/lib/fresh'
 
 interface Txn {
@@ -205,9 +206,7 @@ function EditModal({ tx, cats, onClose, onSaved }: {
               <input type="number" step="0.01" required value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} style={inp} /></label>
           </div>
           <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Category</span>
-            <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} style={inp}>
-              {cats.map((c) => <option key={c.name} value={c.name}>{c.name} ({c.type})</option>)}
-            </select></label>
+            <CategorySelect value={form.category} onChange={(v) => setForm({ ...form, category: v })} cats={cats} /></label>
           <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Description</span>
             <input type="text" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} style={inp} /></label>
           <button className="btn btn-primary" type="submit" disabled={saving} style={{ justifyContent: 'center' }}>

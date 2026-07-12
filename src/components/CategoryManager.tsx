@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
+import CategorySelect from './CategorySelect'
 import { getJSON } from '@/lib/fresh'
 
 interface Cat { id: string; name: string; type: string; color: string | null; count: number; total: number }
@@ -142,10 +143,14 @@ function EditRow({ cat, others, busy, onSave, onReassign, onDelete, onCancel }: 
           Move all {cat.count} transactions to another category, or delete this one.
         </span>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <select style={inp} value={moveTo} onChange={(e) => setMoveTo(e.target.value)}>
-            <option value="">— choose category —</option>
-            {others.map((o) => <option key={o.id} value={o.id}>{o.name} ({o.type})</option>)}
-          </select>
+          <div style={{ minWidth: 240 }}>
+            <CategorySelect
+              placeholder="— choose category —"
+              value={others.find((o) => o.id === moveTo)?.name || ''}
+              onChange={(v) => setMoveTo(others.find((o) => o.name === v)?.id || '')}
+              cats={others}
+            />
+          </div>
           <button className="btn btn-secondary" disabled={busy || !moveTo} onClick={() => onReassign(moveTo)}>Move all here</button>
           <button className="btn btn-secondary" disabled={busy}
             style={{ color: 'var(--expense)', borderColor: 'var(--expense)' }}

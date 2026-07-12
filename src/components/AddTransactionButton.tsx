@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { Plus } from 'lucide-react'
 import IconPill from './IconPill'
+import CategorySelect from './CategorySelect'
 import { getJSON } from '@/lib/fresh'
 
 interface Category { name: string; type: string }
@@ -71,10 +72,7 @@ export default function AddTransactionButton() {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Category</span>
-                  <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} style={inp}>
-                    <option value="">— select —</option>
-                    {catsForType.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}
-                  </select></label>
+                  <CategorySelect value={form.category} onChange={(v) => setForm({ ...form, category: v })} cats={catsForType} /></label>
                 <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Amount</span>
                   <input type="number" step="0.01" required placeholder="0.00" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} style={inp} /></label>
               </div>
