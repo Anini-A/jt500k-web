@@ -47,7 +47,7 @@ export default function CategoryManager() {
   return (
     <div className="card glass">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <h3 style={{ margin: 0 }}>Categories</h3>
+        <h2 style={{ margin: 0 }}>🏷️ Categories</h2>
         <button className="btn btn-secondary" onClick={() => { setAdding((v) => !v); setEditing(null) }}>
           <Plus size={16} /> {adding ? 'Cancel' : 'Add'}
         </button>

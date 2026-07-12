@@ -60,8 +60,9 @@ export default function SettingsPanel() {
     <>
       {/* Connection status */}
       <section className="block">
-        <h2>🗄️ Database</h2>
-        <div className="card glass" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <div className="card glass">
+          <h2 style={{ marginTop: 0, marginBottom: 14 }}>🗄️ Database</h2>
+          <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <span style={{
             width: 12, height: 12, borderRadius: '50%', background: statusMeta.color,
             boxShadow: `0 0 0 4px color-mix(in srgb, ${statusMeta.color} 22%, transparent)`,
@@ -74,13 +75,14 @@ export default function SettingsPanel() {
               {status === 'online' ? 'Your data is live and syncing.' : status === 'offline' ? 'Cannot reach the database right now.' : 'Testing connection…'}
             </div>
           </div>
+          </div>
         </div>
       </section>
 
       {/* Manage */}
       <section className="block">
-        <h2>🎯 Goal & Household</h2>
         <div className="card glass">
+          <h2 style={{ marginTop: 0, marginBottom: 14 }}>🎯 Goal & Household</h2>
           <form onSubmit={save} style={{ display: 'grid', gap: 16, maxWidth: 420 }}>
             <label style={{ display: 'grid', gap: 4 }}>
               <span className="stat-label">Household name</span>
@@ -105,8 +107,8 @@ export default function SettingsPanel() {
 
       {/* Data summary */}
       <section className="block">
-        <h2>📊 Your Data</h2>
         <div className="card glass">
+          <h2 style={{ marginTop: 0, marginBottom: 14 }}>📊 Your Data</h2>
           <div className="stat-grid">
             <div className="stat-card">
               <div className="stat-label">Transactions</div>
@@ -130,14 +132,13 @@ export default function SettingsPanel() {
 
       {/* Category management */}
       <section className="block">
-        <h2>🏷️ Categories</h2>
         <CategoryManager />
       </section>
 
       {/* Info */}
       <section className="block" style={{ marginBottom: 8 }}>
-        <h2>🔐 Access</h2>
         <div className="card glass">
+          <h2 style={{ marginTop: 0, marginBottom: 14 }}>🔐 Access</h2>
           <p style={{ marginTop: 0 }}>
             This site is protected by a <strong>shared password</strong>. It's remembered on each device, so you
             and your wife only enter it once per device.

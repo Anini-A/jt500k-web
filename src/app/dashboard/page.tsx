@@ -243,8 +243,8 @@ export default function Dashboard() {
         )}
 
         {/* Recent — filtered to the active tab's type */}
-        <SectionTitle emoji="🧾" title={`Recent ${TABS.find((t) => t.key === tab)!.label}`} />
         <RecentList
+          title={`🧾 Recent ${TABS.find((t) => t.key === tab)!.label}`}
           txns={filtered.filter((t) => tabType && t.type === tabType).slice().reverse().slice(0, 12)}
           emptyLabel={tab === 'investments' ? 'No investment transactions yet.' : `No ${TABS.find((t) => t.key === tab)!.label.toLowerCase()} in this period.`}
         />
@@ -275,14 +275,6 @@ function Kpi({ emoji, label, value, cls }: { emoji: string; label: string; value
   )
 }
 
-function SectionTitle({ emoji, title }: { emoji: string; title: string }) {
-  return (
-    <h2 style={{ margin: '28px 0 4px', fontSize: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
-      <span>{emoji}</span>{title}
-    </h2>
-  )
-}
-
 function ChartHead({ title, sub }: { title: string; sub: string }) {
   return (
     <>
@@ -293,10 +285,11 @@ function ChartHead({ title, sub }: { title: string; sub: string }) {
 }
 
 // ---- Recent transactions list (add is handled by the header button) ----
-function RecentList({ txns, emptyLabel }: { txns: Txn[]; emptyLabel: string }) {
+function RecentList({ title, txns, emptyLabel }: { title: string; txns: Txn[]; emptyLabel: string }) {
   return (
     <section className="block" style={{ marginBottom: 64 }}>
       <div className="card glass">
+        <h2 style={{ marginTop: 0, marginBottom: 14, fontSize: 18 }}>{title}</h2>
         {txns.length === 0 ? (
           <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)' }}>{emptyLabel}</div>
         ) : (
