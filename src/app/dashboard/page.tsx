@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useMemo, useCallback } from 'react'
-import { Wallet, CreditCard, PiggyBank, LineChart, Banknote, type LucideIcon } from 'lucide-react'
+import { Gauge, Wallet, CreditCard, PiggyBank, LineChart, Banknote, Shield, type LucideIcon } from 'lucide-react'
 import GoalTracker from '@/components/GoalTracker'
 import ChatWidget from '@/components/ChatWidget'
 import HeaderNav from '@/components/HeaderNav'
@@ -9,13 +9,15 @@ import DebtManager from '@/components/DebtManager'
 import { getJSON } from '@/lib/fresh'
 import { MonthlyArea, HBar, Donut, COLORS } from '@/components/DashCharts'
 
-type Tab = 'income' | 'expenses' | 'savings' | 'debts' | 'investments'
-const TABS: { key: Tab; label: string; Icon: LucideIcon }[] = [
+type Tab = 'overview' | 'income' | 'expenses' | 'savings' | 'debts' | 'investments' | 'insurance'
+const TABS: { key: Tab; label: string; Icon: LucideIcon; soon?: boolean }[] = [
+  { key: 'overview', label: 'Overview', Icon: Gauge },
   { key: 'income', label: 'Income', Icon: Wallet },
   { key: 'expenses', label: 'Expenses', Icon: CreditCard },
   { key: 'savings', label: 'Savings', Icon: PiggyBank },
   { key: 'debts', label: 'Debts', Icon: Banknote },
-  { key: 'investments', label: 'Investments', Icon: LineChart },
+  { key: 'investments', label: 'Investments', Icon: LineChart, soon: true },
+  { key: 'insurance', label: 'Insurance', Icon: Shield, soon: true },
 ]
 
 interface Txn {
@@ -52,7 +54,7 @@ export default function Dashboard() {
   const [preset, setPreset] = useState<Preset>('12m')
   const [customFrom, setCustomFrom] = useState('')
   const [customTo, setCustomTo] = useState('')
-  const [tab, setTab] = useState<Tab>('income')
+  const [tab, setTab] = useState<Tab>('overview')
 
   const load = useCallback(async () => {
     const data = await getJSON('/api/data').catch(() => [])
@@ -114,6 +116,17 @@ export default function Dashboard() {
   const tabType: 'income' | 'expense' | 'savings' | null =
     tab === 'income' ? 'income' : tab === 'expenses' ? 'expense' : tab === 'savings' ? 'savings' : null
 
+  // number of calendar months spanned by the active range (for avg/month)
+  const monthsSpan = useMemo(() => {
+    const [fy, fm] = from.split('-').map(Number)
+    const [ty, tm] = to.split('-').map(Number)
+    return Math.max(1, (ty - fy) * 12 + (tm - fm) + 1)
+  }, [from, to])
+  const topIncome = agg.incomeCat[0]
+  const topExpense = agg.expenseCat[0]
+  const topSaving = agg.savingsCat[0]
+  const savingsRate = agg.income > 0 ? Math.round((agg.savings / agg.income) * 100) : 0
+
   if (loading) {
     return (
       <div className="bg-aurora">
@@ -129,40 +142,8 @@ export default function Dashboard() {
     <div className="bg-aurora">
       <div className="wrap">
         <DashHeader />
-        {/* Filter bar */}
-        <section className="block">
-          <div className="card glass" style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {PRESETS.map((p) => (
-                <button key={p.key} onClick={() => setPreset(p.key)}
-                  className={`chip ${preset === p.key ? 'chip-active' : ''}`}>{p.label}</button>
-              ))}
-            </div>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-              <input type="date" value={preset === 'custom' ? (customFrom || minDate) : from} min={minDate} max={maxDate}
-                onChange={(e) => { setPreset('custom'); setCustomFrom(e.target.value) }} className="date-input" />
-              <span className="stat-label">to</span>
-              <input type="date" value={preset === 'custom' ? (customTo || maxDate) : to} min={minDate} max={maxDate}
-                onChange={(e) => { setPreset('custom'); setCustomTo(e.target.value) }} className="date-input" />
-            </div>
-          </div>
-        </section>
 
-        {/* KPIs for the period */}
-        <section className="block">
-          <div className="card glass">
-            <div className="stat-grid">
-              <Kpi emoji="💰" label="Income" value={money(agg.income)} cls="income" />
-              <Kpi emoji="💸" label="Expenses" value={money(agg.expense)} cls="expense" />
-              <Kpi emoji="🏦" label="Savings" value={money(agg.savings)} cls="savings" />
-            </div>
-            <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 12, textAlign: 'center' }}>
-              {from} → {to} · {filtered.length} transactions
-            </div>
-          </div>
-        </section>
-
-        {/* Section tabs */}
+        {/* Section pills — primary nav, on top */}
         <section className="block" style={{ display: 'flex', justifyContent: 'center' }}>
           <div className="tabs">
             {TABS.map((t) => {
@@ -171,63 +152,135 @@ export default function Dashboard() {
                 <button key={t.key} onClick={() => setTab(t.key)}
                   className={`tab ${tab === t.key ? 'tab-active' : ''}`}>
                   <Icon size={16} />{t.label}
+                  {t.soon && <span style={{ fontSize: 9, opacity: 0.65, marginLeft: 2 }}>soon</span>}
                 </button>
               )
             })}
           </div>
         </section>
 
-        {/* INCOME */}
-        {tab === 'income' && (
+        {/* Time-range filter (hidden on coming-soon tabs) */}
+        {tab !== 'investments' && tab !== 'insurance' && (
           <section className="block">
-            <div className="grid-2">
-              <div className="card glass">
-                <ChartHead title="Income Over Time" sub="Monthly income for the selected period" />
-                <MonthlyArea data={agg.monthly} series={[{ key: 'income', name: 'Income', color: COLORS.income }]} />
+            <div className="card glass" style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {PRESETS.map((p) => (
+                  <button key={p.key} onClick={() => setPreset(p.key)}
+                    className={`chip ${preset === p.key ? 'chip-active' : ''}`}>{p.label}</button>
+                ))}
               </div>
-              <div className="card glass">
-                <ChartHead title="Income by Source" sub="Where your money comes from" />
-                <HBar data={agg.incomeCat} color={COLORS.income} />
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                <input type="date" value={preset === 'custom' ? (customFrom || minDate) : from} min={minDate} max={maxDate}
+                  onChange={(e) => { setPreset('custom'); setCustomFrom(e.target.value) }} className="date-input" />
+                <span className="stat-label">to</span>
+                <input type="date" value={preset === 'custom' ? (customTo || maxDate) : to} min={minDate} max={maxDate}
+                  onChange={(e) => { setPreset('custom'); setCustomTo(e.target.value) }} className="date-input" />
               </div>
             </div>
+            <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 8, textAlign: 'center' }}>
+              {from} → {to} · {filtered.length} transactions
+            </div>
           </section>
+        )}
+
+        {/* OVERVIEW */}
+        {tab === 'overview' && (
+          <>
+            <section className="block">
+              <div className="card glass">
+                <div className="stat-grid">
+                  <HeroStat emoji="💰" label="Income" value={money(agg.income)} cls="income" />
+                  <HeroStat emoji="💸" label="Expenses" value={money(agg.expense)} cls="expense" />
+                  <HeroStat emoji="🏦" label="Savings" value={money(agg.savings)} cls="savings" />
+                </div>
+              </div>
+            </section>
+            <section className="block"><GoalTracker saved={allTimeSavings} /></section>
+            <section className="block">
+              <div className="card glass">
+                <ChartHead title="Money Flow" sub="Income vs Expenses vs Savings over time" />
+                <MonthlyArea data={agg.monthly} series={[
+                  { key: 'income', name: 'Income', color: COLORS.income },
+                  { key: 'expense', name: 'Expenses', color: COLORS.expense },
+                  { key: 'savings', name: 'Savings', color: COLORS.savings },
+                ]} />
+              </div>
+            </section>
+          </>
+        )}
+
+        {/* INCOME */}
+        {tab === 'income' && (
+          <>
+            <HeroRow stats={[
+              { emoji: '💰', label: 'Total Income', value: money(agg.income), cls: 'income' },
+              { emoji: '🏆', label: 'Top Source', value: topIncome ? money(topIncome.total) : '—', sub: topIncome?.name },
+              { emoji: '📆', label: 'Avg / Month', value: money(agg.income / monthsSpan), sub: `over ${monthsSpan} month${monthsSpan > 1 ? 's' : ''}` },
+            ]} />
+            <section className="block">
+              <div className="grid-2">
+                <div className="card glass">
+                  <ChartHead title="Income Over Time" sub="Monthly income for the selected period" />
+                  <MonthlyArea data={agg.monthly} series={[{ key: 'income', name: 'Income', color: COLORS.income }]} />
+                </div>
+                <div className="card glass">
+                  <ChartHead title="Income by Source" sub="Where your money comes from" />
+                  <HBar data={agg.incomeCat} color={COLORS.income} />
+                </div>
+              </div>
+            </section>
+          </>
         )}
 
         {/* EXPENSES */}
         {tab === 'expenses' && (
-          <section className="block">
-            <div className="grid-2">
-              <div className="card glass">
-                <ChartHead title="Expenses Over Time" sub="Monthly spending for the selected period" />
-                <MonthlyArea data={agg.monthly} series={[{ key: 'expense', name: 'Expenses', color: COLORS.expense }]} />
+          <>
+            <HeroRow stats={[
+              { emoji: '💸', label: 'Total Expenses', value: money(agg.expense), cls: 'expense' },
+              { emoji: '🏆', label: 'Top Category', value: topExpense ? money(topExpense.total) : '—', sub: topExpense?.name },
+              { emoji: '📆', label: 'Avg / Month', value: money(agg.expense / monthsSpan), sub: `over ${monthsSpan} month${monthsSpan > 1 ? 's' : ''}` },
+            ]} />
+            <section className="block">
+              <div className="grid-2">
+                <div className="card glass">
+                  <ChartHead title="Expenses Over Time" sub="Monthly spending for the selected period" />
+                  <MonthlyArea data={agg.monthly} series={[{ key: 'expense', name: 'Expenses', color: COLORS.expense }]} />
+                </div>
+                <div className="card glass">
+                  <ChartHead title="Spending Breakdown" sub="Share by category" />
+                  <Donut data={agg.expenseCat.slice(0, 8)} />
+                </div>
               </div>
-              <div className="card glass">
-                <ChartHead title="Spending Breakdown" sub="Share by category" />
-                <Donut data={agg.expenseCat.slice(0, 8)} />
+              <div className="card glass" style={{ marginTop: 16 }}>
+                <ChartHead title="Top Expense Categories" sub="Ranked by total spent" />
+                <HBar data={agg.expenseCat.slice(0, 10)} color={COLORS.expense} />
               </div>
-            </div>
-            <div className="card glass" style={{ marginTop: 16 }}>
-              <ChartHead title="Top Expense Categories" sub="Ranked by total spent" />
-              <HBar data={agg.expenseCat.slice(0, 10)} color={COLORS.expense} />
-            </div>
-          </section>
+            </section>
+          </>
         )}
 
         {/* SAVINGS */}
         {tab === 'savings' && (
-          <section className="block">
-            <GoalTracker saved={allTimeSavings} />
-            <div className="grid-2">
-              <div className="card glass">
-                <ChartHead title="Savings Over Time" sub="Monthly amount set aside" />
-                <MonthlyArea data={agg.monthly} series={[{ key: 'savings', name: 'Savings', color: COLORS.savings }]} />
+          <>
+            <HeroRow stats={[
+              { emoji: '🏦', label: 'Total Savings', value: money(agg.savings), cls: 'savings' },
+              { emoji: '🏆', label: 'Top Account', value: topSaving ? money(topSaving.total) : '—', sub: topSaving?.name },
+              { emoji: '📈', label: 'Savings Rate', value: `${savingsRate}%`, sub: 'of income' },
+            ]} />
+            <section className="block"><GoalTracker saved={allTimeSavings} /></section>
+            <section className="block">
+              <div className="grid-2">
+                <div className="card glass">
+                  <ChartHead title="Savings Over Time" sub="Monthly amount set aside" />
+                  <MonthlyArea data={agg.monthly} series={[{ key: 'savings', name: 'Savings', color: COLORS.savings }]} />
+                </div>
+                <div className="card glass">
+                  <ChartHead title="Savings by Account" sub="Where you're building wealth" />
+                  <HBar data={agg.savingsCat} color={COLORS.savings} />
+                </div>
               </div>
-              <div className="card glass">
-                <ChartHead title="Savings by Account" sub="Where you're building wealth" />
-                <HBar data={agg.savingsCat} color={COLORS.savings} />
-              </div>
-            </div>
-          </section>
+            </section>
+          </>
         )}
 
         {/* DEBTS */}
@@ -237,31 +290,26 @@ export default function Dashboard() {
           </section>
         )}
 
-        {/* INVESTMENTS */}
+        {/* INVESTMENTS / INSURANCE — coming soon */}
         {tab === 'investments' && (
-          <section className="block">
-            <div className="card glass" style={{ textAlign: 'center', padding: 40 }}>
-              <div style={{ fontSize: 40, marginBottom: 8 }}>🚧</div>
-              <h3 style={{ margin: '0 0 6px' }}>Coming soon</h3>
-              <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, margin: 0 }}>
-                Portfolio tracking (MSTY, dividends, book value vs market value) will live here.
-              </p>
-            </div>
-          </section>
+          <ComingSoon emoji="📈" title="Investments — coming soon"
+            sub="Portfolio tracking (MSTY, dividends, book value vs market value) will live here." />
+        )}
+        {tab === 'insurance' && (
+          <ComingSoon emoji="🛡️" title="Insurance — coming soon"
+            sub="Track policies and premiums (life, home, auto, health) here." />
         )}
 
-        {/* Recent — filtered to the active tab's type */}
-        <RecentList
-          title={tab === 'debts' ? '🧾 Recent Debt Payments' : `🧾 Recent ${TABS.find((t) => t.key === tab)!.label}`}
-          txns={filtered
-            .filter((t) => tab === 'debts' ? t.category === 'Debt Repayment' : (tabType && t.type === tabType))
-            .slice().reverse().slice(0, 12)}
-          emptyLabel={
-            tab === 'investments' ? 'No investment transactions yet.'
-            : tab === 'debts' ? 'No debt payments in this period.'
-            : `No ${TABS.find((t) => t.key === tab)!.label.toLowerCase()} in this period.`
-          }
-        />
+        {/* Recent — only on the transaction-backed tabs */}
+        {(tab === 'income' || tab === 'expenses' || tab === 'savings' || tab === 'debts') && (
+          <RecentList
+            title={tab === 'debts' ? '🧾 Recent Debt Payments' : `🧾 Recent ${TABS.find((t) => t.key === tab)!.label}`}
+            txns={filtered
+              .filter((t) => tab === 'debts' ? t.category === 'Debt Repayment' : (tabType && t.type === tabType))
+              .slice().reverse().slice(0, 12)}
+            emptyLabel={tab === 'debts' ? 'No debt payments in this period.' : `No ${TABS.find((t) => t.key === tab)!.label.toLowerCase()} in this period.`}
+          />
+        )}
       </div>
 
       <ChatWidget />
@@ -278,13 +326,40 @@ function DashHeader() {
   )
 }
 
-function Kpi({ emoji, label, value, cls }: { emoji: string; label: string; value: string; cls: string }) {
+interface Stat { emoji: string; label: string; value: string; sub?: string; cls?: string }
+
+function HeroStat({ emoji, label, value, sub, cls }: Stat) {
   return (
     <div className="stat-card">
       <div style={{ fontSize: 24, marginBottom: 8 }}>{emoji}</div>
       <div className="stat-label">{label}</div>
-      <div className={`stat-value ${cls}`}>{value}</div>
+      <div className={`stat-value ${cls || ''}`}>{value}</div>
+      {sub && <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{sub}</div>}
     </div>
+  )
+}
+
+function HeroRow({ stats }: { stats: Stat[] }) {
+  return (
+    <section className="block">
+      <div className="card glass">
+        <div className="stat-grid">
+          {stats.map((s) => <HeroStat key={s.label} {...s} />)}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function ComingSoon({ emoji, title, sub }: { emoji: string; title: string; sub: string }) {
+  return (
+    <section className="block" style={{ marginBottom: 64 }}>
+      <div className="card glass" style={{ textAlign: 'center', padding: 40 }}>
+        <div style={{ fontSize: 40, marginBottom: 8 }}>{emoji}</div>
+        <h3 style={{ margin: '0 0 6px' }}>{title}</h3>
+        <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, margin: 0 }}>{sub}</p>
+      </div>
+    </section>
   )
 }
 
