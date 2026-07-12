@@ -17,6 +17,7 @@ export default function GoalTracker({ saved, label = 'Saved so far' }: { saved: 
 
   const pct = Math.min(100, (saved / goal) * 100)
   const remaining = Math.max(0, goal - saved)
+  const today = new Date().toLocaleDateString('en-CA', { year: 'numeric', month: 'short', day: 'numeric' })
 
   return (
     <div className="card glass hero" style={{ marginBottom: 16 }}>
@@ -25,7 +26,8 @@ export default function GoalTracker({ saved, label = 'Saved so far' }: { saved: 
         <span style={{ fontWeight: 700, color: 'var(--savings)' }}>{pct.toFixed(1)}%</span>
       </div>
 
-      <div style={{ height: 16, borderRadius: 999, background: 'var(--kpi-bg)', border: '1px solid var(--border)', overflow: 'hidden', margin: '14px 0 12px' }}>
+      <div title={`Where we stand as of ${today}`}
+        style={{ height: 16, borderRadius: 999, background: 'var(--kpi-bg)', border: '1px solid var(--border)', overflow: 'hidden', margin: '14px 0 12px', cursor: 'help' }}>
         <div style={{
           width: `${pct}%`, height: '100%',
           background: 'linear-gradient(90deg, #6366f1, #1baf7a)',

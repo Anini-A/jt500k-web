@@ -312,21 +312,9 @@ header.top h1 {
   flex-shrink: 0;
 }
 
+/* Fixed icon-only buttons (no hover-expand) — clean on web + mobile */
 .icon-pill .label {
-  max-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  opacity: 0;
-  font-weight: 600;
-  font-size: 14px;
-  transition: max-width 0.28s ease, opacity 0.2s ease, margin-left 0.2s ease;
-}
-
-.icon-pill:hover .label,
-.icon-pill:focus-visible .label {
-  max-width: 190px;
-  opacity: 1;
-  margin-left: 8px;
+  display: none;
 }
 
 .icon-pill.accent {

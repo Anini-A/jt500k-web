@@ -1,21 +1,18 @@
 'use client'
 
 import { useEffect, useState, useMemo, useCallback } from 'react'
-import { Gauge, Wallet, CreditCard, PiggyBank, LineChart, Banknote, Shield, Target, Pencil, Trash2, type LucideIcon } from 'lucide-react'
+import { Wallet, CreditCard, PiggyBank, LineChart, Banknote, Shield, Target, Pencil, Trash2, type LucideIcon } from 'lucide-react'
 import ChatWidget from '@/components/ChatWidget'
 import HeaderNav from '@/components/HeaderNav'
 import DebtManager from '@/components/DebtManager'
 import BudgetManager from '@/components/BudgetManager'
 import InvestmentsPanel from '@/components/InvestmentsPanel'
-import NetWorthCard from '@/components/NetWorthCard'
-import InsightCard from '@/components/InsightCard'
 import EditTransactionModal from '@/components/EditTransactionModal'
 import { getJSON } from '@/lib/fresh'
 import { MonthlyArea, HBar, Donut, COLORS } from '@/components/DashCharts'
 
-type Tab = 'overview' | 'income' | 'expenses' | 'savings' | 'debts' | 'investments' | 'insurance' | 'budget'
+type Tab = 'income' | 'expenses' | 'savings' | 'debts' | 'investments' | 'insurance' | 'budget'
 const TABS: { key: Tab; label: string; Icon: LucideIcon; soon?: boolean }[] = [
-  { key: 'overview', label: 'Overview', Icon: Gauge },
   { key: 'budget', label: 'Budget', Icon: Target },
   { key: 'income', label: 'Income', Icon: Wallet },
   { key: 'expenses', label: 'Expenses', Icon: CreditCard },
@@ -56,10 +53,17 @@ function subMonths(iso: string, n: number) {
 export default function Dashboard() {
   const [txns, setTxns] = useState<Txn[]>([])
   const [loading, setLoading] = useState(true)
-  const [preset, setPreset] = useState<Preset>('12m')
+  const [preset, setPreset] = useState<Preset>('ytd')
   const [customFrom, setCustomFrom] = useState('')
   const [customTo, setCustomTo] = useState('')
-  const [tab, setTab] = useState<Tab>('overview')
+  const [tab, setTab] = useState<Tab>('income')
+
+  // Remember the active tab across refreshes
+  useEffect(() => {
+    const saved = localStorage.getItem('jt-dash-tab') as Tab | null
+    if (saved && TABS.some((t) => t.key === saved)) setTab(saved)
+  }, [])
+  const selectTab = useCallback((t: Tab) => { setTab(t); localStorage.setItem('jt-dash-tab', t) }, [])
 
   const load = useCallback(async () => {
     const data = await getJSON('/api/data').catch(() => [])
@@ -176,7 +180,7 @@ export default function Dashboard() {
             {TABS.map((t) => {
               const Icon = t.Icon
               return (
-                <button key={t.key} onClick={() => setTab(t.key)}
+                <button key={t.key} onClick={() => selectTab(t.key)}
                   className={`tab ${tab === t.key ? 'tab-active' : ''}`}>
                   <Icon size={16} />{t.label}
                   {t.soon && <span style={{ fontSize: 9, opacity: 0.65, marginLeft: 2 }}>soon</span>}
@@ -187,34 +191,7 @@ export default function Dashboard() {
         </section>
 
         {/* Time-range filter — top of data tabs (on Debts it sits above Recent instead) */}
-        {(tab === 'overview' || tab === 'income' || tab === 'expenses' || tab === 'savings') && filterBar}
-
-        {/* OVERVIEW */}
-        {tab === 'overview' && (
-          <>
-            <NetWorthCard />
-            <section className="block">
-              <div className="card glass">
-                <div className="stat-grid">
-                  <HeroStat emoji="💰" label="Income" value={money(agg.income)} cls="income" />
-                  <HeroStat emoji="💸" label="Expenses" value={money(agg.expense)} cls="expense" />
-                  <HeroStat emoji="🏦" label="Savings" value={money(agg.savings)} cls="savings" />
-                </div>
-              </div>
-            </section>
-            <section className="block">
-              <div className="card glass">
-                <ChartHead title="Money Flow" sub="Income vs Expenses vs Savings over time" />
-                <MonthlyArea data={agg.monthly} series={[
-                  { key: 'income', name: 'Income', color: COLORS.income },
-                  { key: 'expense', name: 'Expenses', color: COLORS.expense },
-                  { key: 'savings', name: 'Savings', color: COLORS.savings },
-                ]} />
-              </div>
-            </section>
-            <InsightCard />
-          </>
-        )}
+        {(tab === 'income' || tab === 'expenses' || tab === 'savings') && filterBar}
 
         {/* INCOME */}
         {tab === 'income' && (

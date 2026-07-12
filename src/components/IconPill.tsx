@@ -11,7 +11,8 @@ interface Props {
   external?: boolean
 }
 
-// Circular glass button that expands to show its label on hover.
+// Fixed circular glass icon button. The label is hidden (see globals.css) and
+// surfaced as a native tooltip via title + aria-label — clean on web and mobile.
 export default function IconPill({ icon, label, href, onClick, accent, external }: Props) {
   const className = `icon-pill${accent ? ' accent' : ''}`
   const inner = (

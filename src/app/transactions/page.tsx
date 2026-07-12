@@ -28,6 +28,7 @@ export default function Transactions() {
   const [loading, setLoading] = useState(true)
   const [q, setQ] = useState('')
   const [type, setType] = useState('all')
+  const [cat, setCat] = useState('all')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
   const [editTx, setEditTx] = useState<Txn | null>(null)
@@ -47,15 +48,31 @@ export default function Transactions() {
   const minDate = txns.length ? txns[0].date : ''
   const maxDate = txns.length ? txns[txns.length - 1].date : ''
 
+  // categories present, respecting the active type filter
+  const categories = useMemo(() => {
+    const set = new Set<string>()
+    for (const t of txns) {
+      if (type !== 'all' && t.type !== type) continue
+      if (t.category) set.add(t.category)
+    }
+    return [...set].sort((a, b) => a.localeCompare(b))
+  }, [txns, type])
+
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase()
     return txns
       .filter((t) => type === 'all' || t.type === type)
+      .filter((t) => cat === 'all' || t.category === cat)
       .filter((t) => (!from || t.date >= from) && (!to || t.date <= to))
       .filter((t) => !term || (t.description || '').toLowerCase().includes(term) || (t.category || '').toLowerCase().includes(term))
       .slice()
       .reverse()
-  }, [txns, q, type, from, to])
+  }, [txns, q, type, cat, from, to])
+
+  // if the chosen category isn't valid for the current type, reset it
+  useEffect(() => {
+    if (cat !== 'all' && !categories.includes(cat)) setCat('all')
+  }, [categories, cat])
 
   const del = async (id: string) => {
     if (!confirm('Delete this transaction?')) return
@@ -81,6 +98,11 @@ export default function Transactions() {
               {TYPES.map((t) => (
                 <button key={t.key} onClick={() => setType(t.key)} className={`chip ${type === t.key ? 'chip-active' : ''}`} style={{ flexShrink: 0 }}>{t.label}</button>
               ))}
+              <select value={cat} onChange={(e) => setCat(e.target.value)} className="date-input"
+                style={{ flexShrink: 0, maxWidth: 190 }} aria-label="Filter by category">
+                <option value="all">All categories</option>
+                {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
               <div className={`search-expand ${q ? 'has-value' : ''}`} style={{ height: 38, flexShrink: 0 }}>
                 <Search />
                 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" />

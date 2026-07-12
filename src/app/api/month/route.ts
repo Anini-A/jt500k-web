@@ -22,11 +22,24 @@ export async function GET() {
     return m > mx ? m : mx
   }, '0000-00')
 
+  // previous calendar month (for month-over-month deltas)
+  const [ly, lm] = latest.split('-').map(Number)
+  const prevD = new Date(ly, lm - 2) // lm is 1-based; -2 → previous month
+  const prevMonth = `${prevD.getFullYear()}-${String(prevD.getMonth() + 1).padStart(2, '0')}`
+
   let income = 0, expense = 0, savings = 0
+  let prevIncome = 0, prevExpense = 0, prevSavings = 0
   const byCat = new Map<string, number>()
   for (const t of txns) {
-    if ((t.date as string).slice(0, 7) !== latest) continue
+    const m = (t.date as string).slice(0, 7)
     const amt = Number(t.amount) || 0
+    if (m === prevMonth) {
+      if (t.type === 'income') prevIncome += amt
+      else if (t.type === 'expense') prevExpense += amt
+      else if (t.type === 'savings') prevSavings += amt
+      continue
+    }
+    if (m !== latest) continue
     if (t.type === 'income') income += amt
     else if (t.type === 'expense') {
       expense += amt
@@ -50,6 +63,9 @@ export async function GET() {
     expense: Math.round(expense),
     savings: Math.round(savings),
     net: Math.round(income - expense - savings),
+    prevIncome: Math.round(prevIncome),
+    prevExpense: Math.round(prevExpense),
+    prevSavings: Math.round(prevSavings),
     categories,
   }, { headers: { 'Cache-Control': 'no-store, max-age=0' } })
 }
