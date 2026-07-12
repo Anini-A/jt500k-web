@@ -24,7 +24,7 @@ export default function CategoryManager() {
   const [editing, setEditing] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [openTypes, setOpenTypes] = useState<Set<string>>(new Set(['income', 'expense', 'savings']))
+  const [openTypes, setOpenTypes] = useState<Set<string>>(new Set())
   const toggleType = (t: string) => setOpenTypes((prev) => {
     const n = new Set(prev); n.has(t) ? n.delete(t) : n.add(t); return n
   })
