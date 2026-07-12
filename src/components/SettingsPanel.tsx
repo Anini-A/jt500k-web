@@ -178,6 +178,9 @@ export default function SettingsPanel() {
 function BackupButton() {
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(false)
+  const [drive, setDrive] = useState<'idle' | 'busy'>('idle')
+  const [driveMsg, setDriveMsg] = useState('')
+
   const download = async () => {
     setBusy(true); setDone(false)
     try {
@@ -193,10 +196,26 @@ function BackupButton() {
       setDone(true); setTimeout(() => setDone(false), 3000)
     } finally { setBusy(false) }
   }
+
+  const toDrive = async () => {
+    setDrive('busy'); setDriveMsg('')
+    try {
+      const res = await fetch('/api/backup-now', { method: 'POST' })
+      const d = await res.json()
+      setDriveMsg(res.ok ? `✓ Saved to Drive${d.file ? ` (${d.file})` : ''}` : `✗ ${d.error || 'failed'}`)
+    } catch {
+      setDriveMsg('✗ Could not reach the backup script.')
+    } finally { setDrive('idle') }
+  }
+
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-      <button className="btn btn-primary" onClick={download} disabled={busy}>{busy ? 'Preparing…' : '⬇️ Download backup'}</button>
-      {done && <span style={{ color: 'var(--income)', fontWeight: 600 }}>✓ Downloaded</span>}
+    <div style={{ display: 'grid', gap: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+        <button className="btn btn-primary" onClick={download} disabled={busy}>{busy ? 'Preparing…' : '⬇️ Download backup'}</button>
+        <button className="btn btn-secondary" onClick={toDrive} disabled={drive === 'busy'}>{drive === 'busy' ? 'Backing up…' : '☁️ Back up to Drive now'}</button>
+        {done && <span style={{ color: 'var(--income)', fontWeight: 600 }}>✓ Downloaded</span>}
+      </div>
+      {driveMsg && <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, color: driveMsg.startsWith('✓') ? 'var(--income)' : 'var(--expense)' }}>{driveMsg}</span>}
     </div>
   )
 }
