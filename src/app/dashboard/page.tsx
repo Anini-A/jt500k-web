@@ -8,6 +8,7 @@ import DebtManager from '@/components/DebtManager'
 import BudgetManager from '@/components/BudgetManager'
 import InvestmentsPanel from '@/components/InvestmentsPanel'
 import NetWorthCard from '@/components/NetWorthCard'
+import InsightCard from '@/components/InsightCard'
 import EditTransactionModal from '@/components/EditTransactionModal'
 import { getJSON } from '@/lib/fresh'
 import { MonthlyArea, HBar, Donut, COLORS } from '@/components/DashCharts'
@@ -211,6 +212,7 @@ export default function Dashboard() {
                 ]} />
               </div>
             </section>
+            <InsightCard />
           </>
         )}
 
