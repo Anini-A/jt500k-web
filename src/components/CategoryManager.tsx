@@ -1,14 +1,14 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, Pencil, Trash2 } from 'lucide-react'
+import { Plus, Pencil, Trash2, ChevronDown } from 'lucide-react'
 import CategorySelect from './CategorySelect'
 import { getJSON } from '@/lib/fresh'
 
 interface Cat { id: string; name: string; type: string; color: string | null; count: number; total: number }
 
 const TYPES = ['income', 'expense', 'savings'] as const
-const TYPE_LABEL: Record<string, string> = { income: '🟩 Income', expense: '🟧 Expense', savings: '🟪 Savings' }
+const TYPE_NAME: Record<string, string> = { income: 'Income', expense: 'Expense', savings: 'Savings' }
 const DEFAULT_COLOR: Record<string, string> = { income: '#1baf7a', expense: '#eb6834', savings: '#6366f1' }
 const money = (n: number) => '$' + Math.round(n).toLocaleString()
 
@@ -24,6 +24,10 @@ export default function CategoryManager() {
   const [editing, setEditing] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [openTypes, setOpenTypes] = useState<Set<string>>(new Set(['income', 'expense', 'savings']))
+  const toggleType = (t: string) => setOpenTypes((prev) => {
+    const n = new Set(prev); n.has(t) ? n.delete(t) : n.add(t); return n
+  })
 
   const load = useCallback(async () => {
     const d = await getJSON('/api/categories?counts=1').catch(() => [])
@@ -57,35 +61,52 @@ export default function CategoryManager() {
 
       {adding && <AddForm onDone={async (p) => { if (await act({ action: 'create', ...p })) setAdding(false) }} busy={busy} />}
 
-      {loading ? <div style={{ padding: 16, color: 'var(--text-muted)' }}>Loading…</div> : TYPES.map((type) => {
-        const group = cats.filter((c) => c.type === type)
-        if (!group.length) return null
-        return (
-          <div key={type} style={{ marginTop: 16 }}>
-            <div className="stat-label" style={{ marginBottom: 6 }}>{TYPE_LABEL[type]}</div>
-            <div style={{ display: 'grid', gap: 2 }}>
-              {group.map((c) => editing === c.id ? (
-                <EditRow key={c.id} cat={c} others={cats.filter((x) => x.id !== c.id)} busy={busy}
-                  onSave={(p) => act({ action: 'update', id: c.id, ...p }).then((ok) => ok && setEditing(null))}
-                  onReassign={(toId) => act({ action: 'reassign', fromId: c.id, toId })}
-                  onDelete={(reassignTo) => act({ action: 'delete', id: c.id, reassignTo }).then((ok) => ok && setEditing(null))}
-                  onCancel={() => setEditing(null)} />
-              ) : (
-                <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 4px', borderBottom: '1px solid var(--border)' }}>
-                  <span style={{ width: 12, height: 12, borderRadius: 3, background: c.color || DEFAULT_COLOR[type], flexShrink: 0 }} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 600 }}>{c.name}</div>
-                    <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{c.count} tx · {money(c.total)}</div>
+      {loading ? <div style={{ padding: 16, color: 'var(--text-muted)' }}>Loading…</div> : (
+        <div style={{ display: 'grid', gap: 8, marginTop: 4 }}>
+          {TYPES.map((type) => {
+            const group = cats.filter((c) => c.type === type)
+            if (!group.length) return null
+            const open = openTypes.has(type)
+            const total = group.reduce((s, c) => s + c.total, 0)
+            return (
+              <div key={type}>
+                <button type="button" className={`type-pill ${type}`} onClick={() => toggleType(type)}>
+                  <span style={{ width: 10, height: 10, borderRadius: '50%', background: 'currentColor', flexShrink: 0 }} />
+                  <span>{TYPE_NAME[type]}</span>
+                  <span className="type-count">{group.length}</span>
+                  <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span>{money(total)}</span>
+                    <ChevronDown size={18} className="type-chev" style={{ transform: open ? 'none' : 'rotate(-90deg)' }} />
+                  </span>
+                </button>
+
+                {open && (
+                  <div style={{ display: 'grid', gap: 2, padding: '8px 4px 4px 6px' }}>
+                    {group.map((c) => editing === c.id ? (
+                      <EditRow key={c.id} cat={c} others={cats.filter((x) => x.id !== c.id)} busy={busy}
+                        onSave={(p) => act({ action: 'update', id: c.id, ...p }).then((ok) => ok && setEditing(null))}
+                        onReassign={(toId) => act({ action: 'reassign', fromId: c.id, toId })}
+                        onDelete={(reassignTo) => act({ action: 'delete', id: c.id, reassignTo }).then((ok) => ok && setEditing(null))}
+                        onCancel={() => setEditing(null)} />
+                    ) : (
+                      <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 6px', borderRadius: 8, borderBottom: '1px solid var(--border)' }}>
+                        <span style={{ width: 11, height: 11, borderRadius: 3, background: c.color || DEFAULT_COLOR[type], flexShrink: 0 }} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: 600 }}>{c.name}</div>
+                          <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{c.count} tx · {money(c.total)}</div>
+                        </div>
+                        <button className="btn btn-secondary" style={{ padding: '6px 10px' }} onClick={() => { setEditing(c.id); setAdding(false) }}>
+                          <Pencil size={14} />
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                  <button className="btn btn-secondary" style={{ padding: '6px 10px' }} onClick={() => { setEditing(c.id); setAdding(false) }}>
-                    <Pencil size={14} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )
-      })}
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

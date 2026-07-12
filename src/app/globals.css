@@ -450,6 +450,42 @@ header.top h1 {
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
+/* Collapsible type-group header pill (Income / Expense / Savings) */
+.type-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: 12px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  transition: filter 0.15s ease, transform 0.1s ease;
+}
+
+.type-pill:hover { filter: brightness(0.97) saturate(1.05); }
+.type-pill:active { transform: scale(0.995); }
+
+.type-pill.income { background: var(--income-soft); color: var(--income); }
+.type-pill.expense { background: var(--expense-soft); color: var(--expense); }
+.type-pill.savings { background: var(--savings-soft); color: var(--savings); }
+
+.type-pill .type-count {
+  background: color-mix(in srgb, currentColor 18%, transparent);
+  padding: 1px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.type-pill .type-chev {
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
 /* Custom category dropdown options */
 .cat-option {
   display: flex;
