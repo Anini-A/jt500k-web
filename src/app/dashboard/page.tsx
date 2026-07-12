@@ -5,7 +5,6 @@ import { Wallet, CreditCard, PiggyBank, LineChart, Banknote, type LucideIcon } f
 import GoalTracker from '@/components/GoalTracker'
 import ChatWidget from '@/components/ChatWidget'
 import HeaderNav from '@/components/HeaderNav'
-import VersionStamp from '@/components/VersionStamp'
 import DebtManager from '@/components/DebtManager'
 import { getJSON } from '@/lib/fresh'
 import { MonthlyArea, HBar, Donut, COLORS } from '@/components/DashCharts'
@@ -263,7 +262,6 @@ export default function Dashboard() {
             : `No ${TABS.find((t) => t.key === tab)!.label.toLowerCase()} in this period.`
           }
         />
-        <VersionStamp page="dashboard" />
       </div>
 
       <ChatWidget />

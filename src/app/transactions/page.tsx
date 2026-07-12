@@ -4,7 +4,6 @@ import { useEffect, useState, useMemo, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { Trash2, Search, Pencil } from 'lucide-react'
 import HeaderNav from '@/components/HeaderNav'
-import VersionStamp from '@/components/VersionStamp'
 import CategorySelect from '@/components/CategorySelect'
 import { getJSON } from '@/lib/fresh'
 
@@ -135,7 +134,6 @@ export default function Transactions() {
             )}
           </div>
         </section>
-        <VersionStamp page="transactions page" />
       </div>
 
       {editTx && (

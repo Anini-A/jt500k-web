@@ -103,9 +103,6 @@ export default function Home() {
               {stats.transactionCount.toLocaleString()} transactions tracked
             </div>
           )}
-          <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 4 }}>
-            home page version <code>{(process.env.NEXT_PUBLIC_COMMIT_SHA || 'local').slice(0, 7)}</code>
-          </div>
         </footer>
       </div>
 
