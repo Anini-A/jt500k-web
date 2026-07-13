@@ -6,9 +6,8 @@ export const dynamic = 'force-dynamic'
 // Free provider (Google Gemini) is preferred when its key is present; Anthropic
 // stays as an automatic paid fallback. Get a free key at https://aistudio.google.com/apikey
 const GEMINI_KEY = process.env.GEMINI_API_KEY
-// Rolling alias — always resolves to the current free Flash model (avoids
-// "model no longer available" breakage when Google retires a dated version).
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest'
+// Cheapest capable model + highest free/paid availability (fewest overloads).
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite'
 const ANTHROPIC_KEY =
   process.env.ANTHROPIC_API_KEY || process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY
 
@@ -156,7 +155,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 // Call Gemini with the tool set. Retries once on transient overload, then falls
 // back through other free Flash models so a spike on one doesn't fail the request.
 async function geminiGenerate({ system, contents }: { system: string; contents: any[] }) {
-  const models = [GEMINI_MODEL, 'gemini-2.5-flash-lite', 'gemini-2.0-flash']
+  const models = [GEMINI_MODEL, 'gemini-flash-latest', 'gemini-2.0-flash']
     .filter((m, i, a) => m && a.indexOf(m) === i)
   let lastErr = ''
   for (const model of models) {
