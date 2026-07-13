@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import ChatWidget from '@/components/ChatWidget'
 import HeaderNav from '@/components/HeaderNav'
 import NetWorthCard from '@/components/NetWorthCard'
 import MoneyFlowCard from '@/components/MoneyFlowCard'
@@ -108,8 +107,6 @@ export default function Home() {
           )}
         </footer>
       </div>
-
-      <ChatWidget />
     </div>
   )
 }

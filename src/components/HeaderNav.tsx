@@ -2,10 +2,11 @@
 
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Home, Receipt, LayoutDashboard, Settings, RefreshCw, Landmark } from 'lucide-react'
+import { Home, Receipt, LayoutDashboard, Settings, RefreshCw, Landmark, MessageCircle } from 'lucide-react'
 import IconPill from './IconPill'
 import AddTransactionButton from './AddTransactionButton'
 import SettingsPanel from './SettingsPanel'
+import ChatWidget from './ChatWidget'
 
 type Page = 'home' | 'dashboard' | 'transactions' | 'settings'
 
@@ -13,6 +14,7 @@ type Page = 'home' | 'dashboard' | 'transactions' | 'settings'
 // Dashboard · Settings · Refresh. The current page's own link is omitted.
 export default function HeaderNav({ current }: { current: Page }) {
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [chatOpen, setChatOpen] = useState(false)
 
   return (
     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
@@ -25,6 +27,9 @@ export default function HeaderNav({ current }: { current: Page }) {
         <IconPill icon={<Settings />} label="Settings" onClick={() => setSettingsOpen(true)} />
       )}
       <IconPill icon={<RefreshCw />} label="Refresh" onClick={() => window.location.reload()} />
+      <IconPill icon={<MessageCircle />} label="Ask AI" onClick={() => setChatOpen(true)} />
+
+      {chatOpen && <ChatWidget onClose={() => setChatOpen(false)} />}
 
       {settingsOpen && createPortal(
         <div className="modal-backdrop" onClick={() => setSettingsOpen(false)}>

@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { Wallet, CreditCard, PiggyBank, LineChart, Banknote, Shield, Target, Pencil, Trash2, type LucideIcon } from 'lucide-react'
-import ChatWidget from '@/components/ChatWidget'
 import HeaderNav from '@/components/HeaderNav'
 import DebtManager from '@/components/DebtManager'
 import BudgetManager from '@/components/BudgetManager'
@@ -303,8 +302,6 @@ export default function Dashboard() {
           />
         )}
       </div>
-
-      <ChatWidget />
     </div>
   )
 }
