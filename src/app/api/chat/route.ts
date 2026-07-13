@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic'
 // Free provider (Google Gemini) is preferred when its key is present; Anthropic
 // stays as an automatic paid fallback. Get a free key at https://aistudio.google.com/apikey
 const GEMINI_KEY = process.env.GEMINI_API_KEY
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash'
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash'
 const ANTHROPIC_KEY =
   process.env.ANTHROPIC_API_KEY || process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY
 
