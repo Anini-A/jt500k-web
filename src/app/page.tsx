@@ -34,9 +34,9 @@ function Delta({ now, prev, goodUp }: { now: number; prev: number; goodUp: boole
 }
 
 // A compact "this month" line: label · amount (colored) · tiny delta
-function MonthLine({ label, value, prev, goodUp, cls }: { label: string; value?: number; prev?: number; goodUp: boolean; cls: string }) {
+function MonthLine({ label, value, prev, goodUp, cls, first }: { label: string; value?: number; prev?: number; goodUp: boolean; cls: string; first?: boolean }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, borderTop: '1px solid var(--border)', paddingTop: 8 }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, borderTop: first ? 'none' : '1px solid var(--border)', paddingTop: first ? 0 : 8 }}>
       <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{label}</span>
       <div style={{ textAlign: 'right' }}>
         <span className={`stat-value ${cls}`} style={{ fontSize: 16, fontWeight: 700 }}>{value != null ? money0(value) : '—'}</span>
@@ -90,7 +90,7 @@ export default function Home() {
               {/* This month at a glance */}
               <div style={{ display: 'grid', gap: 8, marginTop: 18, borderTop: '1px solid var(--border)', paddingTop: 16 }}>
                 <h2 style={{ margin: 0 }}>📊 This Month · {month ? month.label : '—'}</h2>
-                <MonthLine label="Income" value={month?.income} prev={month?.prevIncome} goodUp cls="income" />
+                <MonthLine label="Income" value={month?.income} prev={month?.prevIncome} goodUp cls="income" first />
                 <MonthLine label="Expenses" value={month?.expense} prev={month?.prevExpense} goodUp={false} cls="expense" />
                 <MonthLine label="Savings" value={month?.savings} prev={month?.prevSavings} goodUp cls="savings" />
               </div>

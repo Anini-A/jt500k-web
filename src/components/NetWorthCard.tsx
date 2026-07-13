@@ -57,7 +57,7 @@ export default function NetWorthCard() {
 
       {/* The parts, as light supporting lines */}
       <div style={{ display: 'grid', gap: 8, marginTop: 16 }}>
-        <Piece label="Investments" value={money(d.holdingsValue)} />
+        <Piece label="Investments" value={money(d.holdingsValue)} first />
         <Piece label="Cash & other" value={money(d.cashValue)} />
         <Piece label="− Debts" value={money(d.debts)} />
       </div>
@@ -65,9 +65,9 @@ export default function NetWorthCard() {
   )
 }
 
-function Piece({ label, value }: { label: string; value: string }) {
+function Piece({ label, value, first }: { label: string; value: string; first?: boolean }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, borderTop: '1px solid var(--border)', paddingTop: 8 }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, borderTop: first ? 'none' : '1px solid var(--border)', paddingTop: first ? 0 : 8 }}>
       <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{label}</span>
       <span style={{ fontWeight: 700, fontSize: 15 }}>{value}</span>
     </div>
