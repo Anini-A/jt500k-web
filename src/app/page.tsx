@@ -81,7 +81,7 @@ export default function Home() {
           <div className="grid-2">
             <NetWorthCard />
             <div className="card glass" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-              <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>💵 Current Balance</div>
+              <h2 style={{ margin: 0 }}>💵 Current Balance</h2>
               <div style={{ fontSize: 'clamp(30px, 8vw, 40px)', fontWeight: 800, letterSpacing: '-0.02em', margin: '10px 0 2px', color: bal >= 0 ? 'var(--income)' : 'var(--expense)' }}>
                 {stats ? money(bal) : '—'}
               </div>
@@ -89,7 +89,7 @@ export default function Home() {
 
               {/* This month at a glance */}
               <div style={{ display: 'grid', gap: 8, marginTop: 18 }}>
-                <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{month ? month.label : 'This month'}</div>
+                <h2 style={{ margin: 0 }}>{month ? month.label : 'This month'}</h2>
                 <MonthLine label="Income" value={month?.income} prev={month?.prevIncome} goodUp cls="income" />
                 <MonthLine label="Expenses" value={month?.expense} prev={month?.prevExpense} goodUp={false} cls="expense" />
                 <MonthLine label="Savings" value={month?.savings} prev={month?.prevSavings} goodUp cls="savings" />
