@@ -62,7 +62,7 @@ function describeAction(name: string, a: any): string {
 async function buildContext() {
   const { data } = await supabaseAdmin
     .from('transactions')
-    .select('type, amount, date, category, description')
+    .select('id, type, amount, date, category, description')
 
   const txns = data ?? []
   let income = 0, expense = 0, savings = 0

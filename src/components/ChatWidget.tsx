@@ -96,6 +96,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
   const [pending, setPending] = useState<{ name: string; args: any; label: string }[] | null>(null)
   const [recentOpen, setRecentOpen] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const taRef = useRef<HTMLTextAreaElement>(null)
 
   const active = threads.find((t) => t.id === activeId) || threads[0]
   const msgs = active?.msgs ?? [GREETING]
@@ -107,6 +108,12 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight)
   }, [msgs, activeId])
+
+  // auto-grow the composer as you type / wrap, up to a max then scroll
+  useEffect(() => {
+    const el = taRef.current
+    if (el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 160) + 'px' }
+  }, [input])
 
   // update the active thread's messages (accepts a value or updater fn)
   const setMsgs = (v: Msg[] | ((p: Msg[]) => Msg[])) => {
@@ -284,14 +291,16 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
           </div>
         )}
 
-        {/* Composer — fixed at the bottom */}
+        {/* Composer — expandable, wraps to new lines; fixed at the bottom */}
         <form onSubmit={(e) => { e.preventDefault(); send(input) }}
-          style={{ flexShrink: 0, padding: 12, borderTop: '1px solid var(--border)', display: 'flex', gap: 8 }}>
-          <input
-            value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask a question…" autoFocus
-            style={{ flex: 1, minWidth: 0, padding: '10px 12px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 14 }}
+          style={{ flexShrink: 0, padding: 12, borderTop: '1px solid var(--border)', display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+          <textarea
+            ref={taRef} value={input} rows={1} onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(input) } }}
+            placeholder="Ask a question…  (Shift+Enter for a new line)" autoFocus
+            style={{ flex: 1, minWidth: 0, padding: '10px 12px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 14, fontFamily: 'inherit', lineHeight: 1.4, resize: 'none', maxHeight: 160, overflowY: 'auto' }}
           />
-          <button type="submit" disabled={busy} className="btn btn-primary" style={{ padding: '10px 16px' }}>➤</button>
+          <button type="submit" disabled={busy} className="btn btn-primary" style={{ padding: '10px 16px', flexShrink: 0 }}>➤</button>
         </form>
       </div>
     </div>,
