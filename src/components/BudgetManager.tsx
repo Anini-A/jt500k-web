@@ -18,19 +18,26 @@ const inp: React.CSSProperties = {
 }
 
 // For expenses, going over budget is bad. For savings/debt, meeting/beating is good.
+// Colour is kept deliberately quiet: every bar shares one neutral fill, and only a
+// genuine problem (over budget) turns red — so a long list reads calm, not rainbow.
+const BAR_BASE = 'linear-gradient(90deg, var(--savings), var(--income))'
 function envStatus(e: Envelope) {
   const good = e.type === 'savings' || (e.category === 'Debt Repayment')
   const pct = e.budgeted > 0 ? e.spent / e.budgeted : 0
   const remaining = e.budgeted - e.spent
-  let color: string, note: string
+  const over = !good && pct > 1
+  const met = good && pct >= 1
+  let note: string
   if (good) {
-    color = pct >= 1 ? 'var(--income)' : 'var(--savings)'
     note = pct >= 1 ? `target met${e.spent > e.budgeted ? ` (+${money(e.spent - e.budgeted)})` : ''}` : `${money(remaining)} to go`
   } else {
-    color = pct > 1 ? 'var(--expense)' : pct >= 0.85 ? '#e0a12b' : 'var(--income)'
     note = remaining >= 0 ? `${money(remaining)} left` : `over by ${money(-remaining)}`
   }
-  return { pct: Math.min(100, pct * 100), color, note, over: !good && pct > 1 }
+  // fill: one neutral colour for everything; red only when over budget
+  const fill = over ? 'var(--expense)' : BAR_BASE
+  // note ink: red when over, green when a good target is met, muted otherwise
+  const noteColor = over ? 'var(--expense)' : met ? 'var(--income)' : 'var(--text-muted)'
+  return { pct: Math.min(100, pct * 100), fill, note, noteColor, over }
 }
 
 export default function BudgetManager() {
@@ -140,17 +147,16 @@ export default function BudgetManager() {
                     <button onClick={() => toggle(e.category)}
                       style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', padding: 0, fontWeight: 600, minWidth: 0 }}>
                       <ChevronDown size={15} style={{ transition: 'transform .2s ease', transform: open ? 'none' : 'rotate(-90deg)', opacity: 0.55, flexShrink: 0 }} />
-                      <span style={{ width: 9, height: 9, borderRadius: '50%', flexShrink: 0, background: e.type === 'income' ? 'var(--income)' : e.type === 'savings' ? 'var(--savings)' : 'var(--expense)' }} />
                       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.category}</span>
                       <span className="stat-label" style={{ flexShrink: 0 }}>({e.items.length})</span>
                     </button>
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
                       <div style={{ fontWeight: 600 }}>{money(e.spent)} <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>/ {money(e.budgeted)}</span></div>
-                      <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, color: s.color }}>{s.note}</div>
+                      <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, color: s.noteColor }}>{s.note}</div>
                     </div>
                   </div>
-                  <div style={{ height: 9, borderRadius: 999, background: 'var(--kpi-bg)', border: '1px solid var(--border)', overflow: 'hidden' }}>
-                    <div style={{ width: `${s.pct}%`, height: '100%', borderRadius: 999, background: s.color, transition: 'width .6s ease' }} />
+                  <div style={{ height: 6, borderRadius: 999, background: 'var(--kpi-bg)', border: '1px solid var(--border)', overflow: 'hidden' }}>
+                    <div style={{ width: `${s.pct}%`, height: '100%', borderRadius: 999, background: s.fill, transition: 'width .6s ease' }} />
                   </div>
 
                   {open && (
