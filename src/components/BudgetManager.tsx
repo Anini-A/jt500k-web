@@ -119,7 +119,7 @@ export default function BudgetManager() {
           {groups.map((g) => (
             <GroupBar key={g.key} emoji={g.emoji} label={g.label} color={g.color}
               budgeted={g.budgeted} actual={g.actual} goodUp={g.goodUp}
-              pace={g.paced ? pace : null} />
+              pace={pace} />
           ))}
         </div>
       </div>
@@ -182,7 +182,7 @@ export default function BudgetManager() {
                       <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, color: s.noteColor }}>{s.note}</div>
                     </div>
                   </div>
-                  <Bar pct={s.pct} pace={isSetAside(e) ? null : pace} fill={s.fill} height={6} />
+                  <Bar pct={s.pct} pace={pace} fill={s.fill} height={6} />
 
                   {/* Line items — always shown; tap any row to edit it inline */}
                   <div style={{ display: 'grid', gap: 2, marginTop: 9, paddingLeft: 4 }}>

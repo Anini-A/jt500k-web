@@ -55,9 +55,9 @@ export default function NetWorthCard() {
       </div>
       <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{money(remaining)} to go</div>
 
-      {/* The parts, as light supporting lines */}
-      <div style={{ display: 'grid', gap: 8, marginTop: 16 }}>
-        <Piece label="Investments" value={money(d.holdingsValue)} first />
+      {/* The parts, as little inset cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginTop: 16 }}>
+        <Piece label="Investments" value={money(d.holdingsValue)} />
         <Piece label="Cash & other" value={money(d.cashValue)} />
         <Piece label="− Debts" value={money(d.debts)} />
       </div>
@@ -65,11 +65,11 @@ export default function NetWorthCard() {
   )
 }
 
-function Piece({ label, value, first }: { label: string; value: string; first?: boolean }) {
+function Piece({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, borderTop: first ? 'none' : '1px solid var(--border)', paddingTop: first ? 0 : 8 }}>
-      <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{label}</span>
-      <span style={{ fontWeight: 700, fontSize: 15 }}>{value}</span>
+    <div style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 11px', minWidth: 0 }}>
+      <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{label}</div>
+      <div style={{ fontWeight: 700, fontSize: 15, marginTop: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value}</div>
     </div>
   )
 }

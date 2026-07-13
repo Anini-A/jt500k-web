@@ -19,29 +19,20 @@ const money = (n: number) =>
 
 const money0 = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 })
 
-// Month-over-month delta note. `goodUp` = is an increase a good thing?
-function Delta({ now, prev, goodUp }: { now: number; prev: number; goodUp: boolean }) {
-  if (!prev) return null
-  const diff = now - prev
-  if (Math.abs(diff) < 1) return <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 4 }}>— vs last month</div>
-  const up = diff > 0
+// A small inset card for a "this month" figure: label · amount (colored) · tiny delta
+function MonthCard({ label, value, prev, goodUp, cls }: { label: string; value?: number; prev?: number; goodUp: boolean; cls: string }) {
+  const diff = value != null && prev != null ? value - prev : null
+  const up = diff != null && diff > 0
   const good = up === goodUp
   return (
-    <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 4, color: good ? 'var(--income)' : 'var(--expense)' }}>
-      {up ? '▲' : '▼'} {money0(Math.abs(diff))} vs last month
-    </div>
-  )
-}
-
-// A compact "this month" line: label · amount (colored) · tiny delta
-function MonthLine({ label, value, prev, goodUp, cls, first }: { label: string; value?: number; prev?: number; goodUp: boolean; cls: string; first?: boolean }) {
-  return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, borderTop: first ? 'none' : '1px solid var(--border)', paddingTop: first ? 0 : 8 }}>
-      <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{label}</span>
-      <div style={{ textAlign: 'right' }}>
-        <span className={`stat-value ${cls}`} style={{ fontSize: 16, fontWeight: 700 }}>{value != null ? money0(value) : '—'}</span>
-        {value != null && prev != null && <Delta now={value} prev={prev} goodUp={goodUp} />}
-      </div>
+    <div style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 11px', minWidth: 0 }}>
+      <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{label}</div>
+      <div className={`stat-value ${cls}`} style={{ fontSize: 18, fontWeight: 700, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value != null ? money0(value) : '—'}</div>
+      {diff != null && Math.abs(diff) >= 1 && (
+        <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 2, color: good ? 'var(--income)' : 'var(--expense)' }}>
+          {up ? '▲' : '▼'} {money0(Math.abs(diff))}
+        </div>
+      )}
     </div>
   )
 }
@@ -88,11 +79,13 @@ export default function Home() {
               <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>As of {today}</div>
 
               {/* This month at a glance */}
-              <div style={{ display: 'grid', gap: 8, marginTop: 18, borderTop: '1px solid var(--border)', paddingTop: 16 }}>
-                <h2 style={{ margin: 0 }}>📊 This Month · {month ? month.label : '—'}</h2>
-                <MonthLine label="Income" value={month?.income} prev={month?.prevIncome} goodUp cls="income" first />
-                <MonthLine label="Expenses" value={month?.expense} prev={month?.prevExpense} goodUp={false} cls="expense" />
-                <MonthLine label="Savings" value={month?.savings} prev={month?.prevSavings} goodUp cls="savings" />
+              <div style={{ marginTop: 18, borderTop: '1px solid var(--border)', paddingTop: 16 }}>
+                <h2 style={{ margin: '0 0 10px' }}>📊 This Month · {month ? month.label : '—'}</h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                  <MonthCard label="Income" value={month?.income} prev={month?.prevIncome} goodUp cls="income" />
+                  <MonthCard label="Expenses" value={month?.expense} prev={month?.prevExpense} goodUp={false} cls="expense" />
+                  <MonthCard label="Savings" value={month?.savings} prev={month?.prevSavings} goodUp cls="savings" />
+                </div>
               </div>
             </div>
           </div>
