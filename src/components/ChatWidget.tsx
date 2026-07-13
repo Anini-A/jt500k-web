@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 
 interface Msg { role: 'user' | 'assistant'; content: string }
+interface Thread { id: string; msgs: Msg[]; updatedAt: number }
 
 const SUGGESTIONS = [
   'How am I doing toward 500K?',
@@ -12,7 +13,21 @@ const SUGGESTIONS = [
 ]
 
 const GREETING: Msg = { role: 'assistant', content: "Hi! I'm your finance assistant. Ask me anything about your income, spending, or your journey to $500K." }
-const STORE_KEY = 'jt-chat'
+const STORE_KEY = 'jt-chats'
+const MAX_THREADS = 20
+
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7)
+const titleOf = (t: Thread) => {
+  const firstUser = t.msgs.find((m) => m.role === 'user')?.content
+  return (firstUser || 'New chat').replace(/\s+/g, ' ').trim().slice(0, 40) || 'New chat'
+}
+const ago = (ms: number) => {
+  const s = Math.round((Date.now() - ms) / 1000)
+  if (s < 60) return 'just now'
+  const m = Math.round(s / 60); if (m < 60) return `${m}m ago`
+  const h = Math.round(m / 60); if (h < 24) return `${h}h ago`
+  return `${Math.round(h / 24)}d ago`
+}
 
 // Inline **bold** → <strong> (the only inline markup the model uses much)
 function inline(text: string, keyBase: string) {
@@ -52,31 +67,67 @@ function Markdown({ text }: { text: string }) {
   return <>{blocks}</>
 }
 
-// Centered modal chat (opened from the header nav). Fixed size — it never grows
-// while you type; only the message area scrolls. The thread is persisted so
-// closing and reopening resumes where you left off.
-export default function ChatWidget({ onClose }: { onClose: () => void }) {
-  const [msgs, setMsgs] = useState<Msg[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null')
-        if (Array.isArray(saved) && saved.length) return saved
-      } catch { /* ignore */ }
+function loadStore(): { threads: Thread[]; activeId: string } {
+  const fresh: Thread = { id: uid(), msgs: [GREETING], updatedAt: Date.now() }
+  if (typeof window === 'undefined') return { threads: [fresh], activeId: fresh.id }
+  try {
+    const s = JSON.parse(localStorage.getItem(STORE_KEY) || 'null')
+    if (s && Array.isArray(s.threads) && s.threads.length) {
+      const activeId = s.threads.some((t: Thread) => t.id === s.activeId) ? s.activeId : s.threads[0].id
+      return { threads: s.threads, activeId }
     }
-    return [GREETING]
-  })
+    // migrate an old single-thread store if present
+    const old = JSON.parse(localStorage.getItem('jt-chat') || 'null')
+    if (Array.isArray(old) && old.length) {
+      const t: Thread = { id: uid(), msgs: old, updatedAt: Date.now() }
+      return { threads: [t], activeId: t.id }
+    }
+  } catch { /* ignore */ }
+  return { threads: [fresh], activeId: fresh.id }
+}
+
+// Centered modal chat (opened from the header nav). Fixed size — it never grows
+// while you type; only the message area scrolls. Threads are persisted so you
+// can resume, start a new chat, or jump back to a recent one.
+export default function ChatWidget({ onClose }: { onClose: () => void }) {
+  const [{ threads, activeId }, setStore] = useState(loadStore)
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
   const [pending, setPending] = useState<{ name: string; args: any; label: string }[] | null>(null)
+  const [recentOpen, setRecentOpen] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
+
+  const active = threads.find((t) => t.id === activeId) || threads[0]
+  const msgs = active?.msgs ?? [GREETING]
+
+  useEffect(() => {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify({ threads, activeId })) } catch { /* ignore */ }
+  }, [threads, activeId])
 
   useEffect(() => {
     scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight)
-  }, [msgs])
+  }, [msgs, activeId])
 
-  useEffect(() => {
-    try { localStorage.setItem(STORE_KEY, JSON.stringify(msgs)) } catch { /* ignore */ }
-  }, [msgs])
+  // update the active thread's messages (accepts a value or updater fn)
+  const setMsgs = (v: Msg[] | ((p: Msg[]) => Msg[])) => {
+    setStore((s) => {
+      const cur = s.threads.find((t) => t.id === s.activeId)
+      const nextMsgs = typeof v === 'function' ? (v as (p: Msg[]) => Msg[])(cur?.msgs ?? [GREETING]) : v
+      return { ...s, threads: s.threads.map((t) => t.id === s.activeId ? { ...t, msgs: nextMsgs, updatedAt: Date.now() } : t) }
+    })
+  }
+
+  const newChat = () => {
+    setPending(null); setRecentOpen(false)
+    setStore((s) => {
+      const cur = s.threads.find((t) => t.id === s.activeId)
+      if (cur && cur.msgs.length <= 1) return s // already a fresh chat
+      const t: Thread = { id: uid(), msgs: [GREETING], updatedAt: Date.now() }
+      return { threads: [t, ...s.threads].slice(0, MAX_THREADS), activeId: t.id }
+    })
+  }
+
+  const selectThread = (id: string) => { setPending(null); setRecentOpen(false); setStore((s) => ({ ...s, activeId: id })) }
 
   const send = async (text: string) => {
     if (!text.trim() || busy) return
@@ -95,7 +146,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
       })
       const data = await res.json()
       if (data.actions?.length) {
-        setPending(data.actions) // wait for the user to confirm before writing anything
+        setPending(data.actions)
       } else {
         setMsgs([...next, { role: 'assistant', content: data.reply || data.error || 'Something went wrong.' }])
       }
@@ -160,20 +211,35 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
     setPending(null)
   }
 
+  const recents = [...threads].sort((a, b) => b.updatedAt - a.updatedAt)
+
+  const ctrlBtn: React.CSSProperties = { background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-muted)', borderRadius: 999, padding: '5px 11px', fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }
+
   return createPortal(
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-card glass" onClick={(e) => e.stopPropagation()}
-        style={{ width: 'min(560px, 100%)', height: 'min(78vh, 620px)', maxHeight: '78vh', padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'var(--surface-1)' }}>
+      <div className="modal-card glass" onClick={(e) => { e.stopPropagation(); setRecentOpen(false) }}
+        style={{ width: 'min(720px, 100%)', height: 'min(88vh, 760px)', maxHeight: '88vh', padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'var(--surface-1)' }}>
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '14px 16px', borderBottom: '1px solid var(--border)' }}>
-          <h2 style={{ margin: 0, fontSize: 18 }}>🤖 Ask Gemini about your finances</h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '14px 16px', borderBottom: '1px solid var(--border)', position: 'relative' }}>
+          <h2 style={{ margin: 0, fontSize: 18, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>🤖 Ask Gemini</h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-            <button onClick={() => setMsgs([GREETING])} title="Start a new chat"
-              style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-muted)', borderRadius: 999, padding: '5px 11px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-              New chat
-            </button>
+            <button style={ctrlBtn} title="Recent chats" onClick={(e) => { e.stopPropagation(); setRecentOpen((v) => !v) }}>Recent ▾</button>
+            <button style={ctrlBtn} title="Start a new chat" onClick={newChat}>New chat</button>
             <button className="modal-x" aria-label="Close" onClick={onClose}>✕</button>
           </div>
+
+          {recentOpen && (
+            <div onClick={(e) => e.stopPropagation()}
+              style={{ position: 'absolute', top: 52, right: 12, zIndex: 5, width: 'min(320px, 80%)', maxHeight: 320, overflowY: 'auto', background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: 14, boxShadow: 'var(--glass-shadow)', padding: 6 }}>
+              {recents.map((t) => (
+                <button key={t.id} onClick={() => selectThread(t.id)}
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, width: '100%', textAlign: 'left', padding: '9px 10px', borderRadius: 9, border: 'none', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', background: t.id === activeId ? 'var(--kpi-bg)' : 'transparent', color: 'var(--text-primary)' }}>
+                  <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{titleOf(t)}</span>
+                  <span className="stat-label" style={{ flexShrink: 0 }}>{ago(t.updatedAt)}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Messages (the only part that scrolls) */}
