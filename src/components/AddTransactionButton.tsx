@@ -179,7 +179,7 @@ export default function AddTransactionButton() {
               <form onSubmit={submitSingle} style={{ display: 'grid', gap: 12 }}>
                 <div className="form-2">
                   <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Date</span>
-                    <input type="date" required value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} style={inp} /></label>
+                    <input type="date" required value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} style={{ ...inp, WebkitAppearance: 'none', appearance: 'none', minWidth: 0 }} /></label>
                   <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Type</span>
                     <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value, category: '' })} style={inp}>
                       <option value="income">Income</option><option value="expense">Expense</option><option value="savings">Savings</option>
