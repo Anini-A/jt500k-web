@@ -29,7 +29,7 @@ export default function NetWorthCard() {
   const today = new Date().toLocaleDateString('en-CA', { year: 'numeric', month: 'short', day: 'numeric' })
 
   return (
-    <div className="card glass" style={{ height: '100%' }}>
+    <div className="card glass" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 8 }}>
         <h2 style={{ margin: 0 }}>🪙 Net Worth</h2>
         {prev && (
@@ -55,8 +55,8 @@ export default function NetWorthCard() {
       </div>
       <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{money(remaining)} to go</div>
 
-      {/* The parts, as little inset cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginTop: 16 }}>
+      {/* The parts, as little inset cards — fill the space below */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gridTemplateRows: '1fr', gap: 8, marginTop: 16, flex: 1 }}>
         <Piece label="Investments" value={money(d.holdingsValue)} />
         <Piece label="Cash & other" value={money(d.cashValue)} />
         <Piece label="− Debts" value={money(d.debts)} />
@@ -67,9 +67,9 @@ export default function NetWorthCard() {
 
 function Piece({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 11px', minWidth: 0 }}>
+    <div style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '11px 11px', minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4 }}>
       <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{label}</div>
-      <div style={{ fontWeight: 700, fontSize: 15, marginTop: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value}</div>
+      <div style={{ fontWeight: 700, fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value}</div>
     </div>
   )
 }
