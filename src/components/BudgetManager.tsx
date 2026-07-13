@@ -154,7 +154,7 @@ export default function BudgetManager() {
                     <button onClick={() => toggle(e.category)}
                       style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', padding: 0, fontWeight: 600, minWidth: 0 }}>
                       <ChevronDown size={15} style={{ transition: 'transform .2s ease', transform: open ? 'none' : 'rotate(-90deg)', opacity: 0.55, flexShrink: 0 }} />
-                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.category}</span>
+                      <span style={{ fontSize: 16, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.category}</span>
                       <span className="stat-label" style={{ flexShrink: 0 }}>({e.items.length})</span>
                     </button>
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
