@@ -12,7 +12,9 @@ const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest'
 const ANTHROPIC_KEY =
   process.env.ANTHROPIC_API_KEY || process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY
 
-// Build a compact financial context so Claude can answer accurately.
+const norm = (s: string | null) => (s || '').trim().toLowerCase()
+
+// Build a compact financial context so the assistant can answer accurately.
 async function buildContext() {
   const { data } = await supabaseAdmin
     .from('transactions')
@@ -33,20 +35,43 @@ async function buildContext() {
     else if (t.type === 'savings') { savings += amt; m.s += amt }
   }
 
+  // NET WORTH — this is the real "Journey to 500K" metric (Investments + Cash − Debts)
+  const { data: holds } = await supabaseAdmin.from('holdings').select('market_value_cad')
+  const { data: manual } = await supabaseAdmin.from('manual_assets').select('value_cad')
+  const holdingsValue = (holds ?? []).reduce((s, h) => s + Number(h.market_value_cad), 0)
+  const cashValue = (manual ?? []).reduce((s, a) => s + Number(a.value_cad), 0)
+  const { data: debts } = await supabaseAdmin.from('debts').select('name, amount')
+  const { data: pays } = await supabaseAdmin.from('transactions').select('description, amount').eq('category', 'Debt Repayment')
+  const paidByName = new Map<string, number>()
+  for (const p of pays ?? []) paidByName.set(norm(p.description), (paidByName.get(norm(p.description)) || 0) + Number(p.amount))
+  const debtsRemaining = (debts ?? []).reduce((s, d) => s + Math.max(0, Number(d.amount) - (paidByName.get(norm(d.name)) || 0)), 0)
+  const netWorth = holdingsValue + cashValue - debtsRemaining
+
+  // goal amount (defaults to 500K)
+  const { data: hh } = await supabaseAdmin.from('households').select('goal_amount').order('created_at').limit(1).maybeSingle()
+  const goal = Number(hh?.goal_amount) || 500000
+  const money = (n: number) => '$' + Math.round(n).toLocaleString()
+
   const topCats = [...byCat.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10)
-    .map(([c, v]) => `  - ${c}: $${Math.round(v).toLocaleString()}`).join('\n')
+    .map(([c, v]) => `  - ${c}: ${money(v)}`).join('\n')
   const months = [...byMonth.entries()].sort().slice(-6)
-    .map(([mo, v]) => `  - ${mo}: income $${Math.round(v.i)}, expenses $${Math.round(v.e)}, savings $${Math.round(v.s)}`).join('\n')
+    .map(([mo, v]) => `  - ${mo}: income ${money(v.i)}, expenses ${money(v.e)}, savings ${money(v.s)}`).join('\n')
 
-  return `The user is tracking their finances toward a $500,000 savings goal ("Journey to 500K"). All amounts are in CAD.
+  return `The user is tracking their finances toward a ${money(goal)} goal ("Journey to 500K"). All amounts are in CAD.
 
-TOTALS (all time, ${txns.length} transactions since Aug 2024):
-- Total income: $${Math.round(income).toLocaleString()}
-- Total expenses: $${Math.round(expense).toLocaleString()}
-- Total saved/invested: $${Math.round(savings).toLocaleString()}
-- Current cash balance (income - expenses - savings set aside): $${Math.round(income - expense - savings).toLocaleString()}
+⭐ THE GOAL METRIC IS NET WORTH, NOT the savings-contributions total. "Progress to the goal" = net worth ÷ goal. Do NOT use the "total saved/invested" figure below as progress toward the goal.
+
+NET WORTH (current) = ${money(netWorth)}  →  ${Math.round((netWorth / goal) * 100)}% of the ${money(goal)} goal
+- Investments (Wealthsimple holdings): ${money(holdingsValue)}
+- Cash & other assets: ${money(cashValue)}
+- Debts remaining (subtracted): ${money(debtsRemaining)}
+
+CASH-FLOW TOTALS (all time, ${txns.length} transactions since Aug 2024):
+- Total income: ${money(income)}
+- Total expenses: ${money(expense)}
+- Total savings CONTRIBUTIONS (money set aside — a cash-flow figure, NOT the goal progress): ${money(savings)}
+- Current cash balance (income − expenses − savings set aside): ${money(income - expense - savings)}
 - Savings rate: ${income > 0 ? Math.round((savings / income) * 100) : 0}%
-- Progress to $500K: ${Math.round((savings / 500000) * 100)}%
 
 TOP EXPENSE CATEGORIES:
 ${topCats}

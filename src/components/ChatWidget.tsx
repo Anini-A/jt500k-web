@@ -66,7 +66,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
   return createPortal(
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-card glass" onClick={(e) => e.stopPropagation()}
-        style={{ width: 'min(560px, 100%)', height: 'min(78vh, 620px)', maxHeight: '78vh', padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        style={{ width: 'min(560px, 100%)', height: 'min(78vh, 620px)', maxHeight: '78vh', padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'var(--surface-1)' }}>
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '14px 16px', borderBottom: '1px solid var(--border)' }}>
           <h2 style={{ margin: 0, fontSize: 18 }}>🤖 Ask Gemini about your finances</h2>
