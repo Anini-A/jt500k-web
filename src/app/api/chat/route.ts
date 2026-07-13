@@ -3,7 +3,11 @@ import { supabaseAdmin } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
 
-const API_KEY =
+// Free provider (Google Gemini) is preferred when its key is present; Anthropic
+// stays as an automatic paid fallback. Get a free key at https://aistudio.google.com/apikey
+const GEMINI_KEY = process.env.GEMINI_API_KEY
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash'
+const ANTHROPIC_KEY =
   process.env.ANTHROPIC_API_KEY || process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY
 
 // Build a compact financial context so Claude can answer accurately.
@@ -50,35 +54,62 @@ ${months}`
 }
 
 export async function POST(req: NextRequest) {
-  if (!API_KEY) {
-    return NextResponse.json({ error: 'AI is not configured (missing API key).' }, { status: 500 })
+  if (!GEMINI_KEY && !ANTHROPIC_KEY) {
+    return NextResponse.json({ error: 'AI is not configured (add a free GEMINI_API_KEY).' }, { status: 500 })
   }
 
   const { message, history } = await req.json()
   if (!message) return NextResponse.json({ error: 'message required' }, { status: 400 })
 
   const context = await buildContext()
+  const system =
+    `You are a friendly, sharp personal-finance assistant for the "Journey to 500K" app. ` +
+    `Answer using ONLY the data below. Be concise, concrete, and encouraging. Use CAD ($). ` +
+    `When useful, give specific numbers and one actionable suggestion.\n\n${context}`
 
-  const messages = [
-    ...(Array.isArray(history) ? history : []),
-    { role: 'user', content: message },
-  ]
+  const prior = Array.isArray(history) ? history : []
+  const messages = [...prior, { role: 'user', content: message }]
 
   try {
+    // ---- Free: Google Gemini ----
+    if (GEMINI_KEY) {
+      const contents = messages.map((m: any) => ({
+        role: m.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: String(m.content ?? '') }],
+      }))
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            system_instruction: { parts: [{ text: system }] },
+            contents,
+            generationConfig: { maxOutputTokens: 1024, temperature: 0.5 },
+          }),
+        },
+      )
+      if (!res.ok) {
+        const err = await res.text()
+        return NextResponse.json({ error: 'AI error: ' + err.slice(0, 200) }, { status: 502 })
+      }
+      const data = await res.json()
+      const reply = data.candidates?.[0]?.content?.parts?.map((p: any) => p.text).join('') ?? 'Sorry, I could not generate a response.'
+      return NextResponse.json({ reply })
+    }
+
+    // ---- Paid fallback: Anthropic ----
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
-        'x-api-key': API_KEY,
+        'x-api-key': ANTHROPIC_KEY as string,
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 1024,
-        system:
-          `You are a friendly, sharp personal-finance assistant for the "Journey to 500K" app. ` +
-          `Answer using ONLY the data below. Be concise, concrete, and encouraging. Use CAD ($). ` +
-          `When useful, give specific numbers and one actionable suggestion.\n\n${context}`,
+        system,
         messages,
       }),
     })
