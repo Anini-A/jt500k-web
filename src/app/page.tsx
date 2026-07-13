@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import HeaderNav from '@/components/HeaderNav'
+import Logo from '@/components/Logo'
 import NetWorthCard from '@/components/NetWorthCard'
 import MoneyFlowCard from '@/components/MoneyFlowCard'
 import { getJSON } from '@/lib/fresh'
@@ -62,6 +63,7 @@ export default function Home() {
       <div className="wrap">
         <header className="top">
           <div className="brand">
+            <Logo />
             <span>Journey to 500K</span>
           </div>
           <HeaderNav current="home" />

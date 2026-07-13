@@ -1,6 +1,7 @@
 'use client'
 
 import HeaderNav from '@/components/HeaderNav'
+import Logo from '@/components/Logo'
 import SettingsPanel from '@/components/SettingsPanel'
 
 export default function SettingsPage() {
@@ -9,6 +10,7 @@ export default function SettingsPage() {
       <div className="wrap">
         <header className="top">
           <div className="brand">
+            <Logo />
             <span>Settings</span>
           </div>
           <HeaderNav current="settings" />

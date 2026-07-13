@@ -136,6 +136,19 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
 
   const selectThread = (id: string) => { setPending(null); setRecentOpen(false); setStore((s) => ({ ...s, activeId: id })) }
 
+  const deleteThread = (id: string) => setStore((s) => {
+    const remaining = s.threads.filter((t) => t.id !== id)
+    if (!remaining.length) { const t: Thread = { id: uid(), msgs: [GREETING], updatedAt: Date.now() }; return { threads: [t], activeId: t.id } }
+    return { threads: remaining, activeId: s.activeId === id ? remaining[0].id : s.activeId }
+  })
+
+  const clearAll = () => {
+    if (!confirm('Delete all chats? This cannot be undone.')) return
+    setPending(null); setRecentOpen(false)
+    const t: Thread = { id: uid(), msgs: [GREETING], updatedAt: Date.now() }
+    setStore({ threads: [t], activeId: t.id })
+  }
+
   const send = async (text: string) => {
     if (!text.trim() || busy) return
     const next = [...msgs, { role: 'user' as const, content: text }]
@@ -239,12 +252,20 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
             <div onClick={(e) => e.stopPropagation()}
               style={{ position: 'absolute', top: 52, right: 12, zIndex: 5, width: 'min(320px, 80%)', maxHeight: 320, overflowY: 'auto', background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: 14, boxShadow: 'var(--glass-shadow)', padding: 6 }}>
               {recents.map((t) => (
-                <button key={t.id} onClick={() => selectThread(t.id)}
-                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, width: '100%', textAlign: 'left', padding: '9px 10px', borderRadius: 9, border: 'none', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', background: t.id === activeId ? 'var(--kpi-bg)' : 'transparent', color: 'var(--text-primary)' }}>
-                  <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{titleOf(t)}</span>
-                  <span className="stat-label" style={{ flexShrink: 0 }}>{ago(t.updatedAt)}</span>
-                </button>
+                <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <button onClick={() => selectThread(t.id)}
+                    style={{ flex: 1, minWidth: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, textAlign: 'left', padding: '9px 10px', borderRadius: 9, border: 'none', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', background: t.id === activeId ? 'var(--kpi-bg)' : 'transparent', color: 'var(--text-primary)' }}>
+                    <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{titleOf(t)}</span>
+                    <span className="stat-label" style={{ flexShrink: 0 }}>{ago(t.updatedAt)}</span>
+                  </button>
+                  <button onClick={() => deleteThread(t.id)} aria-label="Delete chat" title="Delete chat"
+                    style={{ flexShrink: 0, width: 26, height: 26, borderRadius: 8, border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 13 }}>✕</button>
+                </div>
               ))}
+              <div style={{ borderTop: '1px solid var(--border)', marginTop: 4, paddingTop: 4 }}>
+                <button onClick={clearAll}
+                  style={{ width: '100%', textAlign: 'left', padding: '9px 10px', borderRadius: 9, border: 'none', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', background: 'transparent', color: 'var(--expense)', fontWeight: 600 }}>🗑 Clear all chats</button>
+              </div>
             </div>
           )}
         </div>
@@ -297,8 +318,9 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
           <textarea
             ref={taRef} value={input} rows={1} onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(input) } }}
-            placeholder="Ask a question…  (Shift+Enter for a new line)" autoFocus
-            style={{ flex: 1, minWidth: 0, padding: '10px 12px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 14, fontFamily: 'inherit', lineHeight: 1.4, resize: 'none', maxHeight: 160, overflowY: 'auto' }}
+            placeholder="Ask a question…" autoFocus
+            /* fontSize 16 keeps iOS Safari from auto-zooming the page on focus */
+            style={{ flex: 1, minWidth: 0, padding: '10px 12px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 16, fontFamily: 'inherit', lineHeight: 1.4, resize: 'none', maxHeight: 160, overflowY: 'auto' }}
           />
           <button type="submit" disabled={busy} className="btn btn-primary" style={{ padding: '10px 16px', flexShrink: 0 }}>➤</button>
         </form>

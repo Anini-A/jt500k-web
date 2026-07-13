@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { Wallet, CreditCard, PiggyBank, LineChart, Banknote, Shield, Target, Pencil, Trash2, type LucideIcon } from 'lucide-react'
 import HeaderNav from '@/components/HeaderNav'
+import Logo from '@/components/Logo'
 import DebtManager from '@/components/DebtManager'
 import BudgetManager from '@/components/BudgetManager'
 import InvestmentsPanel from '@/components/InvestmentsPanel'
@@ -309,7 +310,7 @@ export default function Dashboard() {
 function DashHeader() {
   return (
     <header className="top">
-      <div className="brand"><span>Dashboard</span></div>
+      <div className="brand"><Logo /><span>Dashboard</span></div>
       <HeaderNav current="dashboard" />
     </header>
   )

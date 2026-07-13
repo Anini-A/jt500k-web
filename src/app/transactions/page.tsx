@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { Trash2, Search, Pencil } from 'lucide-react'
 import HeaderNav from '@/components/HeaderNav'
+import Logo from '@/components/Logo'
 import EditTransactionModal from '@/components/EditTransactionModal'
 import { getJSON } from '@/lib/fresh'
 
@@ -88,7 +89,7 @@ export default function Transactions() {
     <div className="bg-aurora">
       <div className="wrap">
         <header className="top">
-          <div className="brand"><span>All Transactions</span></div>
+          <div className="brand"><Logo /><span>All Transactions</span></div>
           <HeaderNav current="transactions" />
         </header>
 
