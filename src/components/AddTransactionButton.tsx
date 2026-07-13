@@ -16,6 +16,8 @@ const inp: React.CSSProperties = {
   fontFamily: 'inherit', boxSizing: 'border-box',
 }
 const cell: React.CSSProperties = { ...inp, height: 38, padding: '0 8px', fontSize: 13 }
+// Calm, non-flashing red for the Cancel action
+const cancelBtn: React.CSSProperties = { background: 'var(--expense-soft)', color: 'var(--expense)', border: '1px solid var(--expense)', flex: '0 0 auto' }
 
 // Old sheet names → current category names (user still copies from the old sheet)
 const ALIASES: Record<string, string> = {
@@ -149,7 +151,6 @@ export default function AddTransactionButton() {
   const updateRow = (i: number, patch: Partial<Row>) =>
     setRows((prev) => prev!.map((r, idx) => idx === i ? { ...r, ...patch } : r))
 
-  const wide = mode === 'batch'
 
   return (
     <>
@@ -157,7 +158,7 @@ export default function AddTransactionButton() {
 
       {open && createPortal(
         <div className="modal-backdrop" onClick={close}>
-          <div className="modal-card glass" style={{ width: wide ? 'min(960px, 100%)' : 'min(600px, 100%)' }} onClick={(e) => e.stopPropagation()}>
+          <div className="modal-card glass" style={{ width: 'min(820px, 100%)', minHeight: 'min(78vh, 540px)' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ marginBottom: 14 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
                 <h2 style={{ margin: 0, fontSize: 18 }}>➕ Add Transaction</h2>
@@ -203,9 +204,12 @@ export default function AddTransactionButton() {
                 )}
                 <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Description</span>
                   <input type="text" placeholder="e.g. Groceries" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} style={inp} /></label>
-                <button className="btn btn-primary" type="submit" disabled={saving} style={{ justifyContent: 'center' }}>
-                  {saving ? 'Saving…' : '💾 Save Transaction'}
-                </button>
+                <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+                  <button type="button" className="btn" style={cancelBtn} onClick={close}>Cancel</button>
+                  <button className="btn btn-primary" type="submit" disabled={saving} style={{ flex: 1, justifyContent: 'center' }}>
+                    {saving ? 'Saving…' : '💾 Save Transaction'}
+                  </button>
+                </div>
               </form>
             )}
 
@@ -274,10 +278,13 @@ export default function AddTransactionButton() {
                 </div>
                 </div>
 
-                <button className="btn btn-primary" style={{ justifyContent: 'center' }} disabled={saving || validCount === 0}
-                  onClick={logBatch}>
-                  {saving ? 'Logging…' : `💾 Log ${validCount} transaction${validCount !== 1 ? 's' : ''}${invalidCount ? ` (skips ${invalidCount})` : ''}`}
-                </button>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button type="button" className="btn" style={cancelBtn} onClick={close}>Cancel</button>
+                  <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} disabled={saving || validCount === 0}
+                    onClick={logBatch}>
+                    {saving ? 'Logging…' : `💾 Log ${validCount} transaction${validCount !== 1 ? 's' : ''}${invalidCount ? ` (skips ${invalidCount})` : ''}`}
+                  </button>
+                </div>
               </div>
             )}
 
@@ -316,11 +323,14 @@ export default function AddTransactionButton() {
                         )
                       })}
                     </div>
-                    <button className="btn btn-primary" style={{ justifyContent: 'center' }} disabled={saving || picked.size === 0} onClick={logRecurring}>
-                      {saving ? 'Logging…'
-                        : picked.size === 0 ? 'Select items to log'
-                        : `💾 Log ${picked.size} item${picked.size !== 1 ? 's' : ''} · ${money(pickedTotal)}`}
-                    </button>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      <button type="button" className="btn" style={cancelBtn} onClick={close}>Cancel</button>
+                      <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} disabled={saving || picked.size === 0} onClick={logRecurring}>
+                        {saving ? 'Logging…'
+                          : picked.size === 0 ? 'Select items to log'
+                          : `💾 Log ${picked.size} item${picked.size !== 1 ? 's' : ''} · ${money(pickedTotal)}`}
+                      </button>
+                    </div>
                   </>
                 )}
               </div>

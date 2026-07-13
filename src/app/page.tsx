@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import ChatWidget from '@/components/ChatWidget'
 import HeaderNav from '@/components/HeaderNav'
-import GoalTracker from '@/components/GoalTracker'
 import NetWorthCard from '@/components/NetWorthCard'
 import MoneyFlowCard from '@/components/MoneyFlowCard'
 import { getJSON } from '@/lib/fresh'
@@ -65,30 +64,18 @@ export default function Home() {
           <HeaderNav current="home" />
         </header>
 
-        {/* Two-card headline: Net Worth · Journey to $500K (stack on mobile) */}
+        {/* Two-card headline: Net Worth (with the 500K tracker) · Current Balance */}
         <section className="block">
           <div className="grid-2">
             <NetWorthCard />
-            {stats && (
-              <GoalTracker
-                saved={netWorth > 0 ? netWorth : stats.totalSavings}
-                label={netWorth > 0 ? 'Net worth' : 'Saved so far'}
-              />
-            )}
-          </div>
-        </section>
-
-        {/* Current balance — cash to the cent */}
-        <section className="block">
-          <div className="card glass" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-            <div>
+            <div className="card glass" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
               <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>💵 Current Balance</div>
-              <div style={{ fontSize: 'clamp(26px, 8vw, 38px)', fontWeight: 800, letterSpacing: '-0.02em', margin: '4px 0 2px', color: bal >= 0 ? 'var(--income)' : 'var(--expense)' }}>
+              <div style={{ fontSize: 'clamp(30px, 8vw, 40px)', fontWeight: 800, letterSpacing: '-0.02em', margin: '10px 0 2px', color: bal >= 0 ? 'var(--income)' : 'var(--expense)' }}>
                 {stats ? money(bal) : '—'}
               </div>
-            </div>
-            <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>
-              {stats?.asOf ? `As of ${prettyDate(stats.asOf)}` : ''}
+              <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>
+                {stats?.asOf ? `As of ${prettyDate(stats.asOf)}` : 'Cash on hand'}
+              </div>
             </div>
           </div>
         </section>
