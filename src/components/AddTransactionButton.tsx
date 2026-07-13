@@ -146,28 +146,28 @@ export default function AddTransactionButton() {
       {open && createPortal(
         <div className="modal-backdrop" onClick={close}>
           <div className="modal-card glass" style={{ width: wide ? 'min(960px, 100%)' : 'min(600px, 100%)' }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, gap: 12, flexWrap: 'wrap' }}>
-              <h2 style={{ margin: 0, fontSize: 18 }}>➕ Add Transaction</h2>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <div className="tabs" style={{ padding: 3, width: 'auto' }}>
-                  <button className={`tab ${mode === 'single' ? 'tab-active' : ''}`} style={{ padding: '6px 12px', fontSize: 13 }} onClick={() => setMode('single')}>
-                    <PencilLine size={14} /> Single
-                  </button>
-                  <button className={`tab ${mode === 'batch' ? 'tab-active' : ''}`} style={{ padding: '6px 12px', fontSize: 13 }} onClick={() => setMode('batch')}>
-                    <ClipboardPaste size={14} /> Paste many
-                  </button>
-                  <button className={`tab ${mode === 'recurring' ? 'tab-active' : ''}`} style={{ padding: '6px 12px', fontSize: 13 }} onClick={() => setMode('recurring')}>
-                    <Repeat size={14} /> Recurring
-                  </button>
-                </div>
-                <button className="btn btn-secondary" style={{ padding: '6px 12px' }} onClick={close}>✕</button>
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+                <h2 style={{ margin: 0, fontSize: 18 }}>➕ Add Transaction</h2>
+                <button className="modal-x" aria-label="Close" onClick={close}>✕</button>
+              </div>
+              <div className="tabs" style={{ padding: 3, marginTop: 12 }}>
+                <button className={`tab ${mode === 'single' ? 'tab-active' : ''}`} style={{ flex: 1, justifyContent: 'center', padding: '7px 8px', fontSize: 13 }} onClick={() => setMode('single')}>
+                  <PencilLine size={14} /> Single
+                </button>
+                <button className={`tab ${mode === 'batch' ? 'tab-active' : ''}`} style={{ flex: 1, justifyContent: 'center', padding: '7px 8px', fontSize: 13 }} onClick={() => setMode('batch')}>
+                  <ClipboardPaste size={14} /> Paste
+                </button>
+                <button className={`tab ${mode === 'recurring' ? 'tab-active' : ''}`} style={{ flex: 1, justifyContent: 'center', padding: '7px 8px', fontSize: 13 }} onClick={() => setMode('recurring')}>
+                  <Repeat size={14} /> Recurring
+                </button>
               </div>
             </div>
 
             {/* ---------------- SINGLE ---------------- */}
             {mode === 'single' && (
               <form onSubmit={submitSingle} style={{ display: 'grid', gap: 12 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="form-2">
                   <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Date</span>
                     <input type="date" required value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} style={inp} /></label>
                   <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Type</span>
@@ -175,7 +175,7 @@ export default function AddTransactionButton() {
                       <option value="income">Income</option><option value="expense">Expense</option><option value="savings">Savings</option>
                     </select></label>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="form-2">
                   <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Category</span>
                     <CategorySelect value={form.category} onChange={(v) => setForm({ ...form, category: v })} cats={catsForType} /></label>
                   <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Amount</span>

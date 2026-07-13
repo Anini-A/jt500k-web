@@ -565,6 +565,42 @@ header.top h1 {
   }
 }
 
+/* Two-up form fields that stack to one column on phones (no more collisions) */
+.form-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 520px) {
+  .form-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Round close button, pinned top-right of a modal — always reachable */
+.modal-x {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--kpi-bg);
+  color: var(--text-secondary);
+  font-size: 15px;
+  cursor: pointer;
+  line-height: 1;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.modal-x:hover {
+  background: var(--expense-soft);
+  color: var(--expense);
+}
+
 /* Stat grid */
 .stat-grid {
   display: grid;

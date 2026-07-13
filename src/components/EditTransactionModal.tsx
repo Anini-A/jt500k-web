@@ -64,12 +64,12 @@ export default function EditTransactionModal({ tx, onClose, onSaved }: {
   return createPortal(
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-card glass" onClick={(e) => e.stopPropagation()}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, gap: 12 }}>
           <h2 style={{ margin: 0, fontSize: 18 }}>✏️ Edit Transaction</h2>
-          <button className="btn btn-secondary" style={{ padding: '6px 12px' }} onClick={onClose}>✕</button>
+          <button className="modal-x" aria-label="Close" onClick={onClose}>✕</button>
         </div>
         <form onSubmit={submit} style={{ display: 'grid', gap: 12 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div className="form-2">
             <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Date</span>
               <input type="date" required value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} style={inp} /></label>
             <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Amount</span>
