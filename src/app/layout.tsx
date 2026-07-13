@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Hanken_Grotesk } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
@@ -13,7 +13,16 @@ const hanken = Hanken_Grotesk({
 
 export const metadata: Metadata = {
   title: 'Journey to 500K',
-  description: 'Financial Dashboard',
+  description: 'Household net-worth tracker on the road to $500K.',
+  manifest: '/manifest.webmanifest',
+  appleWebApp: { capable: true, statusBarStyle: 'default', title: 'Journey 500K' },
+}
+
+export const viewport: Viewport = {
+  themeColor: '#1baf7a',
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
 }
 
 export default function RootLayout({
