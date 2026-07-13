@@ -81,18 +81,20 @@ export default function BudgetManager() {
 
   const envelopes = data?.envelopes ?? []
 
-  // Money "set aside" (savings + debt repayment) is not money spent — keep it out
-  // of the "left to spend" cushion so a debt overpayment doesn't read as a blowout.
+  // Savings & debt repayment are money kept, not spent — so the summary splits into
+  // four independent groups instead of one blended cushion.
   const isSetAside = (e: Envelope) => e.type === 'savings' || e.category === 'Debt Repayment'
   const sum = (arr: Envelope[], k: 'budgeted' | 'spent') => arr.reduce((s, e) => s + e[k], 0)
-  const expEnvs = envelopes.filter((e) => !isSetAside(e))
-  const setEnvs = envelopes.filter(isSetAside)
-  const expBudgeted = sum(expEnvs, 'budgeted')
-  const expSpent = sum(expEnvs, 'spent')
-  const setBudgeted = sum(setEnvs, 'budgeted')
-  const setDone = sum(setEnvs, 'spent')
-  const overallPct = expBudgeted > 0 ? Math.min(100, (expSpent / expBudgeted) * 100) : 0
-  const leftover = expBudgeted - expSpent
+  const groups = [
+    { key: 'income', emoji: '💰', label: 'Income', color: 'var(--income)', goodUp: true, paced: true,
+      envs: envelopes.filter((e) => e.type === 'income') },
+    { key: 'spending', emoji: '💸', label: 'Spending', color: 'var(--savings)', goodUp: false, paced: true,
+      envs: envelopes.filter((e) => e.type === 'expense' && e.category !== 'Debt Repayment') },
+    { key: 'saving', emoji: '🏦', label: 'Saving', color: 'var(--savings)', goodUp: true, paced: false,
+      envs: envelopes.filter((e) => e.type === 'savings') },
+    { key: 'debt', emoji: '🧾', label: 'Debt Repayment', color: '#c2892f', goodUp: true, paced: false,
+      envs: envelopes.filter((e) => e.category === 'Debt Repayment') },
+  ].map((g) => ({ ...g, budgeted: sum(g.envs, 'budgeted'), actual: sum(g.envs, 'spent') }))
 
   // Calendar pacing: how far through the tracking month we are (marker on the bars).
   const pace = (() => {
@@ -108,36 +110,21 @@ export default function BudgetManager() {
     <>
       {/* ── Card 1: summary (always visible) ── */}
       <div className="card glass" style={{ marginBottom: 16 }}>
-        <h2 style={{ margin: '0 0 16px' }}>🎯 Monthly Budget</h2>
-
-        {/* Three uniform stats — expenses only (savings/debt shown separately below) */}
-        <div className="stat-grid" style={{ marginBottom: 12 }}>
-          <div className="stat-card">
-            <div className="stat-label">{leftover >= 0 ? 'Left to spend' : 'Over budget'}</div>
-            <div style={{ fontSize: 26, fontWeight: 700, marginTop: 4, color: leftover >= 0 ? 'var(--income)' : 'var(--expense)' }}>{money(Math.abs(leftover))}</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-label">Spent</div>
-            <div style={{ fontSize: 26, fontWeight: 700, marginTop: 4 }}>{money(expSpent)}</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-label">Budgeted</div>
-            <div style={{ fontSize: 26, fontWeight: 700, marginTop: 4 }}>{money(expBudgeted)}</div>
-          </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 8, marginBottom: 18 }}>
+          <h2 style={{ margin: 0 }}>🎯 Monthly Budget</h2>
+          <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>
+            {pace}% through {data?.label ?? 'the month'}
+          </span>
         </div>
-        {expEnvs.length > 0 && (
-          <div>
-            <Bar pct={overallPct} pace={pace} fill="linear-gradient(90deg, var(--savings), var(--income))" height={12} />
-            <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 6 }}>
-              {overallPct.toFixed(0)}% of the spending plan used · {pace}% through {data?.label ?? 'the month'}
-            </div>
-          </div>
-        )}
-        {setEnvs.length > 0 && (
-          <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
-            🏦 Set aside this month: <strong style={{ color: 'var(--savings)' }}>{money(setDone)}</strong> of {money(setBudgeted)} planned <span style={{ color: 'var(--text-muted)' }}>· savings + debt (kept, not spent)</span>
-          </div>
-        )}
+
+        {/* Four independent group bars: income · spending · saving · debt */}
+        <div style={{ display: 'grid', gap: 16 }}>
+          {groups.map((g) => (
+            <GroupBar key={g.key} emoji={g.emoji} label={g.label} color={g.color}
+              budgeted={g.budgeted} actual={g.actual} goodUp={g.goodUp}
+              pace={g.paced ? pace : null} />
+          ))}
+        </div>
       </div>
 
       {/* ── Card 2: the individual items (collapsible) ── */}
@@ -232,6 +219,39 @@ function Bar({ pct, pace, fill, height }: { pct: number; pace: number | null; fi
         <div title={`Today — ${pace}% through the month`}
           style={{ position: 'absolute', top: -1, bottom: -1, left: `${pace}%`, width: 2, background: 'var(--text-primary)', opacity: 0.4 }} />
       )}
+    </div>
+  )
+}
+
+// One row of the summary: a labelled group (Income / Spending / Saving / Debt) with
+// its actual-vs-budget figures, a bar, and a plain-English note.
+function GroupBar({ emoji, label, color, budgeted, actual, goodUp, pace }: {
+  emoji: string; label: string; color: string; budgeted: number; actual: number; goodUp: boolean; pace: number | null
+}) {
+  const pct = budgeted > 0 ? Math.min(100, (actual / budgeted) * 100) : (actual > 0 ? 100 : 0)
+  const remaining = budgeted - actual
+  const over = !goodUp && remaining < 0
+  const met = goodUp && budgeted > 0 && actual >= budgeted
+  const fill = over ? 'var(--expense)' : color
+
+  let note: string
+  if (!budgeted && !actual) note = 'not set up yet'
+  else if (!budgeted) note = `${money(actual)} so far · no budget set`
+  else if (goodUp) note = met ? `target met${actual > budgeted ? ` (+${money(actual - budgeted)})` : ''}` : `${money(remaining)} to go`
+  else note = remaining >= 0 ? `${money(remaining)} left` : `over by ${money(-remaining)}`
+  const noteColor = over ? 'var(--expense)' : met ? 'var(--income)' : 'var(--text-muted)'
+
+  return (
+    <div style={{ opacity: !budgeted && !actual ? 0.55 : 1 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, marginBottom: 7 }}>
+        <span style={{ fontSize: 15, fontWeight: 600 }}>{emoji} {label}</span>
+        <span style={{ flexShrink: 0 }}>
+          <span style={{ fontSize: 16, fontWeight: 600 }}>{money(actual)}</span>
+          <span style={{ color: 'var(--text-muted)' }}> / {budgeted ? money(budgeted) : '—'}</span>
+        </span>
+      </div>
+      <Bar pct={pct} pace={pace} fill={fill} height={8} />
+      <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 5, color: noteColor }}>{note}</div>
     </div>
   )
 }
