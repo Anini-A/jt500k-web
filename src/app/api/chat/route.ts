@@ -14,6 +14,47 @@ const ANTHROPIC_KEY =
 
 const norm = (s: string | null) => (s || '').trim().toLowerCase()
 
+// Tools the assistant can call. Writes are never executed here — the route returns
+// a proposed action and the client confirms before calling the real API.
+const TOOLS = [{
+  function_declarations: [
+    {
+      name: 'add_transaction',
+      description: 'Add one new transaction (income, expense, or savings contribution).',
+      parameters: { type: 'OBJECT', properties: {
+        date: { type: 'STRING', description: 'YYYY-MM-DD; omit for today' },
+        type: { type: 'STRING', enum: ['income', 'expense', 'savings'] },
+        category: { type: 'STRING', description: 'an exact existing category name' },
+        amount: { type: 'NUMBER' },
+        description: { type: 'STRING' },
+      }, required: ['type', 'category', 'amount'] },
+    },
+    { name: 'edit_transaction', description: 'Edit fields of an existing transaction by id.', parameters: { type: 'OBJECT', properties: { id: { type: 'STRING' }, date: { type: 'STRING' }, category: { type: 'STRING' }, amount: { type: 'NUMBER' }, description: { type: 'STRING' } }, required: ['id'] } },
+    { name: 'delete_transaction', description: 'Delete a transaction by id.', parameters: { type: 'OBJECT', properties: { id: { type: 'STRING' } }, required: ['id'] } },
+    { name: 'add_budget_item', description: 'Add a monthly budget line item.', parameters: { type: 'OBJECT', properties: { name: { type: 'STRING' }, category: { type: 'STRING' }, amount: { type: 'NUMBER', description: 'monthly amount' } }, required: ['name', 'category', 'amount'] } },
+    { name: 'edit_budget_item', description: 'Edit a budget line item by id.', parameters: { type: 'OBJECT', properties: { id: { type: 'STRING' }, name: { type: 'STRING' }, category: { type: 'STRING' }, amount: { type: 'NUMBER' } }, required: ['id'] } },
+    { name: 'delete_budget_item', description: 'Delete a budget line item by id.', parameters: { type: 'OBJECT', properties: { id: { type: 'STRING' } }, required: ['id'] } },
+    { name: 'add_recurring', description: 'Add a recurring template (rent, subscription, paycheque…).', parameters: { type: 'OBJECT', properties: { name: { type: 'STRING' }, type: { type: 'STRING', enum: ['income', 'expense', 'savings'] }, category: { type: 'STRING' }, amount: { type: 'NUMBER' }, description: { type: 'STRING' } }, required: ['name', 'type', 'category', 'amount'] } },
+    { name: 'set_goal', description: 'Change the overall savings goal amount (the 500K target).', parameters: { type: 'OBJECT', properties: { amount: { type: 'NUMBER' } }, required: ['amount'] } },
+  ],
+}]
+
+const cad = (n: any) => '$' + Math.round(Number(n) || 0).toLocaleString()
+// Human-readable summary of a proposed action for the confirmation card.
+function describeAction(name: string, a: any): string {
+  switch (name) {
+    case 'add_transaction': return `Add ${a.type} of ${cad(a.amount)} in "${a.category}"${a.description ? ` — ${a.description}` : ''}${a.date ? ` on ${a.date}` : ' (today)'}`
+    case 'edit_transaction': return `Edit transaction ${String(a.id).slice(0, 8)}…${a.amount != null ? ` → ${cad(a.amount)}` : ''}${a.category ? ` → ${a.category}` : ''}${a.description ? ` → "${a.description}"` : ''}${a.date ? ` → ${a.date}` : ''}`
+    case 'delete_transaction': return `Delete transaction ${String(a.id).slice(0, 8)}…`
+    case 'add_budget_item': return `Add budget item "${a.name}" in ${a.category} — ${cad(a.amount)}/mo`
+    case 'edit_budget_item': return `Edit budget item ${String(a.id).slice(0, 8)}…${a.amount != null ? ` → ${cad(a.amount)}/mo` : ''}${a.name ? ` → "${a.name}"` : ''}${a.category ? ` → ${a.category}` : ''}`
+    case 'delete_budget_item': return `Delete budget item ${String(a.id).slice(0, 8)}…`
+    case 'add_recurring': return `Add recurring ${a.type} "${a.name}" in ${a.category} — ${cad(a.amount)}`
+    case 'set_goal': return `Change the goal to ${cad(a.amount)}`
+    default: return name
+  }
+}
+
 // Build a compact financial context so the assistant can answer accurately.
 async function buildContext() {
   const { data } = await supabaseAdmin
@@ -52,12 +93,24 @@ async function buildContext() {
   const goal = Number(hh?.goal_amount) || 500000
   const money = (n: number) => '$' + Math.round(n).toLocaleString()
 
+  // reference data so the assistant can act with valid names / ids
+  const { data: cats } = await supabaseAdmin.from('categories').select('name, type')
+  const catsByType = (type: string) => (cats ?? []).filter((c) => c.type === type).map((c) => c.name).join(', ')
+  const { data: budgetRows } = await supabaseAdmin.from('budgets').select('id, name, category, amount').order('category')
+  const { data: recRows } = await supabaseAdmin.from('recurring').select('id, name, type, category, amount').eq('active', true)
+
+  const recent = [...txns]
+    .sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 25)
+    .map((t: any) => `  - id=${t.id ?? '?'} · ${t.date} · ${t.type} · ${t.category ?? '—'} · ${t.description ?? '—'} · ${money(Number(t.amount))}`).join('\n')
+
   const topCats = [...byCat.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10)
     .map(([c, v]) => `  - ${c}: ${money(v)}`).join('\n')
   const months = [...byMonth.entries()].sort().slice(-6)
     .map(([mo, v]) => `  - ${mo}: income ${money(v.i)}, expenses ${money(v.e)}, savings ${money(v.s)}`).join('\n')
+  const budgetList = (budgetRows ?? []).map((b) => `  - id=${b.id} · ${b.category} · ${b.name} · ${money(Number(b.amount))}/mo`).join('\n')
+  const recList = (recRows ?? []).map((r) => `  - id=${r.id} · ${r.type} · ${r.category} · ${r.name} · ${money(Number(r.amount))}`).join('\n')
 
-  return `The user is tracking their finances toward a ${money(goal)} goal ("Journey to 500K"). All amounts are in CAD.
+  return `Today is ${new Date().toISOString().slice(0, 10)}. The user is tracking their finances toward a ${money(goal)} goal ("Journey to 500K"). All amounts are in CAD.
 
 ⭐ THE GOAL METRIC IS NET WORTH, NOT the savings-contributions total. "Progress to the goal" = net worth ÷ goal. Do NOT use the "total saved/invested" figure below as progress toward the goal.
 
@@ -77,7 +130,21 @@ TOP EXPENSE CATEGORIES:
 ${topCats}
 
 LAST 6 MONTHS:
-${months}`
+${months}
+
+VALID CATEGORY NAMES (use these exact names when adding/editing — never invent one):
+- income: ${catsByType('income')}
+- expense: ${catsByType('expense')}
+- savings: ${catsByType('savings')}
+
+RECENT TRANSACTIONS (most recent 25 — use the exact id to edit or delete one):
+${recent}
+
+BUDGET LINE ITEMS (use the id to edit or delete one):
+${budgetList || '  (none)'}
+
+ACTIVE RECURRING ITEMS:
+${recList || '  (none)'}`
 }
 
 export async function POST(req: NextRequest) {
@@ -92,7 +159,13 @@ export async function POST(req: NextRequest) {
   const system =
     `You are a friendly, sharp personal-finance assistant for the "Journey to 500K" app. ` +
     `Answer using ONLY the data below. Be concise, concrete, and encouraging. Use CAD ($). ` +
-    `When useful, give specific numbers and one actionable suggestion.\n\n${context}`
+    `When useful, give specific numbers and one actionable suggestion.\n\n` +
+    `YOU CAN TAKE ACTIONS via the provided tools: adding/editing/deleting transactions, ` +
+    `adding/editing/deleting budget items, adding recurring items, and changing the goal amount. ` +
+    `Call a tool ONLY when the user clearly asks to record or change something. ` +
+    `Use the exact category names listed; use the exact id from the data for any edit/delete. ` +
+    `If the date is unspecified, use today's date. Never guess an id — if you can't find it, ask. ` +
+    `The app will ask the user to confirm before the change is saved, so you don't need to ask for confirmation yourself.\n\n${context}`
 
   const prior = Array.isArray(history) ? history : []
   const messages = [...prior, { role: 'user', content: message }]
@@ -112,6 +185,7 @@ export async function POST(req: NextRequest) {
           body: JSON.stringify({
             system_instruction: { parts: [{ text: system }] },
             contents,
+            tools: TOOLS,
             // 2.5 Flash "thinks" by default and those tokens eat the output budget,
             // truncating answers — disable thinking and give the reply room.
             generationConfig: {
@@ -127,7 +201,13 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'AI error: ' + err.slice(0, 200) }, { status: 502 })
       }
       const data = await res.json()
-      const reply = data.candidates?.[0]?.content?.parts?.map((p: any) => p.text).join('') ?? 'Sorry, I could not generate a response.'
+      const parts = data.candidates?.[0]?.content?.parts ?? []
+      // If the model wants to act, return a proposed action for the user to confirm.
+      const call = parts.find((p: any) => p.functionCall)?.functionCall
+      if (call) {
+        return NextResponse.json({ action: { name: call.name, args: call.args || {}, label: describeAction(call.name, call.args || {}) } })
+      }
+      const reply = parts.map((p: any) => p.text).filter(Boolean).join('') || 'Sorry, I could not generate a response.'
       return NextResponse.json({ reply })
     }
 

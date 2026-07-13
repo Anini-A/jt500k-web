@@ -67,6 +67,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
   })
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
+  const [pending, setPending] = useState<{ name: string; args: any; label: string } | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -93,12 +94,58 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
         }),
       })
       const data = await res.json()
-      setMsgs([...next, { role: 'assistant', content: data.reply || data.error || 'Something went wrong.' }])
+      if (data.action) {
+        setPending(data.action) // wait for the user to confirm before writing anything
+      } else {
+        setMsgs([...next, { role: 'assistant', content: data.reply || data.error || 'Something went wrong.' }])
+      }
     } catch {
       setMsgs([...next, { role: 'assistant', content: 'Network error — please try again.' }])
     } finally {
       setBusy(false)
     }
+  }
+
+  // Execute a confirmed action against the existing write endpoints.
+  const runAction = async (name: string, a: any) => {
+    const j = (url: string, method: string, body?: any) =>
+      fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined })
+    switch (name) {
+      case 'add_transaction': return j('/api/transactions', 'POST', { date: a.date || new Date().toISOString().slice(0, 10), type: a.type, category: a.category, amount: Number(a.amount), description: a.description })
+      case 'edit_transaction': return j('/api/transactions', 'PATCH', a)
+      case 'delete_transaction': return fetch(`/api/transactions?id=${a.id}`, { method: 'DELETE' })
+      case 'add_budget_item': return j('/api/budgets', 'POST', { name: a.name, category: a.category, amount: Number(a.amount) })
+      case 'edit_budget_item': return j('/api/budgets', 'PATCH', a)
+      case 'delete_budget_item': return fetch(`/api/budgets?id=${a.id}`, { method: 'DELETE' })
+      case 'add_recurring': return j('/api/recurring', 'POST', { name: a.name, type: a.type, category: a.category, amount: Number(a.amount), description: a.description })
+      case 'set_goal': return j('/api/settings', 'PUT', { goalAmount: Number(a.amount) })
+      default: throw new Error('Unknown action')
+    }
+  }
+
+  const confirmAction = async () => {
+    if (!pending) return
+    setBusy(true)
+    try {
+      const res = await runAction(pending.name, pending.args)
+      if (res.ok) {
+        setMsgs((m) => [...m, { role: 'assistant', content: `✅ Done — ${pending.label}.` }])
+        window.dispatchEvent(new CustomEvent('transaction-added'))
+      } else {
+        const e = await res.json().catch(() => ({}))
+        setMsgs((m) => [...m, { role: 'assistant', content: `⚠️ Couldn't do that — ${e.error || 'the change was rejected'}.` }])
+      }
+    } catch (err: any) {
+      setMsgs((m) => [...m, { role: 'assistant', content: `⚠️ Something went wrong — ${err.message}.` }])
+    } finally {
+      setPending(null)
+      setBusy(false)
+    }
+  }
+
+  const cancelAction = () => {
+    setMsgs((m) => [...m, { role: 'assistant', content: 'Okay, cancelled — nothing was saved.' }])
+    setPending(null)
   }
 
   return createPortal(
@@ -142,6 +189,18 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
             </div>
           )}
         </div>
+
+        {/* Confirm-before-write card */}
+        {pending && (
+          <div style={{ flexShrink: 0, padding: '12px 14px', borderTop: '1px solid var(--border)', background: 'var(--kpi-bg)' }}>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 6 }}>Confirm this change?</div>
+            <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 10 }}>{pending.label}</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center', padding: '9px 14px' }} disabled={busy} onClick={confirmAction}>✓ Confirm</button>
+              <button className="btn" style={{ background: 'var(--expense-soft)', color: 'var(--expense)', border: '1px solid var(--expense)', padding: '9px 14px' }} disabled={busy} onClick={cancelAction}>✗ Cancel</button>
+            </div>
+          </div>
+        )}
 
         {/* Composer — fixed at the bottom */}
         <form onSubmit={(e) => { e.preventDefault(); send(input) }}
