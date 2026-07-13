@@ -48,6 +48,7 @@ export default function BudgetManager() {
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<string | null>(null)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set()) // empty = all groups open
   const [busy, setBusy] = useState(false)
 
   const load = useCallback(async () => {
@@ -77,6 +78,9 @@ export default function BudgetManager() {
 
   const toggle = (c: string) => setExpanded((prev) => {
     const n = new Set(prev); n.has(c) ? n.delete(c) : n.add(c); return n
+  })
+  const toggleGroup = (k: string) => setCollapsedGroups((prev) => {
+    const n = new Set(prev); n.has(k) ? n.delete(k) : n.add(k); return n
   })
 
   const envelopes = data?.envelopes ?? []
@@ -153,8 +157,25 @@ export default function BudgetManager() {
         ) : envelopes.length === 0 ? (
           <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>No budget yet — add your first item above.</div>
         ) : (
-          <div style={{ display: 'grid', gap: 4 }}>
-            {envelopes.map((e) => {
+          <div style={{ display: 'grid', gap: 10 }}>
+            {groups.filter((g) => g.envs.length > 0).map((g) => {
+              const gOpen = !collapsedGroups.has(g.key)
+              return (
+                <div key={g.key}>
+                  {/* Group header */}
+                  <button onClick={() => toggleGroup(g.key)}
+                    style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px', cursor: 'pointer', color: 'var(--text-primary)' }}>
+                    <ChevronDown size={16} style={{ transition: 'transform .2s ease', transform: gOpen ? 'none' : 'rotate(-90deg)', opacity: 0.6, flexShrink: 0 }} />
+                    <span style={{ fontSize: 15, fontWeight: 700 }}>{g.emoji} {g.label}</span>
+                    <span className="stat-label" style={{ flexShrink: 0 }}>({g.envs.length})</span>
+                    <span style={{ marginLeft: 'auto', fontWeight: 600, flexShrink: 0 }}>
+                      {money(g.actual)} <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>/ {money(g.budgeted)}</span>
+                    </span>
+                  </button>
+
+                  {gOpen && (
+                    <div style={{ display: 'grid', gap: 4, padding: '4px 6px 0' }}>
+                      {g.envs.map((e) => {
               const s = envStatus(e)
               const open = expanded.has(e.category)
               return (
@@ -192,6 +213,11 @@ export default function BudgetManager() {
                           </div>
                         </div>
                       ))}
+                    </div>
+                  )}
+                </div>
+              )
+                      })}
                     </div>
                   )}
                 </div>
