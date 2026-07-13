@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
+export const maxDuration = 30
 
 // Free provider (Google Gemini) is preferred when its key is present; Anthropic
 // stays as an automatic paid fallback. Get a free key at https://aistudio.google.com/apikey
@@ -152,6 +153,62 @@ ${recList || '  (none)'}`
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
+// ---- Live market snapshot (free Yahoo Finance feed, same as "Refresh Prices") ----
+const MKT_HEADERS = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Safari/537.36', accept: 'application/json', 'accept-language': 'en-US,en;q=0.9' }
+const marketRe = /\b(market|markets|stock|stocks|portfolio|holding|holdings|invest|investment|index|indices|s&p|sp ?500|nasdaq|tsx|dow|share|shares|equit|etf|ticker|xeqt|xqq|msty|bitcoin|btc)\b/i
+
+async function yQuote(ticker: string): Promise<{ price: number; prev: number; currency: string } | null> {
+  for (const host of ['query2.finance.yahoo.com', 'query1.finance.yahoo.com']) {
+    try {
+      const r = await fetch(`https://${host}/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1d`, { headers: MKT_HEADERS, cache: 'no-store' })
+      if (!r.ok) continue
+      const m = (await r.json())?.chart?.result?.[0]?.meta
+      const price = m?.regularMarketPrice
+      const prev = m?.previousClose ?? m?.chartPreviousClose
+      if (typeof price === 'number' && typeof prev === 'number') return { price, prev, currency: m?.currency || 'USD' }
+    } catch { /* try next host */ }
+  }
+  return null
+}
+const yTicker = (symbol: string, currency: string) => currency === 'USD' ? symbol : symbol.replace(/\./g, '-') + '.TO'
+
+let mktCache: { at: number; text: string } | null = null
+async function getMarketContext(): Promise<string> {
+  if (mktCache && Date.now() - mktCache.at < 5 * 60 * 1000) return mktCache.text
+  const pct = (p: number, prev: number) => (prev ? ((p - prev) / prev) * 100 : 0)
+  const sign = (n: number) => (n >= 0 ? '+' : '') + n.toFixed(2) + '%'
+
+  const indices: [string, string][] = [['S&P 500', '^GSPC'], ['Nasdaq', '^IXIC'], ['TSX Composite', '^GSPTSE']]
+  const [idxQuotes, fx] = await Promise.all([Promise.all(indices.map(([, t]) => yQuote(t))), yQuote('CAD=X')])
+  const idxLines = indices.map(([name], i) => { const q = idxQuotes[i]; return q ? `  - ${name}: ${sign(pct(q.price, q.prev))} today` : `  - ${name}: n/a` }).join('\n')
+  const fxLine = fx ? `USD/CAD ${fx.price.toFixed(4)} (${sign(pct(fx.price, fx.prev))} today)` : ''
+
+  const { data: holds } = await supabaseAdmin.from('holdings').select('symbol, currency, quantity, market_value_cad')
+  const rows = holds ?? []
+  const symbols = [...new Map(rows.map((h) => [h.symbol, h.currency])).entries()]
+  const dayPct = new Map<string, number>()
+  for (const [symbol, currency] of symbols) {
+    if (symbol === 'BTC') continue
+    const q = await yQuote(yTicker(symbol, currency))
+    if (q) dayPct.set(symbol, pct(q.price, q.prev))
+    await sleep(100)
+  }
+  let value = 0, change = 0
+  const per = new Map<string, number>()
+  for (const h of rows) {
+    const mv = Number(h.market_value_cad) || 0
+    value += mv
+    const dp = dayPct.get(h.symbol) ?? 0
+    change += (mv * dp) / 100
+    per.set(h.symbol, dp)
+  }
+  const perLines = [...per.entries()].map(([s, dp]) => `  - ${s}: ${sign(dp)} today`).join('\n')
+
+  const text = `\n\nLIVE MARKET (fetched moments ago):\nMajor indices today:\n${idxLines}\n${fxLine}\n\nUSER'S PORTFOLIO TODAY (live):\n- Total value: $${Math.round(value).toLocaleString()}\n- Estimated change today: ${change >= 0 ? '+' : '−'}$${Math.round(Math.abs(change)).toLocaleString()} (${sign(value ? (change / value) * 100 : 0)})\nPer-holding day change:\n${perLines}`
+  mktCache = { at: Date.now(), text }
+  return text
+}
+
 // Call Gemini with the tool set. Retries once on transient overload, then falls
 // back through other free Flash models so a spike on one doesn't fail the request.
 async function geminiGenerate({ system, contents }: { system: string; contents: any[] }) {
@@ -211,6 +268,12 @@ export async function POST(req: NextRequest) {
     `If the date is unspecified, use today's date. Never guess an id — if you can't find it, ask. ` +
     `The app will ask the user to confirm before changes are saved, so you don't need to ask for confirmation yourself.\n\n${context}`
 
+  // Only pull live market data when the question is actually about markets/portfolio.
+  let fullSystem = system
+  if (marketRe.test(String(message))) {
+    try { fullSystem += await getMarketContext() } catch { /* market feed optional */ }
+  }
+
   const prior = Array.isArray(history) ? history : []
   const messages = [...prior, { role: 'user', content: message }]
 
@@ -221,7 +284,7 @@ export async function POST(req: NextRequest) {
         role: m.role === 'assistant' ? 'model' : 'user',
         parts: [{ text: String(m.content ?? '') }],
       }))
-      const r = await geminiGenerate({ system, contents })
+      const r = await geminiGenerate({ system: fullSystem, contents })
       if (!r.ok) {
         const overloaded = /UNAVAILABLE|overloaded|high demand|RESOURCE_EXHAUSTED|503|429/i.test(r.err)
         const msg = overloaded
@@ -250,7 +313,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 1024,
-        system,
+        system: fullSystem,
         messages,
       }),
     })
