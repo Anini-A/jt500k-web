@@ -151,6 +151,43 @@ ACTIVE RECURRING ITEMS:
 ${recList || '  (none)'}`
 }
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+// Call Gemini with the tool set. Retries once on transient overload, then falls
+// back through other free Flash models so a spike on one doesn't fail the request.
+async function geminiGenerate({ system, contents }: { system: string; contents: any[] }) {
+  const models = [GEMINI_MODEL, 'gemini-2.5-flash-lite', 'gemini-2.0-flash']
+    .filter((m, i, a) => m && a.indexOf(m) === i)
+  let lastErr = ''
+  for (const model of models) {
+    // 2.0 Flash doesn't accept thinkingConfig; only send it to 2.5-class models
+    const supportsThinking = !/2\.0/.test(model)
+    const body = {
+      system_instruction: { parts: [{ text: system }] },
+      contents,
+      tools: TOOLS,
+      generationConfig: {
+        maxOutputTokens: 2048,
+        temperature: 0.5,
+        ...(supportsThinking ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
+      },
+    }
+    for (let attempt = 0; attempt < 2; attempt++) {
+      let res: Response
+      try {
+        res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_KEY}`,
+          { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+      } catch (e: any) { lastErr = e.message; break }
+      if (res.ok) return { ok: true as const, data: await res.json() }
+      lastErr = await res.text()
+      const transient = res.status === 503 || res.status === 429 || /UNAVAILABLE|overloaded|high demand|RESOURCE_EXHAUSTED/i.test(lastErr)
+      if (transient && attempt === 0) { await sleep(700); continue } // retry same model once
+      break // give up on this model → try the next one
+    }
+  }
+  return { ok: false as const, err: lastErr }
+}
+
 export async function POST(req: NextRequest) {
   if (!GEMINI_KEY && !ANTHROPIC_KEY) {
     return NextResponse.json({ error: 'AI is not configured (add a free GEMINI_API_KEY).' }, { status: 500 })
@@ -179,37 +216,21 @@ export async function POST(req: NextRequest) {
   const messages = [...prior, { role: 'user', content: message }]
 
   try {
-    // ---- Free: Google Gemini ----
+    // ---- Free: Google Gemini (auto-retry + model fallback on overload) ----
     if (GEMINI_KEY) {
       const contents = messages.map((m: any) => ({
         role: m.role === 'assistant' ? 'model' : 'user',
         parts: [{ text: String(m.content ?? '') }],
       }))
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_KEY}`,
-        {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({
-            system_instruction: { parts: [{ text: system }] },
-            contents,
-            tools: TOOLS,
-            // 2.5 Flash "thinks" by default and those tokens eat the output budget,
-            // truncating answers — disable thinking and give the reply room.
-            generationConfig: {
-              maxOutputTokens: 2048,
-              temperature: 0.5,
-              thinkingConfig: { thinkingBudget: 0 },
-            },
-          }),
-        },
-      )
-      if (!res.ok) {
-        const err = await res.text()
-        return NextResponse.json({ error: 'AI error: ' + err.slice(0, 200) }, { status: 502 })
+      const r = await geminiGenerate({ system, contents })
+      if (!r.ok) {
+        const overloaded = /UNAVAILABLE|overloaded|high demand|RESOURCE_EXHAUSTED|503|429/i.test(r.err)
+        const msg = overloaded
+          ? 'The free AI is busy right now — please try again in a few seconds.'
+          : 'AI error: ' + r.err.slice(0, 200)
+        return NextResponse.json({ error: msg }, { status: 502 })
       }
-      const data = await res.json()
-      const parts = data.candidates?.[0]?.content?.parts ?? []
+      const parts = r.data.candidates?.[0]?.content?.parts ?? []
       // If the model wants to act, return the proposed action(s) for the user to confirm.
       const calls = parts.filter((p: any) => p.functionCall).map((p: any) => p.functionCall)
       if (calls.length) {
