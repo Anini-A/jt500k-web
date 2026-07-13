@@ -41,7 +41,7 @@ function envStatus(e: Envelope) {
 }
 
 export default function BudgetManager() {
-  const [data, setData] = useState<{ label: string; envelopes: Envelope[]; totalBudgeted: number; totalSpent: number } | null>(null)
+  const [data, setData] = useState<{ month: string; label: string; envelopes: Envelope[]; totalBudgeted: number; totalSpent: number } | null>(null)
   const [cats, setCats] = useState<{ name: string; type: string }[]>([])
   const [loading, setLoading] = useState(true)
   const [collapsed, setCollapsed] = useState(false)
@@ -80,10 +80,29 @@ export default function BudgetManager() {
   })
 
   const envelopes = data?.envelopes ?? []
-  const totalBudgeted = data?.totalBudgeted ?? 0
-  const totalSpent = data?.totalSpent ?? 0
-  const overallPct = totalBudgeted > 0 ? Math.min(100, (totalSpent / totalBudgeted) * 100) : 0
-  const leftover = totalBudgeted - totalSpent
+
+  // Money "set aside" (savings + debt repayment) is not money spent — keep it out
+  // of the "left to spend" cushion so a debt overpayment doesn't read as a blowout.
+  const isSetAside = (e: Envelope) => e.type === 'savings' || e.category === 'Debt Repayment'
+  const sum = (arr: Envelope[], k: 'budgeted' | 'spent') => arr.reduce((s, e) => s + e[k], 0)
+  const expEnvs = envelopes.filter((e) => !isSetAside(e))
+  const setEnvs = envelopes.filter(isSetAside)
+  const expBudgeted = sum(expEnvs, 'budgeted')
+  const expSpent = sum(expEnvs, 'spent')
+  const setBudgeted = sum(setEnvs, 'budgeted')
+  const setDone = sum(setEnvs, 'spent')
+  const overallPct = expBudgeted > 0 ? Math.min(100, (expSpent / expBudgeted) * 100) : 0
+  const leftover = expBudgeted - expSpent
+
+  // Calendar pacing: how far through the tracking month we are (marker on the bars).
+  const pace = (() => {
+    if (!data?.month || !/^\d{4}-\d{2}$/.test(data.month)) return 100
+    const [yy, mm] = data.month.split('-').map(Number)
+    const now = new Date()
+    const dim = new Date(yy, mm, 0).getDate()
+    const day = now.getFullYear() === yy && now.getMonth() + 1 === mm ? now.getDate() : dim
+    return Math.round((day / dim) * 100)
+  })()
 
   return (
     <>
@@ -91,29 +110,32 @@ export default function BudgetManager() {
       <div className="card glass" style={{ marginBottom: 16 }}>
         <h2 style={{ margin: '0 0 16px' }}>🎯 Monthly Budget</h2>
 
-        {/* Three uniform stats */}
+        {/* Three uniform stats — expenses only (savings/debt shown separately below) */}
         <div className="stat-grid" style={{ marginBottom: 12 }}>
           <div className="stat-card">
             <div className="stat-label">{leftover >= 0 ? 'Left to spend' : 'Over budget'}</div>
             <div style={{ fontSize: 26, fontWeight: 700, marginTop: 4, color: leftover >= 0 ? 'var(--income)' : 'var(--expense)' }}>{money(Math.abs(leftover))}</div>
           </div>
           <div className="stat-card">
-            <div className="stat-label">Spent / Contributed</div>
-            <div style={{ fontSize: 26, fontWeight: 700, marginTop: 4 }}>{money(totalSpent)}</div>
+            <div className="stat-label">Spent</div>
+            <div style={{ fontSize: 26, fontWeight: 700, marginTop: 4 }}>{money(expSpent)}</div>
           </div>
           <div className="stat-card">
             <div className="stat-label">Budgeted</div>
-            <div style={{ fontSize: 26, fontWeight: 700, marginTop: 4 }}>{money(totalBudgeted)}</div>
+            <div style={{ fontSize: 26, fontWeight: 700, marginTop: 4 }}>{money(expBudgeted)}</div>
           </div>
         </div>
-        {envelopes.length > 0 && (
+        {expEnvs.length > 0 && (
           <div>
-            <div style={{ height: 12, borderRadius: 999, background: 'var(--kpi-bg)', border: '1px solid var(--border)', overflow: 'hidden' }}>
-              <div style={{ width: `${overallPct}%`, height: '100%', borderRadius: 999, background: 'linear-gradient(90deg, var(--savings), var(--income))', transition: 'width .6s ease' }} />
-            </div>
+            <Bar pct={overallPct} pace={pace} fill="linear-gradient(90deg, var(--savings), var(--income))" height={12} />
             <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 6 }}>
-              {overallPct.toFixed(0)}% of the monthly plan used{data?.label ? ` · ${data.label}` : ''}
+              {overallPct.toFixed(0)}% of the spending plan used · {pace}% through {data?.label ?? 'the month'}
             </div>
+          </div>
+        )}
+        {setEnvs.length > 0 && (
+          <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+            🏦 Set aside this month: <strong style={{ color: 'var(--savings)' }}>{money(setDone)}</strong> of {money(setBudgeted)} planned <span style={{ color: 'var(--text-muted)' }}>· savings + debt (kept, not spent)</span>
           </div>
         )}
       </div>
@@ -162,9 +184,7 @@ export default function BudgetManager() {
                       <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, color: s.noteColor }}>{s.note}</div>
                     </div>
                   </div>
-                  <div style={{ height: 6, borderRadius: 999, background: 'var(--kpi-bg)', border: '1px solid var(--border)', overflow: 'hidden' }}>
-                    <div style={{ width: `${s.pct}%`, height: '100%', borderRadius: 999, background: s.fill, transition: 'width .6s ease' }} />
-                  </div>
+                  <Bar pct={s.pct} pace={isSetAside(e) ? null : pace} fill={s.fill} height={6} />
 
                   {open && (
                     <div style={{ display: 'grid', gap: 4, marginTop: 10, paddingLeft: 21 }}>
@@ -194,11 +214,25 @@ export default function BudgetManager() {
         )}
 
         <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 16, marginBottom: 0 }}>
-          💡 Each category envelope tracks its budgeted total (sum of its items) against your actual {data?.label ?? 'monthly'} activity in that category. Expense envelopes turn red when over; savings & debt turn green when you hit target.
+          💡 Each envelope tracks its budgeted total against your actual {data?.label ?? 'monthly'} activity. The faint vertical tick marks today's pace ({pace}% through the month) — a fill sitting well past it is running ahead of schedule. Expense envelopes turn red when over; savings & debt turn green at target.
         </p>
       </>)}
       </div>
     </>
+  )
+}
+
+// Progress bar with an optional "today's pace" marker — a thin vertical tick at the
+// point of the month we've reached, so fill past the tick = ahead of pace.
+function Bar({ pct, pace, fill, height }: { pct: number; pace: number | null; fill: string; height: number }) {
+  return (
+    <div style={{ position: 'relative', height, borderRadius: 999, background: 'var(--kpi-bg)', border: '1px solid var(--border)', overflow: 'hidden' }}>
+      <div style={{ width: `${pct}%`, height: '100%', borderRadius: 999, background: fill, transition: 'width .6s ease' }} />
+      {pace != null && pace > 0 && pace < 100 && (
+        <div title={`Today — ${pace}% through the month`}
+          style={{ position: 'absolute', top: -1, bottom: -1, left: `${pace}%`, width: 2, background: 'var(--text-primary)', opacity: 0.4 }} />
+      )}
+    </div>
   )
 }
 
