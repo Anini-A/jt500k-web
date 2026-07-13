@@ -47,7 +47,6 @@ export default function BudgetManager() {
   const [collapsed, setCollapsed] = useState(false)
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<string | null>(null)
-  const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [groupFilter, setGroupFilter] = useState('all') // 'all' | group key
   const [busy, setBusy] = useState(false)
 
@@ -76,9 +75,6 @@ export default function BudgetManager() {
     } finally { setBusy(false) }
   }
 
-  const toggle = (c: string) => setExpanded((prev) => {
-    const n = new Set(prev); n.has(c) ? n.delete(c) : n.add(c); return n
-  })
 
   const envelopes = data?.envelopes ?? []
 
@@ -177,16 +173,10 @@ export default function BudgetManager() {
                 <div style={{ display: 'grid', gap: 4, paddingLeft: groupFilter === 'all' ? 6 : 0 }}>
                   {g.envs.map((e) => {
               const s = envStatus(e)
-              const open = expanded.has(e.category)
               return (
                 <div key={e.category} style={{ padding: '12px 0', borderBottom: '1px solid var(--border)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                    <button onClick={() => toggle(e.category)}
-                      style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', padding: 0, fontWeight: 600, minWidth: 0 }}>
-                      <ChevronDown size={15} style={{ transition: 'transform .2s ease', transform: open ? 'none' : 'rotate(-90deg)', opacity: 0.55, flexShrink: 0 }} />
-                      <span style={{ fontSize: 16, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.category}</span>
-                      <span className="stat-label" style={{ flexShrink: 0 }}>({e.items.length})</span>
-                    </button>
+                    <span style={{ fontSize: 16, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{e.category}</span>
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
                       <div style={{ fontSize: 16, fontWeight: 600 }}>{money(e.spent)} <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>/ {money(e.budgeted)}</span></div>
                       <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, color: s.noteColor }}>{s.note}</div>
@@ -194,27 +184,23 @@ export default function BudgetManager() {
                   </div>
                   <Bar pct={s.pct} pace={isSetAside(e) ? null : pace} fill={s.fill} height={6} />
 
-                  {open && (
-                    <div style={{ display: 'grid', gap: 4, marginTop: 10, paddingLeft: 21 }}>
-                      {e.items.map((it) => editing === it.id ? (
-                        <ItemForm key={it.id} cats={cats} busy={busy} item={{ ...it, category: e.category }}
-                          onDone={async (p) => { if (await call('PATCH', { id: it.id, ...p })) setEditing(null) }}
-                          onDelete={async () => { if (confirm(`Delete "${it.name}"?`)) { if (await call('DELETE', undefined, `?id=${it.id}`)) setEditing(null) } }}
-                          onCancel={() => setEditing(null)} />
-                      ) : (
-                        <div key={it.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '4px 0' }}>
-                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.name}</span>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                            <span style={{ color: 'var(--text-secondary)' }}>{money2(it.amount)}/mo</span>
-                            <button onClick={() => { setEditing(it.id); setAdding(false) }} aria-label="Edit" title="Edit"
-                              style={{ display: 'inline-flex', padding: 5, borderRadius: 7, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                              <Pencil size={13} />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  {/* Line items — always shown; tap any row to edit it inline */}
+                  <div style={{ display: 'grid', gap: 2, marginTop: 9, paddingLeft: 4 }}>
+                    {e.items.map((it) => editing === it.id ? (
+                      <ItemForm key={it.id} cats={cats} busy={busy} item={{ ...it, category: e.category }}
+                        onDone={async (p) => { if (await call('PATCH', { id: it.id, ...p })) setEditing(null) }}
+                        onDelete={async () => { if (confirm(`Delete "${it.name}"?`)) { if (await call('DELETE', undefined, `?id=${it.id}`)) setEditing(null) } }}
+                        onCancel={() => setEditing(null)} />
+                    ) : (
+                      <button key={it.id} onClick={() => { setEditing(it.id); setAdding(false) }} title="Edit"
+                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '4px 6px', margin: '0 -6px', borderRadius: 7, background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', width: 'calc(100% + 12px)', textAlign: 'left', font: 'inherit' }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 7, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
+                          <Pencil size={12} style={{ opacity: 0.4, flexShrink: 0 }} /> {it.name}
+                        </span>
+                        <span style={{ color: 'var(--text-muted)', flexShrink: 0 }}>{money2(it.amount)}/mo</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )
                   })}
