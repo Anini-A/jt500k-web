@@ -49,7 +49,7 @@ function Piece({ label, value, color, big }: { label: string; value: string; col
   return (
     <div className="stat-card">
       <div className="stat-label">{label}</div>
-      <div style={{ fontWeight: 700, fontSize: big ? 28 : 20, color, marginTop: 4 }}>{value}</div>
+      <div style={{ fontWeight: 700, fontSize: big ? 'clamp(22px, 6vw, 28px)' : 'clamp(17px, 5vw, 20px)', color, marginTop: 4 }}>{value}</div>
     </div>
   )
 }

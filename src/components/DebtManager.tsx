@@ -81,7 +81,7 @@ export default function DebtManager() {
       <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 8 }}>
         <div>
           <div className="stat-label">Total Remaining</div>
-          <div style={{ fontSize: 36, fontWeight: 700, color: totalRemaining > 0 ? 'var(--expense)' : 'var(--income)' }}>
+          <div style={{ fontSize: 'clamp(26px, 8vw, 36px)', fontWeight: 700, color: totalRemaining > 0 ? 'var(--expense)' : 'var(--income)' }}>
             {money(totalRemaining)}
           </div>
         </div>

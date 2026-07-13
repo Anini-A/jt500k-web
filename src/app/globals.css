@@ -110,16 +110,17 @@ a:hover {
   padding: 24px 32px 64px;
 }
 
-/* Floating rounded glass pill — sits in normal flow and scrolls with the page */
+/* Header bar — same rounded-card radius as the rest of the site, gently tinted
+   so it reads as the nav surface rather than just another card. */
 header.top {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 24px;
-  padding: 12px 22px;
-  border-radius: 999px;
-  background: var(--glass-bg);
+  padding: 12px 18px;
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--accent) 8%, var(--glass-bg));
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   border: 1px solid var(--glass-border);
@@ -660,18 +661,64 @@ header.top h1 {
   margin: 0;
 }
 
+/* Never let a stray wide element push the whole page sideways on a phone */
+body {
+  overflow-x: hidden;
+}
+
 /* Responsive */
 @media (max-width: 640px) {
   .wrap {
-    padding: 16px 20px 48px;
+    padding: 14px 12px 48px;
   }
 
   header.top {
-    padding: 10px 16px;
+    padding: 9px 12px;
+    gap: 8px;
+    border-radius: 18px;
+  }
+
+  header.top .brand {
+    font-size: 15px;
   }
 
   header.top .long {
     display: none; /* keep header compact on phones */
+  }
+
+  /* Tighter, smaller nav buttons so the row fits without wrapping */
+  .icon-pill {
+    height: 40px;
+    padding: 0 10px;
+  }
+
+  .icon-pill svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  /* Cards: less padding, a touch less rounding — more room for content */
+  .card {
+    padding: 15px;
+    border-radius: 18px;
+  }
+
+  .card.hero {
+    padding: 20px;
+  }
+
+  .block {
+    margin-bottom: 16px;
+  }
+
+  .block h2,
+  header.top h1 {
+    font-size: 15px;
+  }
+
+  /* Dial back the big figures so long dollar amounts stay inside the card */
+  .stat-value {
+    font-size: 21px;
   }
 
   .hero h1 {
@@ -689,6 +736,7 @@ header.top h1 {
 
   .stat-grid {
     grid-template-columns: 1fr 1fr;
+    gap: 12px;
   }
 
   .service-grid {

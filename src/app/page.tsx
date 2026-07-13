@@ -69,7 +69,7 @@ export default function Home() {
         <section className="block">
           <div className="card glass hero" style={{ textAlign: 'center' }}>
             <div className="stat-label">💵 Current Balance</div>
-            <div style={{ fontSize: 48, fontWeight: 700, margin: '8px 0 4px', color: bal >= 0 ? 'var(--income)' : 'var(--expense)' }}>
+            <div style={{ fontSize: 'clamp(30px, 9vw, 48px)', fontWeight: 700, margin: '8px 0 4px', color: bal >= 0 ? 'var(--income)' : 'var(--expense)' }}>
               {stats ? money(bal) : '—'}
             </div>
             <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>
