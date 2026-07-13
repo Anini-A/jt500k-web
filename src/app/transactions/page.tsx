@@ -93,13 +93,13 @@ export default function Transactions() {
 
         {/* Controls */}
         <section className="block">
-          <div className="card glass" style={{ display: 'flex', flexDirection: 'row', flexWrap: 'nowrap', gap: 8, alignItems: 'center', justifyContent: 'space-between', overflowX: 'auto' }}>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+          <div className="card glass" style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 10, alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', minWidth: 0 }}>
               {TYPES.map((t) => (
                 <button key={t.key} onClick={() => setType(t.key)} className={`chip ${type === t.key ? 'chip-active' : ''}`} style={{ flexShrink: 0 }}>{t.label}</button>
               ))}
               <select value={cat} onChange={(e) => setCat(e.target.value)} className="date-input"
-                style={{ flexShrink: 0, maxWidth: 190 }} aria-label="Filter by category">
+                style={{ flexShrink: 1, maxWidth: 190, minWidth: 0 }} aria-label="Filter by category">
                 <option value="all">All categories</option>
                 {categories.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
@@ -108,7 +108,7 @@ export default function Transactions() {
                 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" />
               </div>
             </div>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', minWidth: 0 }}>
               <input type="date" className="date-input" value={from || minDate} min={minDate} max={maxDate}
                 onChange={(e) => setFrom(e.target.value)} />
               <span className="stat-label">to</span>

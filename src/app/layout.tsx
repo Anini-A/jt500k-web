@@ -1,6 +1,15 @@
 import type { Metadata } from 'next'
+import { Hanken_Grotesk } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
+
+// Close free match to Wealthsimple's brand sans — warm geometric grotesque.
+const hanken = Hanken_Grotesk({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-sans',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   title: 'Journey to 500K',
@@ -13,7 +22,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className={hanken.variable}>
       <body>
         {children}
         <Analytics />

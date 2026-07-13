@@ -70,10 +70,16 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: var(--font-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
   background: var(--page-plane);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
+}
+
+/* Line up digits in money figures so columns don't jitter */
+.stat-value,
+.date-input {
+  font-variant-numeric: tabular-nums;
 }
 
 a {
@@ -120,7 +126,7 @@ header.top {
   margin-bottom: 24px;
   padding: 12px 18px;
   border-radius: 22px;
-  background: color-mix(in srgb, var(--accent) 8%, var(--glass-bg));
+  background: color-mix(in srgb, var(--accent) 15%, var(--glass-bg));
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   border: 1px solid var(--glass-border);
