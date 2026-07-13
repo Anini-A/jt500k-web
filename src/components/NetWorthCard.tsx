@@ -26,7 +26,7 @@ export default function NetWorthCard() {
     <section className="block">
       <div className="card glass">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 8, marginBottom: 4 }}>
-          <div className="stat-label">🪙 Net Worth</div>
+          <h2 style={{ margin: 0 }}>🪙 Net Worth</h2>
           {prev && (
             <span style={{ fontWeight: 600, fontSize: 13, color: delta >= 0 ? 'var(--income)' : 'var(--expense)' }}>
               {delta >= 0 ? '▲' : '▼'} {money(Math.abs(delta))} vs last month

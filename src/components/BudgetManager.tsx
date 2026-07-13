@@ -94,19 +94,19 @@ export default function BudgetManager() {
         )}
       </div>
 
-      {/* Summary */}
-      <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 8 }}>
-        <div>
-          <div className="stat-label">{leftover >= 0 ? 'Left to spend' : 'Over budget'} · {data?.label ?? '…'}</div>
-          <div style={{ fontSize: 36, fontWeight: 700, color: leftover >= 0 ? 'var(--income)' : 'var(--expense)' }}>{money(Math.abs(leftover))}</div>
+      {/* Summary — three uniform stats */}
+      <div className="stat-grid" style={{ marginBottom: 12 }}>
+        <div className="stat-card">
+          <div className="stat-label">{leftover >= 0 ? 'Left to spend' : 'Over budget'}</div>
+          <div style={{ fontSize: 26, fontWeight: 700, marginTop: 4, color: leftover >= 0 ? 'var(--income)' : 'var(--expense)' }}>{money(Math.abs(leftover))}</div>
         </div>
-        <div style={{ paddingBottom: 6 }}>
+        <div className="stat-card">
           <div className="stat-label">Spent / Contributed</div>
-          <div style={{ fontSize: 22, fontWeight: 700 }}>{money(totalSpent)}</div>
+          <div style={{ fontSize: 26, fontWeight: 700, marginTop: 4 }}>{money(totalSpent)}</div>
         </div>
-        <div style={{ paddingBottom: 6 }}>
+        <div className="stat-card">
           <div className="stat-label">Budgeted</div>
-          <div style={{ fontSize: 22, fontWeight: 700 }}>{money(totalBudgeted)}</div>
+          <div style={{ fontSize: 26, fontWeight: 700, marginTop: 4 }}>{money(totalBudgeted)}</div>
         </div>
       </div>
       {envelopes.length > 0 && (
@@ -115,7 +115,7 @@ export default function BudgetManager() {
             <div style={{ width: `${overallPct}%`, height: '100%', borderRadius: 999, background: 'linear-gradient(90deg, var(--savings), var(--income))', transition: 'width .6s ease' }} />
           </div>
           <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 6 }}>
-            {overallPct.toFixed(0)}% of the monthly plan used
+            {overallPct.toFixed(0)}% of the monthly plan used{data?.label ? ` · ${data.label}` : ''}
           </div>
         </div>
       )}
