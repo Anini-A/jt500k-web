@@ -33,19 +33,30 @@ function Delta({ now, prev, goodUp }: { now: number; prev: number; goodUp: boole
   )
 }
 
+// A compact "this month" line: label · amount (colored) · tiny delta
+function MonthLine({ label, value, prev, goodUp, cls }: { label: string; value?: number; prev?: number; goodUp: boolean; cls: string }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, borderTop: '1px solid var(--border)', paddingTop: 8 }}>
+      <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{label}</span>
+      <div style={{ textAlign: 'right' }}>
+        <span className={`stat-value ${cls}`} style={{ fontSize: 16, fontWeight: 700 }}>{value != null ? money0(value) : '—'}</span>
+        {value != null && prev != null && <Delta now={value} prev={prev} goodUp={goodUp} />}
+      </div>
+    </div>
+  )
+}
+
 const prettyDate = (iso: string) =>
   iso ? new Date(iso + 'T00:00:00').toLocaleDateString('en-CA', { year: 'numeric', month: 'short', day: 'numeric' }) : ''
 
 export default function Home() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [month, setMonth] = useState<Month | null>(null)
-  const [netWorth, setNetWorth] = useState(0)
 
   useEffect(() => {
     const load = () => {
       getJSON('/api/stats').then((d) => !d.error && setStats(d)).catch(() => {})
       getJSON('/api/month').then((d) => !d.error && !d.empty && setMonth(d)).catch(() => {})
-      getJSON('/api/networth').then((d) => !d.error && setNetWorth(Number(d.netWorth) || 0)).catch(() => {})
     }
     load()
     window.addEventListener('transaction-added', load)
@@ -53,6 +64,7 @@ export default function Home() {
   }, [])
 
   const bal = stats?.currentBalance ?? 0
+  const today = new Date().toLocaleDateString('en-CA', { year: 'numeric', month: 'short', day: 'numeric' })
 
   return (
     <div className="bg-aurora">
@@ -73,38 +85,15 @@ export default function Home() {
               <div style={{ fontSize: 'clamp(30px, 8vw, 40px)', fontWeight: 800, letterSpacing: '-0.02em', margin: '10px 0 2px', color: bal >= 0 ? 'var(--income)' : 'var(--expense)' }}>
                 {stats ? money(bal) : '—'}
               </div>
-              <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>
-                {stats?.asOf ? `As of ${prettyDate(stats.asOf)}` : 'Cash on hand'}
-              </div>
-            </div>
-          </div>
-        </section>
+              <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>As of {today}</div>
 
-        {/* This month summary — with month-over-month deltas */}
-        <section className="block">
-          <div className="card glass">
-            <div className="stat-grid">
-              <div className="stat-card">
-                <div style={{ fontSize: 24, marginBottom: 8 }}>💰</div>
-                <div className="stat-label">Income</div>
-                <div className="stat-value income">{month ? money(month.income) : '—'}</div>
-                {month && <Delta now={month.income} prev={month.prevIncome} goodUp />}
+              {/* This month at a glance */}
+              <div style={{ display: 'grid', gap: 8, marginTop: 18 }}>
+                <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{month ? month.label : 'This month'}</div>
+                <MonthLine label="Income" value={month?.income} prev={month?.prevIncome} goodUp cls="income" />
+                <MonthLine label="Expenses" value={month?.expense} prev={month?.prevExpense} goodUp={false} cls="expense" />
+                <MonthLine label="Savings" value={month?.savings} prev={month?.prevSavings} goodUp cls="savings" />
               </div>
-              <div className="stat-card">
-                <div style={{ fontSize: 24, marginBottom: 8 }}>💸</div>
-                <div className="stat-label">Expenses</div>
-                <div className="stat-value expense">{month ? money(month.expense) : '—'}</div>
-                {month && <Delta now={month.expense} prev={month.prevExpense} goodUp={false} />}
-              </div>
-              <div className="stat-card">
-                <div style={{ fontSize: 24, marginBottom: 8 }}>🏦</div>
-                <div className="stat-label">Savings</div>
-                <div className="stat-value savings">{month ? money(month.savings) : '—'}</div>
-                {month && <Delta now={month.savings} prev={month.prevSavings} goodUp />}
-              </div>
-            </div>
-            <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, textAlign: 'center', marginTop: 14 }}>
-              {month ? month.label : ''}
             </div>
           </div>
         </section>

@@ -70,7 +70,6 @@ export default function AddTransactionButton() {
   const [rows, setRows] = useState<Row[] | null>(null)
   const [recs, setRecs] = useState<any[]>([])
   const [picked, setPicked] = useState<Set<string>>(new Set())
-  const [recFilter, setRecFilter] = useState('all') // 'all' | group key
   const [recDate, setRecDate] = useState(new Date().toISOString().slice(0, 10))
 
   useEffect(() => {
@@ -140,11 +139,12 @@ export default function AddTransactionButton() {
   // Recurring: group into the same buckets as the Budget tab
   const recGroup = (r: any) => r.type === 'income' ? 'income' : r.type === 'savings' ? 'saving' : r.category === 'Debt Repayment' ? 'debt' : 'spending'
   const REC_GROUPS = [
-    { key: 'income', label: '💰 Income' }, { key: 'spending', label: '💸 Spending' },
-    { key: 'saving', label: '🏦 Saving' }, { key: 'debt', label: '🧾 Debt' },
+    { key: 'income', label: '💰 Income', color: 'var(--income)', soft: 'var(--income-soft)' },
+    { key: 'spending', label: '💸 Spending', color: 'var(--savings)', soft: 'var(--savings-soft)' },
+    { key: 'saving', label: '🏦 Saving', color: 'var(--savings)', soft: 'var(--savings-soft)' },
+    { key: 'debt', label: '🧾 Debt', color: '#c2892f', soft: 'rgba(224,161,43,0.16)' },
   ]
   const recGroupsPresent = REC_GROUPS.filter((g) => recs.some((r) => recGroup(r) === g.key))
-  const shownRecs = recs.filter((r) => recFilter === 'all' || recGroup(r) === recFilter)
   const pickedTotal = recs.filter((r) => picked.has(r.id)).reduce((s, r) => s + Number(r.amount), 0)
   const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' })
 
@@ -160,10 +160,7 @@ export default function AddTransactionButton() {
         <div className="modal-backdrop" onClick={close}>
           <div className="modal-card glass" style={{ width: 'min(820px, 100%)', minHeight: 'min(78vh, 540px)' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ marginBottom: 14 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-                <h2 style={{ margin: 0, fontSize: 18 }}>➕ Add Transaction</h2>
-                <button className="modal-x" aria-label="Close" onClick={close}>✕</button>
-              </div>
+              <h2 style={{ margin: 0, fontSize: 18 }}>➕ Add Transaction</h2>
               <div className="tabs" style={{ padding: 3, marginTop: 12 }}>
                 <button className={`tab ${mode === 'single' ? 'tab-active' : ''}`} style={{ flex: 1, justifyContent: 'center', padding: '7px 8px', fontSize: 13 }} onClick={() => setMode('single')}>
                   <PencilLine size={14} /> Single
@@ -222,10 +219,13 @@ export default function AddTransactionButton() {
                 <textarea value={raw} onChange={(e) => setRaw(e.target.value)} rows={9}
                   placeholder={'2026-07-05\tUber Canada/Ubereats\tFood\t33.36\n2026-07-04\tCostco Wholesale\tFood\t127.61'}
                   style={{ ...inp, height: 'auto', padding: 12, fontFamily: 'ui-monospace, monospace', fontSize: 13, lineHeight: 1.5, resize: 'vertical' }} />
-                <button className="btn btn-primary" style={{ justifyContent: 'center' }} disabled={!raw.trim()}
-                  onClick={() => setRows(parsePaste(raw, cats))}>
-                  👀 Preview {raw.trim() ? `(${raw.trim().split(/\r?\n/).filter((l) => l.trim() && !/^date/i.test(l.trim())).length} rows)` : ''}
-                </button>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button type="button" className="btn" style={cancelBtn} onClick={close}>Cancel</button>
+                  <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} disabled={!raw.trim()}
+                    onClick={() => setRows(parsePaste(raw, cats))}>
+                    👀 Preview {raw.trim() ? `(${raw.trim().split(/\r?\n/).filter((l) => l.trim() && !/^date/i.test(l.trim())).length} rows)` : ''}
+                  </button>
+                </div>
               </div>
             )}
 
@@ -297,31 +297,32 @@ export default function AddTransactionButton() {
                   </p>
                 ) : (
                   <>
-                    {/* Group pills + date */}
                     <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between' }}>
-                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                        <button className={`chip ${recFilter === 'all' ? 'chip-active' : ''}`} onClick={() => setRecFilter('all')}>All</button>
-                        {recGroupsPresent.map((g) => (
-                          <button key={g.key} className={`chip ${recFilter === g.key ? 'chip-active' : ''}`} onClick={() => setRecFilter(g.key)}>{g.label}</button>
-                        ))}
-                      </div>
+                      <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>Pick what to log this month.</span>
                       <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}><span className="stat-label">Date</span>
                         <input type="date" value={recDate} onChange={(e) => setRecDate(e.target.value)} style={{ ...inp, width: 'auto' }} /></label>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 2, maxHeight: '46vh', overflowY: 'auto' }}>
-                      {shownRecs.map((r) => {
-                        const on = picked.has(r.id)
-                        return (
-                          <label key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 4px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
-                            <input type="checkbox" checked={on} onChange={() => setPicked((p) => { const n = new Set(p); n.has(r.id) ? n.delete(r.id) : n.add(r.id); return n })} />
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</div>
-                              <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{r.category}</div>
-                            </div>
-                            <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', flexShrink: 0 }}>{money(Number(r.amount))}</span>
-                          </label>
-                        )
-                      })}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 14, maxHeight: '46vh', overflowY: 'auto' }}>
+                      {recGroupsPresent.map((g) => (
+                        <div key={g.key}>
+                          <span style={{ display: 'inline-block', background: g.soft, color: g.color, padding: '3px 11px', borderRadius: 999, fontSize: 12, fontWeight: 700, marginBottom: 6 }}>{g.label}</span>
+                          <div style={{ display: 'grid', gap: 2 }}>
+                            {recs.filter((r) => recGroup(r) === g.key).map((r) => {
+                              const on = picked.has(r.id)
+                              return (
+                                <label key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 4px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
+                                  <input type="checkbox" checked={on} onChange={() => setPicked((p) => { const n = new Set(p); n.has(r.id) ? n.delete(r.id) : n.add(r.id); return n })} />
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</div>
+                                    <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{r.category}</div>
+                                  </div>
+                                  <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', flexShrink: 0 }}>{money(Number(r.amount))}</span>
+                                </label>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                     <div style={{ display: 'flex', gap: 10 }}>
                       <button type="button" className="btn" style={cancelBtn} onClick={close}>Cancel</button>
