@@ -388,10 +388,10 @@ function RecentList({ title, txns, emptyLabel }: { title: string; txns: Txn[]; e
         {txns.length === 0 ? (
           <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)' }}>{emptyLabel}</div>
         ) : (
-          <div style={{ display: 'grid', gap: 2 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 2 }}>
             {txns.map((t) => (
               <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '10px 4px', borderBottom: '1px solid var(--border)' }}>
-                <div style={{ minWidth: 0 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.description || t.category}</div>
                   <div className="stat-label">{t.date} · {t.category}</div>
                 </div>

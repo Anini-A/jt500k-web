@@ -735,7 +735,9 @@ body {
     flex-direction: column;
   }
 
-  .btn {
+  /* Only the landing hero's CTAs go full-width — not every button (a blanket
+     rule here was stretching modal close/×, Add Item, etc. into giant pills) */
+  .hero-actions .btn {
     width: 100%;
     justify-content: center;
   }

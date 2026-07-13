@@ -127,10 +127,10 @@ export default function Transactions() {
             {!loading && filtered.length === 0 ? (
               <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>No matching transactions.</div>
             ) : (
-              <div style={{ display: 'grid', gap: 2, maxHeight: 1140, overflowY: 'auto', overscrollBehavior: 'contain' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 2, maxHeight: 1140, overflowY: 'auto', overscrollBehavior: 'contain' }}>
                 {filtered.map((t) => (
                   <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '10px 4px', borderBottom: '1px solid var(--border)' }}>
-                    <div style={{ minWidth: 0 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.description || t.category}</div>
                       <div className="stat-label">{t.date} · {t.category}</div>
                     </div>
