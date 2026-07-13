@@ -87,7 +87,13 @@ export async function POST(req: NextRequest) {
           body: JSON.stringify({
             system_instruction: { parts: [{ text: system }] },
             contents,
-            generationConfig: { maxOutputTokens: 1024, temperature: 0.5 },
+            // 2.5 Flash "thinks" by default and those tokens eat the output budget,
+            // truncating answers — disable thinking and give the reply room.
+            generationConfig: {
+              maxOutputTokens: 2048,
+              temperature: 0.5,
+              thinkingConfig: { thinkingBudget: 0 },
+            },
           }),
         },
       )

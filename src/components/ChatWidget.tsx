@@ -11,18 +11,32 @@ const SUGGESTIONS = [
   'What was my best savings month?',
 ]
 
+const GREETING: Msg = { role: 'assistant', content: "Hi! I'm your finance assistant. Ask me anything about your income, spending, or your journey to $500K." }
+const STORE_KEY = 'jt-chat'
+
 // Centered modal chat (opened from the header nav). Fixed size — it never grows
-// while you type; only the message area scrolls.
+// while you type; only the message area scrolls. The thread is persisted so
+// closing and reopening resumes where you left off.
 export default function ChatWidget({ onClose }: { onClose: () => void }) {
-  const [msgs, setMsgs] = useState<Msg[]>([
-    { role: 'assistant', content: "Hi! I'm your finance assistant. Ask me anything about your income, spending, or your journey to $500K." },
-  ])
+  const [msgs, setMsgs] = useState<Msg[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null')
+        if (Array.isArray(saved) && saved.length) return saved
+      } catch { /* ignore */ }
+    }
+    return [GREETING]
+  })
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight)
+  }, [msgs])
+
+  useEffect(() => {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(msgs)) } catch { /* ignore */ }
   }, [msgs])
 
   const send = async (text: string) => {
@@ -56,7 +70,13 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '14px 16px', borderBottom: '1px solid var(--border)' }}>
           <h2 style={{ margin: 0, fontSize: 18 }}>🤖 Ask Gemini about your finances</h2>
-          <button className="modal-x" aria-label="Close" onClick={onClose}>✕</button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+            <button onClick={() => setMsgs([GREETING])} title="Start a new chat"
+              style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-muted)', borderRadius: 999, padding: '5px 11px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+              New chat
+            </button>
+            <button className="modal-x" aria-label="Close" onClick={onClose}>✕</button>
+          </div>
         </div>
 
         {/* Messages (the only part that scrolls) */}
