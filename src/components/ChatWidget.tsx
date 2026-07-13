@@ -14,6 +14,44 @@ const SUGGESTIONS = [
 const GREETING: Msg = { role: 'assistant', content: "Hi! I'm your finance assistant. Ask me anything about your income, spending, or your journey to $500K." }
 const STORE_KEY = 'jt-chat'
 
+// Inline **bold** → <strong> (the only inline markup the model uses much)
+function inline(text: string, keyBase: string) {
+  const out: React.ReactNode[] = []
+  const re = /\*\*(.+?)\*\*/g
+  let last = 0, m: RegExpExecArray | null, k = 0
+  while ((m = re.exec(text))) {
+    if (m.index > last) out.push(text.slice(last, m.index))
+    out.push(<strong key={`${keyBase}-${k++}`}>{m[1]}</strong>)
+    last = m.index + m[0].length
+  }
+  if (last < text.length) out.push(text.slice(last))
+  return out
+}
+
+// Minimal markdown → JSX: **bold**, "* / -" bullet lists, "#" headings, blank lines.
+function Markdown({ text }: { text: string }) {
+  const lines = text.split('\n')
+  const blocks: React.ReactNode[] = []
+  let list: React.ReactNode[] | null = null
+  const flush = () => { if (list) { blocks.push(<ul key={`u${blocks.length}`} style={{ margin: '4px 0', paddingLeft: 20, display: 'grid', gap: 3 }}>{list}</ul>); list = null } }
+
+  lines.forEach((line, i) => {
+    const bullet = line.match(/^\s*[*-]\s+(.*)/)
+    if (bullet) {
+      if (!list) list = []
+      list.push(<li key={i}>{inline(bullet[1], `l${i}`)}</li>)
+      return
+    }
+    flush()
+    if (line.trim() === '') { blocks.push(<div key={i} style={{ height: 6 }} />); return }
+    const h = line.match(/^#{1,6}\s+(.*)/)
+    if (h) blocks.push(<div key={i} style={{ fontWeight: 700, margin: '4px 0 2px' }}>{inline(h[1], `h${i}`)}</div>)
+    else blocks.push(<div key={i}>{inline(line, `p${i}`)}</div>)
+  })
+  flush()
+  return <>{blocks}</>
+}
+
 // Centered modal chat (opened from the header nav). Fixed size — it never grows
 // while you type; only the message area scrolls. The thread is persisted so
 // closing and reopening resumes where you left off.
@@ -85,11 +123,11 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
             <div key={i} style={{
               alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
               maxWidth: '85%', padding: '10px 12px', borderRadius: 14, fontSize: 14, lineHeight: 1.5,
-              whiteSpace: 'pre-wrap',
+              whiteSpace: m.role === 'user' ? 'pre-wrap' : 'normal',
               background: m.role === 'user' ? 'var(--accent)' : 'var(--kpi-bg)',
               color: m.role === 'user' ? '#fff' : 'var(--text-primary)',
               border: m.role === 'user' ? 'none' : '1px solid var(--border)',
-            }}>{m.content}</div>
+            }}>{m.role === 'user' ? m.content : <Markdown text={m.content} />}</div>
           ))}
           {busy && <div style={{ alignSelf: 'flex-start', color: 'var(--text-muted)', fontSize: 13 }}>Gemini is thinking…</div>}
 
