@@ -243,7 +243,8 @@ function GroupBar({ emoji, label, color, budgeted, actual, goodUp, pace }: {
   const remaining = budgeted - actual
   const over = !goodUp && remaining < 0
   const met = goodUp && budgeted > 0 && actual >= budgeted
-  const fill = over ? 'var(--expense)' : color
+  // Match the budget-item bars: one neutral gradient, red only when over
+  const fill = over ? 'var(--expense)' : BAR_BASE
 
   let note: string
   if (!budgeted && !actual) note = 'not set up yet'
