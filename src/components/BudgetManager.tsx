@@ -86,46 +86,53 @@ export default function BudgetManager() {
   const leftover = totalBudgeted - totalSpent
 
   return (
-    <div className="card glass">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, gap: 8 }}>
-        <button onClick={() => setCollapsed((v) => !v)}
-          style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', padding: 0 }}
-          aria-label={collapsed ? 'Expand budget' : 'Collapse budget'}>
-          <ChevronDown size={20} style={{ transition: 'transform .2s ease', transform: collapsed ? 'rotate(-90deg)' : 'none', opacity: 0.7 }} />
-          <h2 style={{ margin: 0 }}>🎯 Monthly Budget</h2>
-        </button>
-        {!collapsed && (
-          <button className="btn btn-secondary" onClick={() => { setAdding((v) => !v); setEditing(null) }}>
-            <Plus size={16} /> {adding ? 'Cancel' : 'Add Item'}
-          </button>
+    <>
+      {/* ── Card 1: summary (always visible) ── */}
+      <div className="card glass" style={{ marginBottom: 16 }}>
+        <h2 style={{ margin: '0 0 16px' }}>🎯 Monthly Budget</h2>
+
+        {/* Three uniform stats */}
+        <div className="stat-grid" style={{ marginBottom: 12 }}>
+          <div className="stat-card">
+            <div className="stat-label">{leftover >= 0 ? 'Left to spend' : 'Over budget'}</div>
+            <div style={{ fontSize: 26, fontWeight: 700, marginTop: 4, color: leftover >= 0 ? 'var(--income)' : 'var(--expense)' }}>{money(Math.abs(leftover))}</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-label">Spent / Contributed</div>
+            <div style={{ fontSize: 26, fontWeight: 700, marginTop: 4 }}>{money(totalSpent)}</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-label">Budgeted</div>
+            <div style={{ fontSize: 26, fontWeight: 700, marginTop: 4 }}>{money(totalBudgeted)}</div>
+          </div>
+        </div>
+        {envelopes.length > 0 && (
+          <div>
+            <div style={{ height: 12, borderRadius: 999, background: 'var(--kpi-bg)', border: '1px solid var(--border)', overflow: 'hidden' }}>
+              <div style={{ width: `${overallPct}%`, height: '100%', borderRadius: 999, background: 'linear-gradient(90deg, var(--savings), var(--income))', transition: 'width .6s ease' }} />
+            </div>
+            <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 6 }}>
+              {overallPct.toFixed(0)}% of the monthly plan used{data?.label ? ` · ${data.label}` : ''}
+            </div>
+          </div>
         )}
       </div>
 
-      {/* Summary — three uniform stats */}
-      <div className="stat-grid" style={{ marginBottom: 12 }}>
-        <div className="stat-card">
-          <div className="stat-label">{leftover >= 0 ? 'Left to spend' : 'Over budget'}</div>
-          <div style={{ fontSize: 26, fontWeight: 700, marginTop: 4, color: leftover >= 0 ? 'var(--income)' : 'var(--expense)' }}>{money(Math.abs(leftover))}</div>
+      {/* ── Card 2: the individual items (collapsible) ── */}
+      <div className="card glass">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: collapsed ? 0 : 16, gap: 8 }}>
+          <button onClick={() => setCollapsed((v) => !v)}
+            style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', padding: 0 }}
+            aria-label={collapsed ? 'Expand budget items' : 'Collapse budget items'}>
+            <ChevronDown size={20} style={{ transition: 'transform .2s ease', transform: collapsed ? 'rotate(-90deg)' : 'none', opacity: 0.7 }} />
+            <h2 style={{ margin: 0 }}>📋 Budget Items</h2>
+          </button>
+          {!collapsed && (
+            <button className="btn btn-secondary" onClick={() => { setAdding((v) => !v); setEditing(null) }}>
+              <Plus size={16} /> {adding ? 'Cancel' : 'Add Item'}
+            </button>
+          )}
         </div>
-        <div className="stat-card">
-          <div className="stat-label">Spent / Contributed</div>
-          <div style={{ fontSize: 26, fontWeight: 700, marginTop: 4 }}>{money(totalSpent)}</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">Budgeted</div>
-          <div style={{ fontSize: 26, fontWeight: 700, marginTop: 4 }}>{money(totalBudgeted)}</div>
-        </div>
-      </div>
-      {envelopes.length > 0 && (
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ height: 12, borderRadius: 999, background: 'var(--kpi-bg)', border: '1px solid var(--border)', overflow: 'hidden' }}>
-            <div style={{ width: `${overallPct}%`, height: '100%', borderRadius: 999, background: 'linear-gradient(90deg, var(--savings), var(--income))', transition: 'width .6s ease' }} />
-          </div>
-          <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 6 }}>
-            {overallPct.toFixed(0)}% of the monthly plan used{data?.label ? ` · ${data.label}` : ''}
-          </div>
-        </div>
-      )}
 
       {!collapsed && (<>
         {adding && (
@@ -190,7 +197,8 @@ export default function BudgetManager() {
           💡 Each category envelope tracks its budgeted total (sum of its items) against your actual {data?.label ?? 'monthly'} activity in that category. Expense envelopes turn red when over; savings & debt turn green when you hit target.
         </p>
       </>)}
-    </div>
+      </div>
+    </>
   )
 }
 
