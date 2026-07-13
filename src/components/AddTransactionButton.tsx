@@ -68,6 +68,7 @@ export default function AddTransactionButton() {
   const [rows, setRows] = useState<Row[] | null>(null)
   const [recs, setRecs] = useState<any[]>([])
   const [picked, setPicked] = useState<Set<string>>(new Set())
+  const [recFilter, setRecFilter] = useState('all') // 'all' | group key
   const [recDate, setRecDate] = useState(new Date().toISOString().slice(0, 10))
 
   useEffect(() => {
@@ -80,7 +81,7 @@ export default function AddTransactionButton() {
   useEffect(() => {
     if (open && mode === 'recurring' && recs.length === 0) {
       getJSON('/api/recurring').then((d) => {
-        if (Array.isArray(d)) { const active = d.filter((r: any) => r.active); setRecs(active); setPicked(new Set(active.map((r: any) => r.id))) }
+        if (Array.isArray(d)) { setRecs(d.filter((r: any) => r.active)); setPicked(new Set()) }
       }).catch(() => {})
     }
   }, [open, mode, recs.length])
@@ -133,6 +134,17 @@ export default function AddTransactionButton() {
   const grouped = { income: cats.filter((c) => c.type === 'income'), expense: cats.filter((c) => c.type === 'expense'), savings: cats.filter((c) => c.type === 'savings') }
   const validCount = (rows ?? []).filter(rowValid).length
   const invalidCount = (rows ?? []).length - validCount
+
+  // Recurring: group into the same buckets as the Budget tab
+  const recGroup = (r: any) => r.type === 'income' ? 'income' : r.type === 'savings' ? 'saving' : r.category === 'Debt Repayment' ? 'debt' : 'spending'
+  const REC_GROUPS = [
+    { key: 'income', label: '💰 Income' }, { key: 'spending', label: '💸 Spending' },
+    { key: 'saving', label: '🏦 Saving' }, { key: 'debt', label: '🧾 Debt' },
+  ]
+  const recGroupsPresent = REC_GROUPS.filter((g) => recs.some((r) => recGroup(r) === g.key))
+  const shownRecs = recs.filter((r) => recFilter === 'all' || recGroup(r) === recFilter)
+  const pickedTotal = recs.filter((r) => picked.has(r.id)).reduce((s, r) => s + Number(r.amount), 0)
+  const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' })
 
   const updateRow = (i: number, patch: Partial<Row>) =>
     setRows((prev) => prev!.map((r, idx) => idx === i ? { ...r, ...patch } : r))
@@ -278,28 +290,36 @@ export default function AddTransactionButton() {
                   </p>
                 ) : (
                   <>
-                    <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between' }}>
-                      <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>Pick what to log, set the date, and add them all at once.</span>
+                    {/* Group pills + date */}
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        <button className={`chip ${recFilter === 'all' ? 'chip-active' : ''}`} onClick={() => setRecFilter('all')}>All</button>
+                        {recGroupsPresent.map((g) => (
+                          <button key={g.key} className={`chip ${recFilter === g.key ? 'chip-active' : ''}`} onClick={() => setRecFilter(g.key)}>{g.label}</button>
+                        ))}
+                      </div>
                       <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}><span className="stat-label">Date</span>
                         <input type="date" value={recDate} onChange={(e) => setRecDate(e.target.value)} style={{ ...inp, width: 'auto' }} /></label>
                     </div>
-                    <div style={{ display: 'grid', gap: 2, maxHeight: '46vh', overflowY: 'auto' }}>
-                      {recs.map((r) => {
+                    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 2, maxHeight: '46vh', overflowY: 'auto' }}>
+                      {shownRecs.map((r) => {
                         const on = picked.has(r.id)
                         return (
-                          <label key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 4px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
+                          <label key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 4px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
                             <input type="checkbox" checked={on} onChange={() => setPicked((p) => { const n = new Set(p); n.has(r.id) ? n.delete(r.id) : n.add(r.id); return n })} />
                             <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontWeight: 600 }}>{r.name}</div>
+                              <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</div>
                               <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{r.category}</div>
                             </div>
-                            <span className={`stat-value ${r.type}`} style={{ fontSize: 15 }}>{Number(r.amount).toLocaleString('en-CA', { style: 'currency', currency: 'CAD' })}</span>
+                            <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', flexShrink: 0 }}>{money(Number(r.amount))}</span>
                           </label>
                         )
                       })}
                     </div>
                     <button className="btn btn-primary" style={{ justifyContent: 'center' }} disabled={saving || picked.size === 0} onClick={logRecurring}>
-                      {saving ? 'Logging…' : `💾 Log ${picked.size} recurring item${picked.size !== 1 ? 's' : ''} on ${recDate}`}
+                      {saving ? 'Logging…'
+                        : picked.size === 0 ? 'Select items to log'
+                        : `💾 Log ${picked.size} item${picked.size !== 1 ? 's' : ''} · ${money(pickedTotal)}`}
                     </button>
                   </>
                 )}
