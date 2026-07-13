@@ -45,7 +45,7 @@ export default function NetWorthCard() {
       </div>
 
       {/* 500K goal — net worth is the goal metric, so it lives here */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, borderTop: '1px solid var(--border)', paddingTop: 16 }}>
         <h2 style={{ margin: 0 }}>🎯 Journey to {short(goal)}</h2>
         <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--savings)' }}>{pct.toFixed(1)}%</span>
       </div>

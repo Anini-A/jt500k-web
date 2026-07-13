@@ -88,8 +88,8 @@ export default function Home() {
               <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>As of {today}</div>
 
               {/* This month at a glance */}
-              <div style={{ display: 'grid', gap: 8, marginTop: 18 }}>
-                <h2 style={{ margin: 0 }}>{month ? month.label : 'This month'}</h2>
+              <div style={{ display: 'grid', gap: 8, marginTop: 18, borderTop: '1px solid var(--border)', paddingTop: 16 }}>
+                <h2 style={{ margin: 0 }}>📊 This Month · {month ? month.label : '—'}</h2>
                 <MonthLine label="Income" value={month?.income} prev={month?.prevIncome} goodUp cls="income" />
                 <MonthLine label="Expenses" value={month?.expense} prev={month?.prevExpense} goodUp={false} cls="expense" />
                 <MonthLine label="Savings" value={month?.savings} prev={month?.prevSavings} goodUp cls="savings" />
