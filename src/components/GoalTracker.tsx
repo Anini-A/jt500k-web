@@ -20,11 +20,14 @@ export default function GoalTracker({ saved, label = 'Saved so far' }: { saved: 
   const today = new Date().toLocaleDateString('en-CA', { year: 'numeric', month: 'short', day: 'numeric' })
 
   return (
-    <div className="card glass hero" style={{ marginBottom: 16 }}>
+    <div className="card glass" style={{ height: '100%' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 8 }}>
         <h2 style={{ margin: 0 }}>🎯 Journey to {short(goal)}</h2>
         <span style={{ fontWeight: 700, color: 'var(--savings)' }}>{pct.toFixed(1)}%</span>
       </div>
+
+      <div style={{ fontWeight: 800, fontSize: 'clamp(30px, 8vw, 40px)', margin: '10px 0 2px', letterSpacing: '-0.02em' }}>{money(saved)}</div>
+      <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{label}</div>
 
       <div title={`Where we stand as of ${today}`}
         style={{ height: 16, borderRadius: 999, background: 'var(--kpi-bg)', border: '1px solid var(--border)', overflow: 'hidden', margin: '14px 0 12px', cursor: 'help' }}>
@@ -35,15 +38,8 @@ export default function GoalTracker({ saved, label = 'Saved so far' }: { saved: 
         }} />
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-        <div>
-          <div className="stat-label">{label}</div>
-          <div style={{ fontWeight: 700, fontSize: 20, color: 'var(--savings)' }}>{money(saved)}</div>
-        </div>
-        <div style={{ textAlign: 'right' }}>
-          <div className="stat-label">Remaining</div>
-          <div style={{ fontWeight: 700, fontSize: 20 }}>{money(remaining)}</div>
-        </div>
+      <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>
+        {money(remaining)} to go
       </div>
     </div>
   )

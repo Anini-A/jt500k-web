@@ -23,33 +23,36 @@ export default function NetWorthCard() {
   const delta = prev ? d.netWorth - prev.net : 0
 
   return (
-    <section className="block">
-      <div className="card glass">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 8, marginBottom: 4 }}>
-          <h2 style={{ margin: 0 }}>🪙 Net Worth</h2>
-          {prev && (
-            <span style={{ fontWeight: 600, fontSize: 13, color: delta >= 0 ? 'var(--income)' : 'var(--expense)' }}>
-              {delta >= 0 ? '▲' : '▼'} {money(Math.abs(delta))} vs last month
-            </span>
-          )}
-        </div>
-        {/* Net worth + its parts, all on one line (wraps to 2×2 on a phone) */}
-        <div className="stat-grid" style={{ marginTop: 6 }}>
-          <Piece label="Net Worth" value={money(d.netWorth)} color="var(--savings)" big />
-          <Piece label="Investments" value={money(d.holdingsValue)} color="var(--income)" />
-          <Piece label="Cash & other" value={money(d.cashValue)} color="var(--text-primary)" />
-          <Piece label="− Debts" value={money(d.debts)} color="var(--expense)" />
-        </div>
+    <div className="card glass" style={{ height: '100%' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 8 }}>
+        <h2 style={{ margin: 0 }}>🪙 Net Worth</h2>
+        {prev && (
+          <span style={{ fontWeight: 600, fontSize: 13, color: delta >= 0 ? 'var(--income)' : 'var(--expense)' }}>
+            {delta >= 0 ? '▲' : '▼'} {money(Math.abs(delta))} vs last month
+          </span>
+        )}
       </div>
-    </section>
+
+      {/* Hero net-worth figure */}
+      <div style={{ fontWeight: 800, fontSize: 'clamp(30px, 8vw, 40px)', color: 'var(--savings)', margin: '10px 0 16px', letterSpacing: '-0.02em' }}>
+        {money(d.netWorth)}
+      </div>
+
+      {/* The parts, as light supporting lines */}
+      <div style={{ display: 'grid', gap: 8, marginTop: 'auto' }}>
+        <Piece label="Investments" value={money(d.holdingsValue)} />
+        <Piece label="Cash & other" value={money(d.cashValue)} />
+        <Piece label="− Debts" value={money(d.debts)} />
+      </div>
+    </div>
   )
 }
 
-function Piece({ label, value, color, big }: { label: string; value: string; color: string; big?: boolean }) {
+function Piece({ label, value }: { label: string; value: string }) {
   return (
-    <div className="stat-card">
-      <div className="stat-label">{label}</div>
-      <div style={{ fontWeight: 700, fontSize: big ? 'clamp(22px, 6vw, 28px)' : 'clamp(17px, 5vw, 20px)', color, marginTop: 4 }}>{value}</div>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, borderTop: '1px solid var(--border)', paddingTop: 8 }}>
+      <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{label}</span>
+      <span style={{ fontWeight: 700, fontSize: 15 }}>{value}</span>
     </div>
   )
 }

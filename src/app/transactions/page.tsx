@@ -32,6 +32,7 @@ export default function Transactions() {
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
   const [editTx, setEditTx] = useState<Txn | null>(null)
+  const [openId, setOpenId] = useState<string | null>(null) // mobile: row whose actions are revealed
 
   const load = useCallback(async () => {
     const data = await getJSON('/api/data').catch(() => [])
@@ -129,23 +130,27 @@ export default function Transactions() {
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 2, maxHeight: 1140, overflowY: 'auto', overscrollBehavior: 'contain' }}>
                 {filtered.map((t) => (
-                  <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '10px 4px', borderBottom: '1px solid var(--border)' }}>
+                  <div key={t.id} className={`list-row ${openId === t.id ? 'open' : ''}`}
+                    onClick={() => setOpenId((id) => (id === t.id ? null : t.id))}
+                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '11px 4px', borderBottom: '1px solid var(--border)' }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.description || t.category}</div>
-                      <div className="stat-label">{t.date} · {t.category}</div>
+                      <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 2 }}>{t.date} · {t.category}</div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-                      <span className={`stat-value ${t.type}`} style={{ fontSize: 16 }}>
+                      <span className={`stat-value ${t.type}`} style={{ fontSize: 16, fontWeight: 700 }}>
                         {t.type === 'income' ? '+' : t.type === 'expense' ? '−' : ''}{money(t.amount)}
                       </span>
-                      <button onClick={() => setEditTx(t)} aria-label="Edit" title="Edit"
-                        style={{ display: 'inline-flex', padding: 6, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                        <Pencil size={16} />
-                      </button>
-                      <button onClick={() => del(t.id)} aria-label="Delete" title="Delete"
-                        style={{ display: 'inline-flex', padding: 6, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                        <Trash2 size={16} />
-                      </button>
+                      <div className="row-actions">
+                        <button onClick={(e) => { e.stopPropagation(); setEditTx(t) }} aria-label="Edit" title="Edit"
+                          style={{ display: 'inline-flex', padding: 6, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                          <Pencil size={16} />
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); del(t.id) }} aria-label="Delete" title="Delete"
+                          style={{ display: 'inline-flex', padding: 6, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}

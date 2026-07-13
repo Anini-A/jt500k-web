@@ -372,6 +372,7 @@ const iconBtn: React.CSSProperties = {
 
 function RecentList({ title, txns, emptyLabel }: { title: string; txns: Txn[]; emptyLabel: string }) {
   const [editTx, setEditTx] = useState<Txn | null>(null)
+  const [openId, setOpenId] = useState<string | null>(null)
 
   const refresh = () => window.dispatchEvent(new CustomEvent('transaction-added'))
   const del = async (id: string) => {
@@ -390,17 +391,21 @@ function RecentList({ title, txns, emptyLabel }: { title: string; txns: Txn[]; e
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 2 }}>
             {txns.map((t) => (
-              <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '10px 4px', borderBottom: '1px solid var(--border)' }}>
+              <div key={t.id} className={`list-row ${openId === t.id ? 'open' : ''}`}
+                onClick={() => setOpenId((id) => (id === t.id ? null : t.id))}
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '11px 4px', borderBottom: '1px solid var(--border)' }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.description || t.category}</div>
-                  <div className="stat-label">{t.date} · {t.category}</div>
+                  <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 2 }}>{t.date} · {t.category}</div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-                  <span className={`stat-value ${t.type}`} style={{ fontSize: 16 }}>
+                  <span className={`stat-value ${t.type}`} style={{ fontSize: 16, fontWeight: 700 }}>
                     {t.type === 'income' ? '+' : t.type === 'expense' ? '−' : ''}{money2(t.amount)}
                   </span>
-                  <button onClick={() => setEditTx(t)} aria-label="Edit" title="Edit" style={iconBtn}><Pencil size={16} /></button>
-                  <button onClick={() => del(t.id)} aria-label="Delete" title="Delete" style={iconBtn}><Trash2 size={16} /></button>
+                  <div className="row-actions">
+                    <button onClick={(e) => { e.stopPropagation(); setEditTx(t) }} aria-label="Edit" title="Edit" style={iconBtn}><Pencil size={16} /></button>
+                    <button onClick={(e) => { e.stopPropagation(); del(t.id) }} aria-label="Delete" title="Delete" style={iconBtn}><Trash2 size={16} /></button>
+                  </div>
                 </div>
               </div>
             ))}

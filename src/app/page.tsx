@@ -65,31 +65,33 @@ export default function Home() {
           <HeaderNav current="home" />
         </header>
 
-        {/* Hero — current balance to the cent */}
+        {/* Two-card headline: Net Worth · Journey to $500K (stack on mobile) */}
         <section className="block">
-          <div className="card glass hero" style={{ textAlign: 'center' }}>
-            <div className="stat-label">💵 Current Balance</div>
-            <div style={{ fontSize: 'clamp(30px, 9vw, 48px)', fontWeight: 700, margin: '8px 0 4px', color: bal >= 0 ? 'var(--income)' : 'var(--expense)' }}>
-              {stats ? money(bal) : '—'}
+          <div className="grid-2">
+            <NetWorthCard />
+            {stats && (
+              <GoalTracker
+                saved={netWorth > 0 ? netWorth : stats.totalSavings}
+                label={netWorth > 0 ? 'Net worth' : 'Saved so far'}
+              />
+            )}
+          </div>
+        </section>
+
+        {/* Current balance — cash to the cent */}
+        <section className="block">
+          <div className="card glass" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <div>
+              <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>💵 Current Balance</div>
+              <div style={{ fontSize: 'clamp(26px, 8vw, 38px)', fontWeight: 800, letterSpacing: '-0.02em', margin: '4px 0 2px', color: bal >= 0 ? 'var(--income)' : 'var(--expense)' }}>
+                {stats ? money(bal) : '—'}
+              </div>
             </div>
             <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>
               {stats?.asOf ? `As of ${prettyDate(stats.asOf)}` : ''}
             </div>
           </div>
         </section>
-
-        {/* 500K goal — uses portfolio value (AUM) when holdings exist, else savings */}
-        {stats && (
-          <section className="block">
-            <GoalTracker
-              saved={netWorth > 0 ? netWorth : stats.totalSavings}
-              label={netWorth > 0 ? 'Net worth' : 'Saved so far'}
-            />
-          </section>
-        )}
-
-        {/* Net worth — investments + cash − debts, all on one line */}
-        <NetWorthCard />
 
         {/* This month summary — with month-over-month deltas */}
         <section className="block">

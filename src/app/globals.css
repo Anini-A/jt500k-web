@@ -578,6 +578,30 @@ header.top h1 {
   }
 }
 
+/* List rows with edit/delete: on desktop the actions are always visible; on phones
+   they're hidden for a calm Wealthsimple-style list and revealed by tapping the row. */
+.row-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .row-actions {
+    display: none;
+  }
+
+  .list-row.open .row-actions {
+    display: flex;
+  }
+
+  /* a subtle hint that the row opens on tap */
+  .list-row {
+    cursor: pointer;
+  }
+}
+
 /* Round close button, pinned top-right of a modal — always reachable */
 .modal-x {
   flex-shrink: 0;
