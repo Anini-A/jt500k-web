@@ -35,6 +35,8 @@ const TOOLS = [{
     { name: 'edit_budget_item', description: 'Edit a budget line item by id.', parameters: { type: 'OBJECT', properties: { id: { type: 'STRING' }, name: { type: 'STRING' }, category: { type: 'STRING' }, amount: { type: 'NUMBER' } }, required: ['id'] } },
     { name: 'delete_budget_item', description: 'Delete a budget line item by id.', parameters: { type: 'OBJECT', properties: { id: { type: 'STRING' } }, required: ['id'] } },
     { name: 'add_recurring', description: 'Add a recurring template (rent, subscription, paycheque…).', parameters: { type: 'OBJECT', properties: { name: { type: 'STRING' }, type: { type: 'STRING', enum: ['income', 'expense', 'savings'] }, category: { type: 'STRING' }, amount: { type: 'NUMBER' }, description: { type: 'STRING' } }, required: ['name', 'type', 'category', 'amount'] } },
+    { name: 'edit_recurring', description: 'Edit a recurring template by id.', parameters: { type: 'OBJECT', properties: { id: { type: 'STRING' }, name: { type: 'STRING' }, type: { type: 'STRING', enum: ['income', 'expense', 'savings'] }, category: { type: 'STRING' }, amount: { type: 'NUMBER' }, description: { type: 'STRING' } }, required: ['id'] } },
+    { name: 'log_recurring', description: 'Post the chosen recurring items as real transactions for a given date (e.g. "log this month\'s recurring items"). Pass the ids of the recurring items to log.', parameters: { type: 'OBJECT', properties: { ids: { type: 'ARRAY', items: { type: 'STRING' }, description: 'ids of active recurring items to log' }, date: { type: 'STRING', description: 'YYYY-MM-DD; omit for today' } }, required: ['ids'] } },
     { name: 'set_goal', description: 'Change the overall savings goal amount (the 500K target).', parameters: { type: 'OBJECT', properties: { amount: { type: 'NUMBER' } }, required: ['amount'] } },
   ],
 }]
@@ -50,6 +52,8 @@ function describeAction(name: string, a: any): string {
     case 'edit_budget_item': return `Edit budget item ${String(a.id).slice(0, 8)}…${a.amount != null ? ` → ${cad(a.amount)}/mo` : ''}${a.name ? ` → "${a.name}"` : ''}${a.category ? ` → ${a.category}` : ''}`
     case 'delete_budget_item': return `Delete budget item ${String(a.id).slice(0, 8)}…`
     case 'add_recurring': return `Add recurring ${a.type} "${a.name}" in ${a.category} — ${cad(a.amount)}`
+    case 'edit_recurring': return `Edit recurring ${String(a.id).slice(0, 8)}…${a.amount != null ? ` → ${cad(a.amount)}` : ''}${a.name ? ` → "${a.name}"` : ''}${a.category ? ` → ${a.category}` : ''}`
+    case 'log_recurring': return `Log ${(a.ids || []).length} recurring item${(a.ids || []).length !== 1 ? 's' : ''} as transactions${a.date ? ` on ${a.date}` : ' (today)'}`
     case 'set_goal': return `Change the goal to ${cad(a.amount)}`
     default: return name
   }
@@ -161,11 +165,15 @@ export async function POST(req: NextRequest) {
     `Answer using ONLY the data below. Be concise, concrete, and encouraging. Use CAD ($). ` +
     `When useful, give specific numbers and one actionable suggestion.\n\n` +
     `YOU CAN TAKE ACTIONS via the provided tools: adding/editing/deleting transactions, ` +
-    `adding/editing/deleting budget items, adding recurring items, and changing the goal amount. ` +
+    `adding/editing/deleting budget items, adding/editing recurring items, logging recurring ` +
+    `items as transactions, and changing the goal amount. ` +
     `Call a tool ONLY when the user clearly asks to record or change something. ` +
-    `Use the exact category names listed; use the exact id from the data for any edit/delete. ` +
+    `You MAY call several tools in one turn when the user asks for multiple changes (e.g. add three ` +
+    `expenses) — they are confirmed together. To "log this/last month's recurring items", call ` +
+    `log_recurring with the ids of the relevant ACTIVE RECURRING ITEMS. ` +
+    `Use the exact category names listed; use the exact id from the data for any edit/delete/log. ` +
     `If the date is unspecified, use today's date. Never guess an id — if you can't find it, ask. ` +
-    `The app will ask the user to confirm before the change is saved, so you don't need to ask for confirmation yourself.\n\n${context}`
+    `The app will ask the user to confirm before changes are saved, so you don't need to ask for confirmation yourself.\n\n${context}`
 
   const prior = Array.isArray(history) ? history : []
   const messages = [...prior, { role: 'user', content: message }]
@@ -202,10 +210,10 @@ export async function POST(req: NextRequest) {
       }
       const data = await res.json()
       const parts = data.candidates?.[0]?.content?.parts ?? []
-      // If the model wants to act, return a proposed action for the user to confirm.
-      const call = parts.find((p: any) => p.functionCall)?.functionCall
-      if (call) {
-        return NextResponse.json({ action: { name: call.name, args: call.args || {}, label: describeAction(call.name, call.args || {}) } })
+      // If the model wants to act, return the proposed action(s) for the user to confirm.
+      const calls = parts.filter((p: any) => p.functionCall).map((p: any) => p.functionCall)
+      if (calls.length) {
+        return NextResponse.json({ actions: calls.map((c: any) => ({ name: c.name, args: c.args || {}, label: describeAction(c.name, c.args || {}) })) })
       }
       const reply = parts.map((p: any) => p.text).filter(Boolean).join('') || 'Sorry, I could not generate a response.'
       return NextResponse.json({ reply })

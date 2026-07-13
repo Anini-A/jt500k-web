@@ -67,7 +67,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
   })
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
-  const [pending, setPending] = useState<{ name: string; args: any; label: string } | null>(null)
+  const [pending, setPending] = useState<{ name: string; args: any; label: string }[] | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -94,8 +94,8 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
         }),
       })
       const data = await res.json()
-      if (data.action) {
-        setPending(data.action) // wait for the user to confirm before writing anything
+      if (data.actions?.length) {
+        setPending(data.actions) // wait for the user to confirm before writing anything
       } else {
         setMsgs([...next, { role: 'assistant', content: data.reply || data.error || 'Something went wrong.' }])
       }
@@ -118,6 +118,15 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
       case 'edit_budget_item': return j('/api/budgets', 'PATCH', a)
       case 'delete_budget_item': return fetch(`/api/budgets?id=${a.id}`, { method: 'DELETE' })
       case 'add_recurring': return j('/api/recurring', 'POST', { name: a.name, type: a.type, category: a.category, amount: Number(a.amount), description: a.description })
+      case 'edit_recurring': return j('/api/recurring', 'PATCH', a)
+      case 'log_recurring': {
+        const date = a.date || new Date().toISOString().slice(0, 10)
+        const list = await (await fetch('/api/recurring')).json()
+        const ids = new Set((a.ids || []).map(String))
+        const chosen = (Array.isArray(list) ? list : []).filter((r: any) => ids.has(String(r.id)) && r.active)
+        if (!chosen.length) throw new Error('no matching recurring items found')
+        return j('/api/transactions', 'POST', chosen.map((r: any) => ({ date, type: r.type, category: r.category, amount: Number(r.amount), description: r.description || r.name })))
+      }
       case 'set_goal': return j('/api/settings', 'PUT', { goalAmount: Number(a.amount) })
       default: throw new Error('Unknown action')
     }
@@ -126,21 +135,24 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
   const confirmAction = async () => {
     if (!pending) return
     setBusy(true)
-    try {
-      const res = await runAction(pending.name, pending.args)
-      if (res.ok) {
-        setMsgs((m) => [...m, { role: 'assistant', content: `✅ Done — ${pending.label}.` }])
-        window.dispatchEvent(new CustomEvent('transaction-added'))
-      } else {
-        const e = await res.json().catch(() => ({}))
-        setMsgs((m) => [...m, { role: 'assistant', content: `⚠️ Couldn't do that — ${e.error || 'the change was rejected'}.` }])
+    let okCount = 0
+    const fails: string[] = []
+    for (const act of pending) {
+      try {
+        const res = await runAction(act.name, act.args)
+        if (res.ok) okCount++
+        else { const e = await res.json().catch(() => ({})); fails.push(`${act.label} (${e.error || 'rejected'})`) }
+      } catch (err: any) {
+        fails.push(`${act.label} (${err.message})`)
       }
-    } catch (err: any) {
-      setMsgs((m) => [...m, { role: 'assistant', content: `⚠️ Something went wrong — ${err.message}.` }])
-    } finally {
-      setPending(null)
-      setBusy(false)
     }
+    if (okCount) window.dispatchEvent(new CustomEvent('transaction-added'))
+    const lines: string[] = []
+    if (okCount) lines.push(`✅ Done — ${okCount} change${okCount !== 1 ? 's' : ''} saved.`)
+    if (fails.length) lines.push(`⚠️ ${fails.length} couldn't be applied:\n${fails.map((f) => `- ${f}`).join('\n')}`)
+    setMsgs((m) => [...m, { role: 'assistant', content: lines.join('\n\n') || 'Nothing changed.' }])
+    setPending(null)
+    setBusy(false)
   }
 
   const cancelAction = () => {
@@ -193,8 +205,12 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
         {/* Confirm-before-write card */}
         {pending && (
           <div style={{ flexShrink: 0, padding: '12px 14px', borderTop: '1px solid var(--border)', background: 'var(--kpi-bg)' }}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 6 }}>Confirm this change?</div>
-            <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 10 }}>{pending.label}</div>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>
+              Confirm {pending.length > 1 ? `these ${pending.length} changes` : 'this change'}?
+            </div>
+            <ul style={{ margin: '0 0 10px', paddingLeft: 18, display: 'grid', gap: 4, fontSize: 13, color: 'var(--text-secondary)' }}>
+              {pending.map((p, i) => <li key={i}>{p.label}</li>)}
+            </ul>
             <div style={{ display: 'flex', gap: 8 }}>
               <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center', padding: '9px 14px' }} disabled={busy} onClick={confirmAction}>✓ Confirm</button>
               <button className="btn" style={{ background: 'var(--expense-soft)', color: 'var(--expense)', border: '1px solid var(--expense)', padding: '9px 14px' }} disabled={busy} onClick={cancelAction}>✗ Cancel</button>
