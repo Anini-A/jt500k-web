@@ -199,6 +199,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
         return j('/api/transactions', 'POST', chosen.map((r: any) => ({ date, type: r.type, category: r.category, amount: Number(r.amount), description: r.description || r.name })))
       }
       case 'set_goal': return j('/api/settings', 'PUT', { goalAmount: Number(a.amount) })
+      case 'refresh_prices': return fetch('/api/holdings/refresh', { method: 'POST' })
       default: throw new Error('Unknown action')
     }
   }

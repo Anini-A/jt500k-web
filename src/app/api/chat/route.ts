@@ -38,6 +38,8 @@ const TOOLS = [{
     { name: 'edit_recurring', description: 'Edit a recurring template by id.', parameters: { type: 'OBJECT', properties: { id: { type: 'STRING' }, name: { type: 'STRING' }, type: { type: 'STRING', enum: ['income', 'expense', 'savings'] }, category: { type: 'STRING' }, amount: { type: 'NUMBER' }, description: { type: 'STRING' } }, required: ['id'] } },
     { name: 'log_recurring', description: 'Post the chosen recurring items as real transactions for a given date (e.g. "log this month\'s recurring items"). Pass the ids of the recurring items to log.', parameters: { type: 'OBJECT', properties: { ids: { type: 'ARRAY', items: { type: 'STRING' }, description: 'ids of active recurring items to log' }, date: { type: 'STRING', description: 'YYYY-MM-DD; omit for today' } }, required: ['ids'] } },
     { name: 'set_goal', description: 'Change the overall savings goal amount (the 500K target).', parameters: { type: 'OBJECT', properties: { amount: { type: 'NUMBER' } }, required: ['amount'] } },
+    { name: 'refresh_prices', description: 'Pull live market prices and update the value of the investment holdings.', parameters: { type: 'OBJECT', properties: {} } },
+    { name: 'find_transactions', description: 'Search ALL transactions (not just the recent 25) to get their ids before editing/deleting an older one. Call this first when the user references a transaction you cannot see in the recent list.', parameters: { type: 'OBJECT', properties: { query: { type: 'STRING', description: 'text to match in description/category' }, category: { type: 'STRING' }, type: { type: 'STRING', enum: ['income', 'expense', 'savings'] }, limit: { type: 'NUMBER' } } } },
   ],
 }]
 
@@ -55,8 +57,31 @@ function describeAction(name: string, a: any): string {
     case 'edit_recurring': return `Edit recurring ${String(a.id).slice(0, 8)}…${a.amount != null ? ` → ${cad(a.amount)}` : ''}${a.name ? ` → "${a.name}"` : ''}${a.category ? ` → ${a.category}` : ''}`
     case 'log_recurring': return `Log ${(a.ids || []).length} recurring item${(a.ids || []).length !== 1 ? 's' : ''} as transactions${a.date ? ` on ${a.date}` : ' (today)'}`
     case 'set_goal': return `Change the goal to ${cad(a.amount)}`
+    case 'refresh_prices': return 'Refresh live investment prices'
     default: return name
   }
+}
+
+// Read-only transaction search (auto-executed, never needs confirmation).
+async function searchTransactions(a: any) {
+  let q = supabaseAdmin.from('transactions').select('id, date, type, category, description, amount')
+    .order('date', { ascending: false }).limit(Math.min(Number(a.limit) || 15, 30))
+  if (a.type) q = q.eq('type', a.type)
+  if (a.category) q = q.eq('category', a.category)
+  if (a.query) {
+    const term = String(a.query).replace(/[%,()]/g, ' ').trim()
+    if (term) q = q.or(`description.ilike.%${term}%,category.ilike.%${term}%`)
+  }
+  const { data } = await q
+  return data ?? []
+}
+
+// Pull functionCalls + text out of a Gemini response.
+function parseGemini(data: any) {
+  const parts = data?.candidates?.[0]?.content?.parts ?? []
+  const calls = parts.filter((p: any) => p.functionCall).map((p: any) => p.functionCall)
+  const reply = parts.map((p: any) => p.text).filter(Boolean).join('')
+  return { calls, reply }
 }
 
 // Build a compact financial context so the assistant can answer accurately.
@@ -259,7 +284,9 @@ export async function POST(req: NextRequest) {
     `When useful, give specific numbers and one actionable suggestion.\n\n` +
     `YOU CAN TAKE ACTIONS via the provided tools: adding/editing/deleting transactions, ` +
     `adding/editing/deleting budget items, adding/editing recurring items, logging recurring ` +
-    `items as transactions, and changing the goal amount. ` +
+    `items as transactions, changing the goal amount, and refreshing live investment prices. ` +
+    `To edit or delete a transaction you cannot see in the recent list, FIRST call find_transactions ` +
+    `to look it up by description/category, then act on the id it returns. ` +
     `Call a tool ONLY when the user clearly asks to record or change something. ` +
     `You MAY call several tools in one turn when the user asks for multiple changes (e.g. add three ` +
     `expenses) — they are confirmed together. To "log this/last month's recurring items", call ` +
@@ -284,22 +311,33 @@ export async function POST(req: NextRequest) {
         role: m.role === 'assistant' ? 'model' : 'user',
         parts: [{ text: String(m.content ?? '') }],
       }))
+      const busyMsg = (err: string) => /UNAVAILABLE|overloaded|high demand|RESOURCE_EXHAUSTED|503|429/i.test(err)
+        ? 'The free AI is busy right now — please try again in a few seconds.'
+        : 'AI error: ' + err.slice(0, 200)
+
       const r = await geminiGenerate({ system: fullSystem, contents })
-      if (!r.ok) {
-        const overloaded = /UNAVAILABLE|overloaded|high demand|RESOURCE_EXHAUSTED|503|429/i.test(r.err)
-        const msg = overloaded
-          ? 'The free AI is busy right now — please try again in a few seconds.'
-          : 'AI error: ' + r.err.slice(0, 200)
-        return NextResponse.json({ error: msg }, { status: 502 })
+      if (!r.ok) return NextResponse.json({ error: busyMsg(r.err) }, { status: 502 })
+      let { calls, reply } = parseGemini(r.data)
+
+      // If it needs to look up an older transaction, run the search and re-ask once
+      // with the results in context (so it can then edit/delete by the real id).
+      const find = calls.find((c: any) => c.name === 'find_transactions')
+      if (find) {
+        const results = await searchTransactions(find.args || {})
+        const cad2 = (n: any) => '$' + (Number(n) || 0).toLocaleString()
+        const block = results.length
+          ? results.map((t: any) => `  - id=${t.id} · ${t.date} · ${t.type} · ${t.category ?? '—'} · ${t.description ?? '—'} · ${cad2(t.amount)}`).join('\n')
+          : '  (no matching transactions found)'
+        const r2 = await geminiGenerate({ system: `${fullSystem}\n\nSEARCH RESULTS (use these exact ids):\n${block}`, contents })
+        if (r2.ok) ({ calls, reply } = parseGemini(r2.data))
       }
-      const parts = r.data.candidates?.[0]?.content?.parts ?? []
-      // If the model wants to act, return the proposed action(s) for the user to confirm.
-      const calls = parts.filter((p: any) => p.functionCall).map((p: any) => p.functionCall)
-      if (calls.length) {
-        return NextResponse.json({ actions: calls.map((c: any) => ({ name: c.name, args: c.args || {}, label: describeAction(c.name, c.args || {}) })) })
+
+      // Any write actions → return for confirmation
+      const writes = calls.filter((c: any) => c.name !== 'find_transactions')
+      if (writes.length) {
+        return NextResponse.json({ actions: writes.map((c: any) => ({ name: c.name, args: c.args || {}, label: describeAction(c.name, c.args || {}) })) })
       }
-      const reply = parts.map((p: any) => p.text).filter(Boolean).join('') || 'Sorry, I could not generate a response.'
-      return NextResponse.json({ reply })
+      return NextResponse.json({ reply: reply || 'Sorry, I could not generate a response.' })
     }
 
     // ---- Paid fallback: Anthropic ----

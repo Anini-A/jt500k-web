@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import HeaderNav from '@/components/HeaderNav'
 import Logo from '@/components/Logo'
 import NetWorthCard from '@/components/NetWorthCard'
+import ForecastCard from '@/components/ForecastCard'
 import MoneyFlowCard from '@/components/MoneyFlowCard'
 import { getJSON } from '@/lib/fresh'
 
@@ -93,6 +94,11 @@ export default function Home() {
               </div>
             </div>
           </div>
+        </section>
+
+        {/* Forecast — projected date to reach the goal */}
+        <section className="block">
+          <ForecastCard />
         </section>
 
         {/* Money Flow — income vs expenses vs savings, defaults to YTD */}
