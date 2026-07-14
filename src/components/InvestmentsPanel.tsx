@@ -96,20 +96,33 @@ export default function InvestmentsPanel() {
   }, [])
   useEffect(() => { load() }, [load])
 
-  const refresh = async () => {
-    setRefreshing(true); setRefreshMsg('')
+  const REFRESH_KEY = 'jt-holdings-refreshed-at'
+  const refresh = useCallback(async (silent = false) => {
+    setRefreshing(true)
+    if (!silent) setRefreshMsg('')
     try {
       const r = await fetch('/api/holdings/refresh', { method: 'POST' })
       const d = await r.json()
-      if (!r.ok) { setRefreshMsg('Refresh failed — showing last import.'); return }
+      if (!r.ok) { if (!silent) setRefreshMsg('Refresh failed — showing last import.'); return }
+      try { localStorage.setItem(REFRESH_KEY, String(Date.now())) } catch { /* ignore */ }
       await load()
       window.dispatchEvent(new CustomEvent('transaction-added'))
       const failed = d.failed?.length ? ` · ${d.failed.length} kept from CSV (${d.failed.join(', ')})` : ''
       setRefreshMsg(d.updated ? `Live prices updated: ${d.updated} holding${d.updated !== 1 ? 's' : ''}${failed}` : 'Could not reach the price feed — showing last import.')
     } catch {
-      setRefreshMsg('Refresh failed — showing last import.')
+      if (!silent) setRefreshMsg('Refresh failed — showing last import.')
     } finally { setRefreshing(false) }
-  }
+  }, [load])
+
+  // Auto-refresh: on open if prices are stale (>15 min), then every 15 min while viewing.
+  useEffect(() => {
+    if (!data?.rows?.length) return
+    const last = Number(localStorage.getItem(REFRESH_KEY) || 0)
+    if (Date.now() - last > 15 * 60 * 1000) refresh(true)
+    const id = setInterval(() => refresh(true), 15 * 60 * 1000)
+    return () => clearInterval(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data?.rows?.length, refresh])
 
   const rows = data?.rows ?? []
   const assets = data?.assets ?? []
@@ -169,7 +182,7 @@ export default function InvestmentsPanel() {
           ))}
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button className="btn btn-secondary" onClick={refresh} disabled={refreshing}>
+          <button className="btn btn-secondary" onClick={() => refresh(false)} disabled={refreshing}>
             <RefreshCw size={15} style={{ animation: refreshing ? 'spin 0.8s linear infinite' : 'none' }} /> {refreshing ? 'Refreshing…' : 'Refresh Prices'}
           </button>
           <button className="btn btn-secondary" onClick={() => setImporting(true)}><Upload size={15} /> Update Holdings</button>
