@@ -7,6 +7,7 @@ import IconPill from './IconPill'
 import AddTransactionButton from './AddTransactionButton'
 import SettingsPanel from './SettingsPanel'
 import ChatWidget from './ChatWidget'
+import NotificationBell from './NotificationBell'
 
 type Page = 'home' | 'dashboard' | 'transactions' | 'settings'
 
@@ -27,6 +28,7 @@ export default function HeaderNav({ current }: { current: Page }) {
         <IconPill icon={<Settings />} label="Settings" onClick={() => setSettingsOpen(true)} />
       )}
       <IconPill icon={<RefreshCw />} label="Refresh" onClick={() => window.location.reload()} />
+      <NotificationBell />
       <IconPill icon={<MessageCircle />} label="Ask AI" onClick={() => setChatOpen(true)} />
 
       {chatOpen && <ChatWidget onClose={() => setChatOpen(false)} />}
