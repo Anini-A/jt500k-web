@@ -127,6 +127,11 @@ async function buildContext() {
   const catsByType = (type: string) => (cats ?? []).filter((c) => c.type === type).map((c) => c.name).join(', ')
   const { data: budgetRows } = await supabaseAdmin.from('budgets').select('id, name, category, amount').order('category')
   const { data: recRows } = await supabaseAdmin.from('recurring').select('id, name, type, category, amount').eq('active', true)
+  const { data: prof } = await supabaseAdmin.from('household_profile').select('data').order('updated_at', { ascending: false }).limit(1).maybeSingle()
+  const profSections: any[] = prof?.data?.sections || []
+  const profileText = profSections.length
+    ? profSections.map((s) => `${s.icon || ''} ${s.title}:\n${(s.items || []).map((it: any) => `  - ${it.label}: ${it.value}`).join('\n')}`).join('\n\n')
+    : ''
 
   const recent = [...txns]
     .sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 25)
@@ -173,7 +178,10 @@ BUDGET LINE ITEMS (use the id to edit or delete one):
 ${budgetList || '  (none)'}
 
 ACTIVE RECURRING ITEMS:
-${recList || '  (none)'}`
+${recList || '  (none)'}
+
+HOUSEHOLD PROFILE (KYC — members, home, insurance, estate, ground rules, goals):
+${profileText || '  (not set up yet)'}`
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
@@ -279,9 +287,12 @@ export async function POST(req: NextRequest) {
 
   const context = await buildContext()
   const system =
-    `You are a friendly, sharp personal-finance assistant for the "Journey to 500K" app. ` +
-    `Answer using ONLY the data below. Be concise, concrete, and encouraging. Use CAD ($). ` +
-    `When useful, give specific numbers and one actionable suggestion.\n\n` +
+    `You are the household's "Family CFO" for the "Journey to 500K" app — analytical, ` +
+    `proactive, and specific to their numbers (no generic advice). Answer using ONLY the data ` +
+    `below, including the HOUSEHOLD PROFILE. Use CAD ($). Apply the household's GROUND RULES when ` +
+    `evaluating spending/saving, and remind them of opportunity cost (a dollar on "wants" is a ` +
+    `dollar not compounding toward $500K) when relevant. Be concise; give specific numbers and a ` +
+    `clear next action.\n\n` +
     `YOU CAN TAKE ACTIONS via the provided tools: adding/editing/deleting transactions, ` +
     `adding/editing/deleting budget items, adding/editing recurring items, logging recurring ` +
     `items as transactions, changing the goal amount, and refreshing live investment prices. ` +

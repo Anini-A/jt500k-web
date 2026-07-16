@@ -144,3 +144,12 @@ create table if not exists recurring (
   created_at timestamptz not null default now()
 );
 alter table recurring enable row level security;
+
+-- Household KYC profile (members, home, insurance, estate, ground rules, goals)
+create table if not exists household_profile (
+  id uuid primary key default gen_random_uuid(),
+  household_id uuid references households(id) on delete cascade,
+  data jsonb not null default '{}'::jsonb,
+  updated_at timestamptz default now(),
+  unique(household_id)
+);

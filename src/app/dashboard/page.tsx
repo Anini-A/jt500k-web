@@ -1,17 +1,19 @@
 'use client'
 
 import { useEffect, useState, useMemo, useCallback } from 'react'
-import { Wallet, CreditCard, PiggyBank, LineChart, Banknote, Shield, Target, Pencil, Trash2, type LucideIcon } from 'lucide-react'
+import { Wallet, CreditCard, PiggyBank, LineChart, Banknote, Shield, Target, Users, Pencil, Trash2, type LucideIcon } from 'lucide-react'
 import HeaderNav from '@/components/HeaderNav'
 import Logo from '@/components/Logo'
 import DebtManager from '@/components/DebtManager'
 import BudgetManager from '@/components/BudgetManager'
 import InvestmentsPanel from '@/components/InvestmentsPanel'
+import ProfilePanel from '@/components/ProfilePanel'
+import InsuranceView from '@/components/InsuranceView'
 import EditTransactionModal from '@/components/EditTransactionModal'
 import { getJSON } from '@/lib/fresh'
 import { MonthlyArea, HBar, Donut, COLORS } from '@/components/DashCharts'
 
-type Tab = 'income' | 'expenses' | 'savings' | 'debts' | 'investments' | 'insurance' | 'budget'
+type Tab = 'income' | 'expenses' | 'savings' | 'debts' | 'investments' | 'insurance' | 'budget' | 'household'
 const TABS: { key: Tab; label: string; Icon: LucideIcon; soon?: boolean }[] = [
   { key: 'budget', label: 'Budget', Icon: Target },
   { key: 'income', label: 'Income', Icon: Wallet },
@@ -19,7 +21,8 @@ const TABS: { key: Tab; label: string; Icon: LucideIcon; soon?: boolean }[] = [
   { key: 'savings', label: 'Savings', Icon: PiggyBank },
   { key: 'debts', label: 'Debts', Icon: Banknote },
   { key: 'investments', label: 'Investments', Icon: LineChart },
-  { key: 'insurance', label: 'Insurance', Icon: Shield, soon: true },
+  { key: 'insurance', label: 'Insurance', Icon: Shield },
+  { key: 'household', label: 'Household', Icon: Users },
 ]
 
 interface Txn {
@@ -280,8 +283,14 @@ export default function Dashboard() {
           </section>
         )}
         {tab === 'insurance' && (
-          <ComingSoon emoji="🛡️" title="Insurance — coming soon"
-            sub="Track policies and premiums (life, home, auto, health) here." />
+          <section className="block" style={{ marginBottom: 64 }}>
+            <InsuranceView />
+          </section>
+        )}
+        {tab === 'household' && (
+          <section className="block" style={{ marginBottom: 64 }}>
+            <ProfilePanel />
+          </section>
         )}
         {tab === 'budget' && (
           <section className="block" style={{ marginBottom: 64 }}>
@@ -341,17 +350,6 @@ function HeroRow({ stats }: { stats: Stat[] }) {
   )
 }
 
-function ComingSoon({ emoji, title, sub }: { emoji: string; title: string; sub: string }) {
-  return (
-    <section className="block" style={{ marginBottom: 64 }}>
-      <div className="card glass" style={{ textAlign: 'center', padding: 40 }}>
-        <div style={{ fontSize: 40, marginBottom: 8 }}>{emoji}</div>
-        <h3 style={{ margin: '0 0 6px' }}>{title}</h3>
-        <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, margin: 0 }}>{sub}</p>
-      </div>
-    </section>
-  )
-}
 
 function ChartHead({ title, sub }: { title: string; sub: string }) {
   return (
