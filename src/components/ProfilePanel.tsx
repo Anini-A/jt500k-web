@@ -73,6 +73,29 @@ function Summary({ big, label }: { big: string; label: string }) {
     </div>
   )
 }
+function ReadinessMeter({ done, total }: { done: number; total: number }) {
+  const pct = total ? Math.round((done / total) * 100) : 0
+  const allDone = done === total && total > 0
+  return (
+    <div style={{ marginBottom: 12, padding: '12px 14px', background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, marginBottom: 8 }}>
+        <span style={{ fontWeight: 700, fontSize: 15 }}>Estate readiness</span>
+        <span style={{ fontWeight: 700, color: allDone ? 'var(--income)' : 'var(--text-secondary)' }}>{allDone ? '✓ ' : ''}{done} of {total} in place</span>
+      </div>
+      <div style={{ height: 10, borderRadius: 999, background: 'var(--surface-1)', border: '1px solid var(--border)', overflow: 'hidden' }}>
+        <div style={{ width: `${pct}%`, height: '100%', borderRadius: 999, background: allDone ? 'var(--income)' : 'linear-gradient(90deg, var(--savings), var(--income))', transition: 'width .6s ease' }} />
+      </div>
+    </div>
+  )
+}
+
+// Goal horizon → colour + timeline dot
+const HORIZON: Record<string, { fg: string; bg: string }> = {
+  short: { fg: 'var(--income)', bg: 'var(--income-soft)' },
+  medium: { fg: '#b7791f', bg: 'rgba(224,161,43,0.16)' },
+  long: { fg: 'var(--savings)', bg: 'var(--savings-soft)' },
+}
+const detectHorizon = (label: string) => { const t = label.toLowerCase(); return /short/.test(t) ? 'short' : /medium|mid/.test(t) ? 'medium' : /long/.test(t) ? 'long' : null }
 
 const inp: React.CSSProperties = {
   padding: '9px 11px', borderRadius: 10, border: '1px solid var(--border)',
@@ -165,6 +188,11 @@ export default function ProfilePanel() {
           const cov = shown.items.reduce((s, it) => { const amts = parseAmounts(it.value).filter((a) => a >= 50000); const mult = /\beach\b|×\s?2|x2/i.test(it.value) ? 2 : 1; return s + amts.reduce((a, b) => a + b, 0) * mult }, 0)
           return cov > 0 ? <Summary big={`≈ ${moneyShort(cov)}`} label="total life coverage" /> : null
         })()}
+        {!editing && shown.id === 'estate' && (() => {
+          const tracked = shown.items.filter((it) => !isUrl(it.value))
+          const done = tracked.filter((it) => !todoRe.test(String(it.value || ''))).length
+          return tracked.length ? <ReadinessMeter done={done} total={tracked.length} /> : null
+        })()}
 
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 8 }}>
           {view.items.map((it, ii) => editing && draft ? (
@@ -190,6 +218,21 @@ export default function ProfilePanel() {
                     </div>
                     <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 3, overflowWrap: 'anywhere' }}>{it.value}</div>
                   </div>
+                </div>
+              )
+            }
+            // Goals: horizon-coloured timeline node
+            if (shown.id === 'goals') {
+              const h = detectHorizon(it.label)
+              const hz = h ? HORIZON[h] : null
+              return (
+                <div key={ii} style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderLeft: hz ? `3px solid ${hz.fg}` : '1px solid var(--border)', borderRadius: 12, padding: '11px 12px', minWidth: 0 }}>
+                  {hz ? (
+                    <span style={{ background: hz.bg, color: hz.fg, padding: '2px 10px', borderRadius: 999, fontSize: 11, fontWeight: 700 }}>{it.label}</span>
+                  ) : (
+                    <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{it.label}</span>
+                  )}
+                  <div style={{ fontSize: 15, fontWeight: 600, marginTop: 6, color: 'var(--text-primary)', overflowWrap: 'anywhere' }}>{it.value}</div>
                 </div>
               )
             }
