@@ -4,7 +4,18 @@ import { useEffect, useState, useCallback } from 'react'
 import { Pencil, Plus, Trash2, ExternalLink, Users, Home, Shield, ScrollText, Flag, type LucideIcon } from 'lucide-react'
 import { getJSON } from '@/lib/fresh'
 
-interface Item { label: string; value: string }
+type Status = 'todo' | 'doing' | 'done'
+interface Item { label: string; value: string; status?: Status }
+
+const STATUS: Record<Status, { label: string; fg: string; bg: string }> = {
+  todo: { label: '⚠ To do', fg: 'var(--expense)', bg: 'var(--expense-soft)' },
+  doing: { label: '◔ In progress', fg: 'var(--accent)', bg: 'var(--accent-soft)' },
+  done: { label: '✓ Done', fg: 'var(--income)', bg: 'var(--income-soft)' },
+}
+function StatusChip({ status }: { status: Status }) {
+  const s = STATUS[status]
+  return <span style={{ background: s.bg, color: s.fg, padding: '2px 9px', borderRadius: 999, fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0 }}>{s.label}</span>
+}
 interface Section { id: string; icon: string; title: string; items: Item[] }
 interface Profile { sections: Section[]; links: { label: string; url: string }[] }
 
@@ -190,17 +201,26 @@ export default function ProfilePanel() {
         })()}
         {!editing && shown.id === 'estate' && (() => {
           const tracked = shown.items.filter((it) => !isUrl(it.value))
-          const done = tracked.filter((it) => !todoRe.test(String(it.value || ''))).length
+          const done = tracked.filter((it) => it.status ? it.status === 'done' : !todoRe.test(String(it.value || ''))).length
           return tracked.length ? <ReadinessMeter done={done} total={tracked.length} /> : null
         })()}
 
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 8 }}>
           {view.items.map((it, ii) => editing && draft ? (
-            <div key={ii} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-              <input style={{ ...inp, flex: '0 0 34%' }} value={it.label} placeholder="Label" onChange={(e) => upd((d) => { d.items[ii].label = e.target.value })} />
-              <textarea style={{ ...inp, flex: 1, minHeight: 38, resize: 'vertical' }} rows={1} value={it.value} placeholder="Value" onChange={(e) => upd((d) => { d.items[ii].value = e.target.value })} />
-              <button aria-label="Remove row" onClick={() => upd((d) => { d.items.splice(ii, 1) })}
-                style={{ flexShrink: 0, padding: 8, borderRadius: 9, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}><Trash2 size={14} /></button>
+            <div key={ii} style={{ display: 'grid', gap: 6, padding: 8, border: '1px solid var(--border)', borderRadius: 10, background: 'var(--surface-1)' }}>
+              <input style={inp} value={it.label} placeholder="Label" onChange={(e) => upd((d) => { d.items[ii].label = e.target.value })} />
+              <textarea style={{ ...inp, minHeight: 38, resize: 'vertical' }} rows={1} value={it.value} placeholder="Value" onChange={(e) => upd((d) => { d.items[ii].value = e.target.value })} />
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'space-between' }}>
+                <select value={it.status || ''} onChange={(e) => upd((d) => { const v = e.target.value; if (v) d.items[ii].status = v as Status; else delete d.items[ii].status })}
+                  style={{ ...inp, width: 'auto', flex: 1, maxWidth: 200 }}>
+                  <option value="">— no status —</option>
+                  <option value="todo">⚠ To do</option>
+                  <option value="doing">◔ In progress</option>
+                  <option value="done">✓ Done</option>
+                </select>
+                <button aria-label="Remove row" onClick={() => upd((d) => { d.items.splice(ii, 1) })}
+                  style={{ flexShrink: 0, padding: 8, borderRadius: 9, border: '1px solid var(--border)', background: 'transparent', color: 'var(--expense)', cursor: 'pointer' }}><Trash2 size={14} /></button>
+              </div>
             </div>
           ) : (() => {
             // Members: render each person as an avatar card
@@ -227,11 +247,14 @@ export default function ProfilePanel() {
               const hz = h ? HORIZON[h] : null
               return (
                 <div key={ii} style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderLeft: hz ? `3px solid ${hz.fg}` : '1px solid var(--border)', borderRadius: 12, padding: '11px 12px', minWidth: 0 }}>
-                  {hz ? (
-                    <span style={{ background: hz.bg, color: hz.fg, padding: '2px 10px', borderRadius: 999, fontSize: 11, fontWeight: 700 }}>{it.label}</span>
-                  ) : (
-                    <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{it.label}</span>
-                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    {hz ? (
+                      <span style={{ background: hz.bg, color: hz.fg, padding: '2px 10px', borderRadius: 999, fontSize: 11, fontWeight: 700 }}>{it.label}</span>
+                    ) : (
+                      <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{it.label}</span>
+                    )}
+                    {it.status && <StatusChip status={it.status} />}
+                  </div>
                   <div style={{ fontSize: 15, fontWeight: 600, marginTop: 6, color: 'var(--text-primary)', overflowWrap: 'anywhere' }}>{it.value}</div>
                 </div>
               )
@@ -239,12 +262,14 @@ export default function ProfilePanel() {
             // Insurance: owner pill + label; Estate: status pill; else plain
             const owner = shown.id === 'insurance' ? detectOwner(it.label) : null
             const cl = owner ? cleanLabel(it.label, owner) : it.label
-            const estateOpen = shown.id === 'estate' ? todoRe.test(String(it.value || '')) : null
+            // explicit status wins; else fall back to text detection on estate items
+            const estateOpen = (it.status === undefined && shown.id === 'estate') ? todoRe.test(String(it.value || '')) : null
             return (
               <div key={ii} style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderLeft: owner ? `3px solid ${OWNER_COLOR[owner].fg}` : '1px solid var(--border)', borderRadius: 12, padding: '11px 12px', minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   {owner && <OwnerPill owner={owner} />}
                   {cl && <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{cl}</span>}
+                  {it.status && <StatusChip status={it.status} />}
                   {estateOpen !== null && <StatusPill open={estateOpen} />}
                 </div>
                 {isUrl(it.value) ? (

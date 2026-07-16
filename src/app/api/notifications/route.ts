@@ -94,7 +94,10 @@ export async function GET() {
   for (const sec of (prof?.data?.sections || [])) {
     if (!['estate', 'insurance'].includes(sec.id)) continue
     for (const it of (sec.items || [])) {
-      if (todoRe.test(String(it.value || ''))) {
+      if (/^https?:\/\//i.test(String(it.value || ''))) continue // skip links
+      // explicit status wins; else fall back to text detection
+      const open = it.status !== undefined ? it.status !== 'done' : todoRe.test(String(it.value || ''))
+      if (open) {
         out.push({ id: `todo-${sec.id}-${slug(it.label)}`, icon: '📌', severity: 'info', title: `To-do: ${it.label}`, detail: it.value })
       }
     }
