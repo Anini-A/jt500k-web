@@ -106,8 +106,8 @@ async function buildContext() {
   }
 
   // NET WORTH — this is the real "Journey to 500K" metric (Investments + Cash − Debts)
-  const { data: holds } = await supabaseAdmin.from('holdings').select('market_value_cad')
-  const { data: manual } = await supabaseAdmin.from('manual_assets').select('value_cad')
+  const { data: holds } = await supabaseAdmin.from('holdings').select('owner, account_type, symbol, name, quantity, market_value_cad, book_value_cad, currency')
+  const { data: manual } = await supabaseAdmin.from('manual_assets').select('owner, name, kind, value_cad')
   const holdingsValue = (holds ?? []).reduce((s, h) => s + Number(h.market_value_cad), 0)
   const cashValue = (manual ?? []).reduce((s, a) => s + Number(a.value_cad), 0)
   const { data: debts } = await supabaseAdmin.from('debts').select('name, amount')
@@ -144,6 +144,16 @@ async function buildContext() {
   const budgetList = (budgetRows ?? []).map((b) => `  - id=${b.id} · ${b.category} · ${b.name} · ${money(Number(b.amount))}/mo`).join('\n')
   const recList = (recRows ?? []).map((r) => `  - id=${r.id} · ${r.type} · ${r.category} · ${r.name} · ${money(Number(r.amount))}`).join('\n')
 
+  // investment holdings detail — so "what's in my TFSA" is answered, never acted on
+  const byAcct = new Map<string, number>()
+  const holdingLines = (holds ?? []).map((h) => {
+    byAcct.set(h.account_type, (byAcct.get(h.account_type) || 0) + Number(h.market_value_cad))
+    const cost = h.book_value_cad ? ` (cost ${money(Number(h.book_value_cad))})` : ''
+    return `  - ${h.symbol} — ${h.account_type} · ${h.owner}: ${Number(h.quantity).toLocaleString()} units · ${money(Number(h.market_value_cad))}${cost}`
+  }).join('\n')
+  const acctSummary = [...byAcct.entries()].map(([a, v]) => `${a} ${money(v)}`).join(' · ')
+  const manualLines = (manual ?? []).map((a: any) => `  - ${a.name}${a.kind ? ` (${a.kind})` : ''} · ${a.owner}: ${money(Number(a.value_cad))}`).join('\n')
+
   return `Today is ${new Date().toISOString().slice(0, 10)}. The user is tracking their finances toward a ${money(goal)} goal ("Journey to 500K"). All amounts are in CAD.
 
 ⭐ THE GOAL METRIC IS NET WORTH, NOT the savings-contributions total. "Progress to the goal" = net worth ÷ goal. Do NOT use the "total saved/invested" figure below as progress toward the goal.
@@ -152,6 +162,12 @@ NET WORTH (current) = ${money(netWorth)}  →  ${Math.round((netWorth / goal) * 
 - Investments (Wealthsimple holdings): ${money(holdingsValue)}
 - Cash & other assets: ${money(cashValue)}
 - Debts remaining (subtracted): ${money(debtsRemaining)}
+
+INVESTMENT HOLDINGS (by account: ${acctSummary || 'none'}):
+${holdingLines || '  (none)'}
+
+CASH & OTHER ASSETS:
+${manualLines || '  (none)'}
 
 CASH-FLOW TOTALS (all time, ${txns.length} transactions since Aug 2024):
 - Total income: ${money(income)}
@@ -294,12 +310,18 @@ export async function POST(req: NextRequest) {
     `emergency-fund gap when there's little cash, a chance to save, or a notable opportunity cost) — ` +
     `but do NOT recite standing advice or a checklist in every reply, and don't repeat the same ` +
     `reminder you've given before. Give specific numbers and a clear next action.\n\n` +
-    `YOU CAN TAKE ACTIONS via the provided tools: adding/editing/deleting transactions, ` +
-    `adding/editing/deleting budget items, adding/editing recurring items, logging recurring ` +
-    `items as transactions, changing the goal amount, and refreshing live investment prices. ` +
-    `To edit or delete a transaction you cannot see in the recent list, FIRST call find_transactions ` +
-    `to look it up by description/category, then act on the id it returns. ` +
-    `Call a tool ONLY when the user clearly asks to record or change something. ` +
+    `⚠️ READ vs. WRITE — THIS IS CRITICAL. By default you are ANSWERING QUESTIONS, not changing data. ` +
+    `If the user asks to view/check/see/show/tell/explain, or asks "what/how/why/can you/is it/should I", ` +
+    `it is READ-ONLY: answer from the data below and DO NOT call any tool. ` +
+    `Examples that are READ-ONLY (never call a tool): "check my TFSA holdings", "what's in my TFSA", ` +
+    `"how am I doing", "should I buy X", "is this okay". "Check/see my prices or holdings" means SHOW me — ` +
+    `do NOT refresh. Only call refresh_prices if the user explicitly says to refresh or update prices. ` +
+    `\n\nONLY call a tool when the user gives an explicit COMMAND to change data using an action verb ` +
+    `(add, log, record, create, edit, change, update, set, delete, remove, refresh). When unsure, ASK ` +
+    `"want me to log that?" instead of acting. ` +
+    `You CAN take these actions when clearly asked: adding/editing/deleting transactions, budget items, ` +
+    `and recurring items; logging recurring items; changing the goal; refreshing prices. ` +
+    `To edit/delete a transaction not in the recent list, FIRST call find_transactions, then act on its id. ` +
     `You MAY call several tools in one turn when the user asks for multiple changes (e.g. add three ` +
     `expenses) — they are confirmed together. To "log this/last month's recurring items", call ` +
     `log_recurring with the ids of the relevant ACTIVE RECURRING ITEMS. ` +
