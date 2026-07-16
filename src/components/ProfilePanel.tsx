@@ -17,6 +17,37 @@ const SECTION_META: Record<string, { Icon: LucideIcon; short: string }> = {
   goals: { Icon: Flag, short: 'Goals' },
 }
 
+// Same owner colour system as the Investments panel
+const OWNER_COLOR: Record<string, { fg: string; bg: string }> = {
+  Jean: { fg: 'var(--accent)', bg: 'var(--accent-soft)' },
+  Henriette: { fg: 'var(--savings)', bg: 'var(--savings-soft)' },
+  Noah: { fg: 'var(--income)', bg: 'var(--income-soft)' },
+  Joint: { fg: '#b7791f', bg: 'rgba(224,161,43,0.16)' },
+}
+function detectOwner(text: string): string | null {
+  const t = ` ${text.toLowerCase()} `
+  if (/\bhenriette\b|\bhf\b/.test(t)) return 'Henriette'
+  if (/\bjean\b|\bja\b/.test(t)) return 'Jean'
+  if (/\bnoah\b|\bnono\b/.test(t)) return 'Noah'
+  if (/\bjoint\b/.test(t)) return 'Joint'
+  return null
+}
+function cleanLabel(label: string, owner: string): string {
+  return label
+    .replace(new RegExp(`^${owner}\\b`, 'i'), '').trim()
+    .replace(/^[—–\-:]\s*/, '').trim()
+    .replace(/^\([^)]*\)\s*/, '').trim()
+}
+const todoRe = /pending|none yet|not (yet|done|set up|submitted|completed)|to (do|submit|update|complete|sign)|missing|no will|no poa|⚠️/i
+
+function OwnerPill({ owner }: { owner: string }) {
+  const c = OWNER_COLOR[owner] || { fg: 'var(--text-secondary)', bg: 'var(--kpi-bg)' }
+  return <span style={{ background: c.bg, color: c.fg, padding: '2px 9px', borderRadius: 999, fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0 }}>{owner}</span>
+}
+function StatusPill({ open }: { open: boolean }) {
+  return <span style={{ background: open ? 'var(--expense-soft)' : 'var(--income-soft)', color: open ? 'var(--expense)' : 'var(--income)', padding: '2px 9px', borderRadius: 999, fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0 }}>{open ? '⚠ Open' : '✓ Done'}</span>
+}
+
 const inp: React.CSSProperties = {
   padding: '9px 11px', borderRadius: 10, border: '1px solid var(--border)',
   background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 14, width: '100%',
@@ -107,16 +138,25 @@ export default function ProfilePanel() {
               <button aria-label="Remove row" onClick={() => upd((d) => { d.items.splice(ii, 1) })}
                 style={{ flexShrink: 0, padding: 8, borderRadius: 9, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}><Trash2 size={14} /></button>
             </div>
-          ) : (
-            <div key={ii} style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '11px 12px', minWidth: 0 }}>
-              <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{it.label}</div>
-              {isUrl(it.value) ? (
-                <a href={it.value} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 4, fontWeight: 600 }}>Open <ExternalLink size={13} /></a>
-              ) : (
-                <div style={{ fontSize: 15, fontWeight: 600, marginTop: 4, color: 'var(--text-primary)', overflowWrap: 'anywhere' }}>{it.value}</div>
-              )}
-            </div>
-          ))}
+          ) : (() => {
+            const owner = ['members', 'insurance'].includes(shown.id) ? detectOwner(`${it.label} ${it.value}`) : null
+            const cl = owner ? cleanLabel(it.label, owner) : it.label
+            const estateOpen = shown.id === 'estate' ? todoRe.test(String(it.value || '')) : null
+            return (
+              <div key={ii} style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderLeft: owner ? `3px solid ${OWNER_COLOR[owner].fg}` : '1px solid var(--border)', borderRadius: 12, padding: '11px 12px', minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  {owner && <OwnerPill owner={owner} />}
+                  {cl && <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{cl}</span>}
+                  {estateOpen !== null && <StatusPill open={estateOpen} />}
+                </div>
+                {isUrl(it.value) ? (
+                  <a href={it.value} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 4, fontWeight: 600 }}>Open <ExternalLink size={13} /></a>
+                ) : (
+                  <div style={{ fontSize: 15, fontWeight: 600, marginTop: 4, color: 'var(--text-primary)', overflowWrap: 'anywhere' }}>{it.value}</div>
+                )}
+              </div>
+            )
+          })())}
         </div>
 
         {editing && draft && (
