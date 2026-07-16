@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { getJSON } from '@/lib/fresh'
 
 const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 })
@@ -20,6 +20,7 @@ export default function ForecastCard() {
   const [avgSave, setAvgSave] = useState<number | null>(null)
   const [rateKey, setRateKey] = useState('m')
   const [override, setOverride] = useState('') // custom monthly savings (calculator)
+  const seeded = useRef(false)
 
   const load = useCallback(() => {
     getJSON('/api/networth').then((d) => !d.error && setNw(Number(d.netWorth) || 0)).catch(() => {})
@@ -38,15 +39,19 @@ export default function ForecastCard() {
     return () => window.removeEventListener('transaction-added', load)
   }, [load])
 
+  // seed the field once with the recent pace; after that it's fully user-controlled
+  useEffect(() => {
+    if (!seeded.current && avgSave !== null) { seeded.current = true; setOverride(String(Math.round(avgSave))) }
+  }, [avgSave])
+
   if (nw === null || avgSave === null) return null
 
   const remaining = Math.max(0, goal - nw)
   const reached = nw >= goal
   const rate = RATES.find((r) => r.key === rateKey)!.rate
 
-  // monthly amount to model: the user's override, else their recent savings pace
-  const edited = override.trim() !== '' && !isNaN(Number(override))
-  const monthly = edited ? Math.max(0, Number(override)) : avgSave
+  // monthly amount to model: whatever is in the field (empty → 0)
+  const monthly = override.trim() === '' || isNaN(Number(override)) ? 0 : Math.max(0, Number(override))
 
   // compound month by month: balance grows at the monthly rate, plus the contribution
   const mRate = Math.pow(1 + rate, 1 / 12) - 1
@@ -89,12 +94,12 @@ export default function ForecastCard() {
               <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>Adding / month ✎</div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 1, marginTop: 4 }}>
                 <span style={{ fontWeight: 700, fontSize: 16 }}>$</span>
-                <input inputMode="numeric" value={edited ? override : String(Math.round(avgSave))}
+                <input inputMode="numeric" value={override} placeholder="0"
                   onChange={(e) => setOverride(e.target.value.replace(/[^0-9.]/g, ''))}
                   style={{ width: 74, fontWeight: 700, fontSize: 16, padding: '2px 2px', border: 'none', borderBottom: '1px dashed var(--border)', background: 'transparent', color: 'var(--text-primary)', fontFamily: 'inherit', outline: 'none' }} />
                 <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>/mo</span>
               </div>
-              {edited && Math.round(Number(override)) !== Math.round(avgSave) && (
+              {Math.round(Number(override) || 0) !== Math.round(avgSave) && (
                 <button onClick={() => setOverride('')} style={{ marginTop: 4, background: 'transparent', border: 'none', padding: 0, color: 'var(--accent)', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>↺ use my pace ({money(avgSave)})</button>
               )}
             </div>
