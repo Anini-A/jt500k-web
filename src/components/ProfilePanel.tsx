@@ -8,9 +8,13 @@ interface Item { label: string; value: string }
 interface Section { id: string; icon: string; title: string; items: Item[] }
 interface Profile { sections: Section[]; links: { label: string; url: string }[] }
 
-// lucide icon per known section (matches the dashboard tab styling)
-const SECTION_ICON: Record<string, LucideIcon> = {
-  members: Users, home: Home, insurance: Shield, estate: ScrollText, goals: Flag,
+// lucide icon + short tab label per known section (matches the dashboard tabs)
+const SECTION_META: Record<string, { Icon: LucideIcon; short: string }> = {
+  members: { Icon: Users, short: 'Members' },
+  home: { Icon: Home, short: 'Home' },
+  insurance: { Icon: Shield, short: 'Insurance' },
+  estate: { Icon: ScrollText, short: 'Estate' },
+  goals: { Icon: Flag, short: 'Goals' },
 }
 
 const inp: React.CSSProperties = {
@@ -63,11 +67,11 @@ export default function ProfilePanel() {
       <section style={{ display: 'flex', justifyContent: 'center' }}>
         <div className="tabs">
           {profile.sections.map((s) => {
-            const Icon = SECTION_ICON[s.id]
+            const meta = SECTION_META[s.id]
             return (
               <button key={s.id} className={`tab ${filter === s.id ? 'tab-active' : ''}`}
                 onClick={() => { setFilter(s.id); cancel() }}>
-                {Icon ? <Icon size={16} /> : <span>{s.icon}</span>} {s.title}
+                {meta ? <meta.Icon size={16} /> : <span>{s.icon}</span>} {meta?.short || s.title}
               </button>
             )
           })}
@@ -85,7 +89,7 @@ export default function ProfilePanel() {
           ) : (
             <>
               <h2 style={{ margin: 0, minWidth: 0, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                {(() => { const Icon = SECTION_ICON[shown.id]; return Icon ? <Icon size={20} /> : <span>{shown.icon}</span> })()} {shown.title}
+                {(() => { const meta = SECTION_META[shown.id]; return meta ? <meta.Icon size={20} /> : <span>{shown.icon}</span> })()} {shown.title}
               </h2>
               <button aria-label="Edit section" title="Edit" onClick={startEdit}
                 style={{ flexShrink: 0, padding: 7, borderRadius: 9, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', display: 'inline-flex' }}>
