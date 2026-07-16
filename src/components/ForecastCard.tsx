@@ -19,6 +19,7 @@ export default function ForecastCard() {
   const [goal, setGoal] = useState(500000)
   const [avgSave, setAvgSave] = useState<number | null>(null)
   const [rateKey, setRateKey] = useState('m')
+  const [override, setOverride] = useState('') // custom monthly savings (calculator)
 
   const load = useCallback(() => {
     getJSON('/api/networth').then((d) => !d.error && setNw(Number(d.netWorth) || 0)).catch(() => {})
@@ -43,11 +44,15 @@ export default function ForecastCard() {
   const reached = nw >= goal
   const rate = RATES.find((r) => r.key === rateKey)!.rate
 
+  // monthly amount to model: the user's override, else their recent savings pace
+  const edited = override.trim() !== '' && !isNaN(Number(override))
+  const monthly = edited ? Math.max(0, Number(override)) : avgSave
+
   // compound month by month: balance grows at the monthly rate, plus the contribution
   const mRate = Math.pow(1 + rate, 1 / 12) - 1
   const MAX = 720 // 60 years cap
   let months = 0, bal = nw
-  if (!reached) { while (bal < goal && months < MAX) { bal = bal * (1 + mRate) + avgSave; months++ } }
+  if (!reached) { while (bal < goal && months < MAX) { bal = bal * (1 + mRate) + monthly; months++ } }
   const projectable = !reached && months < MAX
 
   let dateStr = '', awayStr = ''
@@ -81,8 +86,17 @@ export default function ForecastCard() {
           </div>
           <div style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(2, 1fr)', marginTop: 16 }}>
             <div style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 12, padding: 11 }}>
-              <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>Adding</div>
-              <div style={{ fontWeight: 700, fontSize: 16, marginTop: 4 }}>{money(avgSave)}/mo</div>
+              <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>Adding / month ✎</div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 1, marginTop: 4 }}>
+                <span style={{ fontWeight: 700, fontSize: 16 }}>$</span>
+                <input inputMode="numeric" value={edited ? override : String(Math.round(avgSave))}
+                  onChange={(e) => setOverride(e.target.value.replace(/[^0-9.]/g, ''))}
+                  style={{ width: 74, fontWeight: 700, fontSize: 16, padding: '2px 2px', border: 'none', borderBottom: '1px dashed var(--border)', background: 'transparent', color: 'var(--text-primary)', fontFamily: 'inherit', outline: 'none' }} />
+                <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>/mo</span>
+              </div>
+              {edited && Math.round(Number(override)) !== Math.round(avgSave) && (
+                <button onClick={() => setOverride('')} style={{ marginTop: 4, background: 'transparent', border: 'none', padding: 0, color: 'var(--accent)', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>↺ use my pace ({money(avgSave)})</button>
+              )}
             </div>
             <div style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 12, padding: 11 }}>
               <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>Net worth now</div>
@@ -90,7 +104,7 @@ export default function ForecastCard() {
             </div>
           </div>
           <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 12 }}>
-            💡 Assumes your savings keep compounding at ~{Math.round(rate * 100)}%/yr. Contributions are invested (TFSA), so growth is included.
+            💡 Starts from your recent savings pace ({money(avgSave)}/mo) — edit &quot;Adding&quot; to try any amount. Assumes contributions (TFSA/RRSP/RESP…) compound at ~{Math.round(rate * 100)}%/yr.
           </div>
         </>
       ) : (
