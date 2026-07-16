@@ -95,7 +95,7 @@ export default function ProfilePanel() {
           )}
         </div>
 
-        <div style={{ display: 'grid', gap: editing ? 8 : 2 }}>
+        <div style={{ display: 'grid', gap: 8 }}>
           {view.items.map((it, ii) => editing && draft ? (
             <div key={ii} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
               <input style={{ ...inp, flex: '0 0 34%' }} value={it.label} placeholder="Label" onChange={(e) => upd((d) => { d.items[ii].label = e.target.value })} />
@@ -104,12 +104,12 @@ export default function ProfilePanel() {
                 style={{ flexShrink: 0, padding: 8, borderRadius: 9, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}><Trash2 size={14} /></button>
             </div>
           ) : (
-            <div key={ii} style={{ display: 'flex', justifyContent: 'space-between', gap: 14, padding: '9px 0', borderBottom: ii < view.items.length - 1 ? '1px solid var(--border)' : 'none', flexWrap: 'wrap' }}>
-              <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, flex: '0 0 34%', minWidth: 130 }}>{it.label}</span>
+            <div key={ii} style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '11px 12px', minWidth: 0 }}>
+              <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{it.label}</div>
               {isUrl(it.value) ? (
-                <a href={it.value} target="_blank" rel="noopener noreferrer" style={{ flex: 1, textAlign: 'right', fontSize: 14, fontWeight: 600, display: 'inline-flex', gap: 5, justifyContent: 'flex-end', alignItems: 'center' }}>Open <ExternalLink size={13} /></a>
+                <a href={it.value} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 4, fontWeight: 600 }}>Open <ExternalLink size={13} /></a>
               ) : (
-                <span style={{ flex: 1, textAlign: 'right', fontSize: 14, fontWeight: 500, minWidth: 0 }}>{it.value}</span>
+                <div style={{ fontSize: 15, fontWeight: 600, marginTop: 4, color: 'var(--text-primary)', overflowWrap: 'anywhere' }}>{it.value}</div>
               )}
             </div>
           ))}
