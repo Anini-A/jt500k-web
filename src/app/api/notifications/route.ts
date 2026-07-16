@@ -12,11 +12,12 @@ interface Notif { id: string; icon: string; title: string; detail: string; sever
 
 // GET /api/notifications — recurring reminders, category trends, over-budget alerts.
 export async function GET() {
-  const [{ data: txAll }, { data: recs }, { data: budgetLines }, { data: cats }] = await Promise.all([
+  const [{ data: txAll }, { data: recs }, { data: budgetLines }, { data: cats }, { data: prof }] = await Promise.all([
     supabaseAdmin.from('transactions').select('type, amount, date, category, description'),
     supabaseAdmin.from('recurring').select('name, type, category, amount, description, active'),
     supabaseAdmin.from('budgets').select('category, amount'),
     supabaseAdmin.from('categories').select('name, type'),
+    supabaseAdmin.from('household_profile').select('data').order('updated_at', { ascending: false }).limit(1).maybeSingle(),
   ])
   const txns = txAll ?? []
   const typeByCat = new Map((cats ?? []).map((c) => [c.name, c.type]))
@@ -84,6 +85,18 @@ export async function GET() {
     if (missing.length) {
       const names = missing.slice(0, 6).map((r) => r.name).join(', ')
       out.push({ id: `recurring-${curMonth}-${missing.length}`, icon: '🔁', severity: 'info', title: `${missing.length} recurring item${missing.length !== 1 ? 's' : ''} to log this month`, detail: `${names}${missing.length > 6 ? '…' : ''}. Open ➕ Add → Recurring, or ask the assistant to log them.` })
+    }
+  }
+
+  // ---- 4) Household to-dos (open estate/insurance items from the profile) ----
+  const todoRe = /pending|none yet|not (yet|done|set up|submitted|completed)|to (do|submit|update|complete|sign)|missing|no will|no poa|⚠️/i
+  const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+  for (const sec of (prof?.data?.sections || [])) {
+    if (!['estate', 'insurance'].includes(sec.id)) continue
+    for (const it of (sec.items || [])) {
+      if (todoRe.test(String(it.value || ''))) {
+        out.push({ id: `todo-${sec.id}-${slug(it.label)}`, icon: '📌', severity: 'info', title: `To-do: ${it.label}`, detail: it.value })
+      }
     }
   }
 
