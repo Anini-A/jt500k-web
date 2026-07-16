@@ -1,12 +1,17 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Pencil, Plus, Trash2, ExternalLink } from 'lucide-react'
+import { Pencil, Plus, Trash2, ExternalLink, Users, Home, Shield, ScrollText, Flag, type LucideIcon } from 'lucide-react'
 import { getJSON } from '@/lib/fresh'
 
 interface Item { label: string; value: string }
 interface Section { id: string; icon: string; title: string; items: Item[] }
 interface Profile { sections: Section[]; links: { label: string; url: string }[] }
+
+// lucide icon per known section (matches the dashboard tab styling)
+const SECTION_ICON: Record<string, LucideIcon> = {
+  members: Users, home: Home, insurance: Shield, estate: ScrollText, goals: Flag,
+}
 
 const inp: React.CSSProperties = {
   padding: '9px 11px', borderRadius: 10, border: '1px solid var(--border)',
@@ -54,13 +59,20 @@ export default function ProfilePanel() {
 
   return (
     <div style={{ display: 'grid', gap: 14 }}>
-      {/* Section pills */}
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-        {profile.sections.map((s) => (
-          <button key={s.id} className={`chip ${filter === s.id ? 'chip-active' : ''}`}
-            onClick={() => { setFilter(s.id); cancel() }}>{s.icon} {s.title}</button>
-        ))}
-      </div>
+      {/* Section menu — same segmented tab style as the dashboard */}
+      <section style={{ display: 'flex', justifyContent: 'center' }}>
+        <div className="tabs">
+          {profile.sections.map((s) => {
+            const Icon = SECTION_ICON[s.id]
+            return (
+              <button key={s.id} className={`tab ${filter === s.id ? 'tab-active' : ''}`}
+                onClick={() => { setFilter(s.id); cancel() }}>
+                {Icon ? <Icon size={16} /> : <span>{s.icon}</span>} {s.title}
+              </button>
+            )
+          })}
+        </div>
+      </section>
 
       {/* The selected section as a card, with its own edit */}
       <div className="card glass">
@@ -72,7 +84,9 @@ export default function ProfilePanel() {
             </div>
           ) : (
             <>
-              <h2 style={{ margin: 0, minWidth: 0 }}>{shown.icon} {shown.title}</h2>
+              <h2 style={{ margin: 0, minWidth: 0, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                {(() => { const Icon = SECTION_ICON[shown.id]; return Icon ? <Icon size={20} /> : <span>{shown.icon}</span> })()} {shown.title}
+              </h2>
               <button aria-label="Edit section" title="Edit" onClick={startEdit}
                 style={{ flexShrink: 0, padding: 7, borderRadius: 9, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', display: 'inline-flex' }}>
                 <Pencil size={15} />
