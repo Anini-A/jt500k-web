@@ -18,12 +18,30 @@ const SECTION_META: Record<string, { Icon: LucideIcon; short: string }> = {
 }
 
 // Same owner colour system as the Investments panel
-const OWNER_COLOR: Record<string, { fg: string; bg: string }> = {
-  Jean: { fg: 'var(--accent)', bg: 'var(--accent-soft)' },
-  Henriette: { fg: 'var(--savings)', bg: 'var(--savings-soft)' },
-  Noah: { fg: 'var(--income)', bg: 'var(--income-soft)' },
-  Joint: { fg: '#b7791f', bg: 'rgba(224,161,43,0.16)' },
+const OWNER_COLOR: Record<string, { fg: string; bg: string; initials: string }> = {
+  Jean: { fg: 'var(--accent)', bg: 'var(--accent-soft)', initials: 'JA' },
+  Henriette: { fg: 'var(--savings)', bg: 'var(--savings-soft)', initials: 'HF' },
+  Noah: { fg: 'var(--income)', bg: 'var(--income-soft)', initials: 'NN' },
+  Joint: { fg: '#b7791f', bg: 'rgba(224,161,43,0.16)', initials: 'JT' },
 }
+
+// best-effort money parsing from free-text values
+function parseAmounts(text: string): number[] {
+  const out: number[] = []
+  const re = /\$\s?([\d,]+(?:\.\d+)?)\s?([KM])?/gi
+  let m: RegExpExecArray | null
+  while ((m = re.exec(text))) {
+    let n = parseFloat(m[1].replace(/,/g, ''))
+    const u = (m[2] || '').toUpperCase()
+    if (u === 'K') n *= 1e3
+    if (u === 'M') n *= 1e6
+    out.push(n)
+  }
+  return out
+}
+const parseMoney = (t: string) => parseAmounts(t)[0] || 0
+const moneyShort = (n: number) => n >= 1e6 ? '$' + +(n / 1e6).toFixed(2) + 'M' : n >= 1000 ? '$' + Math.round(n / 1000) + 'K' : '$' + Math.round(n)
+const isPersonLabel = (label: string) => /^(jean|henriette|noah|nono|dependent)\b/i.test(label)
 function detectOwner(text: string): string | null {
   const t = ` ${text.toLowerCase()} `
   if (/\bhenriette\b|\bhf\b/.test(t)) return 'Henriette'
@@ -46,6 +64,14 @@ function OwnerPill({ owner }: { owner: string }) {
 }
 function StatusPill({ open }: { open: boolean }) {
   return <span style={{ background: open ? 'var(--expense-soft)' : 'var(--income-soft)', color: open ? 'var(--expense)' : 'var(--income)', padding: '2px 9px', borderRadius: 999, fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0 }}>{open ? '⚠ Open' : '✓ Done'}</span>
+}
+function Summary({ big, label }: { big: string; label: string }) {
+  return (
+    <div style={{ marginBottom: 12, padding: '12px 14px', background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 12 }}>
+      <div style={{ fontWeight: 800, fontSize: 'clamp(22px, 6vw, 28px)', letterSpacing: '-0.02em' }}>{big}</div>
+      <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 2 }}>{label}</div>
+    </div>
+  )
 }
 
 const inp: React.CSSProperties = {
@@ -130,6 +156,16 @@ export default function ProfilePanel() {
           )}
         </div>
 
+        {/* Section summary (members: combined income · insurance: total coverage) */}
+        {!editing && shown.id === 'members' && (() => {
+          const income = shown.items.reduce((s, it) => { const o = detectOwner(`${it.label} ${it.value}`); return (o === 'Jean' || o === 'Henriette') ? s + parseMoney(it.value) : s }, 0)
+          return income > 0 ? <Summary big={`~${moneyShort(income)}`} label="combined household income" /> : null
+        })()}
+        {!editing && shown.id === 'insurance' && (() => {
+          const cov = shown.items.reduce((s, it) => { const amts = parseAmounts(it.value).filter((a) => a >= 50000); const mult = /\beach\b|×\s?2|x2/i.test(it.value) ? 2 : 1; return s + amts.reduce((a, b) => a + b, 0) * mult }, 0)
+          return cov > 0 ? <Summary big={`≈ ${moneyShort(cov)}`} label="total life coverage" /> : null
+        })()}
+
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 8 }}>
           {view.items.map((it, ii) => editing && draft ? (
             <div key={ii} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
@@ -139,7 +175,26 @@ export default function ProfilePanel() {
                 style={{ flexShrink: 0, padding: 8, borderRadius: 9, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}><Trash2 size={14} /></button>
             </div>
           ) : (() => {
-            const owner = ['members', 'insurance'].includes(shown.id) ? detectOwner(`${it.label} ${it.value}`) : null
+            // Members: render each person as an avatar card
+            if (shown.id === 'members' && isPersonLabel(it.label)) {
+              const owner = detectOwner(it.label) || detectOwner(it.value) || 'Joint'
+              const meta = OWNER_COLOR[owner]
+              const cl = cleanLabel(it.label, owner)
+              return (
+                <div key={ii} style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderLeft: `3px solid ${meta.fg}`, borderRadius: 12, padding: '11px 12px', minWidth: 0, display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                  <div style={{ width: 42, height: 42, borderRadius: '50%', background: meta.bg, color: meta.fg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14, flexShrink: 0 }}>{meta.initials}</div>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' }}>
+                      <span style={{ fontWeight: 700, fontSize: 15 }}>{owner}</span>
+                      {cl && <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>· {cl}</span>}
+                    </div>
+                    <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 3, overflowWrap: 'anywhere' }}>{it.value}</div>
+                  </div>
+                </div>
+              )
+            }
+            // Insurance: owner pill + label; Estate: status pill; else plain
+            const owner = shown.id === 'insurance' ? detectOwner(it.label) : null
             const cl = owner ? cleanLabel(it.label, owner) : it.label
             const estateOpen = shown.id === 'estate' ? todoRe.test(String(it.value || '')) : null
             return (
