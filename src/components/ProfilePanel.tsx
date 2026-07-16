@@ -64,20 +64,20 @@ export default function ProfilePanel() {
 
       {/* The selected section as a card, with its own edit */}
       <div className="card glass">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-          {!editing && (
-            <button aria-label="Edit section" title="Edit" onClick={startEdit}
-              style={{ flexShrink: 0, padding: 7, borderRadius: 9, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', display: 'inline-flex' }}>
-              <Pencil size={15} />
-            </button>
-          )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, justifyContent: 'space-between' }}>
           {editing && draft ? (
-            <>
+            <div style={{ display: 'flex', gap: 8, flex: 1, minWidth: 0 }}>
               <input style={{ ...inp, width: 50, textAlign: 'center' }} value={draft.icon} onChange={(e) => upd((d) => { d.icon = e.target.value })} />
               <input style={{ ...inp, fontWeight: 700 }} value={draft.title} onChange={(e) => upd((d) => { d.title = e.target.value })} />
-            </>
+            </div>
           ) : (
-            <h2 style={{ margin: 0 }}>{shown.icon} {shown.title}</h2>
+            <>
+              <h2 style={{ margin: 0, minWidth: 0 }}>{shown.icon} {shown.title}</h2>
+              <button aria-label="Edit section" title="Edit" onClick={startEdit}
+                style={{ flexShrink: 0, padding: 7, borderRadius: 9, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', display: 'inline-flex' }}>
+                <Pencil size={15} />
+              </button>
+            </>
           )}
         </div>
 
