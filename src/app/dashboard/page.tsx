@@ -1,19 +1,18 @@
 'use client'
 
 import { useEffect, useState, useMemo, useCallback } from 'react'
-import { Wallet, CreditCard, PiggyBank, LineChart, Banknote, Shield, Target, Users, Pencil, Trash2, type LucideIcon } from 'lucide-react'
+import { Wallet, CreditCard, PiggyBank, LineChart, Banknote, Target, Users, Pencil, Trash2, type LucideIcon } from 'lucide-react'
 import HeaderNav from '@/components/HeaderNav'
 import Logo from '@/components/Logo'
 import DebtManager from '@/components/DebtManager'
 import BudgetManager from '@/components/BudgetManager'
 import InvestmentsPanel from '@/components/InvestmentsPanel'
 import ProfilePanel from '@/components/ProfilePanel'
-import InsuranceView from '@/components/InsuranceView'
 import EditTransactionModal from '@/components/EditTransactionModal'
 import { getJSON } from '@/lib/fresh'
 import { MonthlyArea, HBar, Donut, COLORS } from '@/components/DashCharts'
 
-type Tab = 'income' | 'expenses' | 'savings' | 'debts' | 'investments' | 'insurance' | 'budget' | 'household'
+type Tab = 'income' | 'expenses' | 'savings' | 'debts' | 'investments' | 'budget' | 'household'
 const TABS: { key: Tab; label: string; Icon: LucideIcon; soon?: boolean }[] = [
   { key: 'budget', label: 'Budget', Icon: Target },
   { key: 'income', label: 'Income', Icon: Wallet },
@@ -21,7 +20,6 @@ const TABS: { key: Tab; label: string; Icon: LucideIcon; soon?: boolean }[] = [
   { key: 'savings', label: 'Savings', Icon: PiggyBank },
   { key: 'debts', label: 'Debts', Icon: Banknote },
   { key: 'investments', label: 'Investments', Icon: LineChart },
-  { key: 'insurance', label: 'Insurance', Icon: Shield },
   { key: 'household', label: 'Household', Icon: Users },
 ]
 
@@ -280,11 +278,6 @@ export default function Dashboard() {
         {tab === 'investments' && (
           <section className="block" style={{ marginBottom: 64 }}>
             <InvestmentsPanel />
-          </section>
-        )}
-        {tab === 'insurance' && (
-          <section className="block" style={{ marginBottom: 64 }}>
-            <InsuranceView />
           </section>
         )}
         {tab === 'household' && (

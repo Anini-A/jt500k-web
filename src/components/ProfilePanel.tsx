@@ -21,6 +21,7 @@ export default function ProfilePanel() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [draft, setDraft] = useState<Profile | null>(null)
   const [saving, setSaving] = useState(false)
+  const [filter, setFilter] = useState('all') // 'all' | section id
 
   const load = useCallback(() => {
     getJSON('/api/profile').then((d) => setProfile({ sections: d.sections || [], links: d.links || [] })).catch(() => setProfile({ sections: [], links: [] }))
@@ -72,7 +73,19 @@ export default function ProfilePanel() {
         </div>
       )}
 
-      {view.sections.map((sec, si) => (
+      {/* Section filter pills */}
+      {view.sections.length > 1 && (
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          <button className={`chip ${filter === 'all' ? 'chip-active' : ''}`} onClick={() => setFilter('all')}>All</button>
+          {view.sections.map((s, i) => (
+            <button key={s.id || i} className={`chip ${filter === s.id ? 'chip-active' : ''}`} onClick={() => setFilter(s.id)}>{s.icon} {s.title}</button>
+          ))}
+        </div>
+      )}
+
+      {view.sections.map((sec, si) => {
+        if (filter !== 'all' && sec.id !== filter) return null
+        return (
         <div key={sec.id || si} className="card glass">
           {editing ? (
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
@@ -106,7 +119,8 @@ export default function ProfilePanel() {
             )}
           </div>
         </div>
-      ))}
+        )
+      })}
 
       {editing && (
         <button className="btn btn-secondary" style={{ justifySelf: 'start' }}
