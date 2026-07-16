@@ -100,7 +100,7 @@ export default function ForecastCard() {
                 <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>/mo</span>
               </div>
               {Math.round(Number(override) || 0) !== Math.round(avgSave) && (
-                <button onClick={() => setOverride('')} style={{ marginTop: 4, background: 'transparent', border: 'none', padding: 0, color: 'var(--accent)', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>↺ use my pace ({money(avgSave)})</button>
+                <button onClick={() => setOverride(String(Math.round(avgSave)))} style={{ marginTop: 4, background: 'transparent', border: 'none', padding: 0, color: 'var(--accent)', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>↺ use my pace ({money(avgSave)})</button>
               )}
             </div>
             <div style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 12, padding: 11 }}>
