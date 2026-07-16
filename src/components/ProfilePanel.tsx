@@ -62,7 +62,7 @@ export default function ProfilePanel() {
   }
 
   return (
-    <div style={{ display: 'grid', gap: 14 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 14 }}>
       {/* Section menu — same segmented tab style as the dashboard */}
       <section style={{ display: 'flex', justifyContent: 'center' }}>
         <div className="tabs">
@@ -99,7 +99,7 @@ export default function ProfilePanel() {
           )}
         </div>
 
-        <div style={{ display: 'grid', gap: 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 8 }}>
           {view.items.map((it, ii) => editing && draft ? (
             <div key={ii} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
               <input style={{ ...inp, flex: '0 0 34%' }} value={it.label} placeholder="Label" onChange={(e) => upd((d) => { d.items[ii].label = e.target.value })} />
