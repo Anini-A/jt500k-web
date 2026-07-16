@@ -11,7 +11,7 @@ interface Profile { sections: Section[]; links: { label: string; url: string }[]
 // lucide icon + short tab label per known section (matches the dashboard tabs)
 const SECTION_META: Record<string, { Icon: LucideIcon; short: string }> = {
   members: { Icon: Users, short: 'Members' },
-  home: { Icon: Home, short: 'Home' },
+  home: { Icon: Home, short: 'Mortgage' },
   insurance: { Icon: Shield, short: 'Insurance' },
   estate: { Icon: ScrollText, short: 'Estate' },
   goals: { Icon: Flag, short: 'Goals' },
