@@ -71,6 +71,8 @@ export default function AddTransactionButton() {
   const [recs, setRecs] = useState<any[]>([])
   const [picked, setPicked] = useState<Set<string>>(new Set())
   const [recDate, setRecDate] = useState(new Date().toISOString().slice(0, 10))
+  const [recEdit, setRecEdit] = useState<null | 'new' | string>(null) // manage recurring items
+  const [recForm, setRecForm] = useState({ name: '', type: 'expense', category: '', amount: '', description: '' })
 
   useEffect(() => {
     if (open && cats.length === 0) {
@@ -101,6 +103,29 @@ export default function AddTransactionButton() {
       if (res.ok) { close(); window.dispatchEvent(new CustomEvent('transaction-added')) }
       else alert('Error: ' + ((await res.json()).error || 'could not save'))
     } finally { setSaving(false) }
+  }
+
+  // ---- manage recurring items (add / edit / delete) ----
+  const reloadRecs = async () => { const d = await getJSON('/api/recurring').catch(() => []); if (Array.isArray(d)) setRecs(d.filter((r: any) => r.active)) }
+  const startNewRec = () => { setRecForm({ name: '', type: 'expense', category: '', amount: '', description: '' }); setRecEdit('new') }
+  const startEditRec = (r: any) => { setRecForm({ name: r.name, type: r.type, category: r.category, amount: String(r.amount), description: r.description || '' }); setRecEdit(r.id) }
+  const saveRec = async () => {
+    const amount = parseFloat(recForm.amount)
+    if (!recForm.name.trim() || !recForm.category || !(amount > 0)) { alert('Name, category and a positive amount are required.'); return }
+    const payload = { name: recForm.name.trim(), type: recForm.type, category: recForm.category, amount, description: recForm.description }
+    setSaving(true)
+    try {
+      const res = recEdit === 'new'
+        ? await fetch('/api/recurring', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+        : await fetch('/api/recurring', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: recEdit, ...payload }) })
+      if (res.ok) { setRecEdit(null); await reloadRecs() } else alert('Could not save: ' + ((await res.json()).error || 'error'))
+    } finally { setSaving(false) }
+  }
+  const deleteRec = async () => {
+    if (!recEdit || recEdit === 'new') return
+    if (!confirm('Delete this recurring item?')) return
+    const res = await fetch(`/api/recurring?id=${recEdit}`, { method: 'DELETE' })
+    if (res.ok) { setRecEdit(null); await reloadRecs() } else alert('Could not delete.')
   }
 
   const submitSingle = async (e: React.FormEvent) => {
@@ -291,14 +316,43 @@ export default function AddTransactionButton() {
             {/* ---------------- RECURRING ---------------- */}
             {mode === 'recurring' && (
               <div style={{ display: 'grid', gap: 12 }}>
-                {recs.length === 0 ? (
-                  <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, margin: 0 }}>
-                    No recurring items yet. Add them in <strong>Settings → 🔁 Recurring</strong> (rent, subs, paychecks…), then log them here in one tap.
-                  </p>
+                {recEdit !== null ? (
+                  /* Add / edit a recurring item */
+                  <div style={{ display: 'grid', gap: 10 }}>
+                    <div style={{ fontWeight: 700, fontSize: 15 }}>{recEdit === 'new' ? '🔁 New recurring item' : '🔁 Edit recurring item'}</div>
+                    <div className="form-2">
+                      <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Name</span>
+                        <input style={inp} value={recForm.name} onChange={(e) => setRecForm({ ...recForm, name: e.target.value })} placeholder="e.g. Rent" /></label>
+                      <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Type</span>
+                        <select style={inp} value={recForm.type} onChange={(e) => setRecForm({ ...recForm, type: e.target.value, category: '' })}>
+                          <option value="income">Income</option><option value="expense">Expense</option><option value="savings">Savings</option>
+                        </select></label>
+                    </div>
+                    <div className="form-2">
+                      <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Category</span>
+                        <CategorySelect value={recForm.category} onChange={(v) => setRecForm({ ...recForm, category: v })} cats={cats.filter((c) => c.type === recForm.type)} /></label>
+                      <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Amount</span>
+                        <input style={inp} type="number" step="0.01" value={recForm.amount} onChange={(e) => setRecForm({ ...recForm, amount: e.target.value })} placeholder="0.00" /></label>
+                    </div>
+                    <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Description (optional)</span>
+                      <input style={inp} value={recForm.description} onChange={(e) => setRecForm({ ...recForm, description: e.target.value })} placeholder="e.g. matches a debt name" /></label>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} disabled={saving} onClick={saveRec}>💾 {recEdit === 'new' ? 'Add' : 'Save'}</button>
+                      <button className="btn btn-secondary" onClick={() => setRecEdit(null)}>Cancel</button>
+                      {recEdit !== 'new' && <button className="btn" style={cancelBtn} onClick={deleteRec}><Trash2 size={14} /> Delete</button>}
+                    </div>
+                  </div>
+                ) : recs.length === 0 ? (
+                  <div style={{ display: 'grid', gap: 12, justifyItems: 'center', textAlign: 'center', padding: '8px 0' }}>
+                    <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, margin: 0 }}>
+                      No recurring items yet. Add your regulars (rent, subs, paycheques…), then log them here in one tap.
+                    </p>
+                    <button className="btn btn-primary" onClick={startNewRec}><Plus size={15} /> Add recurring item</button>
+                  </div>
                 ) : (
                   <>
                     <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between' }}>
-                      <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>Pick what to log this month.</span>
+                      <button className="btn btn-secondary" onClick={startNewRec}><Plus size={15} /> New</button>
                       <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}><span className="stat-label">Date</span>
                         <input type="date" value={recDate} onChange={(e) => setRecDate(e.target.value)} style={{ ...inp, width: 'auto' }} /></label>
                     </div>
@@ -309,15 +363,18 @@ export default function AddTransactionButton() {
                           <div style={{ display: 'grid', gap: 2 }}>
                             {recs.filter((r) => recGroup(r) === g.key).map((r) => {
                               const on = picked.has(r.id)
+                              const toggle = () => setPicked((p) => { const n = new Set(p); n.has(r.id) ? n.delete(r.id) : n.add(r.id); return n })
                               return (
-                                <label key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 4px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
-                                  <input type="checkbox" checked={on} onChange={() => setPicked((p) => { const n = new Set(p); n.has(r.id) ? n.delete(r.id) : n.add(r.id); return n })} />
-                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 4px', borderBottom: '1px solid var(--border)' }}>
+                                  <input type="checkbox" checked={on} onChange={toggle} />
+                                  <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={toggle}>
                                     <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</div>
                                     <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{r.category}</div>
                                   </div>
                                   <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', flexShrink: 0 }}>{money(Number(r.amount))}</span>
-                                </label>
+                                  <button aria-label="Edit" title="Edit" onClick={() => startEditRec(r)}
+                                    style={{ flexShrink: 0, display: 'inline-flex', padding: 6, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}><PencilLine size={14} /></button>
+                                </div>
                               )
                             })}
                           </div>

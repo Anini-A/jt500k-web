@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import CategoryManager from './CategoryManager'
-import RecurringManager from './RecurringManager'
 import { getJSON } from '@/lib/fresh'
 
 interface Settings {
@@ -135,11 +134,6 @@ export default function SettingsPanel() {
       {/* Category management */}
       <section className="block">
         <CategoryManager />
-      </section>
-
-      {/* Recurring */}
-      <section className="block">
-        <RecurringManager />
       </section>
 
       {/* Backup */}

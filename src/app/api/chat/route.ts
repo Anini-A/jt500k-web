@@ -43,7 +43,11 @@ const TOOLS = [{
   ],
 }]
 
-const cad = (n: any) => '$' + Math.round(Number(n) || 0).toLocaleString()
+// exact amount in the confirmation label (cents shown when present — never rounded)
+const cad = (n: any) => {
+  const x = Number(n) || 0
+  return '$' + x.toLocaleString('en-CA', { minimumFractionDigits: Number.isInteger(x) ? 0 : 2, maximumFractionDigits: 2 })
+}
 // Human-readable summary of a proposed action for the confirmation card.
 function describeAction(name: string, a: any): string {
   switch (name) {
@@ -154,7 +158,11 @@ async function buildContext() {
   const acctSummary = [...byAcct.entries()].map(([a, v]) => `${a} ${money(v)}`).join(' · ')
   const manualLines = (manual ?? []).map((a: any) => `  - ${a.name}${a.kind ? ` (${a.kind})` : ''} · ${a.owner}: ${money(Number(a.value_cad))}`).join('\n')
 
-  return `Today is ${new Date().toISOString().slice(0, 10)}. The user is tracking their finances toward a ${money(goal)} goal ("Journey to 500K"). All amounts are in CAD.
+  const nowD = new Date()
+  const thisM = nowD.toLocaleString('en', { month: 'long', year: 'numeric' })
+  const lastM = new Date(nowD.getFullYear(), nowD.getMonth() - 1, 1).toLocaleString('en', { month: 'long', year: 'numeric' })
+
+  return `Today is ${nowD.toISOString().slice(0, 10)}. "This month" = ${thisM}; "last month" = ${lastM}. Use these exactly when the user says this/last month. The user is tracking their finances toward a ${money(goal)} goal ("Journey to 500K"). All amounts are in CAD.
 
 ⭐ THE GOAL METRIC IS NET WORTH, NOT the savings-contributions total. "Progress to the goal" = net worth ÷ goal. Do NOT use the "total saved/invested" figure below as progress toward the goal.
 
