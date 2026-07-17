@@ -7,8 +7,9 @@ export const maxDuration = 30
 // Free provider (Google Gemini) is preferred when its key is present; Anthropic
 // stays as an automatic paid fallback. Get a free key at https://aistudio.google.com/apikey
 const GEMINI_KEY = process.env.GEMINI_API_KEY
-// Cheapest capable model + highest free/paid availability (fewest overloads).
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite'
+// Fuller Flash for better reasoning/understanding (still cents/month on paid tier);
+// falls back to lite/2.0 on overload. Override with GEMINI_MODEL.
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest'
 const ANTHROPIC_KEY =
   process.env.ANTHROPIC_API_KEY || process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY
 
@@ -269,20 +270,21 @@ async function getMarketContext(): Promise<string> {
 // Call Gemini with the tool set. Retries once on transient overload, then falls
 // back through other free Flash models so a spike on one doesn't fail the request.
 async function geminiGenerate({ system, contents }: { system: string; contents: any[] }) {
-  const models = [GEMINI_MODEL, 'gemini-flash-latest', 'gemini-2.0-flash']
+  const models = [GEMINI_MODEL, 'gemini-2.5-flash-lite', 'gemini-2.0-flash']
     .filter((m, i, a) => m && a.indexOf(m) === i)
   let lastErr = ''
   for (const model of models) {
-    // 2.0 Flash doesn't accept thinkingConfig; only send it to 2.5-class models
+    // 2.0 Flash doesn't accept thinkingConfig; 2.5-class models get a modest
+    // reasoning budget (better accuracy) with headroom so answers don't truncate
     const supportsThinking = !/2\.0/.test(model)
     const body = {
       system_instruction: { parts: [{ text: system }] },
       contents,
       tools: TOOLS,
       generationConfig: {
-        maxOutputTokens: 2048,
-        temperature: 0.5,
-        ...(supportsThinking ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
+        maxOutputTokens: 4096,
+        temperature: 0.4,
+        ...(supportsThinking ? { thinkingConfig: { thinkingBudget: 1024 } } : {}),
       },
     }
     for (let attempt = 0; attempt < 2; attempt++) {
