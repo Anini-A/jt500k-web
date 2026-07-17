@@ -159,6 +159,21 @@ async function buildContext() {
   const acctSummary = [...byAcct.entries()].map(([a, v]) => `${a} ${money(v)}`).join(' · ')
   const manualLines = (manual ?? []).map((a: any) => `  - ${a.name}${a.kind ? ` (${a.kind})` : ''} · ${a.owner}: ${money(Number(a.value_cad))}`).join('\n')
 
+  // pre-computed totals by account type × owner (so balances are never re-summed/mislabelled)
+  const byAcctOwner = new Map<string, number>()
+  const byOwnerTotal = new Map<string, number>()
+  for (const h of holds ?? []) {
+    const mv = Number(h.market_value_cad) || 0
+    byOwnerTotal.set(h.owner, (byOwnerTotal.get(h.owner) || 0) + mv)
+    const k = `${h.account_type}||${h.owner}`
+    byAcctOwner.set(k, (byAcctOwner.get(k) || 0) + mv)
+  }
+  const acctTypeLines = [...byAcct.keys()].map((at) => {
+    const owners = [...byAcctOwner.entries()].filter(([k]) => k.startsWith(at + '||')).map(([k, v]) => `${k.split('||')[1]} ${money(v)}`).join(', ')
+    return `  - ${at}: ${money(byAcct.get(at) || 0)} (${owners})`
+  }).join('\n')
+  const ownerTotalLine = [...byOwnerTotal.entries()].map(([o, v]) => `${o} ${money(v)}`).join(', ')
+
   const nowD = new Date()
   const thisM = nowD.toLocaleString('en', { month: 'long', year: 'numeric' })
   const lastM = new Date(nowD.getFullYear(), nowD.getMonth() - 1, 1).toLocaleString('en', { month: 'long', year: 'numeric' })
@@ -172,7 +187,11 @@ NET WORTH (current) = ${money(netWorth)}  →  ${Math.round((netWorth / goal) * 
 - Cash & other assets: ${money(cashValue)}
 - Debts remaining (subtracted): ${money(debtsRemaining)}
 
-INVESTMENT HOLDINGS (by account: ${acctSummary || 'none'}):
+HOLDINGS BY ACCOUNT TYPE (use these EXACT totals for "how much in my TFSA/RRSP…" — never re-sum across account types or relabel one type as another):
+${acctTypeLines || '  (none)'}
+Holdings by owner (all accounts combined): ${ownerTotalLine || 'none'}
+
+INVESTMENT HOLDINGS — individual positions:
 ${holdingLines || '  (none)'}
 
 CASH & OTHER ASSETS:
@@ -327,6 +346,10 @@ export async function POST(req: NextRequest) {
     `tax, or legal advisor. For major or legal moves (wills, POA, big tax decisions, large trades) suggest ` +
     `confirming with a professional. If a general fact might be out of date (e.g. a specific year's limit), ` +
     `say it may have changed.\n\n` +
+    `STRICT NUMERIC RULES (avoid the common mistakes):\n` +
+    `• Progress to the goal: use the provided NET WORTH figure and its % EXACTLY — never recompute or estimate net worth.\n` +
+    `• Account balances ("how much in my TFSA/RRSP"): use the HOLDINGS BY ACCOUNT TYPE totals — do NOT sum across account types or call one account type another. A person's TFSA total is only the TFSA line, not their whole portfolio.\n` +
+    `• Age / TFSA-room: use the birth years in the HOUSEHOLD PROFILE. TFSA room accrues only from the year someone turned 18. NEVER infer used contribution room from an account balance (balances include growth); direct them to CRA My Account for exact room.\n\n` +
     `You may proactively flag a genuinely relevant opportunity when the data warrants it (e.g. an ` +
     `emergency-fund gap when there's little cash, a chance to save, or a notable opportunity cost) — ` +
     `but do NOT recite standing advice or a checklist in every reply, and don't repeat the same ` +
