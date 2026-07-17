@@ -183,7 +183,7 @@ export default function AddTransactionButton() {
 
       {open && createPortal(
         <div className="modal-backdrop" onClick={close}>
-          <div className="modal-card glass" style={{ width: 'min(820px, 100%)', minHeight: 'min(78vh, 540px)' }} onClick={(e) => e.stopPropagation()}>
+          <div className="modal-card glass" style={{ width: 'min(820px, 100%)', minHeight: 'min(78vh, 540px)', background: 'var(--surface-1)' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ marginBottom: 14 }}>
               <h2 style={{ margin: 0, fontSize: 18 }}>➕ Add Transaction</h2>
               <div className="tabs" style={{ padding: 3, marginTop: 12 }}>
@@ -334,6 +334,14 @@ export default function AddTransactionButton() {
                       <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Amount</span>
                         <input style={inp} type="number" step="0.01" value={recForm.amount} onChange={(e) => setRecForm({ ...recForm, amount: e.target.value })} placeholder="0.00" /></label>
                     </div>
+                    {recForm.category === 'Debt Repayment' && debts.length > 0 && (
+                      <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Which debt?</span>
+                        <select style={inp} value={debts.some((d) => d.name === recForm.description) ? recForm.description : ''}
+                          onChange={(e) => setRecForm({ ...recForm, description: e.target.value })}>
+                          <option value="">— pick a debt (fills description) —</option>
+                          {debts.map((d) => <option key={d.name} value={d.name}>{d.name}</option>)}
+                        </select></label>
+                    )}
                     <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Description (optional)</span>
                       <input style={inp} value={recForm.description} onChange={(e) => setRecForm({ ...recForm, description: e.target.value })} placeholder="e.g. matches a debt name" /></label>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>

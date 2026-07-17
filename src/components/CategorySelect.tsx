@@ -57,9 +57,10 @@ export default function CategorySelect({ value, onChange, cats, placeholder = 'â
       </button>
 
       {open && (
-        <div className="glass" style={{
+        <div style={{
           position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, zIndex: 60,
           borderRadius: 14, maxHeight: 280, overflowY: 'auto', padding: 6,
+          background: 'var(--surface-1)', border: '1px solid var(--border)', boxShadow: 'var(--glass-shadow)',
         }}>
           {cats.map((c) => (
             <button key={c.name} type="button"
