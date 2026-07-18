@@ -5,21 +5,21 @@ import { Pencil, Plus, Trash2, ExternalLink, Users, Home, Shield, ScrollText, Fl
 import { getJSON } from '@/lib/fresh'
 
 type Status = 'todo' | 'doing' | 'done'
-interface Item { label: string; value: string; status?: Status }
-
-const STATUS: Record<Status, { label: string; fg: string; bg: string }> = {
-  todo: { label: '⚠ To do', fg: 'var(--expense)', bg: 'var(--expense-soft)' },
-  doing: { label: '◔ In progress', fg: 'var(--accent)', bg: 'var(--accent-soft)' },
-  done: { label: '✓ Done', fg: 'var(--income)', bg: 'var(--income-soft)' },
-}
-function StatusChip({ status }: { status: Status }) {
-  const s = STATUS[status]
-  return <span style={{ background: s.bg, color: s.fg, padding: '2px 9px', borderRadius: 999, fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0 }}>{s.label}</span>
-}
+interface Field { label: string; value: string }
+interface Item { label: string; value?: string; status?: Status; fields?: Field[] }
 interface Section { id: string; icon: string; title: string; items: Item[] }
 interface Profile { sections: Section[]; links: { label: string; url: string }[] }
 
-// lucide icon + short tab label per known section (matches the dashboard tabs)
+const inp: React.CSSProperties = {
+  padding: '9px 11px', borderRadius: 10, border: '1px solid var(--border)',
+  background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 14, width: '100%',
+  fontFamily: 'inherit', boxSizing: 'border-box',
+}
+const clone = <T,>(x: T): T => JSON.parse(JSON.stringify(x))
+const isUrl = (v: string) => /^https?:\/\//i.test((v || '').trim())
+const todoRe = /pending|none yet|not (yet|done|set up|submitted|completed)|to (do|submit|update|complete|sign)|missing|no will|no poa|⚠️/i
+
+// section → lucide icon + short tab label (matches dashboard tabs)
 const SECTION_META: Record<string, { Icon: LucideIcon; short: string }> = {
   members: { Icon: Users, short: 'Members' },
   home: { Icon: Home, short: 'Mortgage' },
@@ -28,15 +28,28 @@ const SECTION_META: Record<string, { Icon: LucideIcon; short: string }> = {
   goals: { Icon: Flag, short: 'Goals' },
 }
 
-// Same owner colour system as the Investments panel
+// owner colour system (shared with Investments)
 const OWNER_COLOR: Record<string, { fg: string; bg: string; initials: string }> = {
   Jean: { fg: 'var(--accent)', bg: 'var(--accent-soft)', initials: 'JA' },
   Henriette: { fg: 'var(--savings)', bg: 'var(--savings-soft)', initials: 'HF' },
   Noah: { fg: 'var(--income)', bg: 'var(--income-soft)', initials: 'NN' },
   Joint: { fg: '#b7791f', bg: 'rgba(224,161,43,0.16)', initials: 'JT' },
 }
+function detectOwner(text: string): string | null {
+  const t = ` ${text.toLowerCase()} `
+  if (/\bhenriette\b|\bhf\b/.test(t)) return 'Henriette'
+  if (/\bjean\b|\bja\b/.test(t)) return 'Jean'
+  if (/\bnoah\b|\bnono\b/.test(t)) return 'Noah'
+  if (/\bjoint\b/.test(t)) return 'Joint'
+  return null
+}
+const detectProvider = (label: string) => {
+  const t = label.toLowerCase()
+  if (/policy\s?me/.test(t)) return { name: 'PolicyMe', icon: '🛡️' }
+  if (/\bia\b|industrial|workplace|group/.test(t)) return { name: 'IA · Industrial Alliance', icon: '🏢' }
+  return { name: 'Other', icon: '📄' }
+}
 
-// best-effort money parsing from free-text values
 function parseAmounts(text: string): number[] {
   const out: number[] = []
   const re = /\$\s?([\d,]+(?:\.\d+)?)\s?([KM])?/gi
@@ -50,31 +63,21 @@ function parseAmounts(text: string): number[] {
   }
   return out
 }
+const itemText = (it: Item) => [it.value, ...(it.fields || []).map((f) => f.value)].filter(Boolean).join(' ')
 const parseMoney = (t: string) => parseAmounts(t)[0] || 0
 const moneyShort = (n: number) => n >= 1e6 ? '$' + +(n / 1e6).toFixed(2) + 'M' : n >= 1000 ? '$' + Math.round(n / 1000) + 'K' : '$' + Math.round(n)
-const isPersonLabel = (label: string) => /^(jean|henriette|noah|nono|dependent)\b/i.test(label)
-function detectOwner(text: string): string | null {
-  const t = ` ${text.toLowerCase()} `
-  if (/\bhenriette\b|\bhf\b/.test(t)) return 'Henriette'
-  if (/\bjean\b|\bja\b/.test(t)) return 'Jean'
-  if (/\bnoah\b|\bnono\b/.test(t)) return 'Noah'
-  if (/\bjoint\b/.test(t)) return 'Joint'
-  return null
-}
-function cleanLabel(label: string, owner: string): string {
-  return label
-    .replace(new RegExp(`^${owner}\\b`, 'i'), '').trim()
-    .replace(/^[—–\-:]\s*/, '').trim()
-    .replace(/^\([^)]*\)\s*/, '').trim()
-}
-const todoRe = /pending|none yet|not (yet|done|set up|submitted|completed)|to (do|submit|update|complete|sign)|missing|no will|no poa|⚠️/i
+const isPerson = (it: Item) => !!(it.fields && it.fields.length) && /^(jean|henriette|noah|nono|dependent)\b/i.test(it.label)
 
-function OwnerPill({ owner }: { owner: string }) {
-  const c = OWNER_COLOR[owner] || { fg: 'var(--text-secondary)', bg: 'var(--kpi-bg)' }
-  return <span style={{ background: c.bg, color: c.fg, padding: '2px 9px', borderRadius: 999, fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0 }}>{owner}</span>
+const HORIZON: Record<string, { fg: string; bg: string }> = {
+  short: { fg: 'var(--income)', bg: 'var(--income-soft)' },
+  medium: { fg: '#b7791f', bg: 'rgba(224,161,43,0.16)' },
+  long: { fg: 'var(--savings)', bg: 'var(--savings-soft)' },
 }
-function StatusPill({ open }: { open: boolean }) {
-  return <span style={{ background: open ? 'var(--expense-soft)' : 'var(--income-soft)', color: open ? 'var(--expense)' : 'var(--income)', padding: '2px 9px', borderRadius: 999, fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0 }}>{open ? '⚠ Open' : '✓ Done'}</span>
+const detectHorizon = (label: string) => { const t = label.toLowerCase(); return /short/.test(t) ? 'short' : /medium|mid/.test(t) ? 'medium' : /long/.test(t) ? 'long' : null }
+
+function StatusChip({ status }: { status: Status }) {
+  const meta = { todo: { l: '⚠ To do', fg: 'var(--expense)', bg: 'var(--expense-soft)' }, doing: { l: '◔ In progress', fg: 'var(--accent)', bg: 'var(--accent-soft)' }, done: { l: '✓ Done', fg: 'var(--income)', bg: 'var(--income-soft)' } }[status]
+  return <span style={{ background: meta.bg, color: meta.fg, padding: '2px 9px', borderRadius: 999, fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0 }}>{meta.l}</span>
 }
 function Summary({ big, label }: { big: string; label: string }) {
   return (
@@ -99,22 +102,61 @@ function ReadinessMeter({ done, total }: { done: number; total: number }) {
     </div>
   )
 }
-
-// Goal horizon → colour + timeline dot
-const HORIZON: Record<string, { fg: string; bg: string }> = {
-  short: { fg: 'var(--income)', bg: 'var(--income-soft)' },
-  medium: { fg: '#b7791f', bg: 'rgba(224,161,43,0.16)' },
-  long: { fg: 'var(--savings)', bg: 'var(--savings-soft)' },
+function Avatar({ owner, size = 34 }: { owner: string; size?: number }) {
+  const m = OWNER_COLOR[owner] || { fg: 'var(--text-secondary)', bg: 'var(--kpi-bg)', initials: owner.slice(0, 2).toUpperCase() }
+  return <div style={{ width: size, height: size, borderRadius: '50%', background: m.bg, color: m.fg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: size * 0.36, flexShrink: 0 }}>{m.initials}</div>
 }
-const detectHorizon = (label: string) => { const t = label.toLowerCase(); return /short/.test(t) ? 'short' : /medium|mid/.test(t) ? 'medium' : /long/.test(t) ? 'long' : null }
 
-// Insurance grouped by PROVIDER (PolicyMe / IA…), with each person inside
-const detectProvider = (label: string) => {
-  const t = label.toLowerCase()
-  if (/policy\s?me/.test(t)) return { name: 'PolicyMe', icon: '🛡️' }
-  if (/\bia\b|industrial|workplace|group/.test(t)) return { name: 'IA · Industrial Alliance', icon: '🏢' }
-  return { name: 'Other', icon: '📄' }
+// Wealthsimple-style label → value rows
+function FieldRows({ rows }: { rows: { label: string; value: string; status?: Status }[] }) {
+  return (
+    <div>
+      {rows.map((r, i) => {
+        const open = r.status === undefined && todoRe.test(String(r.value || ''))
+        return (
+          <div key={i} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, padding: '10px 0', borderTop: i ? '1px solid var(--border)' : 'none', flexWrap: 'wrap' }}>
+            <span style={{ fontWeight: 600, fontSize: 14 }}>{r.label}</span>
+            <span style={{ fontSize: 14, color: 'var(--text-secondary)', textAlign: 'right', overflowWrap: 'anywhere', display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+              {r.status ? <StatusChip status={r.status} /> : open ? <StatusChip status="todo" /> : null}
+              {isUrl(r.value) ? <a href={r.value} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', gap: 5, alignItems: 'center', fontWeight: 600 }}>Open <ExternalLink size={13} /></a> : r.value}
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  )
 }
+
+function PersonCard({ item }: { item: Item }) {
+  const owner = detectOwner(item.label) || detectOwner(itemText(item)) || 'Joint'
+  const meta = OWNER_COLOR[owner]
+  return (
+    <div style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderLeft: `3px solid ${meta.fg}`, borderRadius: 12, padding: '12px 14px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+        <Avatar owner={owner} />
+        <span style={{ fontWeight: 700, fontSize: 15 }}>{item.label}</span>
+        {item.status && <StatusChip status={item.status} />}
+      </div>
+      <FieldRows rows={item.fields || []} />
+    </div>
+  )
+}
+
+function MembersView({ items }: { items: Item[] }) {
+  const people = items.filter(isPerson)
+  const facts = items.filter((it) => !isPerson(it)).map((it) => ({ label: it.label, value: it.value || '', status: it.status }))
+  return (
+    <div style={{ display: 'grid', gap: 10 }}>
+      {people.map((p, i) => <PersonCard key={i} item={p} />)}
+      {facts.length > 0 && (
+        <div style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 14px' }}>
+          <FieldRows rows={facts} />
+        </div>
+      )}
+    </div>
+  )
+}
+
 function InsuranceByProvider({ items }: { items: Item[] }) {
   const groups = new Map<string, { icon: string; items: Item[] }>()
   for (const it of items) {
@@ -125,23 +167,20 @@ function InsuranceByProvider({ items }: { items: Item[] }) {
   return (
     <div style={{ display: 'grid', gap: 10 }}>
       {[...groups.entries()].map(([name, g]) => (
-        <div key={name} style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 13px' }}>
+        <div key={name} style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 14px' }}>
           <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10 }}>{g.icon} {name}</div>
-          <div style={{ display: 'grid', gap: 10 }}>
+          <div style={{ display: 'grid', gap: 12 }}>
             {g.items.map((it, i) => {
               const owner = detectOwner(it.label)
               const meta = owner ? OWNER_COLOR[owner] : null
-              const open = it.status === undefined ? todoRe.test(String(it.value || '')) : false
               return (
-                <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', borderLeft: meta ? `3px solid ${meta.fg}` : '1px solid var(--border)', paddingLeft: 10 }}>
-                  {meta && <div style={{ width: 30, height: 30, borderRadius: '50%', background: meta.bg, color: meta.fg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 11, flexShrink: 0 }}>{meta.initials}</div>}
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                      <span style={{ fontWeight: 700, fontSize: 14 }}>{owner || it.label}</span>
-                      {it.status ? <StatusChip status={it.status} /> : open ? <StatusPill open /> : null}
-                    </div>
-                    <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 3, overflowWrap: 'anywhere' }}>{it.value}</div>
+                <div key={i} style={{ borderLeft: meta ? `3px solid ${meta.fg}` : '1px solid var(--border)', paddingLeft: 11 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+                    {owner && <Avatar owner={owner} size={26} />}
+                    <span style={{ fontWeight: 700, fontSize: 14 }}>{owner || it.label}</span>
+                    {it.status && <StatusChip status={it.status} />}
                   </div>
+                  <FieldRows rows={it.fields || (it.value ? [{ label: 'Details', value: it.value }] : [])} />
                 </div>
               )
             })}
@@ -152,13 +191,26 @@ function InsuranceByProvider({ items }: { items: Item[] }) {
   )
 }
 
-const inp: React.CSSProperties = {
-  padding: '9px 11px', borderRadius: 10, border: '1px solid var(--border)',
-  background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 14, width: '100%',
-  fontFamily: 'inherit', boxSizing: 'border-box',
+function GoalsView({ items }: { items: Item[] }) {
+  return (
+    <div style={{ display: 'grid', gap: 8 }}>
+      {items.map((it, i) => {
+        const h = detectHorizon(it.label)
+        const hz = h ? HORIZON[h] : null
+        return (
+          <div key={i} style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderLeft: hz ? `3px solid ${hz.fg}` : '1px solid var(--border)', borderRadius: 12, padding: '11px 12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              {hz ? <span style={{ background: hz.bg, color: hz.fg, padding: '2px 10px', borderRadius: 999, fontSize: 11, fontWeight: 700 }}>{it.label}</span>
+                : <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{it.label}</span>}
+              {it.status && <StatusChip status={it.status} />}
+            </div>
+            <div style={{ fontSize: 15, fontWeight: 600, marginTop: 6, overflowWrap: 'anywhere' }}>{it.value}</div>
+          </div>
+        )
+      })}
+    </div>
+  )
 }
-const clone = <T,>(x: T): T => JSON.parse(JSON.stringify(x))
-const isUrl = (v: string) => /^https?:\/\//i.test((v || '').trim())
 
 export default function ProfilePanel() {
   const [profile, setProfile] = useState<Profile | null>(null)
@@ -170,8 +222,7 @@ export default function ProfilePanel() {
   const load = useCallback(() => {
     getJSON('/api/profile').then((d) => {
       const p: Profile = { sections: d.sections || [], links: d.links || [] }
-      setProfile(p)
-      setFilter((f) => f || p.sections[0]?.id || '')
+      setProfile(p); setFilter((f) => f || p.sections[0]?.id || '')
     }).catch(() => setProfile({ sections: [], links: [] }))
   }, [])
   useEffect(() => { load() }, [load])
@@ -196,16 +247,21 @@ export default function ProfilePanel() {
     } finally { setSaving(false) }
   }
 
+  // section summaries
+  const membersIncome = shown.id === 'members' ? shown.items.reduce((s, it) => { const o = detectOwner(it.label); return (o === 'Jean' || o === 'Henriette') ? s + parseMoney(itemText(it)) : s }, 0) : 0
+  const coverage = shown.id === 'insurance' ? shown.items.reduce((s, it) => s + parseAmounts(itemText(it)).filter((a) => a >= 50000).reduce((a, b) => a + b, 0), 0) : 0
+  const estateTracked = shown.id === 'estate' ? shown.items.filter((it) => !isUrl(it.value || '')) : []
+  const estateDone = estateTracked.filter((it) => it.status ? it.status === 'done' : !todoRe.test(String(it.value || ''))).length
+
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 14 }}>
-      {/* Section menu — same segmented tab style as the dashboard */}
+    <div style={{ display: 'grid', gap: 14 }}>
+      {/* Section menu — dashboard tab style */}
       <section style={{ display: 'flex', justifyContent: 'center' }}>
         <div className="tabs">
           {profile.sections.map((s) => {
             const meta = SECTION_META[s.id]
             return (
-              <button key={s.id} className={`tab ${filter === s.id ? 'tab-active' : ''}`}
-                onClick={() => { setFilter(s.id); cancel() }}>
+              <button key={s.id} className={`tab ${filter === s.id ? 'tab-active' : ''}`} onClick={() => { setFilter(s.id); cancel() }}>
                 {meta ? <meta.Icon size={16} /> : <span>{s.icon}</span>} {meta?.short || s.title}
               </button>
             )
@@ -213,7 +269,6 @@ export default function ProfilePanel() {
         </div>
       </section>
 
-      {/* The selected section as a card, with its own edit */}
       <div className="card glass">
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, justifyContent: 'space-between' }}>
           {editing && draft ? (
@@ -234,114 +289,71 @@ export default function ProfilePanel() {
           )}
         </div>
 
-        {/* Section summary (members: combined income · insurance: total coverage) */}
-        {!editing && shown.id === 'members' && (() => {
-          const income = shown.items.reduce((s, it) => { const o = detectOwner(`${it.label} ${it.value}`); return (o === 'Jean' || o === 'Henriette') ? s + parseMoney(it.value) : s }, 0)
-          return income > 0 ? <Summary big={`~${moneyShort(income)}`} label="combined household income" /> : null
-        })()}
-        {!editing && shown.id === 'insurance' && (() => {
-          const cov = shown.items.reduce((s, it) => { const amts = parseAmounts(it.value).filter((a) => a >= 50000); const mult = /\beach\b|×\s?2|x2/i.test(it.value) ? 2 : 1; return s + amts.reduce((a, b) => a + b, 0) * mult }, 0)
-          return cov > 0 ? <Summary big={`≈ ${moneyShort(cov)}`} label="total life coverage" /> : null
-        })()}
-        {!editing && shown.id === 'estate' && (() => {
-          const tracked = shown.items.filter((it) => !isUrl(it.value))
-          const done = tracked.filter((it) => it.status ? it.status === 'done' : !todoRe.test(String(it.value || ''))).length
-          return tracked.length ? <ReadinessMeter done={done} total={tracked.length} /> : null
-        })()}
+        {/* summaries */}
+        {!editing && membersIncome > 0 && <Summary big={`~${moneyShort(membersIncome)}`} label="combined household income" />}
+        {!editing && coverage > 0 && <Summary big={`≈ ${moneyShort(coverage)}`} label="total life coverage" />}
+        {!editing && shown.id === 'estate' && estateTracked.length > 0 && <ReadinessMeter done={estateDone} total={estateTracked.length} />}
 
-        {!editing && shown.id === 'insurance' ? (
-          <InsuranceByProvider items={view.items} />
-        ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 8 }}>
-          {view.items.map((it, ii) => editing && draft ? (
-            <div key={ii} style={{ display: 'grid', gap: 6, padding: 8, border: '1px solid var(--border)', borderRadius: 10, background: 'var(--surface-1)' }}>
-              <input style={inp} value={it.label} placeholder="Label" onChange={(e) => upd((d) => { d.items[ii].label = e.target.value })} />
-              <textarea style={{ ...inp, minHeight: 38, resize: 'vertical' }} rows={1} value={it.value} placeholder="Value" onChange={(e) => upd((d) => { d.items[ii].value = e.target.value })} />
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'space-between' }}>
-                <select value={it.status || ''} onChange={(e) => upd((d) => { const v = e.target.value; if (v) d.items[ii].status = v as Status; else delete d.items[ii].status })}
-                  style={{ ...inp, width: 'auto', flex: 1, maxWidth: 200 }}>
-                  <option value="">— no status —</option>
-                  <option value="todo">⚠ To do</option>
-                  <option value="doing">◔ In progress</option>
-                  <option value="done">✓ Done</option>
-                </select>
-                <button aria-label="Remove row" onClick={() => upd((d) => { d.items.splice(ii, 1) })}
-                  style={{ flexShrink: 0, padding: 8, borderRadius: 9, border: '1px solid var(--border)', background: 'transparent', color: 'var(--expense)', cursor: 'pointer' }}><Trash2 size={14} /></button>
-              </div>
-            </div>
-          ) : (() => {
-            // Members: render each person as an avatar card
-            if (shown.id === 'members' && isPersonLabel(it.label)) {
-              const owner = detectOwner(it.label) || detectOwner(it.value) || 'Joint'
-              const meta = OWNER_COLOR[owner]
-              const cl = cleanLabel(it.label, owner)
-              return (
-                <div key={ii} style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderLeft: `3px solid ${meta.fg}`, borderRadius: 12, padding: '11px 12px', minWidth: 0, display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                  <div style={{ width: 42, height: 42, borderRadius: '50%', background: meta.bg, color: meta.fg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14, flexShrink: 0 }}>{meta.initials}</div>
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' }}>
-                      <span style={{ fontWeight: 700, fontSize: 15 }}>{owner}</span>
-                      {cl && <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>· {cl}</span>}
-                    </div>
-                    <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 3, overflowWrap: 'anywhere' }}>{it.value}</div>
-                  </div>
-                </div>
-              )
-            }
-            // Goals: horizon-coloured timeline node
-            if (shown.id === 'goals') {
-              const h = detectHorizon(it.label)
-              const hz = h ? HORIZON[h] : null
-              return (
-                <div key={ii} style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderLeft: hz ? `3px solid ${hz.fg}` : '1px solid var(--border)', borderRadius: 12, padding: '11px 12px', minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    {hz ? (
-                      <span style={{ background: hz.bg, color: hz.fg, padding: '2px 10px', borderRadius: 999, fontSize: 11, fontWeight: 700 }}>{it.label}</span>
-                    ) : (
-                      <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{it.label}</span>
-                    )}
-                    {it.status && <StatusChip status={it.status} />}
-                  </div>
-                  <div style={{ fontSize: 15, fontWeight: 600, marginTop: 6, color: 'var(--text-primary)', overflowWrap: 'anywhere' }}>{it.value}</div>
-                </div>
-              )
-            }
-            // Insurance: owner pill + label; Estate: status pill; else plain
-            const owner = shown.id === 'insurance' ? detectOwner(it.label) : null
-            const cl = owner ? cleanLabel(it.label, owner) : it.label
-            // explicit status wins; else fall back to text detection on estate items
-            const estateOpen = (it.status === undefined && shown.id === 'estate') ? todoRe.test(String(it.value || '')) : null
-            return (
-              <div key={ii} style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderLeft: owner ? `3px solid ${OWNER_COLOR[owner].fg}` : '1px solid var(--border)', borderRadius: 12, padding: '11px 12px', minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  {owner && <OwnerPill owner={owner} />}
-                  {cl && <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{cl}</span>}
-                  {it.status && <StatusChip status={it.status} />}
-                  {estateOpen !== null && <StatusPill open={estateOpen} />}
-                </div>
-                {isUrl(it.value) ? (
-                  <a href={it.value} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 4, fontWeight: 600 }}>Open <ExternalLink size={13} /></a>
-                ) : (
-                  <div style={{ fontSize: 15, fontWeight: 600, marginTop: 4, color: 'var(--text-primary)', overflowWrap: 'anywhere' }}>{it.value}</div>
-                )}
-              </div>
-            )
-          })())}
-        </div>
-        )}
+        {/* view */}
+        {editing && draft ? (
+          <ItemsEditor section={draft} upd={upd} />
+        ) : shown.id === 'members' ? <MembersView items={view.items} />
+          : shown.id === 'insurance' ? <InsuranceByProvider items={view.items} />
+          : shown.id === 'goals' ? <GoalsView items={view.items} />
+          : <FieldRows rows={view.items.map((it) => ({ label: it.label, value: it.value || '', status: it.status }))} />}
 
         {editing && draft && (
-          <>
-            <button className="btn btn-secondary" style={{ marginTop: 10 }} onClick={() => upd((d) => { d.items.push({ label: '', value: '' }) })}>
-              <Plus size={14} /> Add row
-            </button>
-            <div style={{ display: 'flex', gap: 8, marginTop: 14, borderTop: '1px solid var(--border)', paddingTop: 14 }}>
-              <button className="btn" style={{ background: 'var(--expense-soft)', color: 'var(--expense)', border: '1px solid var(--expense)' }} onClick={cancel} disabled={saving}>Cancel</button>
-              <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} onClick={save} disabled={saving}>{saving ? 'Saving…' : '💾 Save'}</button>
-            </div>
-          </>
+          <div style={{ display: 'flex', gap: 8, marginTop: 14, borderTop: '1px solid var(--border)', paddingTop: 14 }}>
+            <button className="btn" style={{ background: 'var(--expense-soft)', color: 'var(--expense)', border: '1px solid var(--expense)' }} onClick={cancel} disabled={saving}>Cancel</button>
+            <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} onClick={save} disabled={saving}>{saving ? 'Saving…' : '💾 Save'}</button>
+          </div>
         )}
       </div>
+    </div>
+  )
+}
+
+// ---- editor (handles both atomic value items and field-based items) ----
+function ItemsEditor({ section, upd }: { section: Section; upd: (fn: (d: Section) => void) => void }) {
+  const statusSel = (val: Status | undefined, on: (v: Status | undefined) => void) => (
+    <select value={val || ''} onChange={(e) => on((e.target.value || undefined) as Status | undefined)} style={{ ...inp, width: 'auto', flex: 1, maxWidth: 170 }}>
+      <option value="">— no status —</option>
+      <option value="todo">⚠ To do</option>
+      <option value="doing">◔ In progress</option>
+      <option value="done">✓ Done</option>
+    </select>
+  )
+  return (
+    <div style={{ display: 'grid', gap: 10 }}>
+      {section.items.map((it, ii) => (
+        <div key={ii} style={{ display: 'grid', gap: 8, padding: 10, border: '1px solid var(--border)', borderRadius: 12, background: 'var(--surface-1)' }}>
+          <input style={{ ...inp, fontWeight: 700 }} value={it.label} placeholder="Name / label" onChange={(e) => upd((d) => { d.items[ii].label = e.target.value })} />
+
+          {it.fields && it.fields.length ? (
+            <>
+              {it.fields.map((f, fi) => (
+                <div key={fi} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <input style={{ ...inp, flex: '0 0 38%' }} value={f.label} placeholder="Field" onChange={(e) => upd((d) => { d.items[ii].fields![fi].label = e.target.value })} />
+                  <input style={{ ...inp, flex: 1 }} value={f.value} placeholder="Value" onChange={(e) => upd((d) => { d.items[ii].fields![fi].value = e.target.value })} />
+                  <button aria-label="Remove field" onClick={() => upd((d) => { d.items[ii].fields!.splice(fi, 1) })} style={{ flexShrink: 0, padding: 8, borderRadius: 9, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}><Trash2 size={13} /></button>
+                </div>
+              ))}
+              <button className="btn btn-secondary" style={{ justifySelf: 'start' }} onClick={() => upd((d) => { (d.items[ii].fields ||= []).push({ label: '', value: '' }) })}><Plus size={13} /> Add field</button>
+            </>
+          ) : (
+            <textarea style={{ ...inp, minHeight: 38, resize: 'vertical' }} rows={1} value={it.value || ''} placeholder="Value" onChange={(e) => upd((d) => { d.items[ii].value = e.target.value })} />
+          )}
+
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+            {statusSel(it.status, (v) => upd((d) => { if (v) d.items[ii].status = v; else delete d.items[ii].status }))}
+            <div style={{ display: 'flex', gap: 8 }}>
+              {!it.fields && <button className="btn btn-secondary" onClick={() => upd((d) => { d.items[ii].fields = [{ label: '', value: '' }] })}><Plus size={13} /> Fields</button>}
+              <button className="btn" style={{ background: 'var(--expense-soft)', color: 'var(--expense)', border: '1px solid var(--expense)' }} onClick={() => upd((d) => { d.items.splice(ii, 1) })}><Trash2 size={14} /></button>
+            </div>
+          </div>
+        </div>
+      ))}
+      <button className="btn btn-secondary" style={{ justifySelf: 'start' }} onClick={() => upd((d) => { d.items.push({ label: '', value: '' }) })}><Plus size={14} /> Add item</button>
     </div>
   )
 }
