@@ -257,8 +257,8 @@ function HouseholdHero({ profile, netWorth }: { profile: Profile; netWorth: numb
         </div>
       )}
 
-      {/* KPI tiles */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(128px, 1fr))', gap: 8 }}>
+      {/* KPI tiles — 2×2 on phones, 4-across on wider screens */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 8 }}>
         {tiles.map((t) => (
           <div key={t.label} style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '11px 12px' }}>
             <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{t.label}</div>
@@ -272,7 +272,7 @@ function HouseholdHero({ profile, netWorth }: { profile: Profile; netWorth: numb
         <div style={{ marginTop: 12, padding: '11px 12px', background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 12 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, marginBottom: 7 }}>
             <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>🏠 Home equity</span>
-            <span style={{ fontWeight: 700, fontSize: 14 }}>{money0(equity)} <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>· LTV {ltv}%</span></span>
+            <span style={{ fontWeight: 700, fontSize: 14, color: equity < 0 ? 'var(--expense)' : 'inherit' }}>{equity < 0 ? '−' : ''}{money0(Math.abs(equity))} <span style={{ color: ltv > 100 ? 'var(--expense)' : 'var(--text-muted)', fontWeight: 500 }}>· LTV {ltv}%</span></span>
           </div>
           <div style={{ height: 8, borderRadius: 999, background: 'var(--surface-1)', border: '1px solid var(--border)', overflow: 'hidden' }}>
             <div style={{ width: `${Math.max(0, Math.min(100, 100 - ltv))}%`, height: '100%', borderRadius: 999, background: 'linear-gradient(90deg, var(--savings), var(--income))' }} />

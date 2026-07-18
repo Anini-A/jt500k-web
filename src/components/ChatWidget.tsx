@@ -199,6 +199,9 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
         return j('/api/transactions', 'POST', chosen.map((r: any) => ({ date, type: r.type, category: r.category, amount: Number(r.amount), description: r.description || r.name })))
       }
       case 'set_goal': return j('/api/settings', 'PUT', { goalAmount: Number(a.amount) })
+      case 'add_debt': return j('/api/debts', 'POST', { name: a.name, amount: Number(a.amount) })
+      case 'edit_debt': return j('/api/debts', 'PATCH', a)
+      case 'delete_debt': return fetch(`/api/debts?id=${a.id}`, { method: 'DELETE' })
       case 'refresh_prices': return fetch('/api/holdings/refresh', { method: 'POST' })
       default: throw new Error('Unknown action')
     }

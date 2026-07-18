@@ -39,6 +39,9 @@ const TOOLS = [{
     { name: 'edit_recurring', description: 'Edit a recurring template by id.', parameters: { type: 'OBJECT', properties: { id: { type: 'STRING' }, name: { type: 'STRING' }, type: { type: 'STRING', enum: ['income', 'expense', 'savings'] }, category: { type: 'STRING' }, amount: { type: 'NUMBER' }, description: { type: 'STRING' } }, required: ['id'] } },
     { name: 'log_recurring', description: 'Post the chosen recurring items as real transactions for a given date (e.g. "log this month\'s recurring items"). Pass the ids of the recurring items to log.', parameters: { type: 'OBJECT', properties: { ids: { type: 'ARRAY', items: { type: 'STRING' }, description: 'ids of active recurring items to log' }, date: { type: 'STRING', description: 'YYYY-MM-DD; omit for today' } }, required: ['ids'] } },
     { name: 'set_goal', description: 'Change the overall savings goal amount (the 500K target).', parameters: { type: 'OBJECT', properties: { amount: { type: 'NUMBER' } }, required: ['amount'] } },
+    { name: 'add_debt', description: 'Add a NEW debt to track in the Debts tracker (a loan, margin balance, money owed for land, etc.) with a starting balance. This is NOT an expense or budget item.', parameters: { type: 'OBJECT', properties: { name: { type: 'STRING' }, amount: { type: 'NUMBER', description: 'starting balance owed' } }, required: ['name', 'amount'] } },
+    { name: 'edit_debt', description: 'Edit a tracked debt by id (rename or change its balance).', parameters: { type: 'OBJECT', properties: { id: { type: 'STRING' }, name: { type: 'STRING' }, amount: { type: 'NUMBER' } }, required: ['id'] } },
+    { name: 'delete_debt', description: 'Delete a tracked debt by id.', parameters: { type: 'OBJECT', properties: { id: { type: 'STRING' } }, required: ['id'] } },
     { name: 'refresh_prices', description: 'Pull live market prices and update the value of the investment holdings.', parameters: { type: 'OBJECT', properties: {} } },
     { name: 'find_transactions', description: 'Search ALL transactions (not just the recent 25) to get their ids before editing/deleting an older one. Call this first when the user references a transaction you cannot see in the recent list.', parameters: { type: 'OBJECT', properties: { query: { type: 'STRING', description: 'text to match in description/category' }, category: { type: 'STRING' }, type: { type: 'STRING', enum: ['income', 'expense', 'savings'] }, limit: { type: 'NUMBER' } } } },
   ],
@@ -62,6 +65,9 @@ function describeAction(name: string, a: any): string {
     case 'edit_recurring': return `Edit recurring ${String(a.id).slice(0, 8)}…${a.amount != null ? ` → ${cad(a.amount)}` : ''}${a.name ? ` → "${a.name}"` : ''}${a.category ? ` → ${a.category}` : ''}`
     case 'log_recurring': return `Log ${(a.ids || []).length} recurring item${(a.ids || []).length !== 1 ? 's' : ''} as transactions${a.date ? ` on ${a.date}` : ' (today)'}`
     case 'set_goal': return `Change the goal to ${cad(a.amount)}`
+    case 'add_debt': return `Add debt "${a.name}" with balance ${cad(a.amount)}`
+    case 'edit_debt': return `Edit debt ${String(a.id).slice(0, 8)}…${a.amount != null ? ` → ${cad(a.amount)}` : ''}${a.name ? ` → "${a.name}"` : ''}`
+    case 'delete_debt': return `Delete debt ${String(a.id).slice(0, 8)}…`
     case 'refresh_prices': return 'Refresh live investment prices'
     default: return name
   }
@@ -115,11 +121,12 @@ async function buildContext() {
   const { data: manual } = await supabaseAdmin.from('manual_assets').select('owner, name, kind, value_cad')
   const holdingsValue = (holds ?? []).reduce((s, h) => s + Number(h.market_value_cad), 0)
   const cashValue = (manual ?? []).reduce((s, a) => s + Number(a.value_cad), 0)
-  const { data: debts } = await supabaseAdmin.from('debts').select('name, amount')
+  const { data: debts } = await supabaseAdmin.from('debts').select('id, name, amount')
   const { data: pays } = await supabaseAdmin.from('transactions').select('description, amount').eq('category', 'Debt Repayment')
   const paidByName = new Map<string, number>()
   for (const p of pays ?? []) paidByName.set(norm(p.description), (paidByName.get(norm(p.description)) || 0) + Number(p.amount))
-  const debtsRemaining = (debts ?? []).reduce((s, d) => s + Math.max(0, Number(d.amount) - (paidByName.get(norm(d.name)) || 0)), 0)
+  const debtRemainingOf = (d: any) => Math.max(0, Number(d.amount) - (paidByName.get(norm(d.name)) || 0))
+  const debtsRemaining = (debts ?? []).reduce((s, d) => s + debtRemainingOf(d), 0)
   const netWorth = holdingsValue + cashValue - debtsRemaining
 
   // goal amount (defaults to 500K)
@@ -173,6 +180,7 @@ async function buildContext() {
     return `  - ${at}: ${money(byAcct.get(at) || 0)} (${owners})`
   }).join('\n')
   const ownerTotalLine = [...byOwnerTotal.entries()].map(([o, v]) => `${o} ${money(v)}`).join(', ')
+  const debtList = (debts ?? []).map((d) => `  - id=${d.id} · ${d.name}: ${money(debtRemainingOf(d))} remaining (of ${money(Number(d.amount))} original)`).join('\n')
 
   const nowD = new Date()
   const thisM = nowD.toLocaleString('en', { month: 'long', year: 'numeric' })
@@ -186,6 +194,9 @@ NET WORTH (current) = ${money(netWorth)}  →  ${Math.round((netWorth / goal) * 
 - Investments (Wealthsimple holdings): ${money(holdingsValue)}
 - Cash & other assets: ${money(cashValue)}
 - Debts remaining (subtracted): ${money(debtsRemaining)}
+
+TRACKED DEBTS (the Debts tracker — use the id to edit/delete a debt):
+${debtList || '  (none)'}
 
 HOLDINGS BY ACCOUNT TYPE (use these EXACT totals for "how much in my TFSA/RRSP…" — never re-sum across account types or relabel one type as another):
 ${acctTypeLines || '  (none)'}
@@ -366,6 +377,10 @@ export async function POST(req: NextRequest) {
     `You CAN take these actions when clearly asked: adding/editing/deleting transactions, budget items, ` +
     `and recurring items; logging recurring items; changing the goal; refreshing prices. ` +
     `To edit/delete a transaction not in the recent list, FIRST call find_transactions, then act on its id. ` +
+    `\n\nDEBTS vs EXPENSES — don't confuse them: a DEBT is a balance owed, tracked in the Debts tracker ` +
+    `(see TRACKED DEBTS). "Add a new debt item / track a debt for X" → use add_debt (name + balance), NOT ` +
+    `an expense or budget item. Logging a debt PAYMENT is different — that's add_transaction with category ` +
+    `'Debt Repayment'. ` +
     `You MAY call several tools in one turn when the user asks for multiple changes (e.g. add three ` +
     `expenses) — they are confirmed together. To "log this/last month's recurring items", call ` +
     `log_recurring with the ids of the relevant ACTIVE RECURRING ITEMS. ` +
