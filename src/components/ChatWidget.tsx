@@ -2,9 +2,11 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
+import { ArrowLeft, SquarePen, History, ArrowUp } from 'lucide-react'
 
-interface Msg { role: 'user' | 'assistant'; content: string }
+interface Msg { role: 'user' | 'assistant'; content: string; at?: number }
 interface Thread { id: string; msgs: Msg[]; updatedAt: number }
+const timeOf = (at?: number) => at ? new Date(at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }).toLowerCase() : ''
 
 const SUGGESTIONS = [
   'How am I doing toward 500K?',
@@ -151,7 +153,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
 
   const send = async (text: string) => {
     if (!text.trim() || busy) return
-    const next = [...msgs, { role: 'user' as const, content: text }]
+    const next = [...msgs, { role: 'user' as const, content: text, at: Date.now() }]
     setMsgs(next)
     setInput('')
     setBusy(true)
@@ -168,10 +170,10 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
       if (data.actions?.length) {
         setPending(data.actions)
       } else {
-        setMsgs([...next, { role: 'assistant', content: data.reply || data.error || 'Something went wrong.' }])
+        setMsgs([...next, { role: 'assistant', content: data.reply || data.error || 'Something went wrong.', at: Date.now() }])
       }
     } catch {
-      setMsgs([...next, { role: 'assistant', content: 'Network error — please try again.' }])
+      setMsgs([...next, { role: 'assistant', content: 'Network error — please try again.', at: Date.now() }])
     } finally {
       setBusy(false)
     }
@@ -225,31 +227,31 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
     const lines: string[] = []
     if (okCount) lines.push(`✅ Done — ${okCount} change${okCount !== 1 ? 's' : ''} saved.`)
     if (fails.length) lines.push(`⚠️ ${fails.length} couldn't be applied:\n${fails.map((f) => `- ${f}`).join('\n')}`)
-    setMsgs((m) => [...m, { role: 'assistant', content: lines.join('\n\n') || 'Nothing changed.' }])
+    setMsgs((m) => [...m, { role: 'assistant', content: lines.join('\n\n') || 'Nothing changed.', at: Date.now() }])
     setPending(null)
     setBusy(false)
   }
 
   const cancelAction = () => {
-    setMsgs((m) => [...m, { role: 'assistant', content: 'Okay, cancelled — nothing was saved.' }])
+    setMsgs((m) => [...m, { role: 'assistant', content: 'Okay, cancelled — nothing was saved.', at: Date.now() }])
     setPending(null)
   }
 
   const recents = [...threads].sort((a, b) => b.updatedAt - a.updatedAt)
 
-  const ctrlBtn: React.CSSProperties = { background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-muted)', borderRadius: 999, padding: '5px 11px', fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }
+  const roundBtn: React.CSSProperties = { width: 38, height: 38, flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-primary)', cursor: 'pointer' }
 
   return createPortal(
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-card glass" onClick={(e) => { e.stopPropagation(); setRecentOpen(false) }}
         style={{ width: 'min(720px, 100%)', height: 'min(88vh, 760px)', maxHeight: '88vh', padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'var(--surface-1)' }}>
-        {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '14px 16px', borderBottom: '1px solid var(--border)', position: 'relative' }}>
-          <h2 style={{ margin: 0, fontSize: 18, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>🤖 Ask Gemini</h2>
+        {/* Header — back (close) · title · history + new chat */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 14px', borderBottom: '1px solid var(--border)', position: 'relative' }}>
+          <button style={roundBtn} aria-label="Close" title="Close" onClick={onClose}><ArrowLeft size={20} /></button>
+          <div style={{ flex: 1, textAlign: 'center', fontWeight: 700, fontSize: 17, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>🤖 Ask Gemini</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-            <button style={ctrlBtn} title="Recent chats" onClick={(e) => { e.stopPropagation(); setRecentOpen((v) => !v) }}>Recent ▾</button>
-            <button style={ctrlBtn} title="Start a new chat" onClick={newChat}>New chat</button>
-            <button className="modal-x" aria-label="Close" onClick={onClose}>✕</button>
+            <button style={roundBtn} title="Recent chats" onClick={(e) => { e.stopPropagation(); setRecentOpen((v) => !v) }}><History size={19} /></button>
+            <button style={roundBtn} title="New chat" onClick={newChat}><SquarePen size={19} /></button>
           </div>
 
           {recentOpen && (
@@ -277,16 +279,20 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
         {/* Messages (the only part that scrolls) */}
         <div ref={scrollRef} style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
           {msgs.map((m, i) => (
-            <div key={i} style={{
-              alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
-              maxWidth: '85%', padding: '10px 12px', borderRadius: 14, fontSize: 14, lineHeight: 1.5,
-              whiteSpace: m.role === 'user' ? 'pre-wrap' : 'normal',
-              background: m.role === 'user' ? 'var(--accent)' : 'var(--kpi-bg)',
-              color: m.role === 'user' ? '#fff' : 'var(--text-primary)',
-              border: m.role === 'user' ? 'none' : '1px solid var(--border)',
-            }}>{m.role === 'user' ? m.content : <Markdown text={m.content} />}</div>
+            <div key={i} style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
+              {m.at && <div style={{ alignSelf: 'center', fontSize: 11, color: 'var(--text-muted)', margin: '2px 0 6px' }}>{timeOf(m.at)}</div>}
+              <div style={{
+                maxWidth: '86%', padding: '11px 14px', borderRadius: 18, fontSize: 14, lineHeight: 1.5,
+                whiteSpace: m.role === 'user' ? 'pre-wrap' : 'normal',
+                background: m.role === 'user' ? 'var(--accent)' : 'var(--kpi-bg)',
+                color: m.role === 'user' ? '#fff' : 'var(--text-primary)',
+                border: m.role === 'user' ? 'none' : '1px solid var(--border)',
+                borderBottomRightRadius: m.role === 'user' ? 6 : 18,
+                borderBottomLeftRadius: m.role === 'user' ? 18 : 6,
+              }}>{m.role === 'user' ? m.content : <Markdown text={m.content} />}</div>
+            </div>
           ))}
-          {busy && <div style={{ alignSelf: 'flex-start', color: 'var(--text-muted)', fontSize: 13 }}>Gemini is thinking…</div>}
+          {busy && <div style={{ alignSelf: 'flex-start', color: 'var(--text-muted)', fontSize: 13, padding: '0 4px' }}>Gemini is thinking…</div>}
 
           {msgs.length === 1 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
@@ -318,15 +324,23 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
 
         {/* Composer — expandable, wraps to new lines; fixed at the bottom */}
         <form onSubmit={(e) => { e.preventDefault(); send(input) }}
-          style={{ flexShrink: 0, padding: 12, borderTop: '1px solid var(--border)', display: 'flex', gap: 8, alignItems: 'flex-end' }}>
-          <textarea
-            ref={taRef} value={input} rows={1} onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(input) } }}
-            placeholder="Ask a question…" autoFocus
-            /* fontSize 16 keeps iOS Safari from auto-zooming the page on focus */
-            style={{ flex: 1, minWidth: 0, padding: '10px 12px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 16, fontFamily: 'inherit', lineHeight: 1.4, resize: 'none', maxHeight: 160, overflowY: 'auto' }}
-          />
-          <button type="submit" disabled={busy} className="btn btn-primary" style={{ padding: '10px 16px', flexShrink: 0 }}>➤</button>
+          style={{ flexShrink: 0, padding: '10px 12px 8px', borderTop: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+            <textarea
+              ref={taRef} value={input} rows={1} onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(input) } }}
+              placeholder="Ask anything" autoFocus
+              /* fontSize 16 keeps iOS Safari from auto-zooming the page on focus */
+              style={{ flex: 1, minWidth: 0, padding: '11px 16px', borderRadius: 22, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 16, fontFamily: 'inherit', lineHeight: 1.4, resize: 'none', maxHeight: 160, overflowY: 'auto' }}
+            />
+            <button type="submit" disabled={busy || !input.trim()} aria-label="Send"
+              style={{ width: 44, height: 44, flexShrink: 0, borderRadius: 999, border: 'none', cursor: input.trim() ? 'pointer' : 'default', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: input.trim() ? 'var(--accent)' : 'var(--border)', color: '#fff', opacity: busy ? 0.6 : 1 }}>
+              <ArrowUp size={20} />
+            </button>
+          </div>
+          <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--text-muted)', marginTop: 7 }}>
+            Gemini can make mistakes — double-check important numbers.
+          </div>
         </form>
       </div>
     </div>,
