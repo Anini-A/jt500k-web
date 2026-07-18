@@ -108,6 +108,54 @@ const HORIZON: Record<string, { fg: string; bg: string }> = {
 }
 const detectHorizon = (label: string) => { const t = label.toLowerCase(); return /short/.test(t) ? 'short' : /medium|mid/.test(t) ? 'medium' : /long/.test(t) ? 'long' : null }
 
+// Insurance grouped into per-person cards (Jean / Henriette) + a shared card
+function InsuranceRow({ it, first }: { it: Item; first: boolean }) {
+  const o = detectOwner(it.label)
+  const cl = (o ? cleanLabel(it.label, o) : it.label) || it.label
+  const open = it.status === undefined ? todoRe.test(String(it.value || '')) : false
+  return (
+    <div style={{ borderTop: first ? 'none' : '1px solid var(--border)', paddingTop: first ? 0 : 8, marginTop: first ? 0 : 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{cl}</span>
+        {it.status ? <StatusChip status={it.status} /> : open ? <StatusPill open /> : null}
+      </div>
+      <div style={{ fontSize: 14, fontWeight: 600, marginTop: 3, overflowWrap: 'anywhere' }}>{it.value}</div>
+    </div>
+  )
+}
+function InsurancePersonCards({ items }: { items: Item[] }) {
+  const owners = ['Jean', 'Henriette']
+  const groups: Record<string, Item[]> = {}
+  const shared: Item[] = []
+  for (const it of items) {
+    const o = detectOwner(it.label)
+    if (o && owners.includes(o)) (groups[o] ||= []).push(it)
+    else shared.push(it)
+  }
+  return (
+    <div style={{ display: 'grid', gap: 10 }}>
+      {owners.filter((o) => groups[o]?.length).map((o) => {
+        const meta = OWNER_COLOR[o]
+        return (
+          <div key={o} style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderLeft: `3px solid ${meta.fg}`, borderRadius: 12, padding: '12px 13px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+              <div style={{ width: 34, height: 34, borderRadius: '50%', background: meta.bg, color: meta.fg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 12, flexShrink: 0 }}>{meta.initials}</div>
+              <span style={{ fontWeight: 700, fontSize: 15 }}>{o}</span>
+            </div>
+            {groups[o].map((it, i) => <InsuranceRow key={i} it={it} first={i === 0} />)}
+          </div>
+        )
+      })}
+      {shared.length > 0 && (
+        <div style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 13px' }}>
+          <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 8 }}>🏠 Shared</div>
+          {shared.map((it, i) => <InsuranceRow key={i} it={it} first={i === 0} />)}
+        </div>
+      )}
+    </div>
+  )
+}
+
 const inp: React.CSSProperties = {
   padding: '9px 11px', borderRadius: 10, border: '1px solid var(--border)',
   background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 14, width: '100%',
@@ -205,6 +253,9 @@ export default function ProfilePanel() {
           return tracked.length ? <ReadinessMeter done={done} total={tracked.length} /> : null
         })()}
 
+        {!editing && shown.id === 'insurance' ? (
+          <InsurancePersonCards items={view.items} />
+        ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 8 }}>
           {view.items.map((it, ii) => editing && draft ? (
             <div key={ii} style={{ display: 'grid', gap: 6, padding: 8, border: '1px solid var(--border)', borderRadius: 10, background: 'var(--surface-1)' }}>
@@ -281,6 +332,7 @@ export default function ProfilePanel() {
             )
           })())}
         </div>
+        )}
 
         {editing && draft && (
           <>
