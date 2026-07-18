@@ -116,7 +116,7 @@ function FieldRows({ rows }: { rows: { label: string; value: string; status?: St
         return (
           <div key={i} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, padding: '10px 0', borderTop: i ? '1px solid var(--border)' : 'none', flexWrap: 'wrap' }}>
             <span style={{ fontWeight: 600, fontSize: 14 }}>{r.label}</span>
-            <span style={{ fontSize: 14, color: 'var(--text-secondary)', textAlign: 'right', overflowWrap: 'anywhere', display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 14, color: 'var(--text-secondary)', textAlign: 'right', overflowWrap: 'anywhere', wordBreak: 'break-word', minWidth: 0, display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
               {r.status ? <StatusChip status={r.status} /> : open ? <StatusChip status="todo" /> : null}
               {isUrl(r.value) ? <a href={r.value} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', gap: 5, alignItems: 'center', fontWeight: 600 }}>Open <ExternalLink size={13} /></a> : r.value}
             </span>
@@ -146,7 +146,7 @@ function MembersView({ items }: { items: Item[] }) {
   const people = items.filter(isPerson)
   const facts = items.filter((it) => !isPerson(it)).map((it) => ({ label: it.label, value: it.value || '', status: it.status }))
   return (
-    <div style={{ display: 'grid', gap: 10 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 10 }}>
       {people.map((p, i) => <PersonCard key={i} item={p} />)}
       {facts.length > 0 && (
         <div style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 14px' }}>
@@ -165,11 +165,11 @@ function InsuranceByProvider({ items }: { items: Item[] }) {
     groups.get(p.name)!.items.push(it)
   }
   return (
-    <div style={{ display: 'grid', gap: 10 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 10 }}>
       {[...groups.entries()].map(([name, g]) => (
         <div key={name} style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 14px' }}>
           <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10 }}>{g.icon} {name}</div>
-          <div style={{ display: 'grid', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 12 }}>
             {g.items.map((it, i) => {
               const owner = detectOwner(it.label)
               const meta = owner ? OWNER_COLOR[owner] : null
@@ -193,7 +193,7 @@ function InsuranceByProvider({ items }: { items: Item[] }) {
 
 function GoalsView({ items }: { items: Item[] }) {
   return (
-    <div style={{ display: 'grid', gap: 8 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 8 }}>
       {items.map((it, i) => {
         const h = detectHorizon(it.label)
         const hz = h ? HORIZON[h] : null
@@ -327,7 +327,7 @@ export default function ProfilePanel() {
   const estateDone = estateTracked.filter((it) => it.status ? it.status === 'done' : !todoRe.test(String(it.value || ''))).length
 
   return (
-    <div style={{ display: 'grid', gap: 14 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 14 }}>
       {/* HQ hero — roster + live KPIs + home equity */}
       <HouseholdHero profile={profile} netWorth={netWorth} />
 
@@ -400,7 +400,7 @@ function ItemsEditor({ section, upd }: { section: Section; upd: (fn: (d: Section
     </select>
   )
   return (
-    <div style={{ display: 'grid', gap: 10 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 10 }}>
       {section.items.map((it, ii) => (
         <div key={ii} style={{ display: 'grid', gap: 8, padding: 10, border: '1px solid var(--border)', borderRadius: 12, background: 'var(--surface-1)' }}>
           <input style={{ ...inp, fontWeight: 700 }} value={it.label} placeholder="Name / label" onChange={(e) => upd((d) => { d.items[ii].label = e.target.value })} />
