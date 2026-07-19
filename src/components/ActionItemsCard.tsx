@@ -43,37 +43,37 @@ export default function ActionItemsCard() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
         <h2 style={{ margin: 0 }}>🔔 Alerts</h2>
         {urgentCount > 0 && (
-          <span style={{ fontWeight: 700, fontSize: 12, color: 'var(--expense)', background: 'var(--expense-soft)', padding: '3px 9px', borderRadius: 999, flexShrink: 0 }}>{urgentCount} urgent</span>
+          <span style={{ fontWeight: 600, fontSize: 12, color: 'var(--expense)', flexShrink: 0 }}>{urgentCount} urgent</span>
         )}
       </div>
 
       {/* Scroll region is absolutely positioned so its content never grows the card —
           Current Balance sets the row height and a long alert list scrolls inside. */}
       <div style={{ position: 'relative', flex: 1, minHeight: 220, marginTop: 14 }}>
-      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', gap: 14, overflowY: 'auto' }}>
+      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', gap: 22, overflowY: 'auto' }}>
         {items === null ? (
-          <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>Checking…</div>
+          <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Checking…</div>
         ) : actions.length === 0 && infos.length === 0 ? (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', color: 'var(--text-muted)', gap: 6, padding: '10px 0' }}>
-            <div style={{ fontSize: 28 }}>✅</div>
+            <div style={{ fontSize: 26 }}>✅</div>
             <div style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>All clear</div>
-            <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>Nothing needs your attention right now.</div>
+            <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Nothing needs your attention right now.</div>
           </div>
         ) : (
           <>
             {actions.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--expense)' }}>Needs action</div>
-                {actions.map((n) => <Item key={n.id} n={n} onDismiss={n.dismissible ? () => dismiss(n.id) : undefined} skip={n.dismissible} />)}
+              <div>
+                <SectionLabel>Needs action</SectionLabel>
+                {actions.map((n, i) => <Item key={n.id} n={n} first={i === 0} onDismiss={n.dismissible ? () => dismiss(n.id) : undefined} skip={n.dismissible} />)}
               </div>
             )}
             {infos.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Good to know</div>
-                  <button onClick={clearInfo} style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-muted)', borderRadius: 999, padding: '3px 10px', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>Clear all</button>
+                  <SectionLabel>Good to know</SectionLabel>
+                  <button onClick={clearInfo} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', padding: 0, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Clear all</button>
                 </div>
-                {infos.map((n) => <Item key={n.id} n={n} onDismiss={() => dismiss(n.id)} />)}
+                {infos.map((n, i) => <Item key={n.id} n={n} first={i === 0} onDismiss={() => dismiss(n.id)} />)}
               </div>
             )}
           </>
@@ -84,24 +84,25 @@ export default function ActionItemsCard() {
   )
 }
 
-function Item({ n, onDismiss, skip }: { n: Notif; onDismiss?: () => void; skip?: boolean }) {
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>{children}</div>
+}
+
+function Item({ n, first, onDismiss, skip }: { n: Notif; first?: boolean; onDismiss?: () => void; skip?: boolean }) {
   const urgent = n.severity === 'warn'
+  const dot = urgent ? 'var(--expense)' : n.kind === 'action' ? 'var(--accent)' : 'var(--text-muted)'
   return (
-    <div style={{
-      display: 'flex', gap: 10, alignItems: 'flex-start', padding: '10px 11px', borderRadius: 12,
-      background: urgent ? 'var(--expense-soft)' : 'var(--kpi-bg)',
-      border: '1px solid var(--border)', borderLeft: `3px solid ${urgent ? 'var(--expense)' : 'var(--accent)'}`,
-    }}>
-      <span style={{ fontSize: 18, lineHeight: 1.2, flexShrink: 0 }}>{n.icon}</span>
+    <div style={{ display: 'flex', gap: 11, alignItems: 'flex-start', padding: '12px 0', borderTop: first ? 'none' : '1px solid var(--border)' }}>
+      <span style={{ width: 7, height: 7, borderRadius: '50%', background: dot, flexShrink: 0, marginTop: 6 }} />
       <div style={{ minWidth: 0, flex: 1 }}>
-        <div style={{ fontWeight: 700, fontSize: 14 }}>{n.title}</div>
-        <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 2, overflowWrap: 'anywhere' }}>{n.detail}</div>
+        <div style={{ fontWeight: 600, fontSize: 14 }}>{n.title}</div>
+        <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2, overflowWrap: 'anywhere' }}>{n.detail}</div>
       </div>
       {onDismiss ? (
         skip ? (
-          <button onClick={onDismiss} title="Skip this month" style={{ flexShrink: 0, alignSelf: 'flex-start', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 11, fontWeight: 600, borderRadius: 999, padding: '3px 8px', whiteSpace: 'nowrap' }}>Skip</button>
+          <button onClick={onDismiss} title="Skip this month" style={{ flexShrink: 0, border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 12, fontWeight: 600, padding: 0, whiteSpace: 'nowrap' }}>Skip</button>
         ) : (
-          <button onClick={onDismiss} aria-label="Dismiss" title="Dismiss" style={{ flexShrink: 0, alignSelf: 'flex-start', width: 24, height: 24, borderRadius: 8, border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 13 }}>✕</button>
+          <button onClick={onDismiss} aria-label="Dismiss" title="Dismiss" style={{ flexShrink: 0, border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14, padding: 0, lineHeight: 1 }}>✕</button>
         )
       ) : null}
     </div>
