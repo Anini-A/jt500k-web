@@ -566,16 +566,26 @@ header.top h1 {
   display: grid;
   place-items: center;
   color: #fff;
-  background: linear-gradient(140deg, rgba(255, 154, 139, 0.72) 0%, rgba(166, 123, 216, 0.72) 48%, rgba(106, 162, 230, 0.72) 100%);
-  backdrop-filter: blur(9px) saturate(150%);
-  -webkit-backdrop-filter: blur(9px) saturate(150%);
-  box-shadow: 0 6px 20px rgba(120, 110, 190, 0.3), inset 0 0 0 6px rgba(255, 255, 255, 0.14);
+  /* Tinted with the site palette (accent → savings → income), glassy + translucent */
+  background:
+    linear-gradient(140deg,
+      color-mix(in srgb, var(--accent) 60%, transparent) 0%,
+      color-mix(in srgb, var(--savings) 56%, transparent) 50%,
+      color-mix(in srgb, var(--income) 58%, transparent) 100%);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  box-shadow: 0 6px 22px color-mix(in srgb, var(--accent) 26%, transparent), var(--glass-sheen);
   transition: transform .18s ease, box-shadow .28s ease, background .28s ease;
 }
 .chat-fab:hover {
   transform: translateY(-2px) scale(1.05);
-  background: linear-gradient(140deg, rgba(255, 154, 139, 0.9) 0%, rgba(166, 123, 216, 0.9) 48%, rgba(106, 162, 230, 0.9) 100%);
-  box-shadow: 0 12px 36px rgba(150, 110, 210, 0.55), 0 0 26px rgba(150, 120, 230, 0.6), inset 0 0 0 6px rgba(255, 255, 255, 0.2);
+  background:
+    linear-gradient(140deg,
+      color-mix(in srgb, var(--accent) 82%, transparent) 0%,
+      color-mix(in srgb, var(--savings) 78%, transparent) 50%,
+      color-mix(in srgb, var(--income) 80%, transparent) 100%);
+  box-shadow: 0 12px 34px color-mix(in srgb, var(--accent) 42%, transparent), 0 0 26px color-mix(in srgb, var(--savings) 40%, transparent), var(--glass-sheen);
 }
 .chat-fab:active { transform: scale(0.97); }
 @media (max-width: 640px) { .chat-fab { width: 56px; height: 56px; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); } }
