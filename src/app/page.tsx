@@ -3,8 +3,7 @@
 import { useEffect, useState } from 'react'
 import HeaderNav from '@/components/HeaderNav'
 import Logo from '@/components/Logo'
-import NetWorthCard from '@/components/NetWorthCard'
-import ForecastCard from '@/components/ForecastCard'
+import JourneyCard from '@/components/JourneyCard'
 import MoneyFlowCard from '@/components/MoneyFlowCard'
 import { getJSON } from '@/lib/fresh'
 
@@ -70,10 +69,14 @@ export default function Home() {
           <HeaderNav current="home" />
         </header>
 
-        {/* Two-card headline: Net Worth (with the 500K tracker) · Current Balance */}
+        {/* Headline hero — Net Worth + Journey/ETA to 500K, combined */}
         <section className="block">
-          <div className="grid-2">
-            <NetWorthCard />
+          <JourneyCard />
+        </section>
+
+        {/* Current Balance + This Month (full width until its neighbour is decided) */}
+        <section className="block">
+          <div className="grid-2" style={{ gridTemplateColumns: '1fr' }}>
             <div className="card glass" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
               <h2 style={{ margin: 0 }}>💵 Current Balance</h2>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap', margin: '10px 0 0' }}>
@@ -94,11 +97,6 @@ export default function Home() {
               </div>
             </div>
           </div>
-        </section>
-
-        {/* Forecast — projected date to reach the goal */}
-        <section className="block">
-          <ForecastCard />
         </section>
 
         {/* Money Flow — income vs expenses vs savings, defaults to YTD */}
