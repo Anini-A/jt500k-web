@@ -9,7 +9,10 @@ export const revalidate = 0
 const norm = (s: string | null) => (s || '').trim().toLowerCase()
 const money = (n: number) => '$' + Math.round(n).toLocaleString()
 
-interface Notif { id: string; icon: string; title: string; detail: string; severity: 'info' | 'warn' }
+// kind: 'action' = persists until the underlying condition clears; not dismissible
+//       (except recurring, which allows a "skip this month" via dismissible:true).
+//       'info' = purely informational; always dismissible.
+interface Notif { id: string; icon: string; title: string; detail: string; severity: 'info' | 'warn'; kind: 'action' | 'info'; dismissible: boolean }
 
 // GET /api/notifications — recurring reminders, category trends, over-budget alerts.
 export async function GET() {
@@ -41,7 +44,7 @@ export async function GET() {
     if (cat === 'Debt Repayment' || typeByCat.get(cat) !== 'expense') continue
     const spent = spentThisMonth.get(cat) || 0
     if (budgeted > 0 && spent > budgeted) {
-      out.push({ id: `overbudget-${cat}-${curMonth}`, icon: '⚠️', severity: 'warn', title: `Over budget: ${cat}`, detail: `Spent ${money(spent)} of ${money(budgeted)} — over by ${money(spent - budgeted)} this month.` })
+      out.push({ id: `overbudget-${cat}-${curMonth}`, icon: '⚠️', severity: 'warn', kind: 'action', dismissible: false, title: `Over budget: ${cat}`, detail: `Spent ${money(spent)} of ${money(budgeted)} — over by ${money(spent - budgeted)} this month.` })
     }
   }
 
@@ -71,7 +74,7 @@ export async function GET() {
       const avg = seen.reduce((s, v) => s + v, 0) / seen.length
       if (avg > 0 && spent > avg * 1.25 && spent - avg > 75) {
         const pct = Math.round(((spent - avg) / avg) * 100)
-        out.push({ id: `trend-${cat}-${completeMonth}`, icon: '📈', severity: 'info', title: `${cat} spending is climbing`, detail: `${money(spent)} last month — ${pct}% above its ${seen.length}-month average of ${money(avg)}.` })
+        out.push({ id: `trend-${cat}-${completeMonth}`, icon: '📈', severity: 'info', kind: 'info', dismissible: true, title: `${cat} spending is climbing`, detail: `${money(spent)} last month — ${pct}% above its ${seen.length}-month average of ${money(avg)}.` })
       }
     }
   }
@@ -87,7 +90,7 @@ export async function GET() {
     const missing = active.filter((r) => !isLogged(r))
     if (missing.length) {
       const names = missing.slice(0, 6).map((r) => r.name).join(', ')
-      out.push({ id: `recurring-${curMonth}-${missing.length}`, icon: '🔁', severity: 'info', title: `${missing.length} recurring item${missing.length !== 1 ? 's' : ''} to log this month`, detail: `${names}${missing.length > 6 ? '…' : ''}. Open ➕ Add → Recurring, or ask the assistant to log them.` })
+      out.push({ id: `recurring-${curMonth}`, icon: '🔁', severity: 'info', kind: 'action', dismissible: true, title: `${missing.length} recurring item${missing.length !== 1 ? 's' : ''} to log this month`, detail: `${names}${missing.length > 6 ? '…' : ''}. Open ➕ Add → Recurring, or ask the assistant to log them.` })
     }
   }
 
@@ -101,7 +104,7 @@ export async function GET() {
       // explicit status wins; else fall back to text detection
       const open = it.status !== undefined ? it.status !== 'done' : todoRe.test(String(it.value || ''))
       if (open) {
-        out.push({ id: `todo-${sec.id}-${slug(it.label)}`, icon: '📌', severity: 'info', title: `To-do: ${it.label}`, detail: it.value })
+        out.push({ id: `todo-${sec.id}-${slug(it.label)}`, icon: '📌', severity: 'info', kind: 'action', dismissible: false, title: `To-do: ${it.label}`, detail: it.value })
       }
     }
   }
@@ -113,7 +116,7 @@ export async function GET() {
     const res = shortfall(bills, bset)
     if (res && res.short > 0) {
       const buffer = Number(bset.buffer) || 0
-      out.push({ id: `bill-runway-${res.trough.iso}`, icon: '⚠️', severity: 'warn', title: `Home & Utilities may run short`, detail: `Balance dips to ${money(res.trough.balance)} on ${res.trough.label}${buffer ? ` (below your ${money(buffer)} floor)` : ''} — top up about ${money(res.short)} before then.` })
+      out.push({ id: `bill-runway`, icon: '⚠️', severity: 'warn', kind: 'action', dismissible: false, title: `Home & Utilities may run short`, detail: `Balance dips to ${money(res.trough.balance)} on ${res.trough.label}${buffer ? ` (below your ${money(buffer)} floor)` : ''} — top up about ${money(res.short)} before then.` })
     }
   }
 

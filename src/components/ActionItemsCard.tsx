@@ -3,13 +3,14 @@
 import { useEffect, useState, useCallback } from 'react'
 import { getJSON } from '@/lib/fresh'
 
-interface Notif { id: string; icon: string; title: string; detail: string; severity: 'info' | 'warn' }
+interface Notif { id: string; icon: string; title: string; detail: string; severity: 'info' | 'warn'; kind: 'action' | 'info'; dismissible: boolean }
 const DISMISSED_KEY = 'jt-notifs-dismissed'
 const readArr = (): string[] => { try { const v = JSON.parse(localStorage.getItem(DISMISSED_KEY) || '[]'); return Array.isArray(v) ? v : [] } catch { return [] } }
 
 // The app's single action center (replaces the notification bell).
-// URGENT  = severity 'warn'  → money at risk / time-sensitive (bill top-up, over budget).
-// FOR LATER = severity 'info' → good to do, not time-critical (recurring to log, trends, household to-dos).
+// NEEDS ACTION (kind 'action') persists until the condition clears and auto-vanishes
+//   when you handle it — not dismissible (except recurring, which allows "skip this month").
+// GOOD TO KNOW (kind 'info') is purely informational — dismissible + "Clear all".
 export default function ActionItemsCard() {
   const [items, setItems] = useState<Notif[] | null>(null)
   const [dismissed, setDismissed] = useState<string[]>([])
@@ -25,15 +26,18 @@ export default function ActionItemsCard() {
   }, [load])
 
   const shown = (items || []).filter((n) => !dismissed.includes(n.id))
-  const urgent = shown.filter((n) => n.severity === 'warn')
-  const later = shown.filter((n) => n.severity === 'info')
+  // Needs action: urgent (warn) first, then the rest
+  const actions = shown.filter((n) => n.kind === 'action').sort((a, b) => (a.severity === b.severity ? 0 : a.severity === 'warn' ? -1 : 1))
+  const infos = shown.filter((n) => n.kind === 'info')
+  const urgentCount = actions.filter((n) => n.severity === 'warn').length
 
   const dismiss = (id: string) => {
     const next = Array.from(new Set([...readArr(), id])).slice(-300)
     localStorage.setItem(DISMISSED_KEY, JSON.stringify(next)); setDismissed(next)
   }
-  const clearAll = () => {
-    const next = Array.from(new Set([...readArr(), ...shown.map((n) => n.id)])).slice(-300)
+  // Clear all only touches "Good to know" — it can never hide a real to-do
+  const clearInfo = () => {
+    const next = Array.from(new Set([...readArr(), ...infos.map((n) => n.id)])).slice(-300)
     localStorage.setItem(DISMISSED_KEY, JSON.stringify(next)); setDismissed(next)
   }
 
@@ -41,20 +45,15 @@ export default function ActionItemsCard() {
     <div className="card glass" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
         <h2 style={{ margin: 0 }}>⚡ Action Items</h2>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-          {urgent.length > 0 && (
-            <span style={{ fontWeight: 700, fontSize: 12, color: 'var(--expense)', background: 'var(--expense-soft)', padding: '3px 9px', borderRadius: 999 }}>{urgent.length} urgent</span>
-          )}
-          {shown.length > 0 && (
-            <button onClick={clearAll} style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-muted)', borderRadius: 999, padding: '4px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Clear all</button>
-          )}
-        </div>
+        {urgentCount > 0 && (
+          <span style={{ fontWeight: 700, fontSize: 12, color: 'var(--expense)', background: 'var(--expense-soft)', padding: '3px 9px', borderRadius: 999, flexShrink: 0 }}>{urgentCount} urgent</span>
+        )}
       </div>
 
-      <div style={{ marginTop: 14, flex: 1, display: 'flex', flexDirection: 'column', gap: 12, maxHeight: 360, overflowY: 'auto' }}>
+      <div style={{ marginTop: 14, flex: 1, display: 'flex', flexDirection: 'column', gap: 14, maxHeight: 460, overflowY: 'auto' }}>
         {items === null ? (
           <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>Checking…</div>
-        ) : shown.length === 0 ? (
+        ) : actions.length === 0 && infos.length === 0 ? (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', color: 'var(--text-muted)', gap: 6, padding: '10px 0' }}>
             <div style={{ fontSize: 28 }}>✅</div>
             <div style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>All clear</div>
@@ -62,15 +61,20 @@ export default function ActionItemsCard() {
           </div>
         ) : (
           <>
-            {urgent.length > 0 && (
-              <Section label="Urgent" color="var(--expense)">
-                {urgent.map((n) => <Item key={n.id} n={n} urgent onDismiss={() => dismiss(n.id)} />)}
-              </Section>
+            {actions.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--expense)' }}>Needs action</div>
+                {actions.map((n) => <Item key={n.id} n={n} onDismiss={n.dismissible ? () => dismiss(n.id) : undefined} skip={n.dismissible} />)}
+              </div>
             )}
-            {later.length > 0 && (
-              <Section label="For later" color="var(--text-muted)">
-                {later.map((n) => <Item key={n.id} n={n} onDismiss={() => dismiss(n.id)} />)}
-              </Section>
+            {infos.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Good to know</div>
+                  <button onClick={clearInfo} style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-muted)', borderRadius: 999, padding: '3px 10px', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>Clear all</button>
+                </div>
+                {infos.map((n) => <Item key={n.id} n={n} onDismiss={() => dismiss(n.id)} />)}
+              </div>
             )}
           </>
         )}
@@ -79,16 +83,8 @@ export default function ActionItemsCard() {
   )
 }
 
-function Section({ label, color, children }: { label: string; color: string; children: React.ReactNode }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color }}>{label}</div>
-      {children}
-    </div>
-  )
-}
-
-function Item({ n, urgent, onDismiss }: { n: Notif; urgent?: boolean; onDismiss: () => void }) {
+function Item({ n, onDismiss, skip }: { n: Notif; onDismiss?: () => void; skip?: boolean }) {
+  const urgent = n.severity === 'warn'
   return (
     <div style={{
       display: 'flex', gap: 10, alignItems: 'flex-start', padding: '10px 11px', borderRadius: 12,
@@ -100,8 +96,13 @@ function Item({ n, urgent, onDismiss }: { n: Notif; urgent?: boolean; onDismiss:
         <div style={{ fontWeight: 700, fontSize: 14 }}>{n.title}</div>
         <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 2, overflowWrap: 'anywhere' }}>{n.detail}</div>
       </div>
-      <button aria-label="Dismiss" title="Dismiss" onClick={onDismiss}
-        style={{ flexShrink: 0, alignSelf: 'flex-start', width: 24, height: 24, borderRadius: 8, border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 13 }}>✕</button>
+      {onDismiss ? (
+        skip ? (
+          <button onClick={onDismiss} title="Skip this month" style={{ flexShrink: 0, alignSelf: 'flex-start', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 11, fontWeight: 600, borderRadius: 999, padding: '3px 8px', whiteSpace: 'nowrap' }}>Skip</button>
+        ) : (
+          <button onClick={onDismiss} aria-label="Dismiss" title="Dismiss" style={{ flexShrink: 0, alignSelf: 'flex-start', width: 24, height: 24, borderRadius: 8, border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 13 }}>✕</button>
+        )
+      ) : null}
     </div>
   )
 }
