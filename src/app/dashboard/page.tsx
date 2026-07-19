@@ -200,9 +200,9 @@ export default function Dashboard() {
         {tab === 'income' && (
           <>
             <HeroRow stats={[
-              { emoji: '💰', label: 'Total Income', value: money(agg.income), cls: 'income' },
-              { emoji: '🏆', label: 'Top Source', value: topIncome ? money(topIncome.total) : '—', sub: topIncome?.name },
-              { emoji: '📆', label: 'Avg / Month', value: money(agg.income / monthsSpan), sub: `over ${monthsSpan} month${monthsSpan > 1 ? 's' : ''}` },
+              { label: 'Total Income', value: money(agg.income), cls: 'income' },
+              { label: 'Top Source', value: topIncome ? money(topIncome.total) : '—', sub: topIncome?.name },
+              { label: 'Avg / Month', value: money(agg.income / monthsSpan), sub: `over ${monthsSpan} month${monthsSpan > 1 ? 's' : ''}` },
             ]} />
             <section className="block">
               <div className="grid-2">
@@ -223,9 +223,9 @@ export default function Dashboard() {
         {tab === 'expenses' && (
           <>
             <HeroRow stats={[
-              { emoji: '💸', label: 'Total Expenses', value: money(agg.expense), cls: 'expense' },
-              { emoji: '🏆', label: 'Top Category', value: topExpense ? money(topExpense.total) : '—', sub: topExpense?.name },
-              { emoji: '📆', label: 'Avg / Month', value: money(agg.expense / monthsSpan), sub: `over ${monthsSpan} month${monthsSpan > 1 ? 's' : ''}` },
+              { label: 'Total Expenses', value: money(agg.expense), cls: 'expense' },
+              { label: 'Top Category', value: topExpense ? money(topExpense.total) : '—', sub: topExpense?.name },
+              { label: 'Avg / Month', value: money(agg.expense / monthsSpan), sub: `over ${monthsSpan} month${monthsSpan > 1 ? 's' : ''}` },
             ]} />
             <section className="block">
               <div className="grid-2">
@@ -250,9 +250,9 @@ export default function Dashboard() {
         {tab === 'savings' && (
           <>
             <HeroRow stats={[
-              { emoji: '🏦', label: 'Total Savings', value: money(agg.savings), cls: 'savings' },
-              { emoji: '🏆', label: 'Top Account', value: topSaving ? money(topSaving.total) : '—', sub: topSaving?.name },
-              { emoji: '📈', label: 'Savings Rate', value: `${savingsRate}%`, sub: 'of income' },
+              { label: 'Total Savings', value: money(agg.savings), cls: 'savings' },
+              { label: 'Top Account', value: topSaving ? money(topSaving.total) : '—', sub: topSaving?.name },
+              { label: 'Savings Rate', value: `${savingsRate}%`, sub: 'of income' },
             ]} />
             <section className="block">
               <div className="grid-2">
@@ -325,15 +325,14 @@ function DashHeader() {
   )
 }
 
-interface Stat { emoji: string; label: string; value: string; sub?: string; cls?: string }
+interface Stat { label: string; value: string; sub?: string; cls?: string }
 
-function HeroStat({ emoji, label, value, sub, cls }: Stat) {
+function HeroStat({ label, value, sub, cls }: Stat) {
   return (
-    <div className="stat-card">
-      <div style={{ fontSize: 24, marginBottom: 8 }}>{emoji}</div>
-      <div className="stat-label">{label}</div>
-      <div className={`stat-value ${cls || ''}`}>{value}</div>
-      {sub && <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{sub}</div>}
+    <div style={{ minWidth: 0 }}>
+      <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{label}</div>
+      <div className={`stat-value ${cls || ''}`} style={{ fontSize: 'clamp(24px, 5vw, 30px)', marginTop: 6, letterSpacing: '-0.02em' }}>{value}</div>
+      {sub && <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub}</div>}
     </div>
   )
 }
