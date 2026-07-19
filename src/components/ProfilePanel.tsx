@@ -222,7 +222,7 @@ function findVal(section: Section | undefined, re: RegExp): string {
 }
 const money0 = (n: number) => '$' + Math.round(n).toLocaleString()
 
-function HouseholdHero({ profile, netWorth }: { profile: Profile; netWorth: number | null }) {
+function HouseholdHero({ profile }: { profile: Profile }) {
   const sec = (id: string) => profile.sections.find((s) => s.id === id)
   const members = sec('members'), ins = sec('insurance'), estate = sec('estate'), home = sec('home')
   const people = (members?.items || []).filter(isPerson)
@@ -237,7 +237,6 @@ function HouseholdHero({ profile, netWorth }: { profile: Profile; netWorth: numb
   const ltv = homeVal ? Math.round((mortBal / homeVal) * 100) : 0
 
   const tiles = [
-    { label: 'Net worth', value: netWorth != null ? money0(netWorth) : '…', color: 'var(--savings)' },
     { label: 'Combined income', value: income ? `~${moneyShort(income)}` : '—', color: 'var(--income)' },
     { label: 'Life coverage', value: coverage ? `≈ ${moneyShort(coverage)}` : '—', color: 'var(--text-primary)' },
     { label: 'Estate ready', value: tracked.length ? `${done}/${tracked.length}` : '—', color: done === tracked.length && tracked.length ? 'var(--income)' : 'var(--expense)' },
@@ -289,14 +288,12 @@ export default function ProfilePanel() {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState<Section | null>(null)
   const [saving, setSaving] = useState(false)
-  const [netWorth, setNetWorth] = useState<number | null>(null)
 
   const load = useCallback(() => {
     getJSON('/api/profile').then((d) => {
       const p: Profile = { sections: d.sections || [], links: d.links || [] }
       setProfile(p); setFilter((f) => f || p.sections[0]?.id || '')
     }).catch(() => setProfile({ sections: [], links: [] }))
-    getJSON('/api/networth').then((d) => !d.error && setNetWorth(Number(d.netWorth) || 0)).catch(() => {})
   }, [])
   useEffect(() => { load() }, [load])
 
@@ -329,7 +326,7 @@ export default function ProfilePanel() {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 14 }}>
       {/* HQ hero — roster + live KPIs + home equity */}
-      <HouseholdHero profile={profile} netWorth={netWorth} />
+      <HouseholdHero profile={profile} />
 
       {/* Section menu — dashboard tab style */}
       <section style={{ display: 'flex', justifyContent: 'center' }}>
