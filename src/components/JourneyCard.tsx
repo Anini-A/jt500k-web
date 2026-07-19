@@ -74,7 +74,7 @@ export default function JourneyCard() {
       <div className="grid-2" style={{ gap: 'clamp(24px, 5vw, 48px)' }}>
         {/* LEFT — where you are */}
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, minHeight: 34 }}>
             <Label>Net worth</Label>
             {prev && (
               <span style={{ fontWeight: 500, fontSize: 12, color: delta >= 0 ? 'var(--income)' : 'var(--expense)' }}>
@@ -82,7 +82,7 @@ export default function JourneyCard() {
               </span>
             )}
           </div>
-          <div style={{ fontWeight: 700, fontSize: 'clamp(32px, 8vw, 44px)', color: 'var(--text-primary)', margin: '6px 0 22px', letterSpacing: '-0.03em' }}>{money(nw)}</div>
+          <div style={{ fontWeight: 700, fontSize: 'clamp(32px, 8vw, 44px)', color: 'var(--text-primary)', margin: '6px 0 4px', letterSpacing: '-0.03em' }}>{money(nw)}</div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, marginBottom: 9 }}>
             <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{pct.toFixed(1)}% of {short(goal)}</span>
@@ -101,7 +101,7 @@ export default function JourneyCard() {
 
         {/* RIGHT — where you're headed */}
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, minHeight: 34 }}>
             <Label>ETA to {short(goal)}</Label>
             {!reached && (
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 2, background: 'var(--kpi-bg)', borderRadius: 999, padding: 3 }}>
