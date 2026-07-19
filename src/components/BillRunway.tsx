@@ -150,7 +150,7 @@ export default function BillRunway() {
       </div>
 
       {/* BALANCE + LEDGER — side by side */}
-      <div className="grid-2" style={{ marginBottom: 16, alignItems: 'start' }}>
+      <div className="grid-2" style={{ marginBottom: 16 }}>
         <div className="card glass">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
