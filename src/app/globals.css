@@ -181,7 +181,15 @@ header.top h1 {
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow), var(--glass-sheen);
+  box-shadow: var(--glass-shadow), var(--glass-sheen), var(--glass-rim);
+}
+
+/* Liquid-glass specular — a capped top highlight band so tall cards never wash out.
+   Applied as a BACKGROUND layer (below content), so text/numbers stay fully crisp. */
+.card.glass, .modal-card.glass {
+  background-image: var(--glass-specular);
+  background-repeat: no-repeat;
+  background-size: 100% 96px;
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
@@ -314,10 +322,11 @@ header.top h1 {
   transition: transform 0.18s ease, box-shadow 0.24s ease;
 }
 
-/* Specular top-edge highlight — the liquid-glass signature. Sits below the icon. */
+/* Specular top-edge highlight — the liquid-glass signature.
+   On icon-only pills it's a ::before (icons ride above via z-index); the tab bar
+   uses it on the container (behind the tab buttons). */
 .icon-pill::before,
-.tabs::before,
-.tab-active::before {
+.tabs::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -465,7 +474,7 @@ header.top h1 {
 .tab-active:hover {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, var(--accent), #1e63b8);
+  background: var(--glass-specular), linear-gradient(135deg, var(--accent), #1e63b8);
   color: #fff;
   box-shadow: 0 3px 12px rgba(20, 20, 15, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.3), var(--glass-rim);
 }
@@ -578,10 +587,11 @@ header.top h1 {
   font-weight: 600;
   cursor: pointer;
   color: var(--text-secondary);
-  background: var(--glass-bg);
+  background: var(--glass-specular), var(--glass-bg);
   border: 1px solid var(--glass-border);
-  -webkit-backdrop-filter: blur(8px) saturate(140%);
-  backdrop-filter: blur(8px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  backdrop-filter: blur(12px) saturate(150%);
+  box-shadow: var(--glass-rim);
   transition: transform 0.12s ease, background 0.2s ease, color 0.2s ease;
 }
 
@@ -591,10 +601,10 @@ header.top h1 {
 }
 
 .chip-active {
-  background: linear-gradient(135deg, var(--accent), #1e63b8);
+  background: var(--glass-specular), linear-gradient(135deg, var(--accent), #1e63b8);
   color: #fff;
   border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 3px 12px rgba(20, 20, 15, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  box-shadow: 0 3px 12px rgba(20, 20, 15, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.28), var(--glass-rim);
 }
 
 .date-input {
