@@ -70,51 +70,48 @@ export default function JourneyCard() {
   }
 
   return (
-    <div className="card glass">
-      <div className="grid-2" style={{ gap: 20 }}>
+    <div className="card glass" style={{ padding: 'clamp(20px, 4vw, 30px)' }}>
+      <div className="grid-2" style={{ gap: 'clamp(24px, 5vw, 48px)' }}>
         {/* LEFT — where you are */}
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 8 }}>
-            <h2 style={{ margin: 0 }}>🪙 Net Worth</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
+            <Label>Net worth</Label>
             {prev && (
-              <span style={{ fontWeight: 600, fontSize: 13, color: delta >= 0 ? 'var(--income)' : 'var(--expense)' }}>
-                {delta >= 0 ? '▲' : '▼'} {money(Math.abs(delta))} vs last month
+              <span style={{ fontWeight: 500, fontSize: 12, color: delta >= 0 ? 'var(--income)' : 'var(--expense)' }}>
+                {delta >= 0 ? '↑' : '↓'} {money(Math.abs(delta))}
               </span>
             )}
           </div>
-          <div style={{ fontWeight: 800, fontSize: 'clamp(30px, 8vw, 40px)', color: 'var(--savings)', margin: '10px 0 14px', letterSpacing: '-0.02em' }}>{money(nw)}</div>
+          <div style={{ fontWeight: 700, fontSize: 'clamp(32px, 8vw, 44px)', color: 'var(--text-primary)', margin: '6px 0 22px', letterSpacing: '-0.03em' }}>{money(nw)}</div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, borderTop: '1px solid var(--border)', paddingTop: 16 }}>
-            <h2 style={{ margin: 0 }}>🎯 Journey to {short(goal)}</h2>
-            <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--savings)' }}>{pct.toFixed(1)}%</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, marginBottom: 9 }}>
+            <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{pct.toFixed(1)}% of {short(goal)}</span>
+            <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{money(remaining)} to go</span>
           </div>
-          <div title={`Where we stand as of ${today}`}
-            style={{ height: 14, borderRadius: 999, background: 'var(--kpi-bg)', border: '1px solid var(--border)', overflow: 'hidden', margin: '10px 0 7px', cursor: 'help' }}>
+          <div title={`As of ${today}`} style={{ height: 6, borderRadius: 999, background: 'var(--kpi-bg)', overflow: 'hidden' }}>
             <div style={{ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg, #6366f1, #1baf7a)', borderRadius: 999, transition: 'width .6s ease' }} />
           </div>
-          <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{money(remaining)} to go</div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginTop: 16, flex: 1 }}>
+          <div style={{ display: 'flex', gap: 'clamp(16px, 4vw, 32px)', marginTop: 22 }}>
             <Piece label="Investments" value={money(d.holdingsValue)} />
-            <Piece label="Cash & other" value={money(d.cashValue)} />
-            <Piece label="− Debts" value={money(d.debts)} />
+            <Piece label="Cash" value={money(d.cashValue)} />
+            <Piece label="Debts" value={`−${money(d.debts)}`} />
           </div>
         </div>
 
         {/* RIGHT — where you're headed */}
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-            <h2 style={{ margin: 0 }}>🧭 ETA to {short(goal)}</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+            <Label>ETA to {short(goal)}</Label>
             {!reached && (
-              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
-                <button onClick={() => setRateKey('c')} className={`chip ${rateKey === 'c' ? 'chip-active' : ''}`} style={{ padding: '5px 10px', fontSize: 12 }}>5%</button>
-                <button onClick={() => setRateKey('m')} className={`chip ${rateKey === 'm' ? 'chip-active' : ''}`} style={{ padding: '5px 10px', fontSize: 12 }}>7%</button>
-                <span className={`chip ${rateKey === 'o' ? 'chip-active' : ''}`} style={{ padding: '5px 8px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 1 }}
-                  title="Editable — try any rate">
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 2, background: 'var(--kpi-bg)', borderRadius: 999, padding: 3 }}>
+                <Seg active={rateKey === 'c'} onClick={() => setRateKey('c')}>5%</Seg>
+                <Seg active={rateKey === 'm'} onClick={() => setRateKey('m')}>7%</Seg>
+                <span onClick={() => setRateKey('o')} style={{ display: 'inline-flex', alignItems: 'center', padding: '4px 9px', borderRadius: 999, cursor: 'text', fontSize: 12, fontWeight: 600, background: rateKey === 'o' ? 'var(--surface-1)' : 'transparent', color: rateKey === 'o' ? 'var(--text-primary)' : 'var(--text-muted)', boxShadow: rateKey === 'o' ? '0 1px 3px rgba(0,0,0,0.12)' : 'none' }} title="Editable — try any rate">
                   <input inputMode="decimal" value={customRate} aria-label="Custom return rate"
                     onFocus={() => setRateKey('o')}
                     onChange={(e) => { setCustomRate(e.target.value.replace(/[^0-9.]/g, '')); setRateKey('o') }}
-                    style={{ width: 26, fontSize: 12, fontWeight: 600, textAlign: 'right', border: 'none', background: 'transparent', color: 'inherit', fontFamily: 'inherit', outline: 'none', padding: 0 }} />
+                    style={{ width: 22, fontSize: 12, fontWeight: 600, textAlign: 'right', border: 'none', background: 'transparent', color: 'inherit', fontFamily: 'inherit', outline: 'none', padding: 0 }} />
                   %
                 </span>
               </div>
@@ -122,34 +119,28 @@ export default function JourneyCard() {
           </div>
 
           {reached ? (
-            <div style={{ fontWeight: 800, fontSize: 'clamp(26px, 7vw, 34px)', color: 'var(--income)', margin: '10px 0 2px' }}>🎉 Goal reached!</div>
+            <div style={{ fontWeight: 700, fontSize: 'clamp(28px, 7vw, 38px)', color: 'var(--income)', margin: '6px 0 2px', letterSpacing: '-0.02em' }}>Goal reached</div>
           ) : projectable ? (
             <>
-              <div style={{ fontWeight: 800, fontSize: 'clamp(28px, 8vw, 40px)', letterSpacing: '-0.02em', margin: '10px 0 2px', color: 'var(--savings)' }}>{dateStr}</div>
-              <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>
-                about <strong>{awayStr}</strong> away · at ~{Math.round(rate * 100 * 10) / 10}%/yr
-              </div>
-              <div style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 12, padding: 11, marginTop: 16 }}>
-                <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>Adding / month ✎</div>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 1, marginTop: 4 }}>
-                  <span style={{ fontWeight: 700, fontSize: 18 }}>$</span>
+              <div style={{ fontWeight: 700, fontSize: 'clamp(32px, 8vw, 44px)', letterSpacing: '-0.03em', margin: '6px 0 4px', color: 'var(--accent)' }}>{dateStr}</div>
+              <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{awayStr} away · {Math.round(rate * 100 * 10) / 10}%/yr</div>
+
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 26 }}>
+                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Adding</span>
+                <span style={{ display: 'inline-flex', alignItems: 'baseline' }}>
+                  <span style={{ fontWeight: 600, fontSize: 20, color: 'var(--text-secondary)' }}>$</span>
                   <input inputMode="numeric" value={override} placeholder="0"
                     onChange={(e) => setOverride(e.target.value.replace(/[^0-9.]/g, ''))}
-                    style={{ width: 92, fontWeight: 700, fontSize: 18, padding: '2px 2px', border: 'none', borderBottom: '1px dashed var(--border)', background: 'transparent', color: 'var(--text-primary)', fontFamily: 'inherit', outline: 'none' }} />
-                  <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>/mo</span>
-                </div>
+                    style={{ width: 84, fontWeight: 700, fontSize: 20, padding: '0 2px 2px', border: 'none', borderBottom: '1px solid var(--border)', background: 'transparent', color: 'var(--text-primary)', fontFamily: 'inherit', outline: 'none' }} />
+                </span>
+                <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>/mo</span>
                 {Math.round(Number(override) || 0) !== Math.round(avgSave) && (
-                  <button onClick={() => setOverride(String(Math.round(avgSave)))} style={{ marginTop: 4, background: 'transparent', border: 'none', padding: 0, color: 'var(--accent)', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>↺ use my pace ({money(avgSave)})</button>
+                  <button onClick={() => setOverride(String(Math.round(avgSave)))} style={{ background: 'transparent', border: 'none', padding: 0, color: 'var(--accent)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>↺ my pace</button>
                 )}
-              </div>
-              <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 12 }}>
-                💡 Seeded from your recent pace ({money(avgSave)}/mo). Tap a rate or type your own — contributions compound at that return.
               </div>
             </>
           ) : (
-            <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 10 }}>
-              Add a monthly amount (or a return rate) and your projected finish date appears here.
-            </div>
+            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>Add a monthly amount to see your finish date.</div>
           )}
         </div>
       </div>
@@ -157,11 +148,21 @@ export default function JourneyCard() {
   )
 }
 
+function Label({ children }: { children: React.ReactNode }) {
+  return <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{children}</span>
+}
+
+function Seg({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button onClick={onClick} style={{ padding: '4px 10px', borderRadius: 999, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, fontFamily: 'inherit', background: active ? 'var(--surface-1)' : 'transparent', color: active ? 'var(--text-primary)' : 'var(--text-muted)', boxShadow: active ? '0 1px 3px rgba(0,0,0,0.12)' : 'none' }}>{children}</button>
+  )
+}
+
 function Piece({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '11px 11px', minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4 }}>
-      <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{label}</div>
-      <div style={{ fontWeight: 700, fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value}</div>
+    <div style={{ minWidth: 0 }}>
+      <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{label}</div>
+      <div style={{ fontWeight: 600, fontSize: 16, marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value}</div>
     </div>
   )
 }
