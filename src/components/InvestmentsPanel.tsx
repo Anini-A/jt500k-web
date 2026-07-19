@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { ChevronDown, Upload, RefreshCw, Plus, Pencil, Trash2 } from 'lucide-react'
+import { Upload, RefreshCw, Plus, Pencil, Trash2 } from 'lucide-react'
 import { Donut } from './DashCharts'
 import { getJSON } from '@/lib/fresh'
 
@@ -84,7 +84,6 @@ export default function InvestmentsPanel() {
   const [data, setData] = useState<{ rows: Holding[]; assets: Asset[]; totalValue: number; totalCost: number; ownerTotals: Record<string, number>; asOf: string | null } | null>(null)
   const [loading, setLoading] = useState(true)
   const [person, setPerson] = useState('Household')
-  const [openAcct, setOpenAcct] = useState<Set<string>>(new Set())
   const [importing, setImporting] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [refreshMsg, setRefreshMsg] = useState('')
@@ -190,84 +189,75 @@ export default function InvestmentsPanel() {
       </div>
       {refreshMsg && <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: -8, marginBottom: 16, textAlign: 'center' }}>{refreshMsg}</div>}
 
-      {/* Hero */}
+      {/* Hero — AUM + gain + owner split */}
       <div className="card glass" style={{ marginBottom: 16 }}>
-        <div className="stat-grid">
-          <div className="stat-card">
-            <div style={{ fontSize: 24, marginBottom: 8 }}>💼</div>
-            <div className="stat-label">Portfolio Value</div>
-            <div className="stat-value savings">{money(value)}</div>
-          </div>
-          <div className="stat-card">
-            <div style={{ fontSize: 24, marginBottom: 8 }}>🧾</div>
-            <div className="stat-label">Cost Basis</div>
-            <div className="stat-value">{money(cost)}</div>
-          </div>
-          <div className="stat-card">
-            <div style={{ fontSize: 24, marginBottom: 8 }}>{gain >= 0 ? '📈' : '📉'}</div>
-            <div className="stat-label">Unrealized Gain</div>
-            <div className="stat-value" style={{ color: gain >= 0 ? 'var(--income)' : 'var(--expense)' }}>
-              {gain >= 0 ? '+' : ''}{money(gain)}
-            </div>
-            <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, color: gain >= 0 ? 'var(--income)' : 'var(--expense)' }}>
-              {gain >= 0 ? '+' : ''}{gainPct.toFixed(1)}%
-            </div>
-          </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 8 }}>
+          <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>💼 Portfolio value{person !== 'Household' ? ` · ${person}` : ''}</div>
+          {data?.asOf && <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>As of {data.asOf}</span>}
         </div>
-        {data?.asOf && <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 12, textAlign: 'center' }}>As of {data.asOf}{person !== 'Household' ? ` · ${person}` : ''}</div>}
-      </div>
-
-      <div className="grid-2">
-        {/* Accounts accordion */}
-        <div className="card glass">
-          <h3 style={{ marginTop: 0, marginBottom: 4, fontSize: 15 }}>Accounts</h3>
-          <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginBottom: 14 }}>Tap to see the holdings inside</p>
-          <div style={{ display: 'grid', gap: 4 }}>
-            {accounts.map((a) => {
-              const g = a.value - a.cost
-              const open = openAcct.has(a.key)
+        <div style={{ fontWeight: 800, fontSize: 'clamp(30px, 8vw, 42px)', color: 'var(--savings)', margin: '8px 0 4px', letterSpacing: '-0.02em' }}>{money(value)}</div>
+        <div style={{ fontWeight: 600, fontSize: 14, color: gain >= 0 ? 'var(--income)' : 'var(--expense)' }}>
+          {gain >= 0 ? '▲' : '▼'} {money2(Math.abs(gain))} ({gain >= 0 ? '+' : ''}{gainPct.toFixed(1)}%) unrealized · cost {money(cost)}
+        </div>
+        {person === 'Household' && owners.length > 1 && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 8, marginTop: 16 }}>
+            {owners.map((o) => {
+              const c = OWNER_COLOR[o] || { fg: 'var(--text-secondary)', bg: 'var(--kpi-bg)' }
               return (
-                <div key={a.key} style={{ borderBottom: '1px solid var(--border)', paddingBottom: 8 }}>
-                  <button onClick={() => setOpenAcct((p) => { const n = new Set(p); n.has(a.key) ? n.delete(a.key) : n.add(a.key); return n })}
-                    style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', padding: '8px 2px' }}>
-                    <ChevronDown size={15} style={{ transition: 'transform .2s ease', transform: open ? 'none' : 'rotate(-90deg)', opacity: 0.55, flexShrink: 0 }} />
-                    <span style={{ fontWeight: 600 }}>{a.label}</span>
-                    {person === 'Household' && <OwnerPill owner={a.owner} />}
-                    <span style={{ marginLeft: 'auto', textAlign: 'right' }}>
-                      <div style={{ fontWeight: 600 }}>{money(a.value)}</div>
-                      <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, color: g >= 0 ? 'var(--income)' : 'var(--expense)' }}>{g >= 0 ? '+' : ''}{money(g)}</div>
-                    </span>
-                  </button>
-                  {open && (
-                    <div style={{ display: 'grid', gap: 6, padding: '4px 4px 8px 25px' }}>
-                      {a.holds.sort((x, y) => y.market_value_cad - x.market_value_cad).map((h) => (
-                        <div key={h.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
-                          <div style={{ minWidth: 0 }}>
-                            <div style={{ fontWeight: 600 }}>{h.symbol} <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>× {h.quantity.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span></div>
-                            <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 220 }}>{h.name}</div>
-                          </div>
-                          <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                            <div style={{ fontWeight: 600 }}>{money2(h.market_value_cad)}</div>
-                            <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, color: h.market_value_cad - h.book_value_cad >= 0 ? 'var(--income)' : 'var(--expense)' }}>
-                              {h.market_value_cad - h.book_value_cad >= 0 ? '+' : ''}{money2(h.market_value_cad - h.book_value_cad)}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <button key={o} onClick={() => setPerson(o)} style={{ textAlign: 'left', cursor: 'pointer', background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderLeft: `3px solid ${c.fg}`, borderRadius: 12, padding: '10px 11px' }}>
+                  <OwnerPill owner={o} />
+                  <div style={{ fontWeight: 700, fontSize: 16, marginTop: 6 }}>{money(data?.ownerTotals?.[o] || 0)}</div>
+                </button>
               )
             })}
           </div>
-        </div>
+        )}
+      </div>
 
-        {/* Allocation donut */}
-        <div className="card glass">
-          <h3 style={{ marginTop: 0, marginBottom: 4, fontSize: 15 }}>Allocation</h3>
-          <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginBottom: 14 }}>By account</p>
-          <Donut data={donut} />
-        </div>
+      {/* Per-account cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 12, marginBottom: 16 }}>
+        {accounts.map((a) => {
+          const g = a.value - a.cost
+          const gp = a.cost > 0 ? (g / a.cost) * 100 : 0
+          const c = OWNER_COLOR[a.owner]
+          return (
+            <div key={a.key} className="card glass" style={{ borderLeft: `3px solid ${c?.fg || 'var(--border)'}` }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontWeight: 700, fontSize: 15 }}>{a.label}</span>
+                  {person === 'Household' && <OwnerPill owner={a.owner} />}
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontWeight: 700, fontSize: 16 }}>{money(a.value)}</div>
+                  <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, color: g >= 0 ? 'var(--income)' : 'var(--expense)' }}>{g >= 0 ? '+' : ''}{money(g)} ({gp.toFixed(1)}%)</div>
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 2 }}>
+                {a.holds.slice().sort((x, y) => y.market_value_cad - x.market_value_cad).map((h, i) => {
+                  const hg = h.market_value_cad - h.book_value_cad
+                  return (
+                    <div key={h.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '9px 0', borderTop: i ? '1px solid var(--border)' : 'none' }}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontWeight: 600 }}>{h.symbol}</div>
+                        <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{h.quantity.toLocaleString(undefined, { maximumFractionDigits: 4 })} sh{h.name ? ` · ${h.name}` : ''}</div>
+                      </div>
+                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                        <div style={{ fontWeight: 600 }}>{money2(h.market_value_cad)}</div>
+                        <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, color: hg >= 0 ? 'var(--income)' : 'var(--expense)' }}>{hg >= 0 ? '+' : ''}{money2(hg)}</div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Allocation donut */}
+      <div className="card glass" style={{ marginBottom: 16 }}>
+        <h3 style={{ marginTop: 0, marginBottom: 4, fontSize: 15 }}>Allocation by account</h3>
+        <Donut data={donut} />
       </div>
 
       {/* Other manual assets */}
