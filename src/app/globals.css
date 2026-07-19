@@ -21,6 +21,9 @@
   --glass-sheen: inset 0 1px 0 rgba(255, 255, 255, 0.7);
   --kpi-bg: rgba(255, 255, 255, 0.4);
   --header-bg: rgba(249, 249, 247, 0.95);
+  /* Liquid-glass polish: specular top highlight + inner light rim */
+  --glass-specular: linear-gradient(177deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.16) 18%, rgba(255, 255, 255, 0) 48%);
+  --glass-rim: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -47,6 +50,8 @@
     --glass-sheen: inset 0 1px 0 rgba(255, 255, 255, 0.08);
     --kpi-bg: rgba(255, 255, 255, 0.05);
     --header-bg: rgba(13, 13, 13, 0.95);
+    --glass-specular: linear-gradient(177deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.06) 20%, rgba(255, 255, 255, 0) 50%);
+    --glass-rim: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
   }
 }
 
@@ -290,6 +295,8 @@ header.top h1 {
 
 /* Icon pills that expand to a label on hover */
 .icon-pill {
+  position: relative;
+  overflow: hidden;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -299,21 +306,62 @@ header.top h1 {
   color: var(--text-primary);
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  backdrop-filter: blur(20px) saturate(180%);
-  box-shadow: var(--glass-shadow), var(--glass-sheen);
+  -webkit-backdrop-filter: blur(24px) saturate(190%);
+  backdrop-filter: blur(24px) saturate(190%);
+  box-shadow: var(--glass-shadow), var(--glass-sheen), var(--glass-rim);
   cursor: pointer;
   text-decoration: none;
-  transition: transform 0.15s ease, box-shadow 0.2s ease;
+  transition: transform 0.18s ease, box-shadow 0.24s ease;
+}
+
+/* Specular top-edge highlight — the liquid-glass signature. Sits below the icon. */
+.icon-pill::before,
+.tabs::before,
+.tab-active::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--glass-specular);
+  opacity: 0.9;
+  pointer-events: none;
 }
 
 .icon-pill:hover {
   transform: translateY(-1px);
   text-decoration: none;
-  box-shadow: 0 7px 20px rgba(20, 20, 15, 0.2), var(--glass-sheen);
+  box-shadow: 0 9px 24px rgba(20, 20, 15, 0.22), var(--glass-sheen), var(--glass-rim);
+}
+/* Gentle moving sheen on hover */
+.icon-pill::after,
+.tab-active::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 45%;
+  left: -60%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  transform: skewX(-18deg);
+  pointer-events: none;
+  opacity: 0;
+  transition: none;
+}
+.icon-pill:hover::after,
+.tab-active:hover::after {
+  animation: glassSheen 0.7s ease;
+}
+@keyframes glassSheen {
+  0% { left: -60%; opacity: 0; }
+  30% { opacity: 1; }
+  100% { left: 120%; opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .icon-pill:hover::after, .tab-active:hover::after { animation: none; }
 }
 
 .icon-pill svg {
+  position: relative;
   width: 20px;
   height: 20px;
   flex-shrink: 0;
@@ -374,21 +422,25 @@ header.top h1 {
 
 /* Segmented pill tab control — full-width bar with centered pills */
 .tabs {
+  position: relative;
   display: flex;
   justify-content: center;
   gap: 4px;
   padding: 6px;
-  border-radius: 16px;
+  border-radius: 18px;
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
-  -webkit-backdrop-filter: blur(16px) saturate(160%);
-  backdrop-filter: blur(16px) saturate(160%);
-  box-shadow: var(--glass-shadow), var(--glass-sheen);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  box-shadow: var(--glass-shadow), var(--glass-sheen), var(--glass-rim);
   width: 100%;
   overflow-x: auto;
 }
+/* keep the specular from scrolling with tab content */
+.tabs::before { position: absolute; }
 
 .tab {
+  position: relative;
   padding: 9px 18px;
   border-radius: 999px;
   border: none;
@@ -406,14 +458,19 @@ header.top h1 {
 
 .tab:hover {
   color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.14);
 }
 
 .tab-active,
 .tab-active:hover {
+  position: relative;
+  overflow: hidden;
   background: linear-gradient(135deg, var(--accent), #1e63b8);
   color: #fff;
-  box-shadow: 0 3px 10px rgba(20, 20, 15, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  box-shadow: 0 3px 12px rgba(20, 20, 15, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.3), var(--glass-rim);
 }
+/* icon + label ride above the specular/sheen layers */
+.tab > * { position: relative; z-index: 1; }
 
 /* Modal */
 .modal-backdrop {
