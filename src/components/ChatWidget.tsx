@@ -204,7 +204,25 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
       case 'add_debt': return j('/api/debts', 'POST', { name: a.name, amount: Number(a.amount) })
       case 'edit_debt': return j('/api/debts', 'PATCH', a)
       case 'delete_debt': return fetch(`/api/debts?id=${a.id}`, { method: 'DELETE' })
+      case 'delete_recurring': return fetch(`/api/recurring?id=${a.id}`, { method: 'DELETE' })
       case 'refresh_prices': return fetch('/api/holdings/refresh', { method: 'POST' })
+      case 'set_bill_balance': return j('/api/bills', 'PUT', { current_balance: Number(a.current_balance), balance_as_of: a.balance_as_of, deposit_day: a.deposit_day, deposit_amount: a.deposit_amount, buffer: a.buffer })
+      case 'add_bill': return j('/api/bills', 'POST', { name: a.name, day: a.day, amount: Number(a.amount), quarterly: !!a.quarterly, next_due: a.next_due })
+      case 'edit_bill': return j('/api/bills', 'PATCH', a)
+      case 'delete_bill': return fetch(`/api/bills?id=${a.id}`, { method: 'DELETE' })
+      case 'update_household_item': {
+        const prof = await (await fetch('/api/profile')).json()
+        const sections = prof?.sections || []
+        const want = String(a.label || '').trim().toLowerCase()
+        let hit: any = null
+        for (const s of sections) for (const it of (s.items || [])) {
+          if (String(it.label || '').trim().toLowerCase() === want) { hit = it; break }
+        }
+        if (!hit) throw new Error(`no household item called "${a.label}"`)
+        if (a.status) hit.status = a.status
+        if (a.value != null) hit.value = a.value
+        return j('/api/profile', 'PUT', prof)
+      }
       default: throw new Error('Unknown action')
     }
   }
