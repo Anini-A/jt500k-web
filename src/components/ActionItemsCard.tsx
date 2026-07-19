@@ -41,7 +41,7 @@ export default function ActionItemsCard() {
   return (
     <div className="card glass" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-        <h2 style={{ margin: 0 }}>⚡ Action Items</h2>
+        <h2 style={{ margin: 0 }}>🔔 Alerts</h2>
         {urgentCount > 0 && (
           <span style={{ fontWeight: 700, fontSize: 12, color: 'var(--expense)', background: 'var(--expense-soft)', padding: '3px 9px', borderRadius: 999, flexShrink: 0 }}>{urgentCount} urgent</span>
         )}
