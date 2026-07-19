@@ -212,76 +212,6 @@ function GoalsView({ items }: { items: Item[] }) {
   )
 }
 
-// find a value across a section's items (and their fields) by label pattern
-function findVal(section: Section | undefined, re: RegExp): string {
-  for (const it of section?.items || []) {
-    if (re.test(it.label) && it.value) return it.value
-    for (const f of it.fields || []) if (re.test(f.label)) return f.value
-  }
-  return ''
-}
-const money0 = (n: number) => '$' + Math.round(n).toLocaleString()
-
-function HouseholdHero({ profile }: { profile: Profile }) {
-  const sec = (id: string) => profile.sections.find((s) => s.id === id)
-  const members = sec('members'), ins = sec('insurance'), estate = sec('estate'), home = sec('home')
-  const people = (members?.items || []).filter(isPerson)
-  const income = (members?.items || []).reduce((s, it) => { const o = detectOwner(it.label); return (o === 'Jean' || o === 'Henriette') ? s + parseMoney(itemText(it)) : s }, 0)
-  const location = findVal(members, /location/i)
-  const coverage = (ins?.items || []).reduce((s, it) => s + parseAmounts(itemText(it)).filter((a) => a >= 50000).reduce((a, b) => a + b, 0), 0)
-  const tracked = (estate?.items || []).filter((it) => !isUrl(it.value || ''))
-  const done = tracked.filter((it) => it.status ? it.status === 'done' : !todoRe.test(String(it.value || ''))).length
-  const homeVal = parseMoney(findVal(home, /valuation|home value|market value/i))
-  const mortBal = parseMoney(findVal(home, /mortgage balance|outstanding|balance/i))
-  const equity = homeVal && mortBal ? homeVal - mortBal : 0
-  const ltv = homeVal ? Math.round((mortBal / homeVal) * 100) : 0
-
-  const tiles = [
-    { label: 'Combined income', value: income ? `~${moneyShort(income)}` : '—', color: 'var(--income)' },
-    { label: 'Life coverage', value: coverage ? `≈ ${moneyShort(coverage)}` : '—', color: 'var(--text-primary)' },
-    { label: 'Estate ready', value: tracked.length ? `${done}/${tracked.length}` : '—', color: done === tracked.length && tracked.length ? 'var(--income)' : 'var(--expense)' },
-  ]
-  return (
-    <div className="card glass">
-      {/* roster */}
-      {people.length > 0 && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
-          <div style={{ display: 'flex' }}>
-            {people.map((p, i) => { const o = detectOwner(p.label) || 'Joint'; return <div key={i} style={{ marginLeft: i ? -8 : 0, borderRadius: '50%', boxShadow: '0 0 0 2px var(--surface-1)' }}><Avatar owner={o} size={38} /></div> })}
-          </div>
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontWeight: 700, fontSize: 15 }}>{people.map((p) => p.label).join(' · ')}</div>
-            {location && <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{location}</div>}
-          </div>
-        </div>
-      )}
-
-      {/* KPI tiles — 2×2 on phones, 4-across on wider screens */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 8 }}>
-        {tiles.map((t) => (
-          <div key={t.label} style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '11px 12px' }}>
-            <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{t.label}</div>
-            <div style={{ fontWeight: 800, fontSize: 'clamp(18px, 5vw, 22px)', color: t.color, marginTop: 3, letterSpacing: '-0.02em' }}>{t.value}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* home equity */}
-      {homeVal > 0 && (
-        <div style={{ marginTop: 12, padding: '11px 12px', background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 12 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, marginBottom: 7 }}>
-            <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Home size={13} /> Home equity</span>
-            <span style={{ fontWeight: 700, fontSize: 14, color: equity < 0 ? 'var(--expense)' : 'inherit' }}>{equity < 0 ? '−' : ''}{money0(Math.abs(equity))} <span style={{ color: ltv > 100 ? 'var(--expense)' : 'var(--text-muted)', fontWeight: 500 }}>· LTV {ltv}%</span></span>
-          </div>
-          <div style={{ height: 8, borderRadius: 999, background: 'var(--surface-1)', border: '1px solid var(--border)', overflow: 'hidden' }}>
-            <div style={{ width: `${Math.max(0, Math.min(100, 100 - ltv))}%`, height: '100%', borderRadius: 999, background: 'linear-gradient(90deg, var(--savings), var(--income))' }} />
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
 export default function ProfilePanel() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [filter, setFilter] = useState('')
@@ -325,9 +255,6 @@ export default function ProfilePanel() {
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 14 }}>
-      {/* HQ hero — roster + live KPIs + home equity */}
-      <HouseholdHero profile={profile} />
-
       {/* Section menu — dashboard tab style */}
       <section style={{ display: 'flex', justifyContent: 'center' }}>
         <div className="tabs">
