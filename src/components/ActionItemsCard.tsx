@@ -4,42 +4,39 @@ import { useEffect, useState, useCallback } from 'react'
 import { getJSON } from '@/lib/fresh'
 
 interface Notif { id: string; icon: string; title: string; detail: string; severity: 'info' | 'warn'; kind: 'action' | 'info'; dismissible: boolean }
-const DISMISSED_KEY = 'jt-notifs-dismissed'
-const readArr = (): string[] => { try { const v = JSON.parse(localStorage.getItem(DISMISSED_KEY) || '[]'); return Array.isArray(v) ? v : [] } catch { return [] } }
 
 // The app's single action center (replaces the notification bell).
 // NEEDS ACTION (kind 'action') persists until the condition clears and auto-vanishes
 //   when you handle it — not dismissible (except recurring, which allows "skip this month").
 // GOOD TO KNOW (kind 'info') is purely informational — dismissible + "Clear all".
+// Dismissals are stored server-side (DB), so they sync across devices.
 export default function ActionItemsCard() {
   const [items, setItems] = useState<Notif[] | null>(null)
-  const [dismissed, setDismissed] = useState<string[]>([])
 
   const load = useCallback(() => {
     getJSON('/api/notifications').then((d) => { if (!d.error) setItems(d.notifications || []) }).catch(() => setItems([]))
   }, [])
   useEffect(() => {
-    setDismissed(readArr())
     load()
     window.addEventListener('transaction-added', load)
     return () => window.removeEventListener('transaction-added', load)
   }, [load])
 
-  const shown = (items || []).filter((n) => !dismissed.includes(n.id))
+  const shown = items || []
   // Needs action: urgent (warn) first, then the rest
   const actions = shown.filter((n) => n.kind === 'action').sort((a, b) => (a.severity === b.severity ? 0 : a.severity === 'warn' ? -1 : 1))
   const infos = shown.filter((n) => n.kind === 'info')
   const urgentCount = actions.filter((n) => n.severity === 'warn').length
 
-  const dismiss = (id: string) => {
-    const next = Array.from(new Set([...readArr(), id])).slice(-300)
-    localStorage.setItem(DISMISSED_KEY, JSON.stringify(next)); setDismissed(next)
+  const dismissIds = async (ids: string[]) => {
+    if (!ids.length) return
+    setItems((cur) => (cur || []).filter((n) => !ids.includes(n.id))) // optimistic
+    await fetch('/api/notifications', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids }) }).catch(() => {})
+    load()
   }
+  const dismiss = (id: string) => dismissIds([id])
   // Clear all only touches "Good to know" — it can never hide a real to-do
-  const clearInfo = () => {
-    const next = Array.from(new Set([...readArr(), ...infos.map((n) => n.id)])).slice(-300)
-    localStorage.setItem(DISMISSED_KEY, JSON.stringify(next)); setDismissed(next)
-  }
+  const clearInfo = () => dismissIds(infos.map((n) => n.id))
 
   return (
     <div className="card glass" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>

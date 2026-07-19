@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { shortfall } from '@/lib/billRunway'
 
@@ -9,6 +9,11 @@ export const revalidate = 0
 const norm = (s: string | null) => (s || '').trim().toLowerCase()
 const money = (n: number) => '$' + Math.round(n).toLocaleString()
 
+async function household() {
+  const { data } = await supabaseAdmin.from('households').select('id').order('created_at').limit(1).maybeSingle()
+  return data?.id as string | undefined
+}
+
 // kind: 'action' = persists until the underlying condition clears; not dismissible
 //       (except recurring, which allows a "skip this month" via dismissible:true).
 //       'info' = purely informational; always dismissible.
@@ -16,7 +21,7 @@ interface Notif { id: string; icon: string; title: string; detail: string; sever
 
 // GET /api/notifications — recurring reminders, category trends, over-budget alerts.
 export async function GET() {
-  const [{ data: txAll }, { data: recs }, { data: budgetLines }, { data: cats }, { data: prof }, billsRes, billSetRes] = await Promise.all([
+  const [{ data: txAll }, { data: recs }, { data: budgetLines }, { data: cats }, { data: prof }, billsRes, billSetRes, dismRes] = await Promise.all([
     supabaseAdmin.from('transactions').select('type, amount, date, category, description'),
     supabaseAdmin.from('recurring').select('name, type, category, amount, description, active'),
     supabaseAdmin.from('budgets').select('category, amount'),
@@ -24,6 +29,7 @@ export async function GET() {
     supabaseAdmin.from('household_profile').select('data').order('updated_at', { ascending: false }).limit(1).maybeSingle(),
     supabaseAdmin.from('bills').select('name, day, amount, quarterly, next_due, active').then((r) => r, () => ({ data: null })),
     supabaseAdmin.from('bill_settings').select('*').limit(1).maybeSingle().then((r) => r, () => ({ data: null })),
+    supabaseAdmin.from('dismissed_notifs').select('notif_id').then((r) => r, () => ({ data: null })),
   ])
   const txns = txAll ?? []
   const typeByCat = new Map((cats ?? []).map((c) => [c.name, c.type]))
@@ -120,7 +126,24 @@ export async function GET() {
     }
   }
 
+  // drop anything the household has dismissed (only info items + recurring "skip" ever land here)
+  const dismissed = new Set<string>((dismRes?.data || []).map((r: { notif_id: string }) => r.notif_id))
+  const visible = out.filter((n) => !dismissed.has(n.id))
+
   // warnings first
-  out.sort((a, b) => (a.severity === b.severity ? 0 : a.severity === 'warn' ? -1 : 1))
-  return NextResponse.json({ notifications: out }, { headers: { 'Cache-Control': 'no-store' } })
+  visible.sort((a, b) => (a.severity === b.severity ? 0 : a.severity === 'warn' ? -1 : 1))
+  return NextResponse.json({ notifications: visible }, { headers: { 'Cache-Control': 'no-store' } })
+}
+
+// POST /api/notifications — dismiss one or more items { id } or { ids: [] }
+export async function POST(req: NextRequest) {
+  const body = await req.json().catch(() => ({}))
+  const ids: string[] = body.ids || (body.id ? [body.id] : [])
+  if (!ids.length) return NextResponse.json({ error: 'id or ids required' }, { status: 400 })
+  const hh = await household()
+  if (!hh) return NextResponse.json({ error: 'No household' }, { status: 400 })
+  const rows = ids.map((notif_id) => ({ household_id: hh, notif_id }))
+  const { error } = await supabaseAdmin.from('dismissed_notifs').upsert(rows, { onConflict: 'household_id,notif_id' })
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ ok: true })
 }
