@@ -1,7 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { Database, Target, BarChart3, LifeBuoy, Lock, LogOut, Download, Cloud } from 'lucide-react'
 import CategoryManager from './CategoryManager'
+import SectionTitle from './SectionTitle'
 import { getJSON } from '@/lib/fresh'
 
 interface Settings {
@@ -62,7 +64,7 @@ export default function SettingsPanel() {
       {/* Connection status */}
       <section className="block">
         <div className="card glass">
-          <h2 style={{ marginTop: 0, marginBottom: 14 }}>🗄️ Database</h2>
+          <SectionTitle icon={Database} style={{ marginBottom: 14 }}>Database</SectionTitle>
           <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <span style={{
             width: 12, height: 12, borderRadius: '50%', background: statusMeta.color,
@@ -83,7 +85,7 @@ export default function SettingsPanel() {
       {/* Manage */}
       <section className="block">
         <div className="card glass">
-          <h2 style={{ marginTop: 0, marginBottom: 14 }}>🎯 Goal & Household</h2>
+          <SectionTitle icon={Target} style={{ marginBottom: 14 }}>Goal &amp; Household</SectionTitle>
           <form onSubmit={save} style={{ display: 'grid', gap: 16, maxWidth: 420 }}>
             <label style={{ display: 'grid', gap: 4 }}>
               <span className="stat-label">Household name</span>
@@ -98,7 +100,7 @@ export default function SettingsPanel() {
             </label>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <button className="btn btn-primary" type="submit" disabled={saving}>
-                {saving ? 'Saving…' : '💾 Save'}
+                {saving ? 'Saving…' : 'Save'}
               </button>
               {saved && <span style={{ color: 'var(--income)', fontWeight: 600 }}>✓ Saved</span>}
             </div>
@@ -109,7 +111,7 @@ export default function SettingsPanel() {
       {/* Data summary */}
       <section className="block">
         <div className="card glass">
-          <h2 style={{ marginTop: 0, marginBottom: 14 }}>📊 Your Data</h2>
+          <SectionTitle icon={BarChart3} style={{ marginBottom: 14 }}>Your Data</SectionTitle>
           <div className="stat-grid">
             <div className="stat-card">
               <div className="stat-label">Transactions</div>
@@ -139,7 +141,7 @@ export default function SettingsPanel() {
       {/* Backup */}
       <section className="block">
         <div className="card glass">
-          <h2 style={{ marginTop: 0, marginBottom: 14 }}>🛟 Backup</h2>
+          <SectionTitle icon={LifeBuoy} style={{ marginBottom: 14 }}>Backup</SectionTitle>
           <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 0, marginBottom: 14 }}>
             Download a complete snapshot of everything — transactions, categories, budgets, debts, and holdings — as a single JSON file. Keep it in your Google Drive; it's your safety net before any big change.
           </p>
@@ -150,7 +152,7 @@ export default function SettingsPanel() {
       {/* Info */}
       <section className="block" style={{ marginBottom: 8 }}>
         <div className="card glass">
-          <h2 style={{ marginTop: 0, marginBottom: 14 }}>🔐 Access</h2>
+          <SectionTitle icon={Lock} style={{ marginBottom: 14 }}>Access</SectionTitle>
           <p style={{ marginTop: 0 }}>
             This site is protected by a <strong>shared password</strong>. It's remembered on each device, so you
             and your wife only enter it once per device.
@@ -163,7 +165,7 @@ export default function SettingsPanel() {
             className="btn btn-secondary"
             onClick={async () => { await fetch('/api/auth', { method: 'DELETE' }); window.location.href = '/login' }}
           >
-            🚪 Sign out of this device
+<LogOut size={15} style={{ verticalAlign: -3, marginRight: 6 }} />Sign out of this device
           </button>
           <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 16, marginBottom: 0 }}>
             Version <code>{(process.env.NEXT_PUBLIC_COMMIT_SHA || 'local').slice(0, 7)}</code>
@@ -211,8 +213,8 @@ function BackupButton() {
   return (
     <div style={{ display: 'grid', gap: 10 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-        <button className="btn btn-primary" onClick={download} disabled={busy}>{busy ? 'Preparing…' : '⬇️ Download backup'}</button>
-        <button className="btn btn-secondary" onClick={toDrive} disabled={drive === 'busy'}>{drive === 'busy' ? 'Backing up…' : '☁️ Back up to Drive now'}</button>
+        <button className="btn btn-primary" onClick={download} disabled={busy}>{busy ? 'Preparing…' : <><Download size={15} /> Download backup</>}</button>
+        <button className="btn btn-secondary" onClick={toDrive} disabled={drive === 'busy'}>{drive === 'busy' ? 'Backing up…' : <><Cloud size={15} /> Back up to Drive now</>}</button>
         {done && <span style={{ color: 'var(--income)', fontWeight: 600 }}>✓ Downloaded</span>}
       </div>
       {driveMsg && <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, color: driveMsg.startsWith('✓') ? 'var(--income)' : 'var(--expense)' }}>{driveMsg}</span>}

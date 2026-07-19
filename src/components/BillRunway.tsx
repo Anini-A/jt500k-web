@@ -174,7 +174,7 @@ export default function BillRunway() {
             {proj.dueBeforeDeposit.length} bill{proj.dueBeforeDeposit.length === 1 ? '' : 's'} · {money2(proj.dueBeforeDeposit.reduce((s, e) => s + e.amount, 0))} total
           </p>
           {proj.dueBeforeDeposit.length === 0 ? (
-            <div style={{ padding: 16, textAlign: 'center', color: 'var(--text-muted)' }}>Nothing due before your next deposit. 🎉</div>
+            <div style={{ padding: 16, textAlign: 'center', color: 'var(--text-muted)' }}>Nothing due before your next deposit.</div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr)', gap: 2 }}>
               {proj.dueBeforeDeposit.map((e, i) => (

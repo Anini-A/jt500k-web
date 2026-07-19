@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { Upload, RefreshCw, Plus, Pencil, Trash2 } from 'lucide-react'
+import { Upload, RefreshCw, Plus, Pencil, Trash2, LineChart } from 'lucide-react'
 import { Donut } from './DashCharts'
 import { getJSON } from '@/lib/fresh'
 
@@ -162,7 +162,7 @@ export default function InvestmentsPanel() {
   if (rows.length === 0 && assets.length === 0) {
     return (
       <div className="card glass" style={{ textAlign: 'center', padding: 40 }}>
-        <div style={{ fontSize: 40, marginBottom: 8 }}>📈</div>
+        <LineChart size={34} color="var(--text-muted)" style={{ margin: '0 auto 10px' }} />
         <h3 style={{ margin: '0 0 6px' }}>No holdings yet</h3>
         <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginBottom: 16 }}>Import your Wealthsimple holdings CSV to get started.</p>
         <button className="btn btn-primary" onClick={() => setImporting(true)} style={{ margin: '0 auto' }}><Upload size={16} /> Import Holdings</button>
@@ -341,7 +341,7 @@ function AssetForm({ asset, defaultOwner, onDone, onDelete, onCancel }: {
           <input style={inp} type="number" step="0.01" value={value} onChange={(e) => setValue(e.target.value)} placeholder="0.00" /></label>
       </div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <button className="btn btn-primary" disabled={!name.trim() || !parseFloat(value)} onClick={() => onDone({ owner, name: name.trim(), kind, value: parseFloat(value) })}>💾 {asset ? 'Save' : 'Add asset'}</button>
+        <button className="btn btn-primary" disabled={!name.trim() || !parseFloat(value)} onClick={() => onDone({ owner, name: name.trim(), kind, value: parseFloat(value) })}>{asset ? 'Save' : 'Add asset'}</button>
         {onCancel && <button className="btn btn-secondary" onClick={onCancel}>Cancel</button>}
         {onDelete && <button className="btn btn-secondary" style={{ color: 'var(--expense)', borderColor: 'var(--expense)' }} onClick={onDelete}><Trash2 size={14} /> Delete</button>}
       </div>
@@ -380,7 +380,7 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-card glass" onClick={(e) => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <h2 style={{ margin: 0, fontSize: 18 }}>📥 Import Holdings</h2>
+          <h2 style={{ margin: 0, fontSize: 18, display: 'flex', alignItems: 'center', gap: 8 }}><Upload size={18} /> Import Holdings</h2>
           <button className="modal-x" aria-label="Close" onClick={onClose}>✕</button>
         </div>
         <div style={{ display: 'grid', gap: 12 }}>
@@ -404,7 +404,7 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
             </div>
           )}
           <button className="btn btn-primary" disabled={saving || !rows?.length} onClick={submit} style={{ justifyContent: 'center' }}>
-            {saving ? 'Importing…' : rows ? `💾 Import ${rows.length} holdings` : 'Choose a CSV file'}
+            {saving ? 'Importing…' : rows ? `Import ${rows.length} holdings` : 'Choose a CSV file'}
           </button>
         </div>
       </div>

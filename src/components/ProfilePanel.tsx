@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Pencil, Plus, Trash2, ExternalLink, Users, Home, Shield, ScrollText, Flag, type LucideIcon } from 'lucide-react'
+import { Pencil, Plus, Trash2, ExternalLink, Users, Home, Shield, ScrollText, Flag, Building2, FileText, type LucideIcon } from 'lucide-react'
 import { getJSON } from '@/lib/fresh'
 
 type Status = 'todo' | 'doing' | 'done'
@@ -43,11 +43,11 @@ function detectOwner(text: string): string | null {
   if (/\bjoint\b/.test(t)) return 'Joint'
   return null
 }
-const detectProvider = (label: string) => {
+const detectProvider = (label: string): { name: string; Icon: LucideIcon } => {
   const t = label.toLowerCase()
-  if (/policy\s?me/.test(t)) return { name: 'PolicyMe', icon: '🛡️' }
-  if (/\bia\b|industrial|workplace|group/.test(t)) return { name: 'IA · Industrial Alliance', icon: '🏢' }
-  return { name: 'Other', icon: '📄' }
+  if (/policy\s?me/.test(t)) return { name: 'PolicyMe', Icon: Shield }
+  if (/\bia\b|industrial|workplace|group/.test(t)) return { name: 'IA · Industrial Alliance', Icon: Building2 }
+  return { name: 'Other', Icon: FileText }
 }
 
 function parseAmounts(text: string): number[] {
@@ -158,17 +158,17 @@ function MembersView({ items }: { items: Item[] }) {
 }
 
 function InsuranceByProvider({ items }: { items: Item[] }) {
-  const groups = new Map<string, { icon: string; items: Item[] }>()
+  const groups = new Map<string, { Icon: LucideIcon; items: Item[] }>()
   for (const it of items) {
     const p = detectProvider(it.label)
-    if (!groups.has(p.name)) groups.set(p.name, { icon: p.icon, items: [] })
+    if (!groups.has(p.name)) groups.set(p.name, { Icon: p.Icon, items: [] })
     groups.get(p.name)!.items.push(it)
   }
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 10 }}>
       {[...groups.entries()].map(([name, g]) => (
         <div key={name} style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 14px' }}>
-          <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10 }}>{g.icon} {name}</div>
+          <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 7 }}><g.Icon size={15} /> {name}</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 12 }}>
             {g.items.map((it, i) => {
               const owner = detectOwner(it.label)
@@ -270,7 +270,7 @@ function HouseholdHero({ profile }: { profile: Profile }) {
       {homeVal > 0 && (
         <div style={{ marginTop: 12, padding: '11px 12px', background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 12 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, marginBottom: 7 }}>
-            <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>🏠 Home equity</span>
+            <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Home size={13} /> Home equity</span>
             <span style={{ fontWeight: 700, fontSize: 14, color: equity < 0 ? 'var(--expense)' : 'inherit' }}>{equity < 0 ? '−' : ''}{money0(Math.abs(equity))} <span style={{ color: ltv > 100 ? 'var(--expense)' : 'var(--text-muted)', fontWeight: 500 }}>· LTV {ltv}%</span></span>
           </div>
           <div style={{ height: 8, borderRadius: 999, background: 'var(--surface-1)', border: '1px solid var(--border)', overflow: 'hidden' }}>
@@ -378,7 +378,7 @@ export default function ProfilePanel() {
         {editing && draft && (
           <div style={{ display: 'flex', gap: 8, marginTop: 14, borderTop: '1px solid var(--border)', paddingTop: 14 }}>
             <button className="btn" style={{ background: 'var(--expense-soft)', color: 'var(--expense)', border: '1px solid var(--expense)' }} onClick={cancel} disabled={saving}>Cancel</button>
-            <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} onClick={save} disabled={saving}>{saving ? 'Saving…' : '💾 Save'}</button>
+            <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
           </div>
         )}
       </div>

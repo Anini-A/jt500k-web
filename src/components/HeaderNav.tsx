@@ -30,7 +30,7 @@ export default function HeaderNav({ current }: { current: Page }) {
         <div className="modal-backdrop" onClick={() => setSettingsOpen(false)}>
           <div className="modal-card glass" style={{ width: 'min(760px, 100%)' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-              <h2 style={{ margin: 0, fontSize: 18 }}>⚙️ Settings</h2>
+              <h2 style={{ margin: 0, fontSize: 18, display: 'flex', alignItems: 'center', gap: 8 }}><Settings size={18} /> Settings</h2>
               <button className="modal-x" aria-label="Close" onClick={() => setSettingsOpen(false)}>✕</button>
             </div>
             <SettingsPanel />

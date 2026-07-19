@@ -10,6 +10,7 @@ import BudgetManager from '@/components/BudgetManager'
 import InvestmentsPanel from '@/components/InvestmentsPanel'
 import ProfilePanel from '@/components/ProfilePanel'
 import EditTransactionModal from '@/components/EditTransactionModal'
+import SectionTitle from '@/components/SectionTitle'
 import { getJSON } from '@/lib/fresh'
 import { MonthlyArea, HBar, Donut, COLORS } from '@/components/DashCharts'
 
@@ -304,7 +305,7 @@ export default function Dashboard() {
         {/* Recent — only on the transaction-backed tabs */}
         {(tab === 'income' || tab === 'expenses' || tab === 'savings' || tab === 'debts') && (
           <RecentList
-            title={tab === 'debts' ? '🧾 Recent Debt Payments' : `🧾 Recent ${TABS.find((t) => t.key === tab)!.label}`}
+            title={tab === 'debts' ? 'Recent Debt Payments' : `Recent ${TABS.find((t) => t.key === tab)!.label}`}
             txns={filtered
               .filter((t) => tab === 'debts' ? t.category === 'Debt Repayment' : (tabType && t.type === tabType))
               .slice().reverse().slice(0, 12)}
@@ -329,7 +330,7 @@ interface Stat { label: string; value: string; sub?: string; cls?: string }
 
 function HeroStat({ label, value, sub, cls }: Stat) {
   return (
-    <div style={{ minWidth: 0 }}>
+    <div style={{ minWidth: 0, textAlign: 'center' }}>
       <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{label}</div>
       <div className={`stat-value ${cls || ''}`} style={{ fontSize: 'clamp(24px, 5vw, 30px)', marginTop: 6, letterSpacing: '-0.02em' }}>{value}</div>
       {sub && <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub}</div>}
@@ -380,7 +381,7 @@ function RecentList({ title, txns, emptyLabel }: { title: string; txns: Txn[]; e
   return (
     <section className="block" style={{ marginBottom: 64 }}>
       <div className="card glass">
-        <h2 style={{ marginTop: 0, marginBottom: 14, fontSize: 18 }}>{title}</h2>
+        <SectionTitle icon={Receipt} style={{ marginBottom: 14, fontSize: 18 }}>{title}</SectionTitle>
         {txns.length === 0 ? (
           <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)' }}>{emptyLabel}</div>
         ) : (

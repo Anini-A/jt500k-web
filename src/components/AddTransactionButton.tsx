@@ -164,10 +164,10 @@ export default function AddTransactionButton() {
   // Recurring: group into the same buckets as the Budget tab
   const recGroup = (r: any) => r.type === 'income' ? 'income' : r.type === 'savings' ? 'saving' : r.category === 'Debt Repayment' ? 'debt' : 'spending'
   const REC_GROUPS = [
-    { key: 'income', label: '💰 Income', color: 'var(--income)', soft: 'var(--income-soft)' },
-    { key: 'spending', label: '💸 Spending', color: 'var(--savings)', soft: 'var(--savings-soft)' },
-    { key: 'saving', label: '🏦 Saving', color: 'var(--savings)', soft: 'var(--savings-soft)' },
-    { key: 'debt', label: '🧾 Debt', color: '#c2892f', soft: 'rgba(224,161,43,0.16)' },
+    { key: 'income', label: 'Income', color: 'var(--income)', soft: 'var(--income-soft)' },
+    { key: 'spending', label: 'Spending', color: 'var(--savings)', soft: 'var(--savings-soft)' },
+    { key: 'saving', label: 'Saving', color: 'var(--savings)', soft: 'var(--savings-soft)' },
+    { key: 'debt', label: 'Debt', color: '#c2892f', soft: 'rgba(224,161,43,0.16)' },
   ]
   const recGroupsPresent = REC_GROUPS.filter((g) => recs.some((r) => recGroup(r) === g.key))
   const pickedTotal = recs.filter((r) => picked.has(r.id)).reduce((s, r) => s + Number(r.amount), 0)
@@ -185,7 +185,7 @@ export default function AddTransactionButton() {
         <div className="modal-backdrop" onClick={close}>
           <div className="modal-card glass" style={{ width: 'min(820px, 100%)', minHeight: 'min(78vh, 540px)', background: 'var(--surface-1)' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ marginBottom: 14 }}>
-              <h2 style={{ margin: 0, fontSize: 18 }}>➕ Add Transaction</h2>
+              <h2 style={{ margin: 0, fontSize: 18, display: 'flex', alignItems: 'center', gap: 8 }}><Plus size={18} /> Add Transaction</h2>
               <div className="tabs" style={{ padding: 3, marginTop: 12 }}>
                 <button className={`tab ${mode === 'single' ? 'tab-active' : ''}`} style={{ flex: 1, justifyContent: 'center', padding: '7px 8px', fontSize: 13 }} onClick={() => setMode('single')}>
                   <PencilLine size={14} /> Single
@@ -229,7 +229,7 @@ export default function AddTransactionButton() {
                 <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
                   <button type="button" className="btn" style={cancelBtn} onClick={close}>Cancel</button>
                   <button className="btn btn-primary" type="submit" disabled={saving} style={{ flex: 1, justifyContent: 'center' }}>
-                    {saving ? 'Saving…' : '💾 Save Transaction'}
+                    {saving ? 'Saving…' : 'Save Transaction'}
                   </button>
                 </div>
               </form>
@@ -248,7 +248,7 @@ export default function AddTransactionButton() {
                   <button type="button" className="btn" style={cancelBtn} onClick={close}>Cancel</button>
                   <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} disabled={!raw.trim()}
                     onClick={() => setRows(parsePaste(raw, cats))}>
-                    👀 Preview {raw.trim() ? `(${raw.trim().split(/\r?\n/).filter((l) => l.trim() && !/^date/i.test(l.trim())).length} rows)` : ''}
+                    Preview {raw.trim() ? `(${raw.trim().split(/\r?\n/).filter((l) => l.trim() && !/^date/i.test(l.trim())).length} rows)` : ''}
                   </button>
                 </div>
               </div>
@@ -307,7 +307,7 @@ export default function AddTransactionButton() {
                   <button type="button" className="btn" style={cancelBtn} onClick={close}>Cancel</button>
                   <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} disabled={saving || validCount === 0}
                     onClick={logBatch}>
-                    {saving ? 'Logging…' : `💾 Log ${validCount} transaction${validCount !== 1 ? 's' : ''}${invalidCount ? ` (skips ${invalidCount})` : ''}`}
+                    {saving ? 'Logging…' : `Log ${validCount} transaction${validCount !== 1 ? 's' : ''}${invalidCount ? ` (skips ${invalidCount})` : ''}`}
                   </button>
                 </div>
               </div>
@@ -319,7 +319,7 @@ export default function AddTransactionButton() {
                 {recEdit !== null ? (
                   /* Add / edit a recurring item */
                   <div style={{ display: 'grid', gap: 10 }}>
-                    <div style={{ fontWeight: 700, fontSize: 15 }}>{recEdit === 'new' ? '🔁 New recurring item' : '🔁 Edit recurring item'}</div>
+                    <div style={{ fontWeight: 700, fontSize: 15, display: 'flex', alignItems: 'center', gap: 7 }}><Repeat size={15} /> {recEdit === 'new' ? 'New recurring item' : 'Edit recurring item'}</div>
                     <div className="form-2">
                       <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Name</span>
                         <input style={inp} value={recForm.name} onChange={(e) => setRecForm({ ...recForm, name: e.target.value })} placeholder="e.g. Rent" /></label>
@@ -345,7 +345,7 @@ export default function AddTransactionButton() {
                     <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Description (optional)</span>
                       <input style={inp} value={recForm.description} onChange={(e) => setRecForm({ ...recForm, description: e.target.value })} placeholder="e.g. matches a debt name" /></label>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                      <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} disabled={saving} onClick={saveRec}>💾 {recEdit === 'new' ? 'Add' : 'Save'}</button>
+                      <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} disabled={saving} onClick={saveRec}>{recEdit === 'new' ? 'Add' : 'Save'}</button>
                       <button className="btn btn-secondary" onClick={() => setRecEdit(null)}>Cancel</button>
                       {recEdit !== 'new' && <button className="btn" style={cancelBtn} onClick={deleteRec}><Trash2 size={14} /> Delete</button>}
                     </div>
@@ -394,7 +394,7 @@ export default function AddTransactionButton() {
                       <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} disabled={saving || picked.size === 0} onClick={logRecurring}>
                         {saving ? 'Logging…'
                           : picked.size === 0 ? 'Select items to log'
-                          : `💾 Log ${picked.size} item${picked.size !== 1 ? 's' : ''} · ${money(pickedTotal)}`}
+                          : `Log ${picked.size} item${picked.size !== 1 ? 's' : ''} · ${money(pickedTotal)}`}
                       </button>
                     </div>
                   </>

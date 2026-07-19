@@ -3,9 +3,11 @@
 import { useEffect, useState } from 'react'
 import HeaderNav from '@/components/HeaderNav'
 import Logo from '@/components/Logo'
+import { Wallet } from 'lucide-react'
 import JourneyCard from '@/components/JourneyCard'
 import ActionItemsCard from '@/components/ActionItemsCard'
 import MoneyFlowCard from '@/components/MoneyFlowCard'
+import SectionTitle from '@/components/SectionTitle'
 import { getJSON } from '@/lib/fresh'
 
 interface Stats { currentBalance: number; savingsRate: number; transactionCount: number; asOf: string; totalSavings: number }
@@ -48,7 +50,7 @@ export default function Home() {
         <section className="block">
           <div className="grid-2">
             <div className="card glass" style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <h2 style={{ margin: 0 }}>💵 Current Balance</h2>
+              <SectionTitle icon={Wallet}>Current Balance</SectionTitle>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap', margin: '10px 0 0' }}>
                 <div style={{ fontSize: 'clamp(30px, 8vw, 40px)', fontWeight: 800, letterSpacing: '-0.02em', color: bal >= 0 ? 'var(--income)' : 'var(--expense)' }}>
                   {stats ? money(bal) : '—'}

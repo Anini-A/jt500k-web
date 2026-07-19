@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, Pencil, Trash2, ChevronDown } from 'lucide-react'
+import { Plus, Pencil, Trash2, ChevronDown, Tag } from 'lucide-react'
+import SectionTitle from './SectionTitle'
 import CategorySelect from './CategorySelect'
 import { getJSON } from '@/lib/fresh'
 
@@ -53,7 +54,7 @@ export default function CategoryManager() {
   return (
     <div className="card glass">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <h2 style={{ margin: 0 }}>🏷️ Categories</h2>
+        <SectionTitle icon={Tag}>Categories</SectionTitle>
         <button className="btn btn-secondary" onClick={() => { setAdding((v) => !v); setEditing(null) }}>
           <Plus size={16} /> {adding ? 'Cancel' : 'Add'}
         </button>
@@ -154,7 +155,7 @@ function EditRow({ cat, others, busy, onSave, onReassign, onDelete, onCancel }: 
           <input type="color" value={color} onChange={(e) => setColor(e.target.value)} style={{ ...inp, padding: 4, width: 48 }} /></label>
       </div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <button className="btn btn-primary" disabled={busy} onClick={() => onSave({ name, type, color })}>💾 Save</button>
+        <button className="btn btn-primary" disabled={busy} onClick={() => onSave({ name, type, color })}>Save</button>
         <button className="btn btn-secondary" disabled={busy} onClick={onCancel}>Cancel</button>
       </div>
 

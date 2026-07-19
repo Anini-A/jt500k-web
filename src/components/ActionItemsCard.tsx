@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { Bell, CheckCircle2 } from 'lucide-react'
+import SectionTitle from './SectionTitle'
 import { getJSON } from '@/lib/fresh'
 
 interface Notif { id: string; icon: string; title: string; detail: string; severity: 'info' | 'warn'; kind: 'action' | 'info'; dismissible: boolean }
@@ -41,7 +43,7 @@ export default function ActionItemsCard() {
   return (
     <div className="card glass" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-        <h2 style={{ margin: 0 }}>🔔 Alerts</h2>
+        <SectionTitle icon={Bell}>Alerts</SectionTitle>
         {(() => {
           const total = actions.length + infos.length
           if (!total) return null
@@ -61,7 +63,7 @@ export default function ActionItemsCard() {
           <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Checking…</div>
         ) : actions.length === 0 && infos.length === 0 ? (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', color: 'var(--text-muted)', gap: 6, padding: '10px 0' }}>
-            <div style={{ fontSize: 26 }}>✅</div>
+            <CheckCircle2 size={26} color="var(--income)" />
             <div style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>All clear</div>
             <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Nothing needs your attention right now.</div>
           </div>

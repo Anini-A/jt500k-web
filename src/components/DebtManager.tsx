@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, Pencil, Trash2, ChevronDown } from 'lucide-react'
+import { Plus, Pencil, Trash2, ChevronDown, Banknote, CheckCircle2 } from 'lucide-react'
+import SectionTitle from './SectionTitle'
 import { getJSON } from '@/lib/fresh'
 
 interface Debt {
@@ -68,7 +69,7 @@ export default function DebtManager() {
           style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', padding: 0 }}
           aria-label={collapsed ? 'Expand debts' : 'Collapse debts'} title={collapsed ? 'Expand' : 'Collapse'}>
           <ChevronDown size={20} style={{ transition: 'transform .2s ease', transform: collapsed ? 'rotate(-90deg)' : 'none', opacity: 0.7 }} />
-          <h2 style={{ margin: 0 }}>💳 Debt Management</h2>
+          <SectionTitle icon={Banknote}>Debt Management</SectionTitle>
         </button>
         {!collapsed && (
           <button className="btn btn-secondary" onClick={() => { setAdding((v) => !v); setEditing(null) }}>
@@ -135,7 +136,7 @@ export default function DebtManager() {
               <div key={d.id} style={{ padding: '14px 0', borderBottom: '1px solid var(--border)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginBottom: 8 }}>
                   <div style={{ fontWeight: 600, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {d.name} {done && '🎉'}
+                    {d.name} {done && <CheckCircle2 size={14} color="var(--income)" style={{ verticalAlign: -2 }} />}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
                     <span style={{ fontWeight: 700, color: done ? 'var(--income)' : 'var(--expense)' }}>
@@ -165,7 +166,7 @@ export default function DebtManager() {
       )}
 
       <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 16, marginBottom: 0 }}>
-        💡 A payment counts toward a debt when its category is <strong>Debt Repayment</strong> and its description
+        A payment counts toward a debt when its category is <strong>Debt Repayment</strong> and its description
         matches the debt name — the Add Transaction form fills this in for you when you pick a debt.
       </p>
       </>)}
@@ -207,7 +208,7 @@ function EditDebtForm({ debt, busy, onSave, onDelete, onCancel }: {
           <input style={inp} type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} /></label>
       </div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <button className="btn btn-primary" disabled={busy} onClick={() => onSave({ name: name.trim(), amount: parseFloat(amount) })}>💾 Save</button>
+        <button className="btn btn-primary" disabled={busy} onClick={() => onSave({ name: name.trim(), amount: parseFloat(amount) })}>Save</button>
         <button className="btn btn-secondary" disabled={busy} onClick={onCancel}>Cancel</button>
         <button className="btn btn-secondary" disabled={busy} style={{ color: 'var(--expense)', borderColor: 'var(--expense)' }} onClick={onDelete}>
           <Trash2 size={14} /> Delete

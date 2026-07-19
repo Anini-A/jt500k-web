@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Wallet } from 'lucide-react'
 
 export default function Login() {
   const [password, setPassword] = useState('')
@@ -32,7 +33,7 @@ export default function Login() {
     <div className="bg-aurora">
       <div className="wrap" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: 48 }}>
         <div className="card glass hero" style={{ width: 'min(400px, 100%)', textAlign: 'center' }}>
-          <div style={{ fontSize: 44 }}>💵</div>
+          <Wallet size={40} color="var(--accent)" style={{ margin: '0 auto' }} />
           <h1 style={{ fontSize: 24, margin: '8px 0 4px' }}>Journey to 500K</h1>
           <p className="lead" style={{ marginBottom: 20 }}>Enter the shared password to continue.</p>
           <form onSubmit={submit} style={{ display: 'grid', gap: 12 }}>
@@ -46,7 +47,7 @@ export default function Login() {
             />
             {error && <div style={{ color: 'var(--expense)', fontSize: 14 }}>{error}</div>}
             <button className="btn btn-primary" type="submit" disabled={busy} style={{ justifyContent: 'center' }}>
-              {busy ? 'Checking…' : '🔓 Unlock'}
+              {busy ? 'Checking…' : 'Unlock'}
             </button>
           </form>
         </div>

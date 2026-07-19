@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, Pencil, Trash2, ChevronDown } from 'lucide-react'
+import { Plus, Pencil, Trash2, ChevronDown, Wallet, CreditCard, PiggyBank, Banknote, Target, ClipboardList, type LucideIcon } from 'lucide-react'
 import CategorySelect from './CategorySelect'
+import SectionTitle from './SectionTitle'
 import { getJSON } from '@/lib/fresh'
 
 interface Item { id: string; name: string; amount: number }
@@ -83,13 +84,13 @@ export default function BudgetManager() {
   const isSetAside = (e: Envelope) => e.type === 'savings' || e.category === 'Debt Repayment'
   const sum = (arr: Envelope[], k: 'budgeted' | 'spent') => arr.reduce((s, e) => s + e[k], 0)
   const groups = [
-    { key: 'income', emoji: '💰', label: 'Income', color: 'var(--income)', soft: 'var(--income-soft)', goodUp: true, paced: true,
+    { key: 'income', icon: Wallet as LucideIcon, label: 'Income', color: 'var(--income)', soft: 'var(--income-soft)', goodUp: true, paced: true,
       envs: envelopes.filter((e) => e.type === 'income') },
-    { key: 'spending', emoji: '💸', label: 'Spending', color: 'var(--savings)', soft: 'var(--savings-soft)', goodUp: false, paced: true,
+    { key: 'spending', icon: CreditCard as LucideIcon, label: 'Spending', color: 'var(--savings)', soft: 'var(--savings-soft)', goodUp: false, paced: true,
       envs: envelopes.filter((e) => e.type === 'expense' && e.category !== 'Debt Repayment') },
-    { key: 'saving', emoji: '🏦', label: 'Saving', color: 'var(--savings)', soft: 'var(--savings-soft)', goodUp: true, paced: false,
+    { key: 'saving', icon: PiggyBank as LucideIcon, label: 'Saving', color: 'var(--savings)', soft: 'var(--savings-soft)', goodUp: true, paced: false,
       envs: envelopes.filter((e) => e.type === 'savings') },
-    { key: 'debt', emoji: '🧾', label: 'Debt Repayment', color: '#c2892f', soft: 'rgba(224,161,43,0.16)', goodUp: true, paced: false,
+    { key: 'debt', icon: Banknote as LucideIcon, label: 'Debt Repayment', color: '#c2892f', soft: 'rgba(224,161,43,0.16)', goodUp: true, paced: false,
       envs: envelopes.filter((e) => e.category === 'Debt Repayment') },
   ].map((g) => ({ ...g, budgeted: sum(g.envs, 'budgeted'), actual: sum(g.envs, 'spent') }))
 
@@ -108,7 +109,7 @@ export default function BudgetManager() {
       {/* ── Card 1: summary (always visible) ── */}
       <div className="card glass" style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 8, marginBottom: 18 }}>
-          <h2 style={{ margin: 0 }}>🎯 Monthly Budget</h2>
+          <SectionTitle icon={Target}>Monthly Budget</SectionTitle>
           <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>
             {pace}% through {data?.label ?? 'the month'}
           </span>
@@ -117,7 +118,7 @@ export default function BudgetManager() {
         {/* Four independent group bars: income · spending · saving · debt */}
         <div style={{ display: 'grid', gap: 16 }}>
           {groups.map((g) => (
-            <GroupBar key={g.key} emoji={g.emoji} label={g.label} color={g.color}
+            <GroupBar key={g.key} icon={g.icon} label={g.label} color={g.color}
               budgeted={g.budgeted} actual={g.actual} goodUp={g.goodUp}
               pace={pace} />
           ))}
@@ -131,7 +132,7 @@ export default function BudgetManager() {
             style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', padding: 0 }}
             aria-label={collapsed ? 'Expand budget items' : 'Collapse budget items'}>
             <ChevronDown size={20} style={{ transition: 'transform .2s ease', transform: collapsed ? 'rotate(-90deg)' : 'none', opacity: 0.7 }} />
-            <h2 style={{ margin: 0 }}>📋 Budget Items</h2>
+            <SectionTitle icon={ClipboardList}>Budget Items</SectionTitle>
           </button>
           {!collapsed && (
             <button className="btn btn-secondary" onClick={() => { setAdding((v) => !v); setEditing(null) }}>
@@ -154,10 +155,13 @@ export default function BudgetManager() {
             {/* Group selector pills */}
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
               <button className={`chip ${groupFilter === 'all' ? 'chip-active' : ''}`} onClick={() => setGroupFilter('all')}>All</button>
-              {groups.filter((g) => g.envs.length > 0).map((g) => (
-                <button key={g.key} className={`chip ${groupFilter === g.key ? 'chip-active' : ''}`}
-                  onClick={() => setGroupFilter(g.key)}>{g.emoji} {g.label}</button>
-              ))}
+              {groups.filter((g) => g.envs.length > 0).map((g) => {
+                const GIcon = g.icon
+                return (
+                  <button key={g.key} className={`chip ${groupFilter === g.key ? 'chip-active' : ''}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}
+                    onClick={() => setGroupFilter(g.key)}><GIcon size={13} /> {g.label}</button>
+                )
+              })}
             </div>
 
             <div style={{ display: 'grid', gap: 14 }}>
@@ -166,7 +170,7 @@ export default function BudgetManager() {
                 {/* Coloured group label — only needed in the 'All' view to separate groups */}
                 {groupFilter === 'all' && (
                   <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
-                    <span style={{ background: g.soft, color: g.color, padding: '3px 11px', borderRadius: 999, fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap' }}>{g.emoji} {g.label}</span>
+                    <span style={{ background: g.soft, color: g.color, padding: '3px 11px', borderRadius: 999, fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}><g.icon size={13} /> {g.label}</span>
                     <span className="stat-label" style={{ flexShrink: 0 }}>{money(g.actual)} / {money(g.budgeted)}</span>
                   </div>
                 )}
@@ -212,7 +216,7 @@ export default function BudgetManager() {
         )}
 
         <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 16, marginBottom: 0 }}>
-          💡 Each envelope tracks its budgeted total against your actual {data?.label ?? 'monthly'} activity. The faint vertical tick marks today's pace ({pace}% through the month) — a fill sitting well past it is running ahead of schedule. Expense envelopes turn red when over; savings & debt turn green at target.
+          Each envelope tracks its budgeted total against your actual {data?.label ?? 'monthly'} activity. The faint vertical tick marks today's pace ({pace}% through the month) — a fill sitting well past it is running ahead of schedule. Expense envelopes turn red when over; savings & debt turn green at target.
         </p>
       </>)}
       </div>
@@ -236,8 +240,8 @@ function Bar({ pct, pace, fill, height }: { pct: number; pace: number | null; fi
 
 // One row of the summary: a labelled group (Income / Spending / Saving / Debt) with
 // its actual-vs-budget figures, a bar, and a plain-English note.
-function GroupBar({ emoji, label, color, budgeted, actual, goodUp, pace }: {
-  emoji: string; label: string; color: string; budgeted: number; actual: number; goodUp: boolean; pace: number | null
+function GroupBar({ icon: Icon, label, color, budgeted, actual, goodUp, pace }: {
+  icon: LucideIcon; label: string; color: string; budgeted: number; actual: number; goodUp: boolean; pace: number | null
 }) {
   const pct = budgeted > 0 ? Math.min(100, (actual / budgeted) * 100) : (actual > 0 ? 100 : 0)
   const remaining = budgeted - actual
@@ -256,7 +260,7 @@ function GroupBar({ emoji, label, color, budgeted, actual, goodUp, pace }: {
   return (
     <div style={{ opacity: !budgeted && !actual ? 0.55 : 1 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, marginBottom: 7 }}>
-        <span style={{ fontSize: 15, fontWeight: 600 }}>{emoji} {label}</span>
+        <span style={{ fontSize: 15, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 7 }}><Icon size={16} style={{ color }} /> {label}</span>
         <span style={{ flexShrink: 0 }}>
           <span style={{ fontSize: 16, fontWeight: 600 }}>{money(actual)}</span>
           <span style={{ color: 'var(--text-muted)' }}> / {budgeted ? money(budgeted) : '—'}</span>
@@ -291,7 +295,7 @@ function ItemForm({ cats, busy, item, onDone, onDelete, onCancel }: {
       </div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <button className="btn btn-primary" disabled={busy || !name.trim() || !category || !parseFloat(amount)}
-          onClick={() => onDone({ name: name.trim(), category, amount: parseFloat(amount) })}>💾 {item ? 'Save' : 'Add item'}</button>
+          onClick={() => onDone({ name: name.trim(), category, amount: parseFloat(amount) })}>{item ? 'Save' : 'Add item'}</button>
         {onCancel && <button className="btn btn-secondary" disabled={busy} onClick={onCancel}>Cancel</button>}
         {onDelete && <button className="btn btn-secondary" disabled={busy} style={{ color: 'var(--expense)', borderColor: 'var(--expense)' }} onClick={onDelete}><Trash2 size={14} /> Delete</button>}
       </div>

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { ArrowLeft, SquarePen, History, ArrowUp } from 'lucide-react'
+import { ArrowLeft, SquarePen, History, ArrowUp, Sparkles, Trash2, Check, X } from 'lucide-react'
 
 interface Msg { role: 'user' | 'assistant'; content: string; at?: number }
 interface Thread { id: string; msgs: Msg[]; updatedAt: number }
@@ -248,7 +248,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
         {/* Header — back (close) · title · history + new chat */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 14px', borderBottom: '1px solid var(--border)', position: 'relative' }}>
           <button style={roundBtn} aria-label="Close" title="Close" onClick={onClose}><ArrowLeft size={20} /></button>
-          <div style={{ flex: 1, textAlign: 'center', fontWeight: 700, fontSize: 17, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>🤖 Ask Gemini</div>
+          <div style={{ flex: 1, textAlign: 'center', fontWeight: 700, fontSize: 17, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}><Sparkles size={17} /> Ask Gemini</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
             <button style={roundBtn} title="Recent chats" onClick={(e) => { e.stopPropagation(); setRecentOpen((v) => !v) }}><History size={19} /></button>
             <button style={roundBtn} title="New chat" onClick={newChat}><SquarePen size={19} /></button>
@@ -270,7 +270,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
               ))}
               <div style={{ borderTop: '1px solid var(--border)', marginTop: 4, paddingTop: 4 }}>
                 <button onClick={clearAll}
-                  style={{ width: '100%', textAlign: 'left', padding: '9px 10px', borderRadius: 9, border: 'none', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', background: 'transparent', color: 'var(--expense)', fontWeight: 600 }}>🗑 Clear all chats</button>
+                  style={{ display: 'flex', alignItems: 'center', gap: 7, width: '100%', textAlign: 'left', padding: '9px 10px', borderRadius: 9, border: 'none', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', background: 'transparent', color: 'var(--expense)', fontWeight: 600 }}><Trash2 size={14} /> Clear all chats</button>
               </div>
             </div>
           )}
@@ -316,8 +316,8 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
               {pending.map((p, i) => <li key={i}>{p.label}</li>)}
             </ul>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center', padding: '9px 14px' }} disabled={busy} onClick={confirmAction}>✓ Confirm</button>
-              <button className="btn" style={{ background: 'var(--expense-soft)', color: 'var(--expense)', border: '1px solid var(--expense)', padding: '9px 14px' }} disabled={busy} onClick={cancelAction}>✗ Cancel</button>
+              <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center', padding: '9px 14px', gap: 6 }} disabled={busy} onClick={confirmAction}><Check size={15} /> Confirm</button>
+              <button className="btn" style={{ background: 'var(--expense-soft)', color: 'var(--expense)', border: '1px solid var(--expense)', padding: '9px 14px', gap: 6 }} disabled={busy} onClick={cancelAction}><X size={15} /> Cancel</button>
             </div>
           </div>
         )}
