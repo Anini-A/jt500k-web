@@ -160,7 +160,7 @@ export default function BillRunway() {
               <div style={{ fontWeight: 800, fontSize: 26, letterSpacing: '-0.02em' }}>{money2(settings.current_balance)}</div>
             </div>
           </div>
-          <button className="chip" onClick={() => setEditBalance(true)}>Update balance</button>
+          <button className={`chip btn-accent ${covered ? '' : 'btn-pulse'}`} onClick={() => setEditBalance(true)}>Update balance</button>
         </div>
         <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
           <MiniStat label="Monthly bills" value={money(monthlyTotal)} />

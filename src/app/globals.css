@@ -552,6 +552,32 @@ header.top h1 {
   font-size: 13px;
 }
 
+/* Accent-bordered button with a lift on hover (e.g. "Update balance") */
+.btn-accent {
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+}
+.btn-accent:hover {
+  transform: translateY(-1px);
+  background: var(--accent-soft);
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.28);
+}
+.btn-accent:active { transform: translateY(0); box-shadow: none; }
+
+/* Gentle attention pulse — used when action is urgent (balance running short) */
+.btn-pulse {
+  border-color: var(--expense);
+  color: var(--expense);
+  animation: btnPulse 1.8s ease-in-out infinite;
+}
+.btn-pulse:hover { background: var(--expense-soft); box-shadow: 0 4px 14px rgba(224, 74, 74, 0.28); }
+@keyframes btnPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(224, 74, 74, 0.0); }
+  50%      { box-shadow: 0 0 0 6px rgba(224, 74, 74, 0.14); }
+}
+@media (prefers-reduced-motion: reduce) { .btn-pulse { animation: none; } }
+
 /* Two-column responsive grid for chart cards */
 .grid-2 {
   display: grid;
