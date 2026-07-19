@@ -555,7 +555,7 @@ header.top h1 {
 /* Two-column responsive grid for chart cards */
 .grid-2 {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
 }
 
