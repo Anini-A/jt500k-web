@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect, useState, useMemo, useCallback } from 'react'
-import { Wallet, CreditCard, PiggyBank, LineChart, Banknote, Target, Users, Pencil, Trash2, type LucideIcon } from 'lucide-react'
+import { Wallet, CreditCard, PiggyBank, LineChart, Banknote, Target, Users, Receipt, Pencil, Trash2, type LucideIcon } from 'lucide-react'
 import HeaderNav from '@/components/HeaderNav'
 import Logo from '@/components/Logo'
 import DebtManager from '@/components/DebtManager'
+import BillRunway from '@/components/BillRunway'
 import BudgetManager from '@/components/BudgetManager'
 import InvestmentsPanel from '@/components/InvestmentsPanel'
 import ProfilePanel from '@/components/ProfilePanel'
@@ -12,9 +13,10 @@ import EditTransactionModal from '@/components/EditTransactionModal'
 import { getJSON } from '@/lib/fresh'
 import { MonthlyArea, HBar, Donut, COLORS } from '@/components/DashCharts'
 
-type Tab = 'income' | 'expenses' | 'savings' | 'debts' | 'investments' | 'budget' | 'household'
+type Tab = 'income' | 'expenses' | 'savings' | 'debts' | 'investments' | 'budget' | 'bills' | 'household'
 const TABS: { key: Tab; label: string; Icon: LucideIcon; soon?: boolean }[] = [
   { key: 'budget', label: 'Budget', Icon: Target },
+  { key: 'bills', label: 'Bills', Icon: Receipt },
   { key: 'income', label: 'Income', Icon: Wallet },
   { key: 'expenses', label: 'Expenses', Icon: CreditCard },
   { key: 'savings', label: 'Savings', Icon: PiggyBank },
@@ -288,6 +290,11 @@ export default function Dashboard() {
         {tab === 'budget' && (
           <section className="block" style={{ marginBottom: 64 }}>
             <BudgetManager />
+          </section>
+        )}
+        {tab === 'bills' && (
+          <section className="block">
+            <BillRunway />
           </section>
         )}
 

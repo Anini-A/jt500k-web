@@ -12,12 +12,14 @@ interface Notif { id: string; icon: string; title: string; detail: string; sever
 
 // GET /api/notifications — recurring reminders, category trends, over-budget alerts.
 export async function GET() {
-  const [{ data: txAll }, { data: recs }, { data: budgetLines }, { data: cats }, { data: prof }] = await Promise.all([
+  const [{ data: txAll }, { data: recs }, { data: budgetLines }, { data: cats }, { data: prof }, billsRes, billSetRes] = await Promise.all([
     supabaseAdmin.from('transactions').select('type, amount, date, category, description'),
     supabaseAdmin.from('recurring').select('name, type, category, amount, description, active'),
     supabaseAdmin.from('budgets').select('category, amount'),
     supabaseAdmin.from('categories').select('name, type'),
     supabaseAdmin.from('household_profile').select('data').order('updated_at', { ascending: false }).limit(1).maybeSingle(),
+    supabaseAdmin.from('bills').select('name, day, amount, quarterly, next_due, active').then((r) => r, () => ({ data: null })),
+    supabaseAdmin.from('bill_settings').select('*').limit(1).maybeSingle().then((r) => r, () => ({ data: null })),
   ])
   const txns = txAll ?? []
   const typeByCat = new Map((cats ?? []).map((c) => [c.name, c.type]))
@@ -103,7 +105,54 @@ export async function GET() {
     }
   }
 
+  // ---- 5) Bill runway: will the Home & Utilities balance cover bills before the next deposit? ----
+  const bills = (billsRes?.data || []).filter((b: any) => b.active !== false)
+  const bset = billSetRes?.data
+  if (bills.length && bset) {
+    const trough = billTrough(bills, bset)
+    if (trough) {
+      const buffer = Number(bset.buffer) || 0
+      const short = buffer - trough.balance
+      if (short > 0) {
+        out.push({ id: `bill-runway-${trough.iso}`, icon: '⚠️', severity: 'warn', title: `Home & Utilities may run short`, detail: `Balance dips to ${money(trough.balance)} on ${trough.label}${buffer ? ` (below your ${money(buffer)} floor)` : ''} — top up about ${money(short)} before then.` })
+      }
+    }
+  }
+
   // warnings first
   out.sort((a, b) => (a.severity === b.severity ? 0 : a.severity === 'warn' ? -1 : 1))
   return NextResponse.json({ notifications: out }, { headers: { 'Cache-Control': 'no-store' } })
+}
+
+// Lowest projected balance before the next deposit (mirrors BillRunway's engine).
+function billTrough(bills: any[], s: any): { balance: number; iso: string; label: string } | null {
+  const strip = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  const today = strip(new Date())
+  const startRaw = strip(new Date((s.balance_as_of || today.toISOString().slice(0, 10)) + 'T00:00:00'))
+  const from = startRaw < today ? today : startRaw
+  const depDay = Number(s.deposit_day) || 28
+  const depAmt = Number(s.deposit_amount) || 0
+  const DAYS = 42
+  let bal = Number(s.current_balance) || 0
+  let trough: { balance: number; date: Date } | null = null
+  let hitDeposit = false
+  for (let i = 0; i <= DAYS && !hitDeposit; i++) {
+    const d = new Date(from.getFullYear(), from.getMonth(), from.getDate() + i)
+    for (const b of bills) {
+      let hit = false
+      if (b.quarterly && b.next_due) {
+        const occ = strip(new Date(b.next_due + 'T00:00:00'))
+        for (let k = 0; k < 24; k++) {
+          const q = new Date(occ.getFullYear(), occ.getMonth() + k * 3, occ.getDate())
+          if (q > d) break
+          if (q.getTime() === d.getTime()) { hit = true; break }
+        }
+      } else if (!b.quarterly && d.getDate() === Number(b.day)) hit = true
+      if (hit) bal -= Number(b.amount)
+    }
+    if (i > 0 && d.getDate() === depDay && depAmt > 0) hitDeposit = true // stop before crediting the deposit
+    else if (!trough || bal < trough.balance) trough = { balance: bal, date: d }
+  }
+  if (!trough) return null
+  return { balance: Math.round(trough.balance), iso: trough.date.toISOString().slice(0, 10), label: trough.date.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' }) }
 }
