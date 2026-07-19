@@ -149,8 +149,9 @@ export default function BillRunway() {
         </div>
       </div>
 
-      {/* BALANCE + DEPOSIT */}
-      <div className="card glass" style={{ marginBottom: 16 }}>
+      {/* BALANCE + LEDGER — side by side */}
+      <div className="grid-2" style={{ marginBottom: 16, alignItems: 'start' }}>
+        <div className="card glass">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
             <Wallet size={20} color="var(--accent)" />
@@ -166,14 +167,11 @@ export default function BillRunway() {
           <MiniStat label="Keep at least" value={money(monthlyTotal + settings.buffer)} accent />
           <MiniStat label="Next deposit" value={settings.deposit_amount ? `${money(settings.deposit_amount)} · ${depositDateLabel(settings.deposit_day)}` : depositDateLabel(settings.deposit_day)} />
         </div>
-      </div>
+        </div>
 
-      {/* METER */}
-      {proj && <Meter proj={proj} buffer={settings.buffer} />}
-
-      {/* UPCOMING LEDGER */}
-      {proj && (
-        <div className="card glass" style={{ marginTop: 16 }}>
+        {/* UPCOMING LEDGER */}
+        {proj && (
+        <div className="card glass">
           <h3 style={{ margin: '0 0 4px', fontSize: 15, display: 'flex', alignItems: 'center', gap: 8 }}><CalendarClock size={16} /> Coming out before your next deposit</h3>
           <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginBottom: 14 }}>
             {proj.dueBeforeDeposit.length} bill{proj.dueBeforeDeposit.length === 1 ? '' : 's'} · {money2(proj.dueBeforeDeposit.reduce((s, e) => s + e.amount, 0))} total
@@ -194,7 +192,11 @@ export default function BillRunway() {
             </div>
           )}
         </div>
-      )}
+        )}
+      </div>
+
+      {/* METER */}
+      {proj && <Meter proj={proj} buffer={settings.buffer} />}
 
       {/* BILL SCHEDULE */}
       <div className="card glass" style={{ marginTop: 16 }}>
