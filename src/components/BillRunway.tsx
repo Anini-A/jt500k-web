@@ -254,33 +254,55 @@ function MiniStat({ label, value, accent }: { label: string; value: string; acce
 // Day-by-day balance meter across the cycle
 function Meter({ proj, buffer }: { proj: Projection; buffer: number }) {
   const pts = proj.series
+  const [hover, setHover] = useState<number | null>(null)
   const min = Math.min(0, ...pts.map((p) => p.balance))
   const max = Math.max(...pts.map((p) => p.balance), buffer, 1)
   const span = max - min || 1
   const h = (v: number) => `${((v - min) / span) * 100}%`
   const depIso = proj.nextDepositISO
+  const hp = hover != null ? pts[hover] : null
   return (
     <div className="card glass">
       <h3 style={{ margin: '0 0 4px', fontSize: 15 }}>Balance runway</h3>
       <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginBottom: 14 }}>Projected balance each day · red = below your safe floor</p>
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 1, height: 120, borderBottom: '1px solid var(--border)', position: 'relative' }}>
+      <div onMouseLeave={() => setHover(null)}
+        style={{ display: 'flex', alignItems: 'flex-end', gap: 1, height: 120, borderBottom: '1px solid var(--border)', position: 'relative' }}>
         {/* buffer line */}
         <div style={{ position: 'absolute', left: 0, right: 0, bottom: h(buffer), borderTop: '1px dashed var(--text-muted)', opacity: 0.5 }} />
+        {/* hover tooltip */}
+        {hp && (
+          <div style={{
+            position: 'absolute', bottom: '100%', marginBottom: 8, zIndex: 5,
+            left: `${((hover! + 0.5) / pts.length) * 100}%`,
+            transform: `translateX(${hover! < pts.length * 0.15 ? '-8px' : hover! > pts.length * 0.85 ? '-92%' : '-50%'})`,
+            background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: 10,
+            padding: '8px 10px', boxShadow: '0 8px 24px rgba(0,0,0,0.28)', pointerEvents: 'none', whiteSpace: 'nowrap',
+          }}>
+            <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{fmtDay(hp.iso)}</div>
+            <div style={{ fontWeight: 800, fontSize: 15, color: hp.balance < 0 ? 'var(--expense)' : hp.balance < buffer ? '#e0a12b' : 'var(--text-primary)' }}>{money2(hp.balance)}</div>
+            {hp.events.map((e, k) => (
+              <div key={k} style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
+                {e.deposit ? '+ ' : '− '}{e.name} <b style={{ color: 'var(--text-primary)' }}>{money2(e.amount)}</b>
+              </div>
+            ))}
+          </div>
+        )}
         {pts.map((p, i) => {
           const low = p.balance < buffer
           const neg = p.balance < 0
           const isTrough = p.iso === proj.trough.iso
           const isDep = p.iso === depIso
           const hasBill = p.events.some((e) => !e.deposit)
+          const active = hover === i
           return (
-            <div key={i} title={`${fmtDay(p.iso)}: ${money2(p.balance)}${p.events.length ? ' — ' + p.events.map((e) => e.name).join(', ') : ''}`}
-              style={{ flex: 1, minWidth: 0, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', position: 'relative' }}>
+            <div key={i} onMouseEnter={() => setHover(i)} onTouchStart={() => setHover(i)}
+              style={{ flex: 1, minWidth: 0, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', position: 'relative', cursor: 'pointer' }}>
               {hasBill && <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: 3, height: 3, borderRadius: '50%', background: 'var(--expense)' }} />}
               {isDep && <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: 3, height: 3, borderRadius: '50%', background: 'var(--income)' }} />}
               <div style={{
                 height: h(Math.max(p.balance, min)), width: '100%', borderRadius: '2px 2px 0 0',
                 background: neg ? 'var(--expense)' : low ? '#e0a12b' : 'var(--income)',
-                outline: isTrough ? '1.5px solid var(--text-primary)' : 'none', opacity: isTrough ? 1 : 0.9,
+                outline: isTrough || active ? '1.5px solid var(--text-primary)' : 'none', opacity: active || isTrough ? 1 : 0.9,
               }} />
             </div>
           )
