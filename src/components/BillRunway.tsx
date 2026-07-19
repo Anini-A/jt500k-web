@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useMemo } from 'react'
-import { Pencil, Plus, Trash2, TriangleAlert, CheckCircle2, Wallet, CalendarClock } from 'lucide-react'
+import { Pencil, Plus, Trash2, TriangleAlert, CheckCircle2, CalendarClock } from 'lucide-react'
 import { getJSON } from '@/lib/fresh'
 
 interface Bill { id: string; name: string; day: number; amount: number; quarterly?: boolean; next_due?: string | null }
@@ -137,10 +137,10 @@ export default function BillRunway() {
           {covered ? <CheckCircle2 size={26} color="var(--income)" style={{ flexShrink: 0, marginTop: 2 }} />
             : <TriangleAlert size={26} color="var(--expense)" style={{ flexShrink: 0, marginTop: 2 }} />}
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontWeight: 800, fontSize: 'clamp(18px, 4.5vw, 22px)', letterSpacing: '-0.01em' }}>
+            <div style={{ fontWeight: 700, fontSize: 'clamp(18px, 4.5vw, 22px)', letterSpacing: '-0.01em' }}>
               {covered ? 'You’re covered' : `Short ${money2(proj!.short)}`}
             </div>
-            <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 3 }}>
+            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 3 }}>
               {proj && (covered
                 ? <>Balance dips to <b style={{ color: 'var(--text-primary)' }}>{money2(proj.trough.balance)}</b> on {fmtDay(proj.trough.iso)}{proj.nextDepositISO ? `, before your ${fmtDay(proj.nextDepositISO)} deposit` : ''}.</>
                 : <>On {fmtDay(proj.trough.iso)} the balance falls to <b style={{ color: 'var(--expense)' }}>{money2(proj.trough.balance)}</b>. Top up before then.</>)}
@@ -153,12 +153,9 @@ export default function BillRunway() {
       <div className="grid-2" style={{ marginBottom: 16 }}>
         <div className="card glass">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-            <Wallet size={20} color="var(--accent)" />
-            <div>
-              <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>Home &amp; Utilities balance · as of {fmtDay(asOf)}</div>
-              <div style={{ fontWeight: 800, fontSize: 26, letterSpacing: '-0.02em' }}>{money2(settings.current_balance)}</div>
-            </div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Home &amp; Utilities · as of {fmtDay(asOf)}</div>
+            <div style={{ fontWeight: 700, fontSize: 28, letterSpacing: '-0.03em', marginTop: 4 }}>{money2(settings.current_balance)}</div>
           </div>
           <button className={`chip btn-accent ${covered ? '' : 'btn-pulse'}`} onClick={() => setEditBalance(true)}>Update balance</button>
         </div>
