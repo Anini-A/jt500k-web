@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import HeaderNav from '@/components/HeaderNav'
 import Logo from '@/components/Logo'
 import JourneyCard from '@/components/JourneyCard'
+import ActionItemsCard from '@/components/ActionItemsCard'
 import MoneyFlowCard from '@/components/MoneyFlowCard'
 import { getJSON } from '@/lib/fresh'
 
@@ -74,9 +75,9 @@ export default function Home() {
           <JourneyCard />
         </section>
 
-        {/* Current Balance + This Month (full width until its neighbour is decided) */}
+        {/* Current Balance + This Month · Action Items */}
         <section className="block">
-          <div className="grid-2" style={{ gridTemplateColumns: '1fr' }}>
+          <div className="grid-2">
             <div className="card glass" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
               <h2 style={{ margin: 0 }}>💵 Current Balance</h2>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap', margin: '10px 0 0' }}>
@@ -96,6 +97,7 @@ export default function Home() {
                 </div>
               </div>
             </div>
+            <ActionItemsCard />
           </div>
         </section>
 
