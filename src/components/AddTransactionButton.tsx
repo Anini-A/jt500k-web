@@ -16,8 +16,6 @@ const inp: React.CSSProperties = {
   fontFamily: 'inherit', boxSizing: 'border-box',
 }
 const cell: React.CSSProperties = { ...inp, height: 38, padding: '0 8px', fontSize: 13 }
-// Calm, non-flashing red for the Cancel action
-const cancelBtn: React.CSSProperties = { background: 'var(--expense-soft)', color: 'var(--expense)', border: '1px solid var(--expense)', flex: '0 0 auto' }
 
 // Old sheet names → current category names (user still copies from the old sheet)
 const ALIASES: Record<string, string> = {
@@ -227,7 +225,7 @@ export default function AddTransactionButton() {
                 <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Description</span>
                   <input type="text" placeholder="e.g. Groceries" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} style={inp} /></label>
                 <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-                  <button type="button" className="btn" style={cancelBtn} onClick={close}>Cancel</button>
+                  <button type="button" className="btn btn-secondary" style={{ flex: '0 0 auto' }} onClick={close}>Cancel</button>
                   <button className="btn btn-primary" type="submit" disabled={saving} style={{ flex: 1, justifyContent: 'center' }}>
                     {saving ? 'Saving…' : 'Save Transaction'}
                   </button>
@@ -245,7 +243,7 @@ export default function AddTransactionButton() {
                   placeholder={'2026-07-05\tUber Canada/Ubereats\tFood\t33.36\n2026-07-04\tCostco Wholesale\tFood\t127.61'}
                   style={{ ...inp, height: 'auto', padding: 12, fontFamily: 'ui-monospace, monospace', fontSize: 13, lineHeight: 1.5, resize: 'vertical' }} />
                 <div style={{ display: 'flex', gap: 10 }}>
-                  <button type="button" className="btn" style={cancelBtn} onClick={close}>Cancel</button>
+                  <button type="button" className="btn btn-secondary" style={{ flex: '0 0 auto' }} onClick={close}>Cancel</button>
                   <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} disabled={!raw.trim()}
                     onClick={() => setRows(parsePaste(raw, cats))}>
                     Preview {raw.trim() ? `(${raw.trim().split(/\r?\n/).filter((l) => l.trim() && !/^date/i.test(l.trim())).length} rows)` : ''}
@@ -304,7 +302,7 @@ export default function AddTransactionButton() {
                 </div>
 
                 <div style={{ display: 'flex', gap: 10 }}>
-                  <button type="button" className="btn" style={cancelBtn} onClick={close}>Cancel</button>
+                  <button type="button" className="btn btn-secondary" style={{ flex: '0 0 auto' }} onClick={close}>Cancel</button>
                   <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} disabled={saving || validCount === 0}
                     onClick={logBatch}>
                     {saving ? 'Logging…' : `Log ${validCount} transaction${validCount !== 1 ? 's' : ''}${invalidCount ? ` (skips ${invalidCount})` : ''}`}
@@ -347,7 +345,7 @@ export default function AddTransactionButton() {
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} disabled={saving} onClick={saveRec}>{recEdit === 'new' ? 'Add' : 'Save'}</button>
                       <button className="btn btn-secondary" onClick={() => setRecEdit(null)}>Cancel</button>
-                      {recEdit !== 'new' && <button className="btn" style={cancelBtn} onClick={deleteRec}><Trash2 size={14} /> Delete</button>}
+                      {recEdit !== 'new' && <button className="btn btn-secondary" style={{ flex: '0 0 auto' }} onClick={deleteRec}><Trash2 size={14} /> Delete</button>}
                     </div>
                   </div>
                 ) : recs.length === 0 ? (
@@ -390,7 +388,7 @@ export default function AddTransactionButton() {
                       ))}
                     </div>
                     <div style={{ display: 'flex', gap: 10 }}>
-                      <button type="button" className="btn" style={cancelBtn} onClick={close}>Cancel</button>
+                      <button type="button" className="btn btn-secondary" style={{ flex: '0 0 auto' }} onClick={close}>Cancel</button>
                       <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} disabled={saving || picked.size === 0} onClick={logRecurring}>
                         {saving ? 'Logging…'
                           : picked.size === 0 ? 'Select items to log'

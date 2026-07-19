@@ -372,7 +372,7 @@ function BalanceModal({ settings, onClose, onSaved }: { settings: Settings; onCl
       </div>
       <Field label="Safety buffer (optional — keep this much extra)"><input style={inp} inputMode="decimal" value={buffer} onChange={(e) => setBuffer(e.target.value)} placeholder="0.00" /></Field>
       <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-        <button className="chip" style={{ flex: 1 }} onClick={onClose}>Cancel</button>
+        <button className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }} onClick={onClose}>Cancel</button>
         <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
       </div>
     </Shell>
@@ -411,8 +411,8 @@ function BillModal({ bill, onClose, onSaved }: { bill: Bill | null; onClose: () 
       </label>
       {quarterly && <Field label="Next due date"><input style={inp} type="date" value={nextDue} onChange={(e) => setNextDue(e.target.value)} /></Field>}
       <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-        {bill && <button className="chip" onClick={del} style={{ color: 'var(--expense)' }} aria-label="Delete"><Trash2 size={15} /></button>}
-        <button className="chip" style={{ flex: 1 }} onClick={onClose}>Cancel</button>
+        {bill && <button className="btn btn-secondary" onClick={del} style={{ color: 'var(--expense)', borderColor: 'var(--expense)' }} aria-label="Delete"><Trash2 size={15} /></button>}
+        <button className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }} onClick={onClose}>Cancel</button>
         <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
       </div>
     </Shell>

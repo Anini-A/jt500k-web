@@ -377,7 +377,7 @@ export default function ProfilePanel() {
 
         {editing && draft && (
           <div style={{ display: 'flex', gap: 8, marginTop: 14, borderTop: '1px solid var(--border)', paddingTop: 14 }}>
-            <button className="btn" style={{ background: 'var(--expense-soft)', color: 'var(--expense)', border: '1px solid var(--expense)' }} onClick={cancel} disabled={saving}>Cancel</button>
+            <button className="btn btn-secondary" onClick={cancel} disabled={saving}>Cancel</button>
             <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
           </div>
         )}
