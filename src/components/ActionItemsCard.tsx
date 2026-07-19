@@ -47,7 +47,10 @@ export default function ActionItemsCard() {
         )}
       </div>
 
-      <div style={{ marginTop: 14, flex: 1, display: 'flex', flexDirection: 'column', gap: 14, maxHeight: 460, overflowY: 'auto' }}>
+      {/* Scroll region is absolutely positioned so its content never grows the card —
+          Current Balance sets the row height and a long alert list scrolls inside. */}
+      <div style={{ position: 'relative', flex: 1, minHeight: 220, marginTop: 14 }}>
+      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', gap: 14, overflowY: 'auto' }}>
         {items === null ? (
           <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>Checking…</div>
         ) : actions.length === 0 && infos.length === 0 ? (
@@ -75,6 +78,7 @@ export default function ActionItemsCard() {
             )}
           </>
         )}
+      </div>
       </div>
     </div>
   )
