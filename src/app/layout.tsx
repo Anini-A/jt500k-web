@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Hanken_Grotesk } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import ChatFab from '@/components/ChatFab'
 import './globals.css'
 
 // Close free match to Wealthsimple's brand sans — warm geometric grotesque.
@@ -34,6 +35,7 @@ export default function RootLayout({
     <html lang="en" className={hanken.variable}>
       <body>
         {children}
+        <ChatFab />
         <Analytics />
       </body>
     </html>

@@ -552,6 +552,31 @@ header.top h1 {
   font-size: 13px;
 }
 
+/* Floating "Ask AI" orb — bottom-right, aurora gradient, glows on hover */
+.chat-fab {
+  position: fixed;
+  right: 22px;
+  bottom: calc(22px + env(safe-area-inset-bottom, 0px));
+  z-index: 60;
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: linear-gradient(140deg, #ff9a8b 0%, #a67bd8 48%, #6aa2e6 100%);
+  box-shadow: 0 6px 20px rgba(120, 110, 190, 0.38), inset 0 0 0 6px rgba(255, 255, 255, 0.16);
+  transition: transform .18s ease, box-shadow .28s ease;
+}
+.chat-fab:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 12px 36px rgba(150, 110, 210, 0.6), 0 0 26px rgba(150, 120, 230, 0.6), inset 0 0 0 6px rgba(255, 255, 255, 0.22);
+}
+.chat-fab:active { transform: scale(0.97); }
+@media (max-width: 640px) { .chat-fab { width: 56px; height: 56px; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); } }
+
 /* Accent-bordered button with a lift on hover (e.g. "Update balance") */
 .btn-accent {
   border: 1px solid var(--accent);
