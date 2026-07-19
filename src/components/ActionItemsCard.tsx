@@ -42,9 +42,12 @@ export default function ActionItemsCard() {
     <div className="card glass" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
         <h2 style={{ margin: 0 }}>🔔 Alerts</h2>
-        {urgentCount > 0 && (
-          <span style={{ fontWeight: 600, fontSize: 12, color: 'var(--expense)', flexShrink: 0 }}>{urgentCount} urgent</span>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          {urgentCount > 0 && <span style={{ fontWeight: 600, fontSize: 12, color: 'var(--expense)' }}>{urgentCount} urgent</span>}
+          {(actions.length + infos.length) > 0 && (
+            <span style={{ fontWeight: 700, fontSize: 12, color: 'var(--text-secondary)', background: 'var(--kpi-bg)', borderRadius: 999, minWidth: 22, textAlign: 'center', padding: '2px 8px' }}>{actions.length + infos.length}</span>
+          )}
+        </div>
       </div>
 
       {/* Scroll region is absolutely positioned so its content never grows the card —
