@@ -191,22 +191,22 @@ export default function InvestmentsPanel() {
 
       {/* Hero — AUM + gain + owner split */}
       <div className="card glass" style={{ marginBottom: 16 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 8 }}>
-          <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>💼 Portfolio value{person !== 'Household' ? ` · ${person}` : ''}</div>
-          {data?.asOf && <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>As of {data.asOf}</span>}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, minHeight: 20 }}>
+          <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Portfolio value{person !== 'Household' ? ` · ${person}` : ''}</span>
+          {data?.asOf && <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>As of {data.asOf}</span>}
         </div>
-        <div style={{ fontWeight: 800, fontSize: 'clamp(30px, 8vw, 42px)', color: 'var(--savings)', margin: '8px 0 4px', letterSpacing: '-0.02em' }}>{money(value)}</div>
-        <div style={{ fontWeight: 600, fontSize: 14, color: gain >= 0 ? 'var(--income)' : 'var(--expense)' }}>
-          {gain >= 0 ? '▲' : '▼'} {money2(Math.abs(gain))} ({gain >= 0 ? '+' : ''}{gainPct.toFixed(1)}%) unrealized · cost {money(cost)}
+        <div style={{ fontWeight: 700, fontSize: 'clamp(32px, 8vw, 44px)', color: 'var(--text-primary)', margin: '6px 0 4px', letterSpacing: '-0.03em' }}>{money(value)}</div>
+        <div style={{ fontSize: 13, color: gain >= 0 ? 'var(--income)' : 'var(--expense)' }}>
+          {gain >= 0 ? '↑' : '↓'} {money2(Math.abs(gain))} ({gain >= 0 ? '+' : ''}{gainPct.toFixed(1)}%) <span style={{ color: 'var(--text-muted)' }}>· cost {money(cost)}</span>
         </div>
         {person === 'Household' && owners.length > 1 && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 8, marginTop: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: 'clamp(14px, 3vw, 28px)', marginTop: 20 }}>
             {owners.map((o) => {
               const c = OWNER_COLOR[o] || { fg: 'var(--text-secondary)', bg: 'var(--kpi-bg)' }
               return (
-                <button key={o} onClick={() => setPerson(o)} style={{ textAlign: 'left', cursor: 'pointer', background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderLeft: `3px solid ${c.fg}`, borderRadius: 12, padding: '10px 11px' }}>
-                  <OwnerPill owner={o} />
-                  <div style={{ fontWeight: 700, fontSize: 16, marginTop: 6 }}>{money(data?.ownerTotals?.[o] || 0)}</div>
+                <button key={o} onClick={() => setPerson(o)} style={{ textAlign: 'left', cursor: 'pointer', background: 'transparent', border: 'none', borderLeft: `2px solid ${c.fg}`, borderRadius: 0, padding: '2px 0 2px 10px' }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: c.fg }}>{o}</div>
+                  <div style={{ fontWeight: 600, fontSize: 16, marginTop: 3 }}>{money(data?.ownerTotals?.[o] || 0)}</div>
                 </button>
               )
             })}
@@ -214,36 +214,37 @@ export default function InvestmentsPanel() {
         )}
       </div>
 
-      {/* Per-account cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 12, marginBottom: 16 }}>
-        {accounts.map((a) => {
+      {/* Accounts — one card, sections divided */}
+      <div className="card glass" style={{ marginBottom: 16 }}>
+        {accounts.map((a, idx) => {
           const g = a.value - a.cost
           const gp = a.cost > 0 ? (g / a.cost) * 100 : 0
           const c = OWNER_COLOR[a.owner]
           return (
-            <div key={a.key} className="card glass" style={{ borderLeft: `3px solid ${c?.fg || 'var(--border)'}` }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontWeight: 700, fontSize: 15 }}>{a.label}</span>
+            <div key={a.key} style={{ paddingTop: idx ? 18 : 0, marginTop: idx ? 18 : 0, borderTop: idx ? '1px solid var(--border)' : 'none' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: c?.fg || 'var(--text-muted)', flexShrink: 0 }} />
+                  <span style={{ fontWeight: 600, fontSize: 15 }}>{a.label}</span>
                   {person === 'Household' && <OwnerPill owner={a.owner} />}
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontWeight: 700, fontSize: 16 }}>{money(a.value)}</div>
-                  <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, color: g >= 0 ? 'var(--income)' : 'var(--expense)' }}>{g >= 0 ? '+' : ''}{money(g)} ({gp.toFixed(1)}%)</div>
+                  <div style={{ fontSize: 12, color: g >= 0 ? 'var(--income)' : 'var(--expense)' }}>{g >= 0 ? '+' : ''}{money(g)} ({gp.toFixed(1)}%)</div>
                 </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 2 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 2, paddingLeft: 16 }}>
                 {a.holds.slice().sort((x, y) => y.market_value_cad - x.market_value_cad).map((h, i) => {
                   const hg = h.market_value_cad - h.book_value_cad
                   return (
                     <div key={h.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '9px 0', borderTop: i ? '1px solid var(--border)' : 'none' }}>
                       <div style={{ minWidth: 0 }}>
                         <div style={{ fontWeight: 600 }}>{h.symbol}</div>
-                        <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{h.quantity.toLocaleString(undefined, { maximumFractionDigits: 4 })} sh{h.name ? ` · ${h.name}` : ''}</div>
+                        <div style={{ fontSize: 13, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{h.quantity.toLocaleString(undefined, { maximumFractionDigits: 4 })} sh{h.name ? ` · ${h.name}` : ''}</div>
                       </div>
                       <div style={{ textAlign: 'right', flexShrink: 0 }}>
                         <div style={{ fontWeight: 600 }}>{money2(h.market_value_cad)}</div>
-                        <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, color: hg >= 0 ? 'var(--income)' : 'var(--expense)' }}>{hg >= 0 ? '+' : ''}{money2(hg)}</div>
+                        <div style={{ fontSize: 13, color: hg >= 0 ? 'var(--income)' : 'var(--expense)' }}>{hg >= 0 ? '+' : ''}{money2(hg)}</div>
                       </div>
                     </div>
                   )
@@ -284,7 +285,7 @@ function OtherAssets({ assets, showOwner, onChange, defaultOwner }: {
   return (
     <div className="card glass" style={{ marginTop: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 8 }}>
-        <h3 style={{ margin: 0, fontSize: 15 }}>🏦 Other Assets <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>· cash, options, etc.</span></h3>
+        <h3 style={{ margin: 0, fontSize: 15 }}>Other Assets <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>· cash, options, etc.</span></h3>
         <button className="btn btn-secondary" onClick={() => { setAdding((v) => !v); setEditing(null) }}><Plus size={15} /> {adding ? 'Cancel' : 'Add'}</button>
       </div>
       {adding && <AssetForm defaultOwner={defaultOwner} onDone={async (p) => { await onChange('POST', p); setAdding(false) }} onCancel={() => setAdding(false)} />}
