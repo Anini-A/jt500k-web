@@ -50,7 +50,7 @@ export async function GET() {
     if (cat === 'Debt Repayment' || typeByCat.get(cat) !== 'expense') continue
     const spent = spentThisMonth.get(cat) || 0
     if (budgeted > 0 && spent > budgeted) {
-      out.push({ id: `overbudget-${cat}-${curMonth}`, icon: '⚠️', severity: 'warn', kind: 'action', dismissible: false, title: `Over budget: ${cat}`, detail: `Spent ${money(spent)} of ${money(budgeted)} — over by ${money(spent - budgeted)} this month.` })
+      out.push({ id: `overbudget-${cat}-${curMonth}`, icon: '📊', severity: 'info', kind: 'info', dismissible: true, title: `Over budget: ${cat}`, detail: `Spent ${money(spent)} of ${money(budgeted)} — over by ${money(spent - budgeted)} this month.` })
     }
   }
 
