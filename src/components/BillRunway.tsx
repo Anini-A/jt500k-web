@@ -7,6 +7,7 @@ import { getJSON } from '@/lib/fresh'
 interface Bill { id: string; name: string; day: number; amount: number; quarterly?: boolean; next_due?: string | null }
 interface Settings { current_balance: number; balance_as_of: string | null; deposit_day: number; deposit_amount: number; buffer: number }
 
+const num = (v: string) => parseFloat(String(v).replace(/[^0-9.\-]/g, '')) || 0 // tolerates "$55.66", "1,234"
 const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 })
 const money2 = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' })
 const todayISO = () => new Date().toISOString().slice(0, 10)
@@ -163,7 +164,7 @@ export default function BillRunway() {
         <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
           <MiniStat label="Monthly bills" value={money(monthlyTotal)} />
           <MiniStat label="Keep at least" value={money(monthlyTotal + settings.buffer)} accent />
-          <MiniStat label="Deposit" value={settings.deposit_amount ? `${money(settings.deposit_amount)} · day ${settings.deposit_day}` : `day ${settings.deposit_day}`} />
+          <MiniStat label="Next deposit" value={settings.deposit_amount ? `${money(settings.deposit_amount)} · ${depositDateLabel(settings.deposit_day)}` : depositDateLabel(settings.deposit_day)} />
         </div>
       </div>
 
@@ -200,6 +201,13 @@ export default function BillRunway() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <h3 style={{ margin: 0, fontSize: 15 }}>Bill schedule</h3>
           <button className="chip" onClick={() => setEditBill('new')}><Plus size={14} style={{ marginRight: 4 }} />Add bill</button>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 4px 8px', borderBottom: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+            <span style={{ width: 34, textAlign: 'center', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', flexShrink: 0 }}>Day</span>
+            <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Description</span>
+          </div>
+          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Amount</span>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr)', gap: 2 }}>
           {[...bills].sort((a, b) => a.day - b.day).map((b, i) => (
@@ -299,6 +307,8 @@ function Legend({ color, label, outline }: { color: string; label: string; outli
 
 const iconBtn: React.CSSProperties = { display: 'inline-flex', padding: 6, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }
 const fmtDay = (iso: string) => { const d = new Date(iso + 'T00:00:00'); return d.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' }) }
+// the next calendar date the monthly deposit lands on, e.g. "July 28"
+const depositDateLabel = (day: number) => nextDateForDay(new Date(), day).toLocaleDateString('en-CA', { month: 'long', day: 'numeric' })
 
 // ── Modals ──────────────────────────────────────────────────────────
 function Shell({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
@@ -325,8 +335,8 @@ function BalanceModal({ settings, onClose, onSaved }: { settings: Settings; onCl
   const save = async () => {
     setSaving(true)
     const res = await fetch('/api/bills', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
-      current_balance: parseFloat(bal) || 0, balance_as_of: asOf, deposit_day: parseInt(depDay) || 28,
-      deposit_amount: parseFloat(depAmt) || 0, buffer: parseFloat(buffer) || 0,
+      current_balance: num(bal), balance_as_of: asOf, deposit_day: parseInt(depDay) || 28,
+      deposit_amount: num(depAmt), buffer: num(buffer),
     }) })
     setSaving(false)
     if (res.ok) onSaved(); else alert('Could not save.')
@@ -358,7 +368,7 @@ function BillModal({ bill, onClose, onSaved }: { bill: Bill | null; onClose: () 
   const save = async () => {
     if (!name.trim() || !day || !amount) { alert('Name, day and amount are required.'); return }
     setSaving(true)
-    const body = { id: bill?.id, name: name.trim(), day: parseInt(day), amount: parseFloat(amount), quarterly, next_due: quarterly ? (nextDue || null) : null }
+    const body = { id: bill?.id, name: name.trim(), day: parseInt(day), amount: num(amount), quarterly, next_due: quarterly ? (nextDue || null) : null }
     const res = await fetch('/api/bills', { method: bill ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
     setSaving(false)
     if (res.ok) onSaved(); else alert('Could not save.')
