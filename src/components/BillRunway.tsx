@@ -263,7 +263,7 @@ function Meter({ proj, buffer }: { proj: Projection; buffer: number }) {
   const hp = hover != null ? pts[hover] : null
   return (
     <div className="card glass">
-      <h3 style={{ margin: '0 0 4px', fontSize: 15 }}>Balance runway</h3>
+      <h3 style={{ margin: '0 0 4px', fontSize: 15 }}>Balance projection</h3>
       <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginBottom: 14 }}>Projected balance each day · red = below your safe floor</p>
       <div onMouseLeave={() => setHover(null)}
         style={{ display: 'flex', alignItems: 'flex-end', gap: 1, height: 120, borderBottom: '1px solid var(--border)', position: 'relative' }}>
