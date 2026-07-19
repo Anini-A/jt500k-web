@@ -78,7 +78,7 @@ function describeAction(name: string, a: any): string {
     case 'delete_recurring': return `Delete recurring item ${String(a.id).slice(0, 8)}…`
     case 'set_bill_balance': return `Set Home & Utilities balance to ${cad(a.current_balance)}${a.balance_as_of ? ` as of ${a.balance_as_of}` : ''}${a.deposit_amount != null ? ` · deposit ${cad(a.deposit_amount)}` : ''}${a.deposit_day != null ? ` on day ${a.deposit_day}` : ''}${a.buffer != null ? ` · buffer ${cad(a.buffer)}` : ''}`
     case 'add_bill': return `Add bill "${a.name}" — ${cad(a.amount)} on day ${a.day}${a.quarterly ? ' (quarterly)' : ''}`
-    case 'edit_bill': return `Edit bill ${String(a.id).slice(0, 8)}…${a.amount != null ? ` → ${cad(a.amount)}` : ''}${a.day != null ? ` → day ${a.day}` : ''}${a.name ? ` → "${a.name}"` : ''}`
+    case 'edit_bill': return `Edit bill ${String(a.id).slice(0, 8)}…${a.name ? ` → "${a.name}"` : ''}${a.amount != null ? ` → ${cad(a.amount)}` : ''}${a.day != null ? ` → day ${a.day}` : ''}${a.next_due ? ` → next due ${a.next_due}` : ''}${a.quarterly != null ? ` → ${a.quarterly ? 'quarterly' : 'monthly'}` : ''}`
     case 'delete_bill': return `Delete bill ${String(a.id).slice(0, 8)}…`
     case 'update_household_item': return `Update household "${a.label}"${a.status ? ` → ${a.status}` : ''}${a.value ? ` → "${a.value}"` : ''}`
     case 'refresh_prices': return 'Refresh live investment prices'
