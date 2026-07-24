@@ -181,18 +181,17 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
       if (fin) finalRef.current += fin
       setInput((finalRef.current + interim).trim())
     }
-    r.onerror = (e: any) => {
-      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { setVoiceMode(false); voiceModeRef.current = false }
-    }
+    // Any error → just stop this turn and go idle. NEVER exit voice mode (that caused the
+    // overlay to flash back to the chat with a stuck waveform). User taps the orb to retry.
+    r.onerror = () => { setListening(false); recogRef.current = null }
     r.onend = () => {
       setListening(false); recogRef.current = null
       if (!voiceModeRef.current) return
       const text = finalRef.current.trim()
-      if (text) { emptyRef.current = 0; setInput(''); sendRef.current(text) }        // heard something → send
-      // iOS can't restart without a tap → go idle ("Tap to talk"). Elsewhere, keep listening.
-      else if (!iosRef.current && emptyRef.current++ < 5) setTimeout(() => { if (voiceModeRef.current) startListen() }, 180)
-      else if (iosRef.current) { /* idle — wait for the user to tap the orb */ }
-      else { setVoiceMode(false); voiceModeRef.current = false }
+      if (text) { emptyRef.current = 0; setInput(''); sendRef.current(text) } // heard something → send
+      // nothing heard: on desktop/Android keep auto-listening; on iOS go idle ("Tap to talk")
+      else if (!iosRef.current && emptyRef.current++ < 5) setTimeout(() => { if (voiceModeRef.current && !recogRef.current) startListen() }, 180)
+      // else: idle — stay in voice mode, wait for a tap
     }
     recogRef.current = r
     setListening(true)
@@ -209,7 +208,8 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
       stopSpeaking(); setListening(false)
     } else {
       stopSpeaking(); setVoiceMode(true); voiceModeRef.current = true; emptyRef.current = 0
-      startListen()
+      // iOS needs a real tap per listen → open on "Tap to talk"; desktop/Android auto-starts
+      if (!iosRef.current) startListen()
     }
   }
 
