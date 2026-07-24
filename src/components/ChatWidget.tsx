@@ -406,30 +406,32 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
         {/* Hands-free voice UI — replaces the text chat while a conversation is on */}
         {voiceMode && (
           <div className="voice-overlay">
-            <button style={roundBtn} aria-label="Close voice" title="Back to chat" onClick={toggleVoice}><ArrowLeft size={20} /></button>
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 22, padding: '0 24px', textAlign: 'center' }}>
-              <button type="button" aria-label="Tap to talk" onClick={() => { stopSpeaking(); startListen() }}
-                className={`voice-orb ${listening ? 'is-listening' : busy ? 'is-thinking' : speaking ? 'is-speaking' : 'is-idle'}`} />
-              <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: listening ? 'var(--expense)' : 'var(--accent)' }}>
+            <button style={roundBtn} aria-label="Back to chat" title="Back to chat" onClick={toggleVoice}><ArrowLeft size={20} /></button>
+
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 30, padding: '0 24px', textAlign: 'center' }}>
+              <div className="voice-orb-wrap">
+                <button type="button" aria-label="Tap to talk" onClick={() => { stopSpeaking(); startListen() }}
+                  className={`voice-orb ${listening ? 'is-listening' : busy ? 'is-thinking' : speaking ? 'is-speaking' : 'is-idle'}`} />
+              </div>
+              <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: listening ? 'var(--expense)' : 'var(--accent)' }}>
                 {listening ? 'Listening' : busy ? 'Thinking' : speaking ? 'Speaking' : 'Tap to talk'}
               </div>
-              <div style={{ fontSize: 18, lineHeight: 1.5, color: 'var(--text-primary)', maxWidth: 440, minHeight: 54 }}>
+              <div style={{ fontSize: 19, lineHeight: 1.55, fontWeight: 500, letterSpacing: '-0.01em', color: 'var(--text-primary)', maxWidth: 460, minHeight: 62 }}>
                 {listening
                   ? (input || <span style={{ color: 'var(--text-muted)' }}>Say something…</span>)
                   : ([...msgs].reverse().find((m) => m.role === 'assistant')?.content || <span style={{ color: 'var(--text-muted)' }}>Tap the orb and speak.</span>)}
               </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, paddingBottom: 8 }}>
-              <button onClick={() => setSpeak((v) => { if (v) stopSpeaking(); return !v })} aria-label="Toggle voice output"
-                style={{ width: 52, height: 52, borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: speak ? 'var(--accent)' : 'var(--text-muted)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 22, paddingBottom: 8 }}>
+              <button className="voice-ctrl" onClick={() => setSpeak((v) => { if (v) stopSpeaking(); return !v })} aria-label="Toggle voice output" title={speak ? 'Mute' : 'Unmute'}
+                style={{ color: speak ? 'var(--accent)' : 'var(--text-muted)' }}>
                 {speak ? <Volume2 size={22} /> : <VolumeX size={22} />}
               </button>
-              <button className={listening ? 'mic-live' : ''} onClick={() => { stopSpeaking(); startListen() }} aria-label="Talk"
-                style={{ width: 68, height: 68, borderRadius: 999, border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', background: 'var(--expense)' }}>
-                <Mic size={28} />
+              <button className={`voice-mic ${listening ? 'mic-live' : ''}`} onClick={() => { stopSpeaking(); startListen() }} aria-label="Talk">
+                <Mic size={30} />
               </button>
-              <button onClick={toggleVoice} aria-label="End voice conversation"
-                style={{ width: 52, height: 52, borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-secondary)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+              <button className="voice-ctrl" onClick={toggleVoice} aria-label="End voice conversation" title="End">
                 <X size={22} />
               </button>
             </div>
