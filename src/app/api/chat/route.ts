@@ -389,6 +389,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'AI is not configured (add a free GEMINI_API_KEY).' }, { status: 500 })
   }
 
+  try {
   const { message, history, clientDate, voice } = await req.json()
   if (!message) return NextResponse.json({ error: 'message required' }, { status: 400 })
 
@@ -456,7 +457,6 @@ export async function POST(req: NextRequest) {
   const prior = Array.isArray(history) ? history : []
   const messages = [...prior, { role: 'user', content: message }]
 
-  try {
     // ---- Free: Google Gemini (auto-retry + model fallback on overload) ----
     if (GEMINI_KEY) {
       const contents = messages.map((m: any) => ({
