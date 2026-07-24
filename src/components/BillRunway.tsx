@@ -156,9 +156,10 @@ export default function BillRunway() {
         </div>
       </section>
 
-      {/* VERDICT — coverage framing */}
+      {/* VERDICT + BALANCE — side by side */}
+      <div className="grid-2" style={{ marginBottom: 16 }}>
       {proj && (
-      <div className="card glass" style={{ borderLeft: `4px solid ${covered ? 'var(--income)' : AMBER}`, marginBottom: 16 }}>
+      <div className="card glass" style={{ borderLeft: `4px solid ${covered ? 'var(--income)' : AMBER}`, display: 'flex', alignItems: 'center' }}>
         <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
           {covered ? <CheckCircle2 size={26} color="var(--income)" style={{ flexShrink: 0, marginTop: 2 }} />
             : <TriangleAlert size={26} color={AMBER} style={{ flexShrink: 0, marginTop: 2 }} />}
@@ -184,8 +185,6 @@ export default function BillRunway() {
       </div>
       )}
 
-      {/* BALANCE + COVERAGE TIMELINE — side by side, equal height */}
-      <div className="grid-2" style={{ marginBottom: 16 }}>
         {/* BALANCE — with stale nudge */}
         <div className="card glass">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
@@ -211,10 +210,10 @@ export default function BillRunway() {
             <MiniStat label="Safety buffer" value={money(settings.buffer)} accent />
           </div>
         </div>
-
-        {/* COVERAGE TIMELINE */}
-        {proj && <CoverageTimeline proj={proj} asOf={asOf} />}
       </div>
+
+      {/* COVERAGE TIMELINE — full-width long card */}
+      {proj && <CoverageTimeline proj={proj} asOf={asOf} />}
 
       {/* BILL SCHEDULE */}
       <div className="card glass" style={{ marginTop: 16 }}>
@@ -274,15 +273,12 @@ function MiniStat({ label, value, accent }: { label: string; value: string; acce
 // balance; an amber cutoff line marks where the money runs out and top-ups begin.
 function CoverageTimeline({ proj, asOf }: { proj: Projection; asOf: string }) {
   return (
-    <div className="card glass" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <div className="card glass">
       <h3 style={{ margin: '0 0 4px', fontSize: 15, display: 'flex', alignItems: 'center', gap: 8 }}><CalendarClock size={16} /> Coverage timeline</h3>
       <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginBottom: 8 }}>
         {proj.coveredThroughISO ? <>Your {money2(proj.startBalance)} covers up to <b style={{ color: 'var(--text-primary)' }}>{fmtDay(proj.coveredThroughISO)}</b></> : <>What your {money2(proj.startBalance)} covers</>}
       </p>
 
-      {/* scroll region — absolutely positioned so the balance card sets the height */}
-      <div style={{ position: 'relative', flex: 1, minHeight: 140 }}>
-      <div style={{ position: 'absolute', inset: 0, overflowY: 'auto' }}>
       {/* starting balance */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '10px 4px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 11, minWidth: 0 }}>
@@ -332,8 +328,6 @@ function CoverageTimeline({ proj, asOf }: { proj: Projection; asOf: string }) {
           {proj.remainingCount} bill{proj.remainingCount === 1 ? '' : 's'} need a top-up · {money2(proj.remainingTotal)} total
         </div>
       ) : null}
-      </div>
-      </div>
     </div>
   )
 }
