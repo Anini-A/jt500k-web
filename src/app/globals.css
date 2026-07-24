@@ -68,6 +68,14 @@
   to { transform: rotate(360deg); }
 }
 
+/* Voice-input mic while listening */
+.mic-live { animation: micPulse 1.3s ease-in-out infinite; }
+@keyframes micPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(224, 74, 74, 0.0); }
+  50%      { box-shadow: 0 0 0 6px rgba(224, 74, 74, 0.22); }
+}
+@media (prefers-reduced-motion: reduce) { .mic-live { animation: none; } }
+
 html {
   height: 100%;
 }

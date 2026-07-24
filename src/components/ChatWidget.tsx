@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { ArrowLeft, SquarePen, History, ArrowUp, Sparkles, Trash2, Check, X } from 'lucide-react'
+import { ArrowLeft, SquarePen, History, ArrowUp, Sparkles, Trash2, Check, X, Mic } from 'lucide-react'
 import { today } from '@/lib/date'
 
 interface Msg { role: 'user' | 'assistant'; content: string; at?: number }
@@ -98,8 +98,35 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
   const [busy, setBusy] = useState(false)
   const [pending, setPending] = useState<{ name: string; args: any; label: string }[] | null>(null)
   const [recentOpen, setRecentOpen] = useState(false)
+  const [listening, setListening] = useState(false)
+  const [micOK, setMicOK] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const taRef = useRef<HTMLTextAreaElement>(null)
+  const recogRef = useRef<any>(null)
+
+  useEffect(() => { setMicOK(!!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition)) }, [])
+  // stop listening if the chat closes/unmounts
+  useEffect(() => () => { try { recogRef.current?.stop() } catch { /* ignore */ } }, [])
+
+  // Voice input — Web Speech API transcribes into the composer (free, on-device/browser)
+  const toggleMic = () => {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (!SR) return
+    if (listening) { try { recogRef.current?.stop() } catch { /* ignore */ } return }
+    const r = new SR()
+    r.lang = 'en-CA'; r.interimResults = true; r.continuous = false; r.maxAlternatives = 1
+    const base = input ? input.replace(/\s+$/, '') + ' ' : ''
+    r.onresult = (e: any) => {
+      let txt = ''
+      for (let i = e.resultIndex; i < e.results.length; i++) txt += e.results[i][0].transcript
+      setInput(base + txt)
+    }
+    r.onend = () => { setListening(false); recogRef.current = null; taRef.current?.focus() }
+    r.onerror = () => { setListening(false); recogRef.current = null }
+    recogRef.current = r
+    setListening(true)
+    try { r.start() } catch { setListening(false) }
+  }
 
   const active = threads.find((t) => t.id === activeId) || threads[0]
   const msgs = active?.msgs ?? [GREETING]
@@ -371,13 +398,20 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
               /* fontSize 16 keeps iOS Safari from auto-zooming the page on focus */
               style={{ flex: 1, minWidth: 0, padding: '11px 16px', borderRadius: 22, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 16, fontFamily: 'inherit', lineHeight: 1.4, resize: 'none', maxHeight: 160, overflowY: 'auto' }}
             />
+            {micOK && (
+              <button type="button" onClick={toggleMic} aria-label={listening ? 'Stop voice input' : 'Voice input'} title={listening ? 'Stop' : 'Speak'}
+                className={listening ? 'mic-live' : ''}
+                style={{ width: 44, height: 44, flexShrink: 0, borderRadius: 999, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: listening ? 'var(--expense)' : 'var(--kpi-bg)', color: listening ? '#fff' : 'var(--text-secondary)', border: `1px solid ${listening ? 'var(--expense)' : 'var(--border)'}` }}>
+                <Mic size={20} />
+              </button>
+            )}
             <button type="submit" disabled={busy || !input.trim()} aria-label="Send"
               style={{ width: 44, height: 44, flexShrink: 0, borderRadius: 999, border: 'none', cursor: input.trim() ? 'pointer' : 'default', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: input.trim() ? 'var(--accent)' : 'var(--border)', color: '#fff', opacity: busy ? 0.6 : 1 }}>
               <ArrowUp size={20} />
             </button>
           </div>
           <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--text-muted)', marginTop: 7 }}>
-            Gemini can make mistakes — double-check important numbers.
+            {listening ? 'Listening… tap the mic to stop.' : 'Gemini can make mistakes — double-check important numbers.'}
           </div>
         </form>
       </div>
