@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { Wallet, CreditCard, PiggyBank, LineChart, Banknote, Target, Users, Receipt, Pencil, Trash2, type LucideIcon } from 'lucide-react'
 import HeaderNav from '@/components/HeaderNav'
+import PagePill from '@/components/PagePill'
 import Logo from '@/components/Logo'
 import DebtManager from '@/components/DebtManager'
 import BillRunway from '@/components/BillRunway'
@@ -322,6 +323,7 @@ function DashHeader() {
   return (
     <header className="top">
       <div className="brand"><Logo /><span>Dashboard</span></div>
+      <PagePill current="dashboard" />
       <HeaderNav current="dashboard" />
     </header>
   )

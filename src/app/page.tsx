@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import HeaderNav from '@/components/HeaderNav'
+import PagePill from '@/components/PagePill'
 import Logo from '@/components/Logo'
 import { Wallet } from 'lucide-react'
 import JourneyCard from '@/components/JourneyCard'
@@ -38,6 +39,7 @@ export default function Home() {
             <Logo />
             <span>Journey to 500K</span>
           </div>
+          <PagePill current="home" />
           <HeaderNav current="home" />
         </header>
 

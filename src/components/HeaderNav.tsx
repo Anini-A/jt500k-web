@@ -2,29 +2,24 @@
 
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Home, Receipt, LayoutDashboard, Settings, RefreshCw, Landmark } from 'lucide-react'
+import { Settings } from 'lucide-react'
 import IconPill from './IconPill'
 import AddTransactionButton from './AddTransactionButton'
 import SettingsPanel from './SettingsPanel'
 
 type Page = 'home' | 'dashboard' | 'transactions' | 'settings'
 
-// Consistent header nav across pages. Order: Home · Add · All Transactions ·
-// Dashboard · Settings · Refresh. The current page's own link is omitted.
+// Header actions (page navigation now lives in the centered PagePill). Just the
+// two things you reach for: Add a transaction, and Settings.
 export default function HeaderNav({ current }: { current: Page }) {
   const [settingsOpen, setSettingsOpen] = useState(false)
 
   return (
     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-      {current !== 'home' && <IconPill icon={<Home />} label="Home" href="/" />}
       <AddTransactionButton />
-      {current !== 'dashboard' && <IconPill icon={<LayoutDashboard />} label="Dashboard" href="/dashboard" />}
-      {current !== 'transactions' && <IconPill icon={<Receipt />} label="All Transactions" href="/transactions" />}
-      <IconPill icon={<Landmark />} label="Wealthsimple" href="https://my.wealthsimple.com/app/login" external />
       {current !== 'settings' && (
         <IconPill icon={<Settings />} label="Settings" onClick={() => setSettingsOpen(true)} />
       )}
-      <IconPill icon={<RefreshCw />} label="Refresh" onClick={() => window.location.reload()} />
 
       {settingsOpen && createPortal(
         <div className="modal-backdrop" onClick={() => setSettingsOpen(false)}>

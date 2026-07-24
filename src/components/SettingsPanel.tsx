@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Database, Target, BarChart3, LifeBuoy, Lock, LogOut, Download, Cloud } from 'lucide-react'
+import { Database, Target, BarChart3, LifeBuoy, Lock, LogOut, Download, Cloud, RefreshCw, Landmark } from 'lucide-react'
 import CategoryManager from './CategoryManager'
 import SectionTitle from './SectionTitle'
 import { getJSON } from '@/lib/fresh'
@@ -61,6 +61,14 @@ export default function SettingsPanel() {
 
   return (
     <>
+      {/* Quick actions (moved out of the header) */}
+      <section className="block">
+        <div className="card glass" style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <button className="btn btn-secondary" onClick={() => window.location.reload()}><RefreshCw size={15} /> Refresh data</button>
+          <a className="btn btn-secondary" href="https://my.wealthsimple.com/app/login" target="_blank" rel="noopener noreferrer"><Landmark size={15} /> Open Wealthsimple</a>
+        </div>
+      </section>
+
       {/* Connection status */}
       <section className="block">
         <div className="card glass">

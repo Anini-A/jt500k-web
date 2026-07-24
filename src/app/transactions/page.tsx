@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { Trash2, Search, Pencil } from 'lucide-react'
 import HeaderNav from '@/components/HeaderNav'
+import PagePill from '@/components/PagePill'
 import Logo from '@/components/Logo'
 import EditTransactionModal from '@/components/EditTransactionModal'
 import { getJSON } from '@/lib/fresh'
@@ -90,6 +91,7 @@ export default function Transactions() {
       <div className="wrap">
         <header className="top">
           <div className="brand"><Logo /><span>All Transactions</span></div>
+          <PagePill current="transactions" />
           <HeaderNav current="transactions" />
         </header>
 

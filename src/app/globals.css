@@ -124,9 +124,9 @@ a:hover {
 /* Header bar — same rounded-card radius as the rest of the site, gently tinted
    so it reads as the nav surface rather than just another card. */
 header.top {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr auto; /* brand · centered pill · actions */
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
   margin-bottom: 24px;
   padding: 12px 18px;
@@ -136,6 +136,45 @@ header.top {
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow), var(--glass-sheen);
+}
+
+/* Top-center section pill (Transactions · Home · Dashboard) */
+.page-pill {
+  justify-self: center;
+  min-width: 0;
+  max-width: 100%;
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--kpi-bg);
+  border: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.page-pill::-webkit-scrollbar { display: none; }
+.page-seg {
+  flex-shrink: 0;
+  padding: 6px 15px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: inherit;
+  transition: background .2s ease, color .2s ease;
+}
+.page-seg.active {
+  background: var(--surface-1);
+  color: var(--text-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+@media (max-width: 640px) {
+  header.top .brand span { display: none; } /* logo only — make room for the pill */
+  .page-seg { padding: 6px 12px; font-size: 12px; }
 }
 
 header.top .brand {
