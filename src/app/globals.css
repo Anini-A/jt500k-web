@@ -193,6 +193,9 @@ header.top .brand {
   gap: 8px;
   font-size: 17px;
   font-weight: 600;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
 }
 
 header.top h1 {

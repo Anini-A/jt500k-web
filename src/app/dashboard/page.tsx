@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useMemo, useCallback } from 'react'
+import Link from 'next/link'
 import { Wallet, CreditCard, PiggyBank, LineChart, Banknote, Target, Users, Receipt, Pencil, Trash2, type LucideIcon } from 'lucide-react'
 import HeaderNav from '@/components/HeaderNav'
 import PagePill from '@/components/PagePill'
@@ -322,7 +323,7 @@ export default function Dashboard() {
 function DashHeader() {
   return (
     <header className="top">
-      <div className="brand"><Logo /><span>Dashboard</span></div>
+      <Link href="/" className="brand" aria-label="Home"><Logo /></Link>
       <PagePill current="dashboard" />
       <HeaderNav current="dashboard" />
     </header>

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import HeaderNav from '@/components/HeaderNav'
 import PagePill from '@/components/PagePill'
 import Logo from '@/components/Logo'
+import Link from 'next/link'
 import { Wallet } from 'lucide-react'
 import JourneyCard from '@/components/JourneyCard'
 import ActionItemsCard from '@/components/ActionItemsCard'
@@ -35,10 +36,7 @@ export default function Home() {
     <div className="bg-aurora">
       <div className="wrap">
         <header className="top">
-          <div className="brand">
-            <Logo />
-            <span>Journey to 500K</span>
-          </div>
+          <Link href="/" className="brand" aria-label="Home"><Logo /></Link>
           <PagePill current="home" />
           <HeaderNav current="home" />
         </header>

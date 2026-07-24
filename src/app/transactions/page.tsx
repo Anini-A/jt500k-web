@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { Trash2, Search, Pencil } from 'lucide-react'
+import Link from 'next/link'
 import HeaderNav from '@/components/HeaderNav'
 import PagePill from '@/components/PagePill'
 import Logo from '@/components/Logo'
@@ -90,7 +91,7 @@ export default function Transactions() {
     <div className="bg-aurora">
       <div className="wrap">
         <header className="top">
-          <div className="brand"><Logo /><span>All Transactions</span></div>
+          <Link href="/" className="brand" aria-label="Home"><Logo /></Link>
           <PagePill current="transactions" />
           <HeaderNav current="transactions" />
         </header>
