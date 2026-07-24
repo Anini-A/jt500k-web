@@ -170,11 +170,14 @@ export default function BillRunway() {
             <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Home &amp; Utilities · as of {fmtDay(asOf)}</div>
             <div style={{ fontWeight: 700, fontSize: 28, letterSpacing: '-0.03em', marginTop: 4 }}>{money2(settings.current_balance)}</div>
           </div>
-          <button className={`chip btn-accent ${stale ? 'btn-attention' : ''}`} onClick={() => setEditBalance(true)}>Update balance</button>
+          {!stale && <button className="chip btn-accent" onClick={() => setEditBalance(true)}>Update balance</button>}
         </div>
         {stale && (
-          <div style={{ marginTop: 12, padding: '9px 12px', background: 'var(--accent-soft)', borderRadius: 10, display: 'flex', gap: 8, alignItems: 'center', color: 'var(--accent)', fontSize: 13, fontWeight: 600 }}>
-            <TriangleAlert size={15} style={{ flexShrink: 0 }} /> Last updated {fmtDay(asOf)} · {staleDays} day{staleDays === 1 ? '' : 's'} ago — update your balance so the forecast stays accurate.
+          <div style={{ marginTop: 12, padding: '12px 14px', background: 'var(--accent-soft)', borderRadius: 12, display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', color: 'var(--accent)', fontSize: 13, fontWeight: 600, minWidth: 0, flex: 1 }}>
+              <TriangleAlert size={15} style={{ flexShrink: 0 }} /> Last updated {fmtDay(asOf)} · {staleDays} day{staleDays === 1 ? '' : 's'} ago — update your balance so the forecast stays accurate.
+            </div>
+            <button className="chip btn-accent btn-attention" style={{ flexShrink: 0 }} onClick={() => setEditBalance(true)}>Update balance</button>
           </div>
         )}
         <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
