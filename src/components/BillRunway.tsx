@@ -4,8 +4,8 @@ import { useEffect, useState, useCallback, useMemo, Fragment } from 'react'
 import { Pencil, Plus, Trash2, TriangleAlert, CheckCircle2, CalendarClock } from 'lucide-react'
 import { getJSON } from '@/lib/fresh'
 
-interface Bill { id: string; name: string; day: number; amount: number; quarterly?: boolean; next_due?: string | null }
-interface Settings { current_balance: number; balance_as_of: string | null; deposit_day: number; deposit_amount: number; buffer: number }
+interface Bill { id: string; account_id: string | null; name: string; day: number; amount: number; quarterly?: boolean; next_due?: string | null }
+interface Account { id: string; name: string; current_balance: number; balance_as_of: string | null; buffer: number }
 
 const num = (v: string) => parseFloat(String(v).replace(/[^0-9.\-]/g, '')) || 0 // tolerates "$55.66", "1,234"
 const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 })
@@ -59,7 +59,7 @@ function nextOccurrence(bill: Bill, from: Date): Date | null {
   return nextDateForDay(from, bill.day)
 }
 
-function project(bills: Bill[], s: Settings): Projection {
+function project(bills: Bill[], s: { current_balance: number; balance_as_of: string | null; buffer: number }): Projection {
   const start = stripTime(new Date((s.balance_as_of || todayISO()) + 'T00:00:00'))
   const today = stripTime(new Date(todayISO() + 'T00:00:00'))
   const from = start < today ? today : start // never project into the past
@@ -94,41 +94,68 @@ function project(bills: Bill[], s: Settings): Projection {
 // ── UI ──────────────────────────────────────────────────────────────
 export default function BillRunway() {
   const [bills, setBills] = useState<Bill[]>([])
-  const [settings, setSettings] = useState<Settings | null>(null)
+  const [accounts, setAccounts] = useState<Account[]>([])
+  const [activeId, setActiveId] = useState<string>('')
   const [loading, setLoading] = useState(true)
-  const [editBalance, setEditBalance] = useState(false)
+  const [editBalance, setEditBalance] = useState(false) // edits the active account
+  const [newAccount, setNewAccount] = useState(false)
   const [editBill, setEditBill] = useState<Bill | 'new' | null>(null)
 
   const load = useCallback(async () => {
     const d = await getJSON('/api/bills').catch(() => null)
     if (d && !d.error) {
       setBills((d.bills || []).map((b: Bill) => ({ ...b, amount: Number(b.amount) })))
-      setSettings({
-        current_balance: Number(d.settings?.current_balance) || 0,
-        balance_as_of: d.settings?.balance_as_of || null,
-        deposit_day: Number(d.settings?.deposit_day) || 28,
-        deposit_amount: Number(d.settings?.deposit_amount) || 0,
-        buffer: Number(d.settings?.buffer) || 0,
-      })
+      const accs: Account[] = (d.accounts || []).map((a: any) => ({
+        id: a.id, name: a.name, current_balance: Number(a.current_balance) || 0,
+        balance_as_of: a.balance_as_of || null, buffer: Number(a.buffer) || 0,
+      }))
+      setAccounts(accs)
+      setActiveId((cur) => (cur && accs.some((a) => a.id === cur)) ? cur : (accs[0]?.id || ''))
     }
     setLoading(false)
   }, [])
   useEffect(() => { load() }, [load])
 
-  const proj = useMemo(() => (settings ? project(bills, settings) : null), [bills, settings])
+  const active = accounts.find((a) => a.id === activeId) || null
+  const acctBills = useMemo(() => bills.filter((b) => b.account_id === activeId), [bills, activeId])
+  const proj = useMemo(() => (active ? project(acctBills, active) : null), [acctBills, active])
+  // per-account coverage (for the pill status dots)
+  const coverageOf = useCallback((a: Account) => project(bills.filter((b) => b.account_id === a.id), a).firstShort == null, [bills])
 
   if (loading) return <div className="card glass" style={{ padding: 40, textAlign: 'center' }}>Loading your bill runway…</div>
-  if (!settings) return <div className="card glass" style={{ padding: 40, textAlign: 'center' }}>Could not load bills.</div>
+  if (!accounts.length) return (
+    <div className="card glass" style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
+      No bill accounts yet. Run <code>sql/bill_accounts_setup.sql</code> in Supabase to get started.
+    </div>
+  )
+  if (!active) return null
 
-  const monthlyTotal = bills.filter((b) => !b.quarterly).reduce((s, b) => s + b.amount, 0)
+  const monthlyTotal = acctBills.filter((b) => !b.quarterly).reduce((s, b) => s + b.amount, 0)
   const covered = proj ? proj.firstShort == null : true
-  const asOf = settings.balance_as_of || todayISO()
+  const asOf = active.balance_as_of || todayISO()
   const staleDays = Math.max(0, Math.round((Date.parse(todayISO()) - Date.parse(asOf)) / 86400000))
   const stale = staleDays >= 1
   const through = proj?.coveredThroughISO
+  const settings = active // alias so the balance card / modal read the active account
 
   return (
     <div style={{ marginBottom: 64 }}>
+      {/* ACCOUNT SWITCHER */}
+      <section className="block" style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+        <div className="tabs">
+          {accounts.map((a) => {
+            const ok = coverageOf(a)
+            return (
+              <button key={a.id} onClick={() => setActiveId(a.id)} className={`tab ${a.id === activeId ? 'tab-active' : ''}`}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: ok ? 'var(--income)' : AMBER, flexShrink: 0 }} />
+                {a.name}
+              </button>
+            )
+          })}
+          <button onClick={() => setNewAccount(true)} className="tab" title="Add account"><Plus size={15} /></button>
+        </div>
+      </section>
+
       {/* VERDICT — coverage framing */}
       {proj && (
       <div className="card glass" style={{ borderLeft: `4px solid ${covered ? 'var(--income)' : AMBER}`, marginBottom: 16 }}>
@@ -163,7 +190,10 @@ export default function BillRunway() {
         <div className="card glass">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Home &amp; Utilities · as of {fmtDay(asOf)}</div>
+              <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                {active.name} · as of {fmtDay(asOf)}
+                <button onClick={() => setEditBalance(true)} aria-label="Account settings" title="Rename / delete account" style={{ ...iconBtn, padding: 3 }}><Pencil size={12} /></button>
+              </div>
               <div style={{ fontWeight: 700, fontSize: 28, letterSpacing: '-0.03em', marginTop: 4 }}>{money2(settings.current_balance)}</div>
             </div>
             {!stale && <button className="chip btn-accent" onClick={() => setEditBalance(true)}>Update balance</button>}
@@ -200,7 +230,7 @@ export default function BillRunway() {
           <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Amount</span>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr)', gap: 2 }}>
-          {[...bills].sort((a, b) => a.day - b.day).map((b, i) => (
+          {[...acctBills].sort((a, b) => a.day - b.day).map((b, i) => (
             <div key={b.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', padding: '10px 4px', borderTop: i ? '1px solid var(--border)' : 'none' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
                 <span style={{ width: 34, height: 34, borderRadius: 9, background: 'var(--kpi-bg)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0, lineHeight: 1 }}>
@@ -224,8 +254,9 @@ export default function BillRunway() {
         Ranged bills are modeled on their earliest possible day, so the runway is worst-case safe.
       </p>
 
-      {editBalance && <BalanceModal settings={settings} onClose={() => setEditBalance(false)} onSaved={() => { setEditBalance(false); load() }} />}
-      {editBill && <BillModal bill={editBill === 'new' ? null : editBill} onClose={() => setEditBill(null)} onSaved={() => { setEditBill(null); load() }} />}
+      {editBalance && <AccountModal account={active} canDelete={accounts.length > 1} onClose={() => setEditBalance(false)} onSaved={(id) => { setEditBalance(false); if (id !== undefined) setActiveId(id); load() }} />}
+      {newAccount && <AccountModal account={null} canDelete={false} onClose={() => setNewAccount(false)} onSaved={(id) => { setNewAccount(false); if (id) setActiveId(id); load() }} />}
+      {editBill && <BillModal bill={editBill === 'new' ? null : editBill} accountId={activeId} onClose={() => setEditBill(null)} onSaved={() => { setEditBill(null); load() }} />}
     </div>
   )
 }
@@ -325,25 +356,40 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   return <label style={{ display: 'block', marginBottom: 12 }}><span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, display: 'block', marginBottom: 5 }}>{label}</span>{children}</label>
 }
 
-function BalanceModal({ settings, onClose, onSaved }: { settings: Settings; onClose: () => void; onSaved: () => void }) {
-  const [bal, setBal] = useState(String(settings.current_balance || ''))
-  const [asOf, setAsOf] = useState(settings.balance_as_of || todayISO())
-  const [buffer, setBuffer] = useState(String(settings.buffer || ''))
+// Create a new account OR edit the active one's name/balance/buffer (+ delete).
+// onSaved(id): id = new account id on create, '' after delete, undefined after edit.
+function AccountModal({ account, canDelete, onClose, onSaved }: { account: Account | null; canDelete: boolean; onClose: () => void; onSaved: (id?: string) => void }) {
+  const isNew = account == null
+  const [name, setName] = useState(account?.name || '')
+  const [bal, setBal] = useState(account ? String(account.current_balance || '') : '')
+  const [asOf, setAsOf] = useState(account?.balance_as_of || todayISO())
+  const [buffer, setBuffer] = useState(account ? String(account.buffer || '') : '')
   const [saving, setSaving] = useState(false)
   const save = async () => {
+    if (!name.trim()) { alert('Account name is required.'); return }
     setSaving(true)
-    const res = await fetch('/api/bills', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
-      current_balance: num(bal), balance_as_of: asOf, buffer: num(buffer),
-    }) })
+    const body: Record<string, unknown> = { name: name.trim(), current_balance: num(bal), balance_as_of: asOf, buffer: num(buffer) }
+    const res = isNew
+      ? await fetch('/api/bill-accounts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      : await fetch('/api/bill-accounts', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: account!.id, ...body }) })
     setSaving(false)
-    if (res.ok) onSaved(); else alert('Could not save.')
+    if (!res.ok) { alert('Could not save.'); return }
+    const j = await res.json().catch(() => ({}))
+    onSaved(isNew ? j.id : undefined)
+  }
+  const del = async () => {
+    if (!account || !confirm(`Delete the "${account.name}" account and all its bills?`)) return
+    const res = await fetch(`/api/bill-accounts?id=${account.id}`, { method: 'DELETE' })
+    if (res.ok) onSaved(''); else alert('Could not delete.')
   }
   return (
-    <Shell title="Update balance" onClose={onClose}>
-      <Field label="Current balance in the account"><input style={inp} inputMode="decimal" value={bal} onChange={(e) => setBal(e.target.value)} placeholder="0.00" autoFocus /></Field>
+    <Shell title={isNew ? 'Add account' : `${account!.name}`} onClose={onClose}>
+      <Field label="Account name"><input style={inp} value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Transpo" autoFocus={isNew} /></Field>
+      <Field label="Current balance"><input style={inp} inputMode="decimal" value={bal} onChange={(e) => setBal(e.target.value)} placeholder="0.00" autoFocus={!isNew} /></Field>
       <Field label="As of date"><input style={inp} type="date" value={asOf} onChange={(e) => setAsOf(e.target.value)} /></Field>
       <Field label="Safety buffer (keep at least this much)"><input style={inp} inputMode="decimal" value={buffer} onChange={(e) => setBuffer(e.target.value)} placeholder="0.00" /></Field>
       <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+        {!isNew && canDelete && <button className="btn btn-secondary" style={{ color: 'var(--expense)', borderColor: 'var(--expense)' }} onClick={del} aria-label="Delete account"><Trash2 size={15} /></button>}
         <button className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }} onClick={onClose}>Cancel</button>
         <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
       </div>
@@ -351,7 +397,7 @@ function BalanceModal({ settings, onClose, onSaved }: { settings: Settings; onCl
   )
 }
 
-function BillModal({ bill, onClose, onSaved }: { bill: Bill | null; onClose: () => void; onSaved: () => void }) {
+function BillModal({ bill, accountId, onClose, onSaved }: { bill: Bill | null; accountId: string; onClose: () => void; onSaved: () => void }) {
   const [name, setName] = useState(bill?.name || '')
   const [day, setDay] = useState(String(bill?.day || ''))
   const [amount, setAmount] = useState(bill ? String(bill.amount) : '')
@@ -361,7 +407,7 @@ function BillModal({ bill, onClose, onSaved }: { bill: Bill | null; onClose: () 
   const save = async () => {
     if (!name.trim() || !day || !amount) { alert('Name, day and amount are required.'); return }
     setSaving(true)
-    const body = { id: bill?.id, name: name.trim(), day: parseInt(day), amount: num(amount), quarterly, next_due: quarterly ? (nextDue || null) : null }
+    const body = { id: bill?.id, account_id: accountId, name: name.trim(), day: parseInt(day), amount: num(amount), quarterly, next_due: quarterly ? (nextDue || null) : null }
     const res = await fetch('/api/bills', { method: bill ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
     setSaving(false)
     if (res.ok) onSaved(); else alert('Could not save.')

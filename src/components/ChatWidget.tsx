@@ -179,6 +179,16 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
     }
   }
 
+  // resolve a bill-account by name (falls back to the only account if there's one)
+  const findBillAccount = async (nameLike: string) => {
+    const d = await (await fetch('/api/bill-accounts')).json().catch(() => ({}))
+    const accs: any[] = d?.accounts || []
+    const want = String(nameLike || '').trim().toLowerCase()
+    return accs.find((x) => String(x.name).trim().toLowerCase() === want)
+      || accs.find((x) => String(x.name).trim().toLowerCase().includes(want))
+      || (accs.length === 1 ? accs[0] : null)
+  }
+
   // Execute a confirmed action against the existing write endpoints.
   const runAction = async (name: string, a: any) => {
     const j = (url: string, method: string, body?: any) =>
@@ -206,8 +216,16 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
       case 'delete_debt': return fetch(`/api/debts?id=${a.id}`, { method: 'DELETE' })
       case 'delete_recurring': return fetch(`/api/recurring?id=${a.id}`, { method: 'DELETE' })
       case 'refresh_prices': return fetch('/api/holdings/refresh', { method: 'POST' })
-      case 'set_bill_balance': return j('/api/bills', 'PUT', { current_balance: Number(a.current_balance), balance_as_of: a.balance_as_of, deposit_day: a.deposit_day, deposit_amount: a.deposit_amount, buffer: a.buffer })
-      case 'add_bill': return j('/api/bills', 'POST', { name: a.name, day: a.day, amount: Number(a.amount), quarterly: !!a.quarterly, next_due: a.next_due })
+      case 'set_bill_balance': {
+        const acc = await findBillAccount(a.account)
+        if (!acc) throw new Error(`no bill account called "${a.account}"`)
+        return j('/api/bill-accounts', 'PATCH', { id: acc.id, current_balance: Number(a.current_balance), balance_as_of: a.balance_as_of, buffer: a.buffer })
+      }
+      case 'add_bill': {
+        const acc = await findBillAccount(a.account)
+        if (!acc) throw new Error(`no bill account called "${a.account}"`)
+        return j('/api/bills', 'POST', { account_id: acc.id, name: a.name, day: a.day, amount: Number(a.amount), quarterly: !!a.quarterly, next_due: a.next_due })
+      }
       case 'edit_bill': return j('/api/bills', 'PATCH', a)
       case 'delete_bill': return fetch(`/api/bills?id=${a.id}`, { method: 'DELETE' })
       case 'update_household_item': {

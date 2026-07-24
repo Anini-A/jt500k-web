@@ -27,8 +27,8 @@ export async function GET() {
     supabaseAdmin.from('budgets').select('category, amount'),
     supabaseAdmin.from('categories').select('name, type'),
     supabaseAdmin.from('household_profile').select('data').order('updated_at', { ascending: false }).limit(1).maybeSingle(),
-    supabaseAdmin.from('bills').select('name, day, amount, quarterly, next_due, active').then((r) => r, () => ({ data: null })),
-    supabaseAdmin.from('bill_settings').select('*').limit(1).maybeSingle().then((r) => r, () => ({ data: null })),
+    supabaseAdmin.from('bills').select('account_id, name, day, amount, quarterly, next_due, active').then((r) => r, () => ({ data: null })),
+    supabaseAdmin.from('bill_accounts').select('*').then((r) => r, () => ({ data: null })),
     supabaseAdmin.from('dismissed_notifs').select('notif_id').then((r) => r, () => ({ data: null })),
   ])
   const txns = txAll ?? []
@@ -115,14 +115,15 @@ export async function GET() {
     }
   }
 
-  // ---- 5) Bill runway: will the Home & Utilities balance cover bills before the next deposit? ----
-  const bills = (billsRes?.data || []).filter((b: any) => b.active !== false)
-  const bset = billSetRes?.data
-  if (bills.length && bset) {
-    const res = shortfall(bills, bset)
+  // ---- 5) Bill runway: will each account's balance cover its upcoming bills? ----
+  const allBills = (billsRes?.data || []).filter((b: any) => b.active !== false)
+  const billAccounts = (billSetRes?.data as any[]) || []
+  for (const acc of billAccounts) {
+    const accBills = allBills.filter((b: any) => b.account_id === acc.id)
+    if (!accBills.length) continue
+    const res = shortfall(accBills, acc)
     if (res && res.short > 0) {
-      const buffer = Number(bset.buffer) || 0
-      out.push({ id: `bill-runway`, icon: '⚠️', severity: 'warn', kind: 'action', dismissible: false, title: `Home & Utilities may run short`, detail: `Balance dips to ${money(res.trough.balance)} on ${res.trough.label}${buffer ? ` (below your ${money(buffer)} floor)` : ''} — top up about ${money(res.short)} before then.` })
+      out.push({ id: `bill-runway-${acc.id}`, icon: '⚠️', severity: 'warn', kind: 'action', dismissible: false, title: `${acc.name} may run short`, detail: `Balance runs out ${res.trough.label} — top up about ${money(res.short)} to cover upcoming bills.` })
     }
   }
 

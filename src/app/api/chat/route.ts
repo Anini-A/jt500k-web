@@ -46,8 +46,8 @@ const TOOLS = [{
     { name: 'refresh_prices', description: 'Pull live market prices and update the value of the investment holdings.', parameters: { type: 'OBJECT', properties: {} } },
     { name: 'find_transactions', description: 'Search ALL transactions (not just the recent 25) to get their ids before editing/deleting an older one. Call this first when the user references a transaction you cannot see in the recent list.', parameters: { type: 'OBJECT', properties: { query: { type: 'STRING', description: 'text to match in description/category' }, category: { type: 'STRING' }, type: { type: 'STRING', enum: ['income', 'expense', 'savings'] }, limit: { type: 'NUMBER' } } } },
     { name: 'delete_recurring', description: 'Delete a recurring template by id.', parameters: { type: 'OBJECT', properties: { id: { type: 'STRING' } }, required: ['id'] } },
-    { name: 'set_bill_balance', description: 'Update the Home & Utilities bill account (Bill Runway): set the current balance, and optionally the monthly deposit day/amount or the safety buffer. Use for "set my utilities balance to $105".', parameters: { type: 'OBJECT', properties: { current_balance: { type: 'NUMBER' }, balance_as_of: { type: 'STRING', description: 'YYYY-MM-DD; omit for today' }, deposit_day: { type: 'NUMBER' }, deposit_amount: { type: 'NUMBER' }, buffer: { type: 'NUMBER', description: 'safety cushion to keep' } }, required: ['current_balance'] } },
-    { name: 'add_bill', description: 'Add a recurring bill to the Home & Utilities account. day = day of month it is charged (1-31).', parameters: { type: 'OBJECT', properties: { name: { type: 'STRING' }, day: { type: 'NUMBER' }, amount: { type: 'NUMBER' }, quarterly: { type: 'BOOLEAN' }, next_due: { type: 'STRING', description: 'YYYY-MM-DD, only for quarterly bills' } }, required: ['name', 'day', 'amount'] } },
+    { name: 'set_bill_balance', description: 'Update a bill account balance (Bill Runway). Pass the account NAME (e.g. "Home & Utilities", "Transpo") from the BILL ACCOUNTS list, the current balance, and optionally the safety buffer. Use for "set my Transpo balance to $105".', parameters: { type: 'OBJECT', properties: { account: { type: 'STRING', description: 'account name to match' }, current_balance: { type: 'NUMBER' }, balance_as_of: { type: 'STRING', description: 'YYYY-MM-DD; omit for today' }, buffer: { type: 'NUMBER', description: 'safety cushion to keep' } }, required: ['account', 'current_balance'] } },
+    { name: 'add_bill', description: 'Add a recurring bill to a bill account. Pass the account NAME it belongs to. day = day of month it is charged (1-31).', parameters: { type: 'OBJECT', properties: { account: { type: 'STRING', description: 'account name the bill belongs to' }, name: { type: 'STRING' }, day: { type: 'NUMBER' }, amount: { type: 'NUMBER' }, quarterly: { type: 'BOOLEAN' }, next_due: { type: 'STRING', description: 'YYYY-MM-DD, only for quarterly bills' } }, required: ['account', 'name', 'day', 'amount'] } },
     { name: 'edit_bill', description: 'Edit a bill by id.', parameters: { type: 'OBJECT', properties: { id: { type: 'STRING' }, name: { type: 'STRING' }, day: { type: 'NUMBER' }, amount: { type: 'NUMBER' }, quarterly: { type: 'BOOLEAN' }, next_due: { type: 'STRING' } }, required: ['id'] } },
     { name: 'delete_bill', description: 'Delete a bill by id.', parameters: { type: 'OBJECT', properties: { id: { type: 'STRING' } }, required: ['id'] } },
     { name: 'update_household_item', description: 'Update a Household/KYC profile item: mark a to-do done (or todo/doing) and/or set its value. Match by the item label, e.g. "Will", "Power of Attorney".', parameters: { type: 'OBJECT', properties: { label: { type: 'STRING', description: 'the item label to match' }, status: { type: 'STRING', enum: ['todo', 'doing', 'done'] }, value: { type: 'STRING' } }, required: ['label'] } },
@@ -76,8 +76,8 @@ function describeAction(name: string, a: any): string {
     case 'edit_debt': return `Edit debt ${String(a.id).slice(0, 8)}…${a.amount != null ? ` → ${cad(a.amount)}` : ''}${a.name ? ` → "${a.name}"` : ''}`
     case 'delete_debt': return `Delete debt ${String(a.id).slice(0, 8)}…`
     case 'delete_recurring': return `Delete recurring item ${String(a.id).slice(0, 8)}…`
-    case 'set_bill_balance': return `Set Home & Utilities balance to ${cad(a.current_balance)}${a.balance_as_of ? ` as of ${a.balance_as_of}` : ''}${a.deposit_amount != null ? ` · deposit ${cad(a.deposit_amount)}` : ''}${a.deposit_day != null ? ` on day ${a.deposit_day}` : ''}${a.buffer != null ? ` · buffer ${cad(a.buffer)}` : ''}`
-    case 'add_bill': return `Add bill "${a.name}" — ${cad(a.amount)} on day ${a.day}${a.quarterly ? ' (quarterly)' : ''}`
+    case 'set_bill_balance': return `Set ${a.account || 'account'} balance to ${cad(a.current_balance)}${a.balance_as_of ? ` as of ${a.balance_as_of}` : ''}${a.buffer != null ? ` · buffer ${cad(a.buffer)}` : ''}`
+    case 'add_bill': return `Add bill "${a.name}" to ${a.account || 'account'} — ${cad(a.amount)} on day ${a.day}${a.quarterly ? ' (quarterly)' : ''}`
     case 'edit_bill': return `Edit bill ${String(a.id).slice(0, 8)}…${a.name ? ` → "${a.name}"` : ''}${a.amount != null ? ` → ${cad(a.amount)}` : ''}${a.day != null ? ` → day ${a.day}` : ''}${a.next_due ? ` → next due ${a.next_due}` : ''}${a.quarterly != null ? ` → ${a.quarterly ? 'quarterly' : 'monthly'}` : ''}`
     case 'delete_bill': return `Delete bill ${String(a.id).slice(0, 8)}…`
     case 'update_household_item': return `Update household "${a.label}"${a.status ? ` → ${a.status}` : ''}${a.value ? ` → "${a.value}"` : ''}`
@@ -153,8 +153,8 @@ async function buildContext() {
   const catsByType = (type: string) => (cats ?? []).filter((c) => c.type === type).map((c) => c.name).join(', ')
   const { data: budgetRows } = await supabaseAdmin.from('budgets').select('id, name, category, amount').order('category')
   const { data: recRows } = await supabaseAdmin.from('recurring').select('id, name, type, category, amount').eq('active', true)
-  const billsRes = await supabaseAdmin.from('bills').select('id, name, day, amount, quarterly, next_due, active').then((r) => r, () => ({ data: null }))
-  const billSetRes = await supabaseAdmin.from('bill_settings').select('*').limit(1).maybeSingle().then((r) => r, () => ({ data: null }))
+  const billsRes = await supabaseAdmin.from('bills').select('id, account_id, name, day, amount, quarterly, next_due, active').then((r) => r, () => ({ data: null }))
+  const billAcctRes = await supabaseAdmin.from('bill_accounts').select('*').then((r) => r, () => ({ data: null }))
   const { data: prof } = await supabaseAdmin.from('household_profile').select('data').order('updated_at', { ascending: false }).limit(1).maybeSingle()
   const profSections: any[] = prof?.data?.sections || []
   const profileText = profSections.length
@@ -198,30 +198,27 @@ async function buildContext() {
   const ownerTotalLine = [...byOwnerTotal.entries()].map(([o, v]) => `${o} ${money(v)}`).join(', ')
   const debtList = (debts ?? []).map((d) => `  - id=${d.id} · ${d.name}: ${money(debtRemainingOf(d))} remaining (of ${money(Number(d.amount))} original)`).join('\n')
 
-  // BILL RUNWAY — the Home & Utilities bills account (coverage before next paycheck)
-  const activeBills = ((billsRes?.data as any[]) || []).filter((b) => b.active !== false)
-  const billSet = billSetRes?.data as any
+  // BILL RUNWAY — one section per bill account (each has its own balance; no deposits)
+  const allBills = ((billsRes?.data as any[]) || []).filter((b) => b.active !== false)
+  const billAccounts = (billAcctRes?.data as any[]) || []
   let billsSection = ''
-  if (activeBills.length && billSet) {
-    const sf = shortfall(activeBills as any, billSet)
-    const bal = Number(billSet.current_balance) || 0
-    const buf = Number(billSet.buffer) || 0
-    const verdict = sf
-      ? (sf.short > 0
-        ? `SHORT by ${money(sf.short)} — projected to dip to ${money(sf.trough.balance)} on ${sf.trough.label} before the next deposit${buf ? ` (below the ${money(buf)} buffer)` : ''}`
-        : `COVERED — lowest point ${money(sf.trough.balance)} on ${sf.trough.label}, stays above the ${money(buf)} buffer`)
-      : 'no bills to project'
-    const billLines = activeBills.sort((a, b) => a.day - b.day)
-      .map((b) => `  - id=${b.id} · ${b.name}: ${money(Number(b.amount))} on day ${b.day}${b.quarterly ? ` (quarterly${b.next_due ? `, next ${b.next_due}` : ''})` : ''}`).join('\n')
+  if (billAccounts.length) {
+    const blocks = billAccounts.map((acc) => {
+      const accBills = allBills.filter((b) => b.account_id === acc.id)
+      const sf = shortfall(accBills, acc)
+      const buf = Number(acc.buffer) || 0
+      const verdict = !accBills.length ? 'no bills'
+        : sf && sf.short > 0
+          ? `SHORT — balance runs out ${sf.trough.label}; top up ${money(sf.short)} to cover upcoming bills${buf ? ` (keep a ${money(buf)} buffer)` : ''}`
+          : `COVERED — the balance covers every upcoming bill${buf ? ` while staying above the ${money(buf)} buffer` : ''}`
+      const lines = [...accBills].sort((a, b) => a.day - b.day)
+        .map((b) => `    - id=${b.id} · ${b.name}: ${money(Number(b.amount))} on day ${b.day}${b.quarterly ? ` (quarterly${b.next_due ? `, next ${b.next_due}` : ''})` : ''}`).join('\n')
+      return `  • ${acc.name}: balance ${money(Number(acc.current_balance) || 0)} (as of ${acc.balance_as_of || 'today'}), buffer ${money(buf)}\n    Coverage: ${verdict}\n${lines || '    (no bills)'}`
+    }).join('\n')
     billsSection = `
 
-BILL RUNWAY (Home & Utilities account — every recurring bill is paid from it):
-- Current balance: ${money(bal)} (as of ${billSet.balance_as_of || 'today'})
-- Monthly paycheque deposit: ${money(Number(billSet.deposit_amount) || 0)} on day ${billSet.deposit_day}
-- Safety buffer: ${money(buf)}
-- Coverage ("am I short/covered this month?"): ${verdict}
-Bills (use the id to edit or delete one):
-${billLines || '  (none)'}`
+BILL ACCOUNTS (each account pays its own bills from its own balance — no deposits modeled; use a bill's id to edit/delete, and set_bill_balance with the account name to update a balance):
+${blocks}`
   }
 
   const nowD = new Date()
@@ -403,7 +400,7 @@ export async function POST(req: NextRequest) {
     `• Progress to the goal: use the provided NET WORTH figure and its % EXACTLY — never recompute or estimate net worth.\n` +
     `• Account balances ("how much in my TFSA/RRSP"): use the HOLDINGS BY ACCOUNT TYPE totals — do NOT sum across account types or call one account type another. A person's TFSA total is only the TFSA line, not their whole portfolio.\n` +
     `• Age / TFSA-room: use the birth years in the HOUSEHOLD PROFILE. TFSA room accrues only from the year someone turned 18. NEVER infer used contribution room from an account balance (balances include growth); direct them to CRA My Account for exact room.\n` +
-    `• Bills / "am I short/covered this month?": answer from the BILL RUNWAY section's Coverage line — don't recompute it. To change the bills account balance when the user states a new one ("my utilities account has $105"), use set_bill_balance. Add/edit/delete bills with the bill tools using the ids there.\n` +
+    `• Bills / "am I short/covered?": there may be several BILL ACCOUNTS, each with its own balance and bills. Answer from the relevant account's Coverage line — don't recompute. To change a balance ("my Transpo account has $105"), use set_bill_balance with that account's NAME. add_bill needs the account name; edit/delete bills use the bill id.\n` +
     `• Show amounts EXACTLY as given, INCLUDING cents when present (e.g. $1,000.56, $45.39, $141.33). Do not round to whole dollars or drop the cents. Only whole-dollar figures may appear without decimals.\n\n` +
     `You may proactively flag a genuinely relevant opportunity when the data warrants it (e.g. an ` +
     `emergency-fund gap when there's little cash, a chance to save, or a notable opportunity cost) — ` +
