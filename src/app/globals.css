@@ -172,23 +172,32 @@ header.top {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
 
-.page-compact { display: none; flex-direction: column; align-items: center; gap: 5px; }
-.page-current { font-weight: 700; font-size: 15px; letter-spacing: -0.01em; white-space: nowrap; }
-.page-dots { display: flex; gap: 3px; align-items: center; }
-.page-dot {
-  width: 18px; height: 14px; padding: 0; border: none; background: transparent; cursor: pointer;
-  display: inline-flex; align-items: center; justify-content: center;
+/* mobile pill: · Label · */
+.page-compact {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: var(--kpi-bg);
+  border: 1px solid var(--border);
 }
-.page-dot::before {
+.page-current { font-weight: 700; font-size: 14px; letter-spacing: -0.01em; white-space: nowrap; }
+.page-edge {
+  width: 16px; height: 16px; padding: 0; border: none; background: transparent; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.page-edge::before {
   content: ''; width: 6px; height: 6px; border-radius: 50%;
-  background: var(--text-muted); opacity: 0.4; transition: all .2s ease;
+  background: var(--accent); opacity: 0.85; transition: opacity .2s ease;
 }
-.page-dot.on::before { opacity: 1; background: var(--accent); width: 7px; height: 7px; }
+.page-edge:disabled { cursor: default; }
+.page-edge:disabled::before { opacity: 0; } /* no dot when there's nothing that way */
 
 @media (max-width: 640px) {
   header.top .brand span { display: none; }
   .page-segs { display: none; }
-  .page-compact { display: flex; }
+  .page-compact { display: inline-flex; }
 }
 
 /* Page transition — the new page slides in from the swipe/tap direction */

@@ -62,14 +62,11 @@ export default function PagePill({ current }: { current: Key }) {
           <button key={p.key} className={`page-seg ${i === idx ? 'active' : ''}`} onClick={() => go(i)} aria-current={i === idx}>{p.label}</button>
         ))}
       </div>
-      {/* mobile: current label + dots (swipe to change) */}
+      {/* mobile: a pill — · Label · — swipe (or tap a dot) to change */}
       <div className="page-compact">
+        <button className="page-edge" onClick={() => go(idx - 1)} disabled={idx === 0} aria-label="Previous section" />
         <span className="page-current" aria-live="polite">{PAGES[idx].label}</span>
-        <div className="page-dots">
-          {PAGES.map((p, i) => (
-            <button key={p.key} className={`page-dot ${i === idx ? 'on' : ''}`} onClick={() => go(i)} aria-label={p.label} title={p.label} />
-          ))}
-        </div>
+        <button className="page-edge" onClick={() => go(idx + 1)} disabled={idx === PAGES.length - 1} aria-label="Next section" />
       </div>
     </div>
   )
