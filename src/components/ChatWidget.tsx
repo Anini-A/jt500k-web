@@ -116,6 +116,10 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
   const listenRef = useRef<() => void>(() => {})
   const voiceRef = useRef<SpeechSynthesisVoice | null>(null)
   const iosRef = useRef(false) // iOS can't restart recognition without a tap → tap-to-talk
+  const useRecorderRef = useRef(false) // iOS PWA: record audio + transcribe via Gemini instead of SpeechRecognition
+  const mediaRef = useRef<MediaRecorder | null>(null)
+  const chunksRef = useRef<BlobPart[]>([])
+  const streamRef = useRef<MediaStream | null>(null)
 
   // pick the most natural-sounding English voice available
   useEffect(() => {
@@ -138,13 +142,17 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
   useEffect(() => { voiceModeRef.current = voiceMode }, [voiceMode])
   useEffect(() => { speakRef.current = speak }, [speak])
   useEffect(() => {
-    setMicOK(!!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition))
     const ua = navigator.userAgent || ''
     iosRef.current = /iP(hone|ad|od)/.test(ua) || (navigator.platform === 'MacIntel' && (navigator as any).maxTouchPoints > 1)
+    const hasSR = !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition)
+    const hasRec = typeof MediaRecorder !== 'undefined' && !!navigator.mediaDevices?.getUserMedia
+    // iOS blocks SpeechRecognition (esp. in the PWA) → use audio recording + Gemini transcription
+    useRecorderRef.current = iosRef.current && hasRec
+    setMicOK(hasSR || useRecorderRef.current)
     try { setSpeak(localStorage.getItem('jt-chat-speak') !== 'off') } catch { /* ignore */ }
   }, [])
   useEffect(() => { try { localStorage.setItem('jt-chat-speak', speak ? 'on' : 'off') } catch { /* ignore */ } }, [speak])
-  useEffect(() => () => { try { recogRef.current?.abort?.(); window.speechSynthesis?.cancel() } catch { /* ignore */ } }, [])
+  useEffect(() => () => { try { recogRef.current?.abort?.(); mediaRef.current?.stop(); streamRef.current?.getTracks().forEach((t) => t.stop()); window.speechSynthesis?.cancel() } catch { /* ignore */ } }, [])
 
   const stopSpeaking = () => { try { window.speechSynthesis?.cancel() } catch { /* ignore */ } setSpeaking(false) }
   // Text-to-speech — read a reply aloud, then run onDone (used to resume listening)
@@ -199,16 +207,60 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
   }
   listenRef.current = startListen
 
+  // ── iOS path: record audio, transcribe with Gemini ──
+  const startRecord = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      streamRef.current = stream
+      const mime = ['audio/mp4', 'audio/webm', 'audio/aac'].find((m) => (window as any).MediaRecorder?.isTypeSupported?.(m)) || ''
+      const mr = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined)
+      chunksRef.current = []
+      mr.ondataavailable = (e) => { if (e.data && e.data.size) chunksRef.current.push(e.data) }
+      mr.onstop = async () => {
+        try { streamRef.current?.getTracks().forEach((t) => t.stop()) } catch { /* ignore */ }
+        streamRef.current = null
+        setListening(false)
+        const blob = new Blob(chunksRef.current, { type: mr.mimeType || 'audio/mp4' })
+        if (!blob.size) return
+        setBusy(true)
+        try {
+          const b64 = await new Promise<string>((res, rej) => {
+            const fr = new FileReader()
+            fr.onloadend = () => res(String(fr.result).split(',')[1] || '')
+            fr.onerror = rej
+            fr.readAsDataURL(blob)
+          })
+          const r = await fetch('/api/transcribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ audio: b64, mime: blob.type }) })
+          const d = await r.json()
+          const text = (d.text || '').trim()
+          setBusy(false)
+          if (text) { setInput(''); sendRef.current(text) }
+        } catch { setBusy(false) }
+      }
+      mediaRef.current = mr
+      setListening(true)
+      mr.start()
+    } catch { setListening(false) } // permission denied / no mic
+  }
+  const stopRecord = () => { try { mediaRef.current?.stop() } catch { /* ignore */ } }
+
+  // one place the orb/mic calls — record (iOS) vs SpeechRecognition (elsewhere)
+  const onTalk = () => {
+    stopSpeaking()
+    if (useRecorderRef.current) { listening ? stopRecord() : startRecord() }
+    else startListen()
+  }
+
   // mic button: toggle hands-free conversation
   const toggleVoice = () => {
-    if (!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition)) return
+    if (!micOK) return
     if (voiceMode) {
       setVoiceMode(false); voiceModeRef.current = false
-      try { recogRef.current?.abort?.() } catch { /* ignore */ }
+      try { recogRef.current?.abort?.(); mediaRef.current?.stop() } catch { /* ignore */ }
       stopSpeaking(); setListening(false)
     } else {
       stopSpeaking(); setVoiceMode(true); voiceModeRef.current = true; emptyRef.current = 0
-      // iOS needs a real tap per listen → open on "Tap to talk"; desktop/Android auto-starts
+      // iOS taps to talk; desktop/Android auto-starts the listen loop
       if (!iosRef.current) startListen()
     }
   }
@@ -415,7 +467,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
 
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 30, padding: '0 24px', textAlign: 'center' }}>
               <div className="voice-orb-wrap">
-                <button type="button" aria-label="Tap to talk" onClick={() => { stopSpeaking(); startListen() }}
+                <button type="button" aria-label="Tap to talk" onClick={onTalk}
                   className={`voice-orb ${pending ? 'is-idle' : listening ? 'is-listening' : busy ? 'is-thinking' : speaking ? 'is-speaking' : 'is-idle'}`} />
               </div>
               {pending ? (
@@ -434,7 +486,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
                   </div>
                   <div style={{ fontSize: 19, lineHeight: 1.55, fontWeight: 500, letterSpacing: '-0.01em', color: 'var(--text-primary)', maxWidth: 460, minHeight: 62 }}>
                     {listening
-                      ? (input || <span style={{ color: 'var(--text-muted)' }}>Say something…</span>)
+                      ? (input || <span style={{ color: 'var(--text-muted)' }}>{useRecorderRef.current ? 'Recording… tap the orb when done.' : 'Say something…'}</span>)
                       : ([...msgs].reverse().find((m) => m.role === 'assistant')?.content || <span style={{ color: 'var(--text-muted)' }}>Tap the orb and speak.</span>)}
                   </div>
                 </>
@@ -452,7 +504,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
                   style={{ color: speak ? 'var(--accent)' : 'var(--text-muted)' }}>
                   {speak ? <Volume2 size={22} /> : <VolumeX size={22} />}
                 </button>
-                <button className={`voice-mic ${listening ? 'mic-live' : ''}`} onClick={() => { stopSpeaking(); startListen() }} aria-label="Talk">
+                <button className={`voice-mic ${listening ? 'mic-live' : ''}`} onClick={onTalk} aria-label="Talk">
                   <Mic size={30} />
                 </button>
                 <button className="voice-ctrl" onClick={toggleVoice} aria-label="End voice conversation" title="End">
