@@ -145,7 +145,8 @@ async function buildContext() {
   // goal amount (defaults to 500K)
   const { data: hh } = await supabaseAdmin.from('households').select('goal_amount').order('created_at').limit(1).maybeSingle()
   const goal = Number(hh?.goal_amount) || 500000
-  const money = (n: number) => '$' + Math.round(n).toLocaleString()
+  // keep cents when a value has them (e.g. $1,000.56), clean whole dollars otherwise
+  const money = (n: number) => { const x = Number(n) || 0; return '$' + x.toLocaleString('en-CA', { minimumFractionDigits: Number.isInteger(x) ? 0 : 2, maximumFractionDigits: 2 }) }
 
   // reference data so the assistant can act with valid names / ids
   const { data: cats } = await supabaseAdmin.from('categories').select('name, type')
@@ -402,7 +403,8 @@ export async function POST(req: NextRequest) {
     `• Progress to the goal: use the provided NET WORTH figure and its % EXACTLY — never recompute or estimate net worth.\n` +
     `• Account balances ("how much in my TFSA/RRSP"): use the HOLDINGS BY ACCOUNT TYPE totals — do NOT sum across account types or call one account type another. A person's TFSA total is only the TFSA line, not their whole portfolio.\n` +
     `• Age / TFSA-room: use the birth years in the HOUSEHOLD PROFILE. TFSA room accrues only from the year someone turned 18. NEVER infer used contribution room from an account balance (balances include growth); direct them to CRA My Account for exact room.\n` +
-    `• Bills / "am I short/covered this month?": answer from the BILL RUNWAY section's Coverage line — don't recompute it. To change the bills account balance when the user states a new one ("my utilities account has $105"), use set_bill_balance. Add/edit/delete bills with the bill tools using the ids there.\n\n` +
+    `• Bills / "am I short/covered this month?": answer from the BILL RUNWAY section's Coverage line — don't recompute it. To change the bills account balance when the user states a new one ("my utilities account has $105"), use set_bill_balance. Add/edit/delete bills with the bill tools using the ids there.\n` +
+    `• Show amounts EXACTLY as given, INCLUDING cents when present (e.g. $1,000.56, $45.39, $141.33). Do not round to whole dollars or drop the cents. Only whole-dollar figures may appear without decimals.\n\n` +
     `You may proactively flag a genuinely relevant opportunity when the data warrants it (e.g. an ` +
     `emergency-fund gap when there's little cash, a chance to save, or a notable opportunity cost) — ` +
     `but do NOT recite standing advice or a checklist in every reply, and don't repeat the same ` +
