@@ -101,6 +101,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
   const [pending, setPending] = useState<{ name: string; args: any; label: string }[] | null>(null)
   const [recentOpen, setRecentOpen] = useState(false)
   const [listening, setListening] = useState(false)   // mic actively capturing
+  const [speaking, setSpeaking] = useState(false)     // TTS is reading a reply
   const [voiceMode, setVoiceMode] = useState(false)   // hands-free conversation on
   const [micOK, setMicOK] = useState(false)
   const [speak, setSpeak] = useState(true)            // read answers aloud
@@ -114,6 +115,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
   const sendRef = useRef<(t: string) => void>(() => {})
   const listenRef = useRef<() => void>(() => {})
   const voiceRef = useRef<SpeechSynthesisVoice | null>(null)
+  const iosRef = useRef(false) // iOS can't restart recognition without a tap → tap-to-talk
 
   // pick the most natural-sounding English voice available
   useEffect(() => {
@@ -137,12 +139,14 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
   useEffect(() => { speakRef.current = speak }, [speak])
   useEffect(() => {
     setMicOK(!!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition))
+    const ua = navigator.userAgent || ''
+    iosRef.current = /iP(hone|ad|od)/.test(ua) || (navigator.platform === 'MacIntel' && (navigator as any).maxTouchPoints > 1)
     try { setSpeak(localStorage.getItem('jt-chat-speak') !== 'off') } catch { /* ignore */ }
   }, [])
   useEffect(() => { try { localStorage.setItem('jt-chat-speak', speak ? 'on' : 'off') } catch { /* ignore */ } }, [speak])
   useEffect(() => () => { try { recogRef.current?.abort?.(); window.speechSynthesis?.cancel() } catch { /* ignore */ } }, [])
 
-  const stopSpeaking = () => { try { window.speechSynthesis?.cancel() } catch { /* ignore */ } }
+  const stopSpeaking = () => { try { window.speechSynthesis?.cancel() } catch { /* ignore */ } setSpeaking(false) }
   // Text-to-speech — read a reply aloud, then run onDone (used to resume listening)
   const say = (text: string, onDone?: () => void) => {
     const synth = window.speechSynthesis
@@ -152,8 +156,10 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
     if (voiceRef.current) u.voice = voiceRef.current
     u.lang = voiceRef.current?.lang || 'en-CA'
     u.rate = 1.0; u.pitch = 1.0 // natural cadence
-    u.onend = () => onDone?.()
-    u.onerror = () => onDone?.()
+    const done = () => { setSpeaking(false); onDone?.() }
+    u.onend = done
+    u.onerror = done
+    setSpeaking(true)
     synth.speak(u)
   }
 
@@ -183,7 +189,9 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
       if (!voiceModeRef.current) return
       const text = finalRef.current.trim()
       if (text) { emptyRef.current = 0; setInput(''); sendRef.current(text) }        // heard something → send
-      else if (emptyRef.current++ < 5) setTimeout(() => { if (voiceModeRef.current) startListen() }, 180) // keep listening
+      // iOS can't restart without a tap → go idle ("Tap to talk"). Elsewhere, keep listening.
+      else if (!iosRef.current && emptyRef.current++ < 5) setTimeout(() => { if (voiceModeRef.current) startListen() }, 180)
+      else if (iosRef.current) { /* idle — wait for the user to tap the orb */ }
       else { setVoiceMode(false); voiceModeRef.current = false }
     }
     recogRef.current = r
@@ -275,7 +283,8 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
         }),
       })
       const data = await res.json()
-      const resume = () => { if (voiceModeRef.current) listenRef.current() } // hands-free: listen again
+      // hands-free: auto-listen again after the answer — but NOT on iOS (needs a tap; idles instead)
+      const resume = () => { if (voiceModeRef.current && !iosRef.current) listenRef.current() }
       if (data.actions?.length) {
         setPending(data.actions)
       } else {
@@ -398,15 +407,16 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
         {voiceMode && (
           <div className="voice-overlay">
             <button style={roundBtn} aria-label="Close voice" title="Back to chat" onClick={toggleVoice}><ArrowLeft size={20} /></button>
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 26, padding: '0 24px', textAlign: 'center' }}>
-              <div className={`voice-orb ${listening ? 'is-listening' : busy ? 'is-thinking' : 'is-speaking'}`} />
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 22, padding: '0 24px', textAlign: 'center' }}>
+              <button type="button" aria-label="Tap to talk" onClick={() => { stopSpeaking(); startListen() }}
+                className={`voice-orb ${listening ? 'is-listening' : busy ? 'is-thinking' : speaking ? 'is-speaking' : 'is-idle'}`} />
               <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: listening ? 'var(--expense)' : 'var(--accent)' }}>
-                {listening ? 'Listening' : busy ? 'Thinking' : 'Speaking'}
+                {listening ? 'Listening' : busy ? 'Thinking' : speaking ? 'Speaking' : 'Tap to talk'}
               </div>
               <div style={{ fontSize: 18, lineHeight: 1.5, color: 'var(--text-primary)', maxWidth: 440, minHeight: 54 }}>
                 {listening
                   ? (input || <span style={{ color: 'var(--text-muted)' }}>Say something…</span>)
-                  : ([...msgs].reverse().find((m) => m.role === 'assistant')?.content || '')}
+                  : ([...msgs].reverse().find((m) => m.role === 'assistant')?.content || <span style={{ color: 'var(--text-muted)' }}>Tap the orb and speak.</span>)}
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, paddingBottom: 8 }}>
@@ -414,7 +424,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
                 style={{ width: 52, height: 52, borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: speak ? 'var(--accent)' : 'var(--text-muted)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
                 {speak ? <Volume2 size={22} /> : <VolumeX size={22} />}
               </button>
-              <button className={listening ? 'mic-live' : ''} onClick={startListen} aria-label="Listen now"
+              <button className={listening ? 'mic-live' : ''} onClick={() => { stopSpeaking(); startListen() }} aria-label="Talk"
                 style={{ width: 68, height: 68, borderRadius: 999, border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', background: 'var(--expense)' }}>
                 <Mic size={28} />
               </button>
