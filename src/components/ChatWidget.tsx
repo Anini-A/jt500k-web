@@ -2,12 +2,14 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { ArrowLeft, SquarePen, History, ArrowUp, Sparkles, Trash2, Check, X, Mic } from 'lucide-react'
+import { ArrowLeft, SquarePen, History, ArrowUp, Sparkles, Trash2, Check, X, Mic, Volume2, VolumeX } from 'lucide-react'
 import { today } from '@/lib/date'
 
 interface Msg { role: 'user' | 'assistant'; content: string; at?: number }
 interface Thread { id: string; msgs: Msg[]; updatedAt: number }
 const timeOf = (at?: number) => at ? new Date(at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }).toLowerCase() : ''
+// strip markdown so speech reads naturally
+const plain = (t: string) => t.replace(/\*\*/g, '').replace(/^#{1,6}\s+/gm, '').replace(/^\s*[*-]\s+/gm, '').replace(/`/g, '').trim()
 
 const SUGGESTIONS = [
   'How am I doing toward 500K?',
@@ -100,13 +102,29 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
   const [recentOpen, setRecentOpen] = useState(false)
   const [listening, setListening] = useState(false)
   const [micOK, setMicOK] = useState(false)
+  const [speak, setSpeak] = useState(true) // read answers aloud
   const scrollRef = useRef<HTMLDivElement>(null)
   const taRef = useRef<HTMLTextAreaElement>(null)
   const recogRef = useRef<any>(null)
 
-  useEffect(() => { setMicOK(!!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition)) }, [])
-  // stop listening if the chat closes/unmounts
-  useEffect(() => () => { try { recogRef.current?.stop() } catch { /* ignore */ } }, [])
+  useEffect(() => {
+    setMicOK(!!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition))
+    try { setSpeak(localStorage.getItem('jt-chat-speak') !== 'off') } catch { /* ignore */ }
+  }, [])
+  useEffect(() => { try { localStorage.setItem('jt-chat-speak', speak ? 'on' : 'off') } catch { /* ignore */ } }, [speak])
+  // stop listening / speaking if the chat closes/unmounts
+  useEffect(() => () => { try { recogRef.current?.stop(); window.speechSynthesis?.cancel() } catch { /* ignore */ } }, [])
+
+  // Text-to-speech — read an assistant reply aloud (free, browser-native)
+  const say = (text: string) => {
+    const synth = window.speechSynthesis
+    if (!synth || !text.trim()) return
+    synth.cancel()
+    const u = new SpeechSynthesisUtterance(plain(text))
+    u.lang = 'en-CA'; u.rate = 1.03
+    synth.speak(u)
+  }
+  const stopSpeaking = () => { try { window.speechSynthesis?.cancel() } catch { /* ignore */ } }
 
   // Voice input — Web Speech API transcribes into the composer (free, on-device/browser)
   const toggleMic = () => {
@@ -181,6 +199,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
 
   const send = async (text: string) => {
     if (!text.trim() || busy) return
+    stopSpeaking() // cut off any answer being read
     const next = [...msgs, { role: 'user' as const, content: text, at: Date.now() }]
     setMsgs(next)
     setInput('')
@@ -199,7 +218,9 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
       if (data.actions?.length) {
         setPending(data.actions)
       } else {
-        setMsgs([...next, { role: 'assistant', content: data.reply || data.error || 'Something went wrong.', at: Date.now() }])
+        const reply = data.reply || data.error || 'Something went wrong.'
+        setMsgs([...next, { role: 'assistant', content: reply, at: Date.now() }])
+        if (speak && data.reply) say(reply)
       }
     } catch {
       setMsgs([...next, { role: 'assistant', content: 'Network error — please try again.', at: Date.now() }])
@@ -315,6 +336,8 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
           <button style={roundBtn} aria-label="Close" title="Close" onClick={onClose}><ArrowLeft size={20} /></button>
           <div style={{ flex: 1, textAlign: 'center', fontWeight: 700, fontSize: 17, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}><Sparkles size={17} /> Ask Gemini</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+            <button style={{ ...roundBtn, color: speak ? 'var(--accent)' : 'var(--text-muted)' }} title={speak ? 'Mute voice replies' : 'Speak replies aloud'} aria-label="Toggle spoken replies"
+              onClick={() => { setSpeak((v) => { if (v) stopSpeaking(); return !v }) }}>{speak ? <Volume2 size={19} /> : <VolumeX size={19} />}</button>
             <button style={roundBtn} title="Recent chats" onClick={(e) => { e.stopPropagation(); setRecentOpen((v) => !v) }}><History size={19} /></button>
             <button style={roundBtn} title="New chat" onClick={newChat}><SquarePen size={19} /></button>
           </div>
@@ -410,9 +433,14 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
               <ArrowUp size={20} />
             </button>
           </div>
-          <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--text-muted)', marginTop: 7 }}>
-            {listening ? 'Listening… tap the mic to stop.' : 'Gemini can make mistakes — double-check important numbers.'}
-          </div>
+          {listening ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, marginTop: 8 }}>
+              <span className="wave" aria-hidden="true"><span /><span /><span /><span /><span /><span /><span /></span>
+              <span style={{ fontSize: 12, color: 'var(--expense)', fontWeight: 600 }}>Listening…</span>
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--text-muted)', marginTop: 7 }}>Gemini can make mistakes — double-check important numbers.</div>
+          )}
         </form>
       </div>
     </div>,

@@ -74,7 +74,26 @@
   0%, 100% { box-shadow: 0 0 0 0 rgba(224, 74, 74, 0.0); }
   50%      { box-shadow: 0 0 0 6px rgba(224, 74, 74, 0.22); }
 }
-@media (prefers-reduced-motion: reduce) { .mic-live { animation: none; } }
+
+/* Listening waveform (equalizer bars) */
+.wave { display: inline-flex; align-items: center; gap: 3px; height: 18px; }
+.wave > span {
+  width: 3px; height: 100%; border-radius: 2px; background: var(--expense);
+  transform-origin: center; animation: waveJump 0.9s ease-in-out infinite;
+}
+.wave > span:nth-child(1) { animation-delay: -0.9s; }
+.wave > span:nth-child(2) { animation-delay: -0.5s; }
+.wave > span:nth-child(3) { animation-delay: -0.2s; }
+.wave > span:nth-child(4) { animation-delay: -0.7s; }
+.wave > span:nth-child(5) { animation-delay: -0.3s; }
+.wave > span:nth-child(6) { animation-delay: -0.6s; }
+.wave > span:nth-child(7) { animation-delay: -0.1s; }
+@keyframes waveJump { 0%, 100% { transform: scaleY(0.28); } 50% { transform: scaleY(1); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .mic-live { animation: none; }
+  .wave > span { animation: none; transform: scaleY(0.6); }
+}
 
 html {
   height: 100%;
