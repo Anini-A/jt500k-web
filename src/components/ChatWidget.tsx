@@ -287,8 +287,8 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
       const resume = () => { if (voiceModeRef.current && !iosRef.current) listenRef.current() }
       if (data.actions?.length) {
         setPending(data.actions)
-        // a change needs confirming — leave voice mode so the confirm card is visible/tappable
-        if (voiceModeRef.current) { setVoiceMode(false); voiceModeRef.current = false; stopSpeaking() }
+        // confirm inside the current mode — speak the prompt if in voice
+        if (voiceModeRef.current) say(data.actions.length === 1 ? `${data.actions[0].label}. Confirm or cancel?` : `${data.actions.length} changes. Confirm or cancel?`)
       } else {
         const reply = data.reply || data.error || 'Something went wrong.'
         setMsgs([...next, { role: 'assistant', content: reply, at: Date.now() }])
@@ -386,14 +386,17 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
     const lines: string[] = []
     if (okCount) lines.push(`✅ Done — ${okCount} change${okCount !== 1 ? 's' : ''} saved.`)
     if (fails.length) lines.push(`⚠️ ${fails.length} couldn't be applied:\n${fails.map((f) => `- ${f}`).join('\n')}`)
-    setMsgs((m) => [...m, { role: 'assistant', content: lines.join('\n\n') || 'Nothing changed.', at: Date.now() }])
+    const summary = lines.join('\n\n') || 'Nothing changed.'
+    setMsgs((m) => [...m, { role: 'assistant', content: summary, at: Date.now() }])
     setPending(null)
     setBusy(false)
+    if (voiceModeRef.current) say(okCount ? `Done. ${okCount} change${okCount !== 1 ? 's' : ''} saved.` : summary, () => { if (voiceModeRef.current && !iosRef.current) listenRef.current() })
   }
 
   const cancelAction = () => {
     setMsgs((m) => [...m, { role: 'assistant', content: 'Okay, cancelled — nothing was saved.', at: Date.now() }])
     setPending(null)
+    if (voiceModeRef.current) say('Cancelled.', () => { if (voiceModeRef.current && !iosRef.current) listenRef.current() })
   }
 
   const recents = [...threads].sort((a, b) => b.updatedAt - a.updatedAt)
@@ -413,30 +416,50 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 30, padding: '0 24px', textAlign: 'center' }}>
               <div className="voice-orb-wrap">
                 <button type="button" aria-label="Tap to talk" onClick={() => { stopSpeaking(); startListen() }}
-                  className={`voice-orb ${listening ? 'is-listening' : busy ? 'is-thinking' : speaking ? 'is-speaking' : 'is-idle'}`} />
+                  className={`voice-orb ${pending ? 'is-idle' : listening ? 'is-listening' : busy ? 'is-thinking' : speaking ? 'is-speaking' : 'is-idle'}`} />
               </div>
-              <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: listening ? 'var(--expense)' : 'var(--accent)' }}>
-                {listening ? 'Listening' : busy ? 'Thinking' : speaking ? 'Speaking' : 'Tap to talk'}
-              </div>
-              <div style={{ fontSize: 19, lineHeight: 1.55, fontWeight: 500, letterSpacing: '-0.01em', color: 'var(--text-primary)', maxWidth: 460, minHeight: 62 }}>
-                {listening
-                  ? (input || <span style={{ color: 'var(--text-muted)' }}>Say something…</span>)
-                  : ([...msgs].reverse().find((m) => m.role === 'assistant')?.content || <span style={{ color: 'var(--text-muted)' }}>Tap the orb and speak.</span>)}
-              </div>
+              {pending ? (
+                <>
+                  <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--accent)' }}>Confirm {pending.length > 1 ? `${pending.length} changes` : 'this change'}</div>
+                  <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 8, maxWidth: 460, width: '100%' }}>
+                    {pending.map((p, i) => (
+                      <li key={i} style={{ fontSize: 16, fontWeight: 500, color: 'var(--text-primary)', background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '11px 14px' }}>{p.label}</li>
+                    ))}
+                  </ul>
+                </>
+              ) : (
+                <>
+                  <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: listening ? 'var(--expense)' : 'var(--accent)' }}>
+                    {listening ? 'Listening' : busy ? 'Thinking' : speaking ? 'Speaking' : 'Tap to talk'}
+                  </div>
+                  <div style={{ fontSize: 19, lineHeight: 1.55, fontWeight: 500, letterSpacing: '-0.01em', color: 'var(--text-primary)', maxWidth: 460, minHeight: 62 }}>
+                    {listening
+                      ? (input || <span style={{ color: 'var(--text-muted)' }}>Say something…</span>)
+                      : ([...msgs].reverse().find((m) => m.role === 'assistant')?.content || <span style={{ color: 'var(--text-muted)' }}>Tap the orb and speak.</span>)}
+                  </div>
+                </>
+              )}
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 22, paddingBottom: 8 }}>
-              <button className="voice-ctrl" onClick={() => setSpeak((v) => { if (v) stopSpeaking(); return !v })} aria-label="Toggle voice output" title={speak ? 'Mute' : 'Unmute'}
-                style={{ color: speak ? 'var(--accent)' : 'var(--text-muted)' }}>
-                {speak ? <Volume2 size={22} /> : <VolumeX size={22} />}
-              </button>
-              <button className={`voice-mic ${listening ? 'mic-live' : ''}`} onClick={() => { stopSpeaking(); startListen() }} aria-label="Talk">
-                <Mic size={30} />
-              </button>
-              <button className="voice-ctrl" onClick={toggleVoice} aria-label="End voice conversation" title="End">
-                <X size={22} />
-              </button>
-            </div>
+            {pending ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, paddingBottom: 8 }}>
+                <button className="btn" onClick={cancelAction} disabled={busy} style={{ background: 'var(--kpi-bg)', color: 'var(--text-secondary)', border: '1px solid var(--border)', padding: '12px 22px' }}><X size={16} /> Cancel</button>
+                <button className="btn btn-primary" onClick={confirmAction} disabled={busy} style={{ padding: '12px 26px', gap: 6 }}><Check size={16} /> Confirm</button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 22, paddingBottom: 8 }}>
+                <button className="voice-ctrl" onClick={() => setSpeak((v) => { if (v) stopSpeaking(); return !v })} aria-label="Toggle voice output" title={speak ? 'Mute' : 'Unmute'}
+                  style={{ color: speak ? 'var(--accent)' : 'var(--text-muted)' }}>
+                  {speak ? <Volume2 size={22} /> : <VolumeX size={22} />}
+                </button>
+                <button className={`voice-mic ${listening ? 'mic-live' : ''}`} onClick={() => { stopSpeaking(); startListen() }} aria-label="Talk">
+                  <Mic size={30} />
+                </button>
+                <button className="voice-ctrl" onClick={toggleVoice} aria-label="End voice conversation" title="End">
+                  <X size={22} />
+                </button>
+              </div>
+            )}
           </div>
         )}
         {/* Header — back (close) · title · history + new chat */}
