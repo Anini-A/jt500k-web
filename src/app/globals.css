@@ -670,6 +670,19 @@ header.top h1 {
 }
 .btn-accent:active { transform: translateY(0); box-shadow: none; }
 
+/* Accent attention pulse — used to prompt a needed action (e.g. stale balance) */
+.btn-attention {
+  border-color: var(--accent);
+  color: var(--accent);
+  animation: btnAttention 1.8s ease-in-out infinite;
+}
+.btn-attention:hover { background: var(--accent-soft); box-shadow: 0 4px 14px rgba(42, 120, 214, 0.28); }
+@keyframes btnAttention {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(42, 120, 214, 0.0); }
+  50%      { box-shadow: 0 0 0 6px rgba(42, 120, 214, 0.14); }
+}
+@media (prefers-reduced-motion: reduce) { .btn-attention { animation: none; } }
+
 /* Gentle attention pulse — used when action is urgent (balance running short) */
 .btn-pulse {
   border-color: var(--expense);

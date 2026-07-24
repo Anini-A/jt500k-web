@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useState, useCallback, useMemo, Fragment } from 'react'
 import { Pencil, Plus, Trash2, TriangleAlert, CheckCircle2, CalendarClock } from 'lucide-react'
 import { getJSON } from '@/lib/fresh'
 
@@ -17,28 +17,33 @@ const inp: React.CSSProperties = {
   fontFamily: 'inherit', boxSizing: 'border-box',
 }
 
-// ── Projection engine ───────────────────────────────────────────────
-// Walks day-by-day from the balance date forward, draining bills and adding
-// the monthly deposit, to find the lowest point before the next paycheck.
-interface DayPoint { date: Date; iso: string; balance: number; events: { name: string; amount: number; deposit?: boolean }[] }
+// ── Coverage engine ─────────────────────────────────────────────────
+// Walks the upcoming bills in date order from the current balance and answers
+// "what does this balance cover, and when does it run out before payday?"
+interface TLEvent { iso: string; name: string; amount: number; kind: 'bill' | 'deposit'; balanceAfter: number }
 interface Projection {
-  series: DayPoint[]
-  trough: DayPoint            // lowest balance before the next deposit
+  timeline: TLEvent[]         // bills (+ the payday deposit) from today to the next deposit
+  startBalance: number
+  buffer: number
   nextDepositISO: string | null
-  dueBeforeDeposit: { name: string; amount: number; iso: string }[]
+  troughBal: number           // lowest balance reached before the next deposit
+  troughISO: string
   short: number               // >0 means you dip below the buffer by this much
+  firstShort: TLEvent | null  // the first bill that breaches the buffer (0 covers it)
+  coveredCount: number        // how many bills the balance covers before running short
 }
 
+const daysInMonth = (y: number, m: number) => new Date(y, m + 1, 0).getDate()
+const stripTime = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate())
+const addDays = (d: Date, n: number) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n)
+const sameYMD = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
+
 function nextDateForDay(from: Date, day: number): Date {
-  const d = new Date(from.getFullYear(), from.getMonth(), 1)
   const inThis = new Date(from.getFullYear(), from.getMonth(), Math.min(day, daysInMonth(from.getFullYear(), from.getMonth())))
   if (inThis >= stripTime(from)) return inThis
   const y = from.getFullYear(), m = from.getMonth() + 1
   return new Date(y, m, Math.min(day, daysInMonth(y, m)))
 }
-const daysInMonth = (y: number, m: number) => new Date(y, m + 1, 0).getDate()
-const stripTime = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate())
-const sameYMD = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
 
 function quarterlyHits(bill: Bill, from: Date, to: Date): Date[] {
   const out: Date[] = []
@@ -56,44 +61,45 @@ function project(bills: Bill[], s: Settings): Projection {
   const start = stripTime(new Date((s.balance_as_of || todayISO()) + 'T00:00:00'))
   const today = stripTime(new Date(todayISO() + 'T00:00:00'))
   const from = start < today ? today : start // never project into the past
-  const DAYS = 42
-  const to = new Date(from.getFullYear(), from.getMonth(), from.getDate() + DAYS)
-
-  // pre-compute quarterly hit dates
+  const DAYS = 60
+  const to = addDays(from, DAYS)
   const qHits = new Map<string, Date[]>()
   bills.forEach((b) => { if (b.quarterly) qHits.set(b.id, quarterlyHits(b, from, to)) })
 
+  const buffer = Number(s.buffer) || 0
   let bal = Number(s.current_balance) || 0
-  const series: DayPoint[] = []
-  let nextDeposit: Date | null = null
+  const startBalance = bal
+  const timeline: TLEvent[] = []
+  let nextDepositISO: string | null = null
+  let troughBal = bal
+  let troughISO = from.toISOString().slice(0, 10)
+  let depositReached = false
 
-  for (let i = 0; i <= DAYS; i++) {
-    const d = new Date(from.getFullYear(), from.getMonth(), from.getDate() + i)
+  for (let i = 0; i <= DAYS && !depositReached; i++) {
+    const d = addDays(from, i)
     const dom = d.getDate()
-    const events: DayPoint['events'] = []
-    // bills first (worst-case: money leaves before the deposit lands)
-    for (const b of bills) {
-      const hit = b.quarterly ? (qHits.get(b.id) || []).some((h) => sameYMD(h, d)) : dom === b.day
-      if (hit) { bal -= Number(b.amount); events.push({ name: b.name, amount: Number(b.amount) }) }
+    const iso = d.toISOString().slice(0, 10)
+    // bills that hit today (money leaves before any same-day deposit — worst case)
+    const dayBills = bills.filter((b) => b.quarterly ? (qHits.get(b.id) || []).some((h) => sameYMD(h, d)) : dom === b.day)
+    for (const b of dayBills) {
+      bal = Math.round((bal - Number(b.amount)) * 100) / 100
+      if (bal < troughBal) { troughBal = bal; troughISO = iso }
+      timeline.push({ iso, name: b.name, amount: Number(b.amount), kind: 'bill', balanceAfter: bal })
     }
-    // then the monthly deposit (skip day 0 so today's balance is the entered one)
-    if (i > 0 && dom === s.deposit_day && s.deposit_amount > 0) {
-      bal += Number(s.deposit_amount); events.push({ name: 'Paycheck deposit', amount: Number(s.deposit_amount), deposit: true })
-      if (!nextDeposit) nextDeposit = d
+    // then the monthly paycheque deposit (skip day 0 so today keeps the entered balance)
+    if (i > 0 && dom === s.deposit_day && Number(s.deposit_amount) > 0) {
+      bal = Math.round((bal + Number(s.deposit_amount)) * 100) / 100
+      timeline.push({ iso, name: 'Paycheque deposit', amount: Number(s.deposit_amount), kind: 'deposit', balanceAfter: bal })
+      nextDepositISO = iso
+      depositReached = true
     }
-    series.push({ date: d, iso: d.toISOString().slice(0, 10), balance: Math.round(bal * 100) / 100, events })
   }
 
-  // Danger window = up to the day BEFORE the next deposit (after it, you're refunded)
-  const depIdx = nextDeposit ? series.findIndex((p) => sameYMD(p.date, nextDeposit!)) : series.length - 1
-  const window = series.slice(0, depIdx >= 0 ? depIdx : series.length)
-  let trough = window[0] || series[0]
-  for (const p of window) if (p.balance < trough.balance) trough = p
-
-  const dueBeforeDeposit = window.flatMap((p) => p.events.filter((e) => !e.deposit).map((e) => ({ name: e.name, amount: e.amount, iso: p.iso })))
-  const short = Math.max(0, (Number(s.buffer) || 0) - trough.balance)
-
-  return { series, trough, nextDepositISO: nextDeposit ? nextDeposit.toISOString().slice(0, 10) : null, dueBeforeDeposit, short }
+  const billEvents = timeline.filter((e) => e.kind === 'bill')
+  const firstShort = billEvents.find((e) => e.balanceAfter < buffer) || null
+  const coveredCount = firstShort ? billEvents.indexOf(firstShort) : billEvents.length
+  const short = Math.max(0, buffer - troughBal)
+  return { timeline, startBalance, buffer, nextDepositISO, troughBal, troughISO, short, firstShort, coveredCount }
 }
 
 // ── UI ──────────────────────────────────────────────────────────────
@@ -128,72 +134,58 @@ export default function BillRunway() {
   const monthlyTotal = bills.filter((b) => !b.quarterly).reduce((s, b) => s + b.amount, 0)
   const covered = proj ? proj.short <= 0 : true
   const asOf = settings.balance_as_of || todayISO()
+  const staleDays = Math.max(0, Math.round((Date.parse(todayISO()) - Date.parse(asOf)) / 86400000))
+  const stale = staleDays >= 1
+  const dep = proj?.nextDepositISO
 
   return (
     <div style={{ marginBottom: 64 }}>
-      {/* VERDICT */}
+      {/* VERDICT — coverage framing */}
+      {proj && (
       <div className="card glass" style={{ borderLeft: `4px solid ${covered ? 'var(--income)' : 'var(--expense)'}`, marginBottom: 16 }}>
         <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
           {covered ? <CheckCircle2 size={26} color="var(--income)" style={{ flexShrink: 0, marginTop: 2 }} />
             : <TriangleAlert size={26} color="var(--expense)" style={{ flexShrink: 0, marginTop: 2 }} />}
           <div style={{ minWidth: 0 }}>
             <div style={{ fontWeight: 700, fontSize: 'clamp(18px, 4.5vw, 22px)', letterSpacing: '-0.01em' }}>
-              {covered ? 'You’re covered' : `Short ${money2(proj!.short)}`}
+              {covered ? (dep ? 'Covered until payday' : 'Covered') : `Runs short ${money2(proj.short)}`}
             </div>
             <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 3 }}>
-              {proj && (covered
-                ? <>Balance dips to <b style={{ color: 'var(--text-primary)' }}>{money2(proj.trough.balance)}</b> on {fmtDay(proj.trough.iso)}{proj.nextDepositISO ? `, before your ${fmtDay(proj.nextDepositISO)} deposit` : ''}.</>
-                : <>On {fmtDay(proj.trough.iso)} the balance falls to <b style={{ color: 'var(--expense)' }}>{money2(proj.trough.balance)}</b>. Top up before then.</>)}
+              {covered
+                ? <>Your <b style={{ color: 'var(--text-primary)' }}>{money2(proj.startBalance)}</b> covers {proj.coveredCount} bill{proj.coveredCount === 1 ? '' : 's'}{dep ? <> through your <b style={{ color: 'var(--text-primary)' }}>{fmtDay(dep)}</b> deposit</> : ''} — low of {money2(proj.troughBal)} on {fmtDay(proj.troughISO)}.</>
+                : proj.firstShort
+                  ? <><b style={{ color: 'var(--text-primary)' }}>{proj.firstShort.name}</b> ({money2(proj.firstShort.amount)}) on <b style={{ color: 'var(--text-primary)' }}>{fmtDay(proj.firstShort.iso)}</b> would leave you at <b style={{ color: 'var(--expense)' }}>{money2(proj.firstShort.balanceAfter)}</b>. Top up {money2(proj.short)} before then.</>
+                  : <>Balance falls to <b style={{ color: 'var(--expense)' }}>{money2(proj.troughBal)}</b> — top up {money2(proj.short)}.</>}
+              {stale && <> · <span style={{ color: 'var(--accent)' }}>based on your {fmtDay(asOf)} balance</span></>}
             </div>
           </div>
         </div>
       </div>
+      )}
 
-      {/* BALANCE + LEDGER — side by side */}
-      <div className="grid-2" style={{ marginBottom: 16 }}>
-        <div className="card glass">
+      {/* BALANCE — with stale nudge */}
+      <div className="card glass" style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Home &amp; Utilities · as of {fmtDay(asOf)}</div>
             <div style={{ fontWeight: 700, fontSize: 28, letterSpacing: '-0.03em', marginTop: 4 }}>{money2(settings.current_balance)}</div>
           </div>
-          <button className={`chip btn-accent ${covered ? '' : 'btn-pulse'}`} onClick={() => setEditBalance(true)}>Update balance</button>
+          <button className={`chip btn-accent ${stale ? 'btn-attention' : ''}`} onClick={() => setEditBalance(true)}>Update balance</button>
         </div>
+        {stale && (
+          <div style={{ marginTop: 12, padding: '9px 12px', background: 'var(--accent-soft)', borderRadius: 10, display: 'flex', gap: 8, alignItems: 'center', color: 'var(--accent)', fontSize: 13, fontWeight: 600 }}>
+            <TriangleAlert size={15} style={{ flexShrink: 0 }} /> Last updated {fmtDay(asOf)} · {staleDays} day{staleDays === 1 ? '' : 's'} ago — update your balance so the forecast stays accurate.
+          </div>
+        )}
         <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
           <MiniStat label="Monthly bills" value={money(monthlyTotal)} />
           <MiniStat label="Keep at least" value={money(monthlyTotal + settings.buffer)} accent />
           <MiniStat label="Next deposit" value={settings.deposit_amount ? `${money(settings.deposit_amount)} · ${depositDateLabel(settings.deposit_day)}` : depositDateLabel(settings.deposit_day)} />
         </div>
-        </div>
-
-        {/* UPCOMING LEDGER */}
-        {proj && (
-        <div className="card glass">
-          <h3 style={{ margin: '0 0 4px', fontSize: 15, display: 'flex', alignItems: 'center', gap: 8 }}><CalendarClock size={16} /> Coming out before your next deposit</h3>
-          <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginBottom: 14 }}>
-            {proj.dueBeforeDeposit.length} bill{proj.dueBeforeDeposit.length === 1 ? '' : 's'} · {money2(proj.dueBeforeDeposit.reduce((s, e) => s + e.amount, 0))} total
-          </p>
-          {proj.dueBeforeDeposit.length === 0 ? (
-            <div style={{ padding: 16, textAlign: 'center', color: 'var(--text-muted)' }}>Nothing due before your next deposit.</div>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr)', gap: 2 }}>
-              {proj.dueBeforeDeposit.map((e, i) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', padding: '10px 4px', borderTop: i ? '1px solid var(--border)' : 'none' }}>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{e.name}</div>
-                    <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 2 }}>{fmtDay(e.iso)}</div>
-                  </div>
-                  <span className="stat-value expense" style={{ fontSize: 15, fontWeight: 700, flexShrink: 0 }}>−{money2(e.amount)}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-        )}
       </div>
 
-      {/* METER */}
-      {proj && <Meter proj={proj} buffer={settings.buffer} />}
+      {/* COVERAGE TIMELINE — replaces the bar meter + old ledger */}
+      {proj && <CoverageTimeline proj={proj} asOf={asOf} />}
 
       {/* BILL SCHEDULE */}
       <div className="card glass" style={{ marginTop: 16 }}>
@@ -249,80 +241,65 @@ function MiniStat({ label, value, accent }: { label: string; value: string; acce
 }
 
 // Day-by-day balance meter across the cycle
-function Meter({ proj, buffer }: { proj: Projection; buffer: number }) {
-  const pts = proj.series
-  const [hover, setHover] = useState<number | null>(null)
-  const min = Math.min(0, ...pts.map((p) => p.balance))
-  const max = Math.max(...pts.map((p) => p.balance), buffer, 1)
-  const span = max - min || 1
-  const h = (v: number) => `${((v - min) / span) * 100}%`
-  const depIso = proj.nextDepositISO
-  const hp = hover != null ? pts[hover] : null
+// Chronological "what does my balance cover?" list — each bill drains the running
+// balance; a cutoff line marks where it can no longer cover; the deposit refills it.
+function CoverageTimeline({ proj, asOf }: { proj: Projection; asOf: string }) {
+  const buffer = proj.buffer
   return (
     <div className="card glass">
-      <h3 style={{ margin: '0 0 4px', fontSize: 15 }}>Balance projection</h3>
-      <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginBottom: 14 }}>Projected balance each day · red = below your safe floor</p>
-      <div onMouseLeave={() => setHover(null)}
-        style={{ display: 'flex', alignItems: 'flex-end', gap: 1, height: 120, borderBottom: '1px solid var(--border)', position: 'relative' }}>
-        {/* buffer line */}
-        <div style={{ position: 'absolute', left: 0, right: 0, bottom: h(buffer), borderTop: '1px dashed var(--text-muted)', opacity: 0.5 }} />
-        {/* hover tooltip */}
-        {hp && (
-          <div style={{
-            position: 'absolute', bottom: '100%', marginBottom: 8, zIndex: 5,
-            left: `${((hover! + 0.5) / pts.length) * 100}%`,
-            transform: `translateX(${hover! < pts.length * 0.15 ? '-8px' : hover! > pts.length * 0.85 ? '-92%' : '-50%'})`,
-            background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: 10,
-            padding: '8px 10px', boxShadow: '0 8px 24px rgba(0,0,0,0.28)', pointerEvents: 'none', whiteSpace: 'nowrap',
-          }}>
-            <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{fmtDay(hp.iso)}</div>
-            <div style={{ fontWeight: 800, fontSize: 15, color: hp.balance < 0 ? 'var(--expense)' : hp.balance < buffer ? '#e0a12b' : 'var(--text-primary)' }}>{money2(hp.balance)}</div>
-            {hp.events.map((e, k) => (
-              <div key={k} style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
-                {e.deposit ? '+ ' : '− '}{e.name} <b style={{ color: 'var(--text-primary)' }}>{money2(e.amount)}</b>
+      <h3 style={{ margin: '0 0 4px', fontSize: 15, display: 'flex', alignItems: 'center', gap: 8 }}><CalendarClock size={16} /> Coverage timeline</h3>
+      <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginBottom: 14 }}>
+        What your {money2(proj.startBalance)} covers before {proj.nextDepositISO ? `your ${fmtDay(proj.nextDepositISO)} deposit` : 'the next deposit'}
+      </p>
+
+      {/* starting balance */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '10px 4px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 11, minWidth: 0 }}>
+          <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--text-muted)', flexShrink: 0 }} />
+          <div style={{ fontWeight: 600 }}>Now <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>· {fmtDay(asOf)}</span></div>
+        </div>
+        <span style={{ fontWeight: 700, fontSize: 15 }}>{money2(proj.startBalance)}</span>
+      </div>
+
+      {proj.timeline.length === 0 ? (
+        <div style={{ padding: 16, textAlign: 'center', color: 'var(--text-muted)' }}>Nothing due before your next deposit — you&apos;re clear.</div>
+      ) : proj.timeline.map((e, i) => {
+        const isCutoff = proj.firstShort != null && e === proj.firstShort
+        const below = e.kind === 'bill' && e.balanceAfter < buffer
+        const dep = e.kind === 'deposit'
+        return (
+          <Fragment key={i}>
+            {isCutoff && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '4px 0', color: 'var(--expense)' }}>
+                <div style={{ flex: 1, height: 1, background: 'var(--expense)', opacity: 0.4 }} />
+                <span style={{ fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap' }}>⚠ balance runs out here</span>
+                <div style={{ flex: 1, height: 1, background: 'var(--expense)', opacity: 0.4 }} />
               </div>
-            ))}
-          </div>
-        )}
-        {pts.map((p, i) => {
-          const low = p.balance < buffer
-          const neg = p.balance < 0
-          const isTrough = p.iso === proj.trough.iso
-          const isDep = p.iso === depIso
-          const hasBill = p.events.some((e) => !e.deposit)
-          const active = hover === i
-          return (
-            <div key={i} onMouseEnter={() => setHover(i)} onTouchStart={() => setHover(i)}
-              style={{ flex: 1, minWidth: 0, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', position: 'relative', cursor: 'pointer' }}>
-              {hasBill && <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: 3, height: 3, borderRadius: '50%', background: 'var(--expense)' }} />}
-              {isDep && <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: 3, height: 3, borderRadius: '50%', background: 'var(--income)' }} />}
-              <div style={{
-                height: h(Math.max(p.balance, min)), width: '100%', borderRadius: '2px 2px 0 0',
-                background: neg ? 'var(--expense)' : low ? '#e0a12b' : 'var(--income)',
-                outline: isTrough || active ? '1.5px solid var(--text-primary)' : 'none', opacity: active || isTrough ? 1 : 0.9,
-              }} />
+            )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '10px 4px', borderTop: '1px solid var(--border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 11, minWidth: 0 }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: dep ? 'var(--income)' : below ? 'var(--expense)' : 'var(--text-muted)' }} />
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{e.name}</div>
+                  <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 2 }}>{fmtDay(e.iso)}</div>
+                </div>
+              </div>
+              <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                <div style={{ fontWeight: 700, fontSize: 15, color: dep ? 'var(--income)' : 'var(--text-primary)' }}>{dep ? '+' : '−'}{money2(e.amount)}</div>
+                <div style={{ fontSize: 12, marginTop: 2, color: e.balanceAfter < buffer ? 'var(--expense)' : 'var(--text-muted)' }}>→ {money2(e.balanceAfter)}</div>
+              </div>
             </div>
-          )
-        })}
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
-        <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{fmtDay(pts[0].iso)}</span>
-        <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{fmtDay(pts[pts.length - 1].iso)}</span>
-      </div>
-      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 10 }}>
-        <Legend color="var(--income)" label="Healthy" />
-        <Legend color="#e0a12b" label="Below floor" />
-        <Legend color="var(--expense)" label="Overdrawn / bill day" />
-        <Legend color="var(--text-primary)" label="Lowest point" outline />
-      </div>
+          </Fragment>
+        )
+      })}
+
+      {/* all-clear footer when nothing breaches before payday */}
+      {proj.firstShort == null && proj.timeline.some((e) => e.kind === 'bill') && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 10, color: 'var(--income)', fontSize: 12, fontWeight: 600 }}>
+          <CheckCircle2 size={14} /> Every bill covered through payday.
+        </div>
+      )}
     </div>
-  )
-}
-function Legend({ color, label, outline }: { color: string; label: string; outline?: boolean }) {
-  return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-secondary)' }}>
-      <span style={{ width: 11, height: 11, borderRadius: 3, background: outline ? 'transparent' : color, outline: outline ? `1.5px solid ${color}` : 'none' }} />{label}
-    </span>
   )
 }
 
