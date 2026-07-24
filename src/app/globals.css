@@ -145,7 +145,7 @@ header.top {
 .page-segs {
   display: inline-flex;
   align-items: center;
-  min-height: 46px;
+  min-height: 42px;
   box-sizing: border-box;
   gap: 2px;
   padding: 4px;
@@ -179,7 +179,7 @@ header.top {
 .page-compact {
   display: none;
   align-items: center;
-  min-height: 46px;
+  min-height: 42px;
   box-sizing: border-box;
   gap: 8px;
   padding: 0 16px;
@@ -225,7 +225,7 @@ header.top .brand {
   cursor: pointer;
 }
 /* logo mark sized to match the Settings pill / section pill in the header */
-header.top .brand svg { width: 42px; height: 42px; }
+header.top .brand svg { width: 38px; height: 38px; }
 
 header.top h1 {
   font-size: 18px;
@@ -389,7 +389,7 @@ header.top h1 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 46px;
+  height: 42px;
   padding: 0 13px;
   border-radius: 999px;
   color: var(--text-primary);
@@ -707,8 +707,8 @@ header.top h1 {
   position: fixed;
   bottom: calc(22px + env(safe-area-inset-bottom, 0px));
   z-index: 60;
-  width: 62px;
-  height: 62px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   border: 1px solid var(--glass-border);
   cursor: pointer;
@@ -737,11 +737,11 @@ header.top h1 {
 .fab:active { transform: scale(0.97); }
 /* chat sits at the right; add sits just to its left */
 .fab-chat { right: 22px; }
-.fab-add  { right: calc(22px + 62px + 14px); }
+.fab-add  { right: calc(22px + 56px + 14px); }
 @media (max-width: 640px) {
-  .fab { width: 56px; height: 56px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+  .fab { width: 52px; height: 52px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
   .fab-chat { right: 16px; }
-  .fab-add  { right: calc(16px + 56px + 12px); }
+  .fab-add  { right: calc(16px + 52px + 12px); }
 }
 
 /* Accent-bordered button with a lift on hover (e.g. "Update balance") */
