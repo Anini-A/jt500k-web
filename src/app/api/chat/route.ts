@@ -44,7 +44,7 @@ const TOOLS = [{
     { name: 'edit_debt', description: 'Edit a tracked debt by id (rename or change its balance).', parameters: { type: 'OBJECT', properties: { id: { type: 'STRING' }, name: { type: 'STRING' }, amount: { type: 'NUMBER' } }, required: ['id'] } },
     { name: 'delete_debt', description: 'Delete a tracked debt by id.', parameters: { type: 'OBJECT', properties: { id: { type: 'STRING' } }, required: ['id'] } },
     { name: 'refresh_prices', description: 'Pull live market prices and update the value of the investment holdings.', parameters: { type: 'OBJECT', properties: {} } },
-    { name: 'find_transactions', description: 'Search ALL transactions (not just the recent 25) to get their ids before editing/deleting an older one. Call this first when the user references a transaction you cannot see in the recent list.', parameters: { type: 'OBJECT', properties: { query: { type: 'STRING', description: 'text to match in description/category' }, category: { type: 'STRING' }, type: { type: 'STRING', enum: ['income', 'expense', 'savings'] }, limit: { type: 'NUMBER' } } } },
+    { name: 'find_transactions', description: 'Search ALL transactions (the full all-time history, not just the recent 25). Use for ANY listing/total/aggregate over a period or category ("how much did I pay in July", "all groceries this year", "every debt payment"), or to get an id before editing/deleting. Optional from/to bound the dates (YYYY-MM-DD).', parameters: { type: 'OBJECT', properties: { query: { type: 'STRING', description: 'text to match in description/category' }, category: { type: 'STRING' }, type: { type: 'STRING', enum: ['income', 'expense', 'savings'] }, from: { type: 'STRING', description: 'earliest date YYYY-MM-DD' }, to: { type: 'STRING', description: 'latest date YYYY-MM-DD' }, limit: { type: 'NUMBER' } } } },
     { name: 'delete_recurring', description: 'Delete a recurring template by id.', parameters: { type: 'OBJECT', properties: { id: { type: 'STRING' } }, required: ['id'] } },
     { name: 'set_bill_balance', description: 'Update a bill account balance (Bill Runway). Pass the account NAME (e.g. "Home & Utilities", "Transpo") from the BILL ACCOUNTS list, the current balance, and optionally the safety buffer. Use for "set my Transpo balance to $105".', parameters: { type: 'OBJECT', properties: { account: { type: 'STRING', description: 'account name to match' }, current_balance: { type: 'NUMBER' }, balance_as_of: { type: 'STRING', description: 'YYYY-MM-DD; omit for today' }, buffer: { type: 'NUMBER', description: 'safety cushion to keep' } }, required: ['account', 'current_balance'] } },
     { name: 'add_bill', description: 'Add a recurring bill to a bill account. Pass the account NAME it belongs to. day = day of month it is charged (1-31).', parameters: { type: 'OBJECT', properties: { account: { type: 'STRING', description: 'account name the bill belongs to' }, name: { type: 'STRING' }, day: { type: 'NUMBER' }, amount: { type: 'NUMBER' }, quarterly: { type: 'BOOLEAN' }, next_due: { type: 'STRING', description: 'YYYY-MM-DD, only for quarterly bills' } }, required: ['account', 'name', 'day', 'amount'] } },
@@ -87,11 +87,15 @@ function describeAction(name: string, a: any): string {
 }
 
 // Read-only transaction search (auto-executed, never needs confirmation).
+// Searches ALL transactions (not the recent-25) with optional date bounds, so
+// "how much did I pay in July / on X" is always answered from the full history.
 async function searchTransactions(a: any) {
   let q = supabaseAdmin.from('transactions').select('id, date, type, category, description, amount')
-    .order('date', { ascending: false }).limit(Math.min(Number(a.limit) || 15, 30))
+    .order('date', { ascending: false }).limit(Math.min(Number(a.limit) || 200, 500))
   if (a.type) q = q.eq('type', a.type)
   if (a.category) q = q.eq('category', a.category)
+  if (a.from) q = q.gte('date', a.from)
+  if (a.to) q = q.lte('date', a.to)
   if (a.query) {
     const term = String(a.query).replace(/[%,()]/g, ' ').trim()
     if (term) q = q.or(`description.ilike.%${term}%,category.ilike.%${term}%`)
@@ -115,6 +119,8 @@ async function buildContext(clientDate?: string) {
     .select('id, type, amount, date, category, description')
 
   const txns = data ?? []
+  // keep cents when a value has them (e.g. $1,000.56), clean whole dollars otherwise
+  const money = (n: number) => { const x = Number(n) || 0; return '$' + x.toLocaleString('en-CA', { minimumFractionDigits: Number.isInteger(x) ? 0 : 2, maximumFractionDigits: 2 }) }
   let income = 0, expense = 0, savings = 0
   const byCat = new Map<string, number>()
   const byMonth = new Map<string, { i: number; e: number; s: number }>()
@@ -147,8 +153,6 @@ async function buildContext(clientDate?: string) {
   // goal amount (defaults to 500K)
   const { data: hh } = await supabaseAdmin.from('households').select('goal_amount').order('created_at').limit(1).maybeSingle()
   const goal = Number(hh?.goal_amount) || 500000
-  // keep cents when a value has them (e.g. $1,000.56), clean whole dollars otherwise
-  const money = (n: number) => { const x = Number(n) || 0; return '$' + x.toLocaleString('en-CA', { minimumFractionDigits: Number.isInteger(x) ? 0 : 2, maximumFractionDigits: 2 }) }
 
   // reference data so the assistant can act with valid names / ids
   const { data: cats } = await supabaseAdmin.from('categories').select('name, type')
@@ -426,6 +430,8 @@ export async function POST(req: NextRequest) {
     `You CAN take these actions when clearly asked: adding/editing/deleting transactions, budget items, ` +
     `and recurring items; logging recurring items; changing the goal; refreshing prices. ` +
     `To edit/delete a transaction not in the recent list, FIRST call find_transactions, then act on its id. ` +
+    `⚠️ The RECENT TRANSACTIONS list is only a 25-row snapshot — NEVER total or list a period/category from it. ` +
+    `For ANY "how much / list / total" over a month, year, or category (e.g. "how much debt did I pay in July"), ALWAYS call find_transactions with the category and from/to dates and sum the full result — do not answer from the snapshot. ` +
     `\n\nDEBTS vs EXPENSES — don't confuse them: a DEBT is a balance owed, tracked in the Debts tracker ` +
     `(see TRACKED DEBTS). "Add a new debt item / track a debt for X" → use add_debt (name + balance), NOT ` +
     `an expense or budget item. Logging a debt PAYMENT is different — that's add_transaction with category ` +

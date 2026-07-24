@@ -63,7 +63,6 @@ export default function Dashboard() {
   const [preset, setPreset] = useState<Preset>('mtd') // Debts filter default
   const [customFrom, setCustomFrom] = useState('')
   const [customTo, setCustomTo] = useState('')
-  const [month, setMonth] = useState(today().slice(0, 7)) // Income/Expenses/Savings month, default current
   const [tab, setTab] = useState<Tab>('income')
 
   // Remember the active tab across refreshes
@@ -87,23 +86,10 @@ export default function Dashboard() {
 
   const maxDate = txns.length ? txns[txns.length - 1].date : today()
   const minDate = txns.length ? txns[0].date : '2024-01-01'
-  const monthTab = tab === 'income' || tab === 'expenses' || tab === 'savings'
 
-  // months present in the data (+ current), newest first — for the month selector
-  const availableMonths = useMemo(() => {
-    const set = new Set<string>([today().slice(0, 7)])
-    for (const t of txns) set.add(t.date.slice(0, 7))
-    return [...set].sort().reverse()
-  }, [txns])
-
-  // resolve active date range. Income/Expenses/Savings = a single selected month;
-  // Debts (and others) = the preset range, anchored to today so it's the real calendar month.
+  // resolve active date range from the preset (anchored to today so MTD/ranges are
+  // the real calendar month, not shifted by future-dated entries)
   const { from, to } = useMemo(() => {
-    if (monthTab) {
-      const [y, mo] = month.split('-').map(Number)
-      const last = new Date(y, mo, 0).getDate()
-      return { from: `${month}-01`, to: `${month}-${String(last).padStart(2, '0')}` }
-    }
     const t = today()
     if (preset === 'custom') return { from: customFrom || minDate, to: customTo || maxDate }
     if (preset === 'all') return { from: minDate, to: maxDate }
@@ -111,7 +97,7 @@ export default function Dashboard() {
     if (preset === 'mtd') return { from: t.slice(0, 7) + '-01', to: t }
     const n = preset === '12m' ? 12 : preset === '6m' ? 6 : 3
     return { from: subMonths(t, n), to: t }
-  }, [monthTab, month, preset, customFrom, customTo, minDate, maxDate])
+  }, [preset, customFrom, customTo, minDate, maxDate])
 
   const filtered = useMemo(
     () => txns.filter((t) => t.date >= from && t.date <= to),
@@ -181,20 +167,6 @@ export default function Dashboard() {
     </section>
   )
 
-  const monthBar = (
-    <section className="block">
-      <div className="card glass" style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between' }}>
-        <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{filtered.length} transactions this month</span>
-        <select className="date-input" value={month} onChange={(e) => setMonth(e.target.value)} aria-label="Month" style={{ fontWeight: 600 }}>
-          {[...new Set([month, ...availableMonths])].sort().reverse().map((m) => {
-            const [y, mo] = m.split('-')
-            return <option key={m} value={m}>{new Date(Number(y), Number(mo) - 1).toLocaleString('en', { month: 'long', year: 'numeric' })}</option>
-          })}
-        </select>
-      </div>
-    </section>
-  )
-
   if (loading) {
     return (
       <div className="bg-aurora">
@@ -228,7 +200,7 @@ export default function Dashboard() {
         </section>
 
         {/* Time-range filter — top of data tabs (on Debts it sits above Recent instead) */}
-        {monthTab && monthBar}
+        {(tab === 'income' || tab === 'expenses' || tab === 'savings') && filterBar}
 
         {/* INCOME */}
         {tab === 'income' && (
