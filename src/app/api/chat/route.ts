@@ -135,9 +135,11 @@ async function buildContext(clientDate?: string) {
   const holdingsValue = (holds ?? []).reduce((s, h) => s + Number(h.market_value_cad), 0)
   const cashValue = (manual ?? []).reduce((s, a) => s + Number(a.value_cad), 0)
   const { data: debts } = await supabaseAdmin.from('debts').select('id, name, amount')
-  const { data: pays } = await supabaseAdmin.from('transactions').select('description, amount').eq('category', 'Debt Repayment')
+  const { data: pays } = await supabaseAdmin.from('transactions').select('date, description, amount').eq('category', 'Debt Repayment')
   const paidByName = new Map<string, number>()
   for (const p of pays ?? []) paidByName.set(norm(p.description), (paidByName.get(norm(p.description)) || 0) + Number(p.amount))
+  const payList = [...(pays ?? [])].sort((a, b) => (a.date < b.date ? 1 : -1))
+    .map((p) => `  - ${p.date} · ${p.description ?? '—'} · ${money(Number(p.amount))}`).join('\n')
   const debtRemainingOf = (d: any) => Math.max(0, Number(d.amount) - (paidByName.get(norm(d.name)) || 0))
   const debtsRemaining = (debts ?? []).reduce((s, d) => s + debtRemainingOf(d), 0)
   const netWorth = holdingsValue + cashValue - debtsRemaining
@@ -161,7 +163,8 @@ async function buildContext(clientDate?: string) {
     ? profSections.map((s) => `${s.icon || ''} ${s.title}:\n${(s.items || []).map((it: any) => `  - ${it.label}: ${it.value}`).join('\n')}`).join('\n\n')
     : ''
 
-  const recent = [...txns]
+  const cutoff = clientDate && /^\d{4}-\d{2}-\d{2}$/.test(clientDate) ? clientDate : new Date().toISOString().slice(0, 10)
+  const recent = [...txns].filter((t: any) => (t.date as string) <= cutoff) // exclude future-dated so "recent" is actually recent
     .sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 25)
     .map((t: any) => `  - id=${t.id ?? '?'} · ${t.date} · ${t.type} · ${t.category ?? '—'} · ${t.description ?? '—'} · ${money(Number(t.amount))}`).join('\n')
 
@@ -238,6 +241,9 @@ NET WORTH (current) = ${money(netWorth)}  →  ${Math.round((netWorth / goal) * 
 
 TRACKED DEBTS (the Debts tracker — use the id to edit/delete a debt):
 ${debtList || '  (none)'}
+
+DEBT REPAYMENTS — every payment logged (category "Debt Repayment"). This is the COMPLETE list; total by month/debt from HERE, never from the recent-25 above:
+${payList || '  (none)'}
 
 HOLDINGS BY ACCOUNT TYPE (use these EXACT totals for "how much in my TFSA/RRSP…" — never re-sum across account types or relabel one type as another):
 ${acctTypeLines || '  (none)'}

@@ -14,7 +14,7 @@ async function household() {
 
 // GET /api/budgets — line items rolled into per-category envelopes vs
 // this month's actual spending in each category.
-export async function GET() {
+export async function GET(req: NextRequest) {
   const { data: lines, error } = await supabaseAdmin.from('budgets').select('*').order('amount', { ascending: false })
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
@@ -22,13 +22,17 @@ export async function GET() {
   const { data: cats } = await supabaseAdmin.from('categories').select('name, type')
   const typeByCat = new Map((cats ?? []).map((c) => [c.name, c.type]))
 
-  // tracking month = latest month present in the data
   const { data: allTx } = await supabaseAdmin.from('transactions').select('date, category, amount')
   const tx = allTx ?? []
-  const latest = tx.reduce((mx, t) => ((t.date as string) > mx ? (t.date as string) : mx), '0000-00').slice(0, 7)
+  // tracking month = requested ?month=YYYY-MM, else the CURRENT calendar month
+  // (not the latest month in data — future-dated entries must not hijack it)
+  const current = new Date().toISOString().slice(0, 7)
+  const monthParam = new URL(req.url).searchParams.get('month')
+  const month = monthParam && /^\d{4}-\d{2}$/.test(monthParam) ? monthParam : current
+  const availableMonths = [...new Set([current, ...tx.map((t) => (t.date as string).slice(0, 7))])].sort().reverse()
   const spentByCat = new Map<string, number>()
   for (const t of tx) {
-    if ((t.date as string).slice(0, 7) !== latest) continue
+    if ((t.date as string).slice(0, 7) !== month) continue
     if (!t.category) continue
     spentByCat.set(t.category, (spentByCat.get(t.category) || 0) + Number(t.amount))
   }
@@ -50,14 +54,13 @@ export async function GET() {
     spent: Math.round((spentByCat.get(e.category) || 0) * 100) / 100,
   })).sort((a, b) => b.budgeted - a.budgeted)
 
-  const [y, mo] = latest.split('-')
-  const label = latest === '0000'
-    ? 'this month'
-    : new Date(Number(y), Number(mo) - 1).toLocaleString('en', { month: 'long', year: 'numeric' })
+  const [y, mo] = month.split('-')
+  const label = new Date(Number(y), Number(mo) - 1).toLocaleString('en', { month: 'long', year: 'numeric' })
 
   return NextResponse.json({
-    month: latest,
+    month,
     label,
+    availableMonths,
     envelopes,
     totalBudgeted: Math.round(envelopes.reduce((s, e) => s + e.budgeted, 0) * 100) / 100,
     totalSpent: Math.round(envelopes.reduce((s, e) => s + e.spent, 0) * 100) / 100,

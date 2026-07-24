@@ -8,6 +8,7 @@ import PagePill from '@/components/PagePill'
 import Logo from '@/components/Logo'
 import EditTransactionModal from '@/components/EditTransactionModal'
 import { getJSON } from '@/lib/fresh'
+import { today, ymd } from '@/lib/date'
 
 interface Txn {
   id: string
@@ -25,6 +26,12 @@ const TYPES = [
   { key: 'expense', label: 'Expenses' },
   { key: 'savings', label: 'Savings' },
 ]
+type Preset = 'all' | 'ytd' | '12m' | '6m' | '3m' | 'mtd' | 'custom'
+const PRESETS: { key: Preset; label: string }[] = [
+  { key: 'all', label: 'All' }, { key: 'ytd', label: 'YTD' }, { key: '12m', label: '12M' },
+  { key: '6m', label: '6M' }, { key: '3m', label: '3M' }, { key: 'mtd', label: 'MTD' },
+]
+const subMonths = (iso: string, n: number) => { const d = new Date(iso + 'T12:00:00'); d.setMonth(d.getMonth() - n); return ymd(d) }
 
 export default function Transactions() {
   const [txns, setTxns] = useState<Txn[]>([])
@@ -32,6 +39,7 @@ export default function Transactions() {
   const [q, setQ] = useState('')
   const [type, setType] = useState('all')
   const [cat, setCat] = useState('all')
+  const [preset, setPreset] = useState<Preset>('mtd')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
   const [editTx, setEditTx] = useState<Txn | null>(null)
@@ -52,6 +60,18 @@ export default function Transactions() {
   const minDate = txns.length ? txns[0].date : ''
   const maxDate = txns.length ? txns[txns.length - 1].date : ''
 
+  // effective date range from the active preset (anchored to today, so future-dated
+  // entries never shift "this month"); 'custom' uses the date inputs.
+  const range = useMemo(() => {
+    const t = today()
+    if (preset === 'custom') return { from: from || minDate, to: to || maxDate }
+    if (preset === 'all') return { from: '', to: '' }
+    if (preset === 'ytd') return { from: t.slice(0, 4) + '-01-01', to: t }
+    if (preset === 'mtd') return { from: t.slice(0, 7) + '-01', to: t }
+    const n = preset === '12m' ? 12 : preset === '6m' ? 6 : 3
+    return { from: subMonths(t, n), to: t }
+  }, [preset, from, to, minDate, maxDate])
+
   // categories present, respecting the active type filter
   const categories = useMemo(() => {
     const set = new Set<string>()
@@ -67,11 +87,11 @@ export default function Transactions() {
     return txns
       .filter((t) => type === 'all' || t.type === type)
       .filter((t) => cat === 'all' || t.category === cat)
-      .filter((t) => (!from || t.date >= from) && (!to || t.date <= to))
+      .filter((t) => (!range.from || t.date >= range.from) && (!range.to || t.date <= range.to))
       .filter((t) => !term || (t.description || '').toLowerCase().includes(term) || (t.category || '').toLowerCase().includes(term))
       .slice()
       .reverse()
-  }, [txns, q, type, cat, from, to])
+  }, [txns, q, type, cat, range])
 
   // if the chosen category isn't valid for the current type, reset it
   useEffect(() => {
@@ -114,11 +134,16 @@ export default function Transactions() {
               </div>
             </div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', minWidth: 0 }}>
-              <input type="date" className="date-input" value={from || minDate} min={minDate} max={maxDate}
-                onChange={(e) => setFrom(e.target.value)} />
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {PRESETS.map((p) => (
+                  <button key={p.key} onClick={() => setPreset(p.key)} className={`chip ${preset === p.key ? 'chip-active' : ''}`} style={{ flexShrink: 0 }}>{p.label}</button>
+                ))}
+              </div>
+              <input type="date" className="date-input" value={preset === 'custom' ? (from || minDate) : range.from || minDate} min={minDate} max={maxDate}
+                onChange={(e) => { setPreset('custom'); setFrom(e.target.value) }} />
               <span className="stat-label">to</span>
-              <input type="date" className="date-input" value={to || maxDate} min={minDate} max={maxDate}
-                onChange={(e) => setTo(e.target.value)} />
+              <input type="date" className="date-input" value={preset === 'custom' ? (to || maxDate) : range.to || maxDate} min={minDate} max={maxDate}
+                onChange={(e) => { setPreset('custom'); setTo(e.target.value) }} />
             </div>
           </div>
         </section>

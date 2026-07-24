@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { Plus, Pencil, Trash2, ChevronDown, Wallet, CreditCard, PiggyBank, Banknote, Target, ClipboardList, type LucideIcon } from 'lucide-react'
 import CategorySelect from './CategorySelect'
 import SectionTitle from './SectionTitle'
+import { today } from '@/lib/date'
 import { getJSON } from '@/lib/fresh'
 
 interface Item { id: string; name: string; amount: number }
@@ -42,8 +43,9 @@ function envStatus(e: Envelope) {
 }
 
 export default function BudgetManager() {
-  const [data, setData] = useState<{ month: string; label: string; envelopes: Envelope[]; totalBudgeted: number; totalSpent: number } | null>(null)
+  const [data, setData] = useState<{ month: string; label: string; availableMonths?: string[]; envelopes: Envelope[]; totalBudgeted: number; totalSpent: number } | null>(null)
   const [cats, setCats] = useState<{ name: string; type: string }[]>([])
+  const [month, setMonth] = useState(today().slice(0, 7)) // current local month
   const [loading, setLoading] = useState(true)
   const [collapsed, setCollapsed] = useState(false)
   const [adding, setAdding] = useState(false)
@@ -52,10 +54,10 @@ export default function BudgetManager() {
   const [busy, setBusy] = useState(false)
 
   const load = useCallback(async () => {
-    const d = await getJSON('/api/budgets').catch(() => null)
+    const d = await getJSON(`/api/budgets?month=${month}`).catch(() => null)
     if (d && !d.error) setData(d)
     setLoading(false)
-  }, [])
+  }, [month])
 
   useEffect(() => {
     load()
@@ -108,11 +110,17 @@ export default function BudgetManager() {
     <>
       {/* ── Card 1: summary (always visible) ── */}
       <div className="card glass" style={{ marginBottom: 16 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 8, marginBottom: 18 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 18 }}>
           <SectionTitle icon={Target}>Monthly Budget</SectionTitle>
-          <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>
-            {pace}% through {data?.label ?? 'the month'}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{pace}% through</span>
+            <select className="date-input" value={month} onChange={(e) => setMonth(e.target.value)} aria-label="Budget month" style={{ fontWeight: 600 }}>
+              {[...new Set([month, ...(data?.availableMonths ?? [])])].sort().reverse().map((m) => {
+                const [y, mo] = m.split('-')
+                return <option key={m} value={m}>{new Date(Number(y), Number(mo) - 1).toLocaleString('en', { month: 'long', year: 'numeric' })}</option>
+              })}
+            </select>
+          </div>
         </div>
 
         {/* Four independent group bars: income · spending · saving · debt */}
