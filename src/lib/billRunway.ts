@@ -14,13 +14,14 @@ export function billTrough(bills: BillRow[], s: BillSettings): Trough | null {
   const today = strip(new Date())
   const startRaw = strip(new Date((s.balance_as_of || today.toISOString().slice(0, 10)) + 'T00:00:00'))
   const from = startRaw < today ? today : startRaw
-  const depDay = Number(s.deposit_day) || 28
-  const depAmt = Number(s.deposit_amount) || 0
-  const DAYS = 42
+  // No deposits in the model — the balance only drains. Walk ~one billing cycle and
+  // report the point where it first drops below the buffer (i.e. runs short).
+  const DAYS = 35
+  const buffer = Number(s.buffer) || 0
   let bal = Number(s.current_balance) || 0
   let trough: { balance: number; date: Date } | null = null
-  let hitDeposit = false
-  for (let i = 0; i <= DAYS && !hitDeposit; i++) {
+  let firstShort: { balance: number; date: Date } | null = null
+  for (let i = 0; i <= DAYS; i++) {
     const d = new Date(from.getFullYear(), from.getMonth(), from.getDate() + i)
     for (const b of active) {
       let hit = false
@@ -32,11 +33,15 @@ export function billTrough(bills: BillRow[], s: BillSettings): Trough | null {
           if (q.getTime() === d.getTime()) { hit = true; break }
         }
       } else if (!b.quarterly && d.getDate() === Number(b.day)) hit = true
-      if (hit) bal -= Number(b.amount)
+      if (hit) {
+        bal -= Number(b.amount)
+        if (!firstShort && bal < buffer) firstShort = { balance: bal, date: d }
+        if (!trough || bal < trough.balance) trough = { balance: bal, date: d }
+      }
     }
-    if (i > 0 && d.getDate() === depDay && depAmt > 0) hitDeposit = true // stop before crediting the deposit
-    else if (!trough || bal < trough.balance) trough = { balance: bal, date: d }
   }
+  // report the first-shortfall day (most actionable); fall back to the lowest point
+  trough = firstShort || trough
   if (!trough) return null
   return {
     balance: Math.round(trough.balance),
