@@ -109,7 +109,7 @@ function parseGemini(data: any) {
 }
 
 // Build a compact financial context so the assistant can answer accurately.
-async function buildContext() {
+async function buildContext(clientDate?: string) {
   const { data } = await supabaseAdmin
     .from('transactions')
     .select('id, type, amount, date, category, description')
@@ -221,11 +221,13 @@ BILL ACCOUNTS (each account pays its own bills from its own balance — no depos
 ${blocks}`
   }
 
-  const nowD = new Date()
+  // use the caller's LOCAL date when provided (server runs in UTC, which is a day ahead in the evening for Winnipeg)
+  const nowD = /^\d{4}-\d{2}-\d{2}$/.test(clientDate || '') ? new Date(clientDate + 'T12:00:00') : new Date()
+  const todayStr = clientDate && /^\d{4}-\d{2}-\d{2}$/.test(clientDate) ? clientDate : nowD.toISOString().slice(0, 10)
   const thisM = nowD.toLocaleString('en', { month: 'long', year: 'numeric' })
   const lastM = new Date(nowD.getFullYear(), nowD.getMonth() - 1, 1).toLocaleString('en', { month: 'long', year: 'numeric' })
 
-  return `Today is ${nowD.toISOString().slice(0, 10)}. "This month" = ${thisM}; "last month" = ${lastM}. Use these exactly when the user says this/last month. The user is tracking their finances toward a ${money(goal)} goal ("Journey to 500K"). All amounts are in CAD.
+  return `Today is ${todayStr}. "This month" = ${thisM}; "last month" = ${lastM}. Use these exactly when the user says this/last month. The user is tracking their finances toward a ${money(goal)} goal ("Journey to 500K"). All amounts are in CAD.
 
 ⭐ THE GOAL METRIC IS NET WORTH, NOT the savings-contributions total. "Progress to the goal" = net worth ÷ goal. Do NOT use the "total saved/invested" figure below as progress toward the goal.
 
@@ -377,10 +379,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'AI is not configured (add a free GEMINI_API_KEY).' }, { status: 500 })
   }
 
-  const { message, history } = await req.json()
+  const { message, history, clientDate } = await req.json()
   if (!message) return NextResponse.json({ error: 'message required' }, { status: 400 })
 
-  const context = await buildContext()
+  const context = await buildContext(clientDate)
   const system =
     `You are the household's "Family CFO" for the "Journey to 500K" app — analytical, proactive, and ` +
     `specific to their numbers. Use CAD ($). ANSWER THE USER'S ACTUAL QUESTION FIRST, concisely.\n\n` +

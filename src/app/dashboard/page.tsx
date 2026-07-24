@@ -12,6 +12,7 @@ import ProfilePanel from '@/components/ProfilePanel'
 import EditTransactionModal from '@/components/EditTransactionModal'
 import SectionTitle from '@/components/SectionTitle'
 import { getJSON } from '@/lib/fresh'
+import { ymd, today } from '@/lib/date'
 import { MonthlyArea, HBar, Donut, COLORS } from '@/components/DashCharts'
 
 type Tab = 'income' | 'expenses' | 'savings' | 'debts' | 'investments' | 'budget' | 'bills' | 'household'
@@ -49,9 +50,9 @@ const PRESETS: { key: Preset; label: string }[] = [
 ]
 
 function subMonths(iso: string, n: number) {
-  const d = new Date(iso)
+  const d = new Date(iso + 'T12:00:00') // noon avoids UTC day-shift
   d.setMonth(d.getMonth() - n)
-  return d.toISOString().slice(0, 10)
+  return ymd(d)
 }
 
 export default function Dashboard() {
@@ -81,7 +82,7 @@ export default function Dashboard() {
     return () => window.removeEventListener('transaction-added', load)
   }, [load])
 
-  const maxDate = txns.length ? txns[txns.length - 1].date : new Date().toISOString().slice(0, 10)
+  const maxDate = txns.length ? txns[txns.length - 1].date : today()
   const minDate = txns.length ? txns[0].date : '2024-01-01'
 
   // resolve active date range

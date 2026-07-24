@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useMemo, Fragment } from 'react'
 import { Pencil, Plus, Trash2, TriangleAlert, CheckCircle2, CalendarClock } from 'lucide-react'
 import { getJSON } from '@/lib/fresh'
+import { ymd, today } from '@/lib/date'
 
 interface Bill { id: string; account_id: string | null; name: string; day: number; amount: number; quarterly?: boolean; next_due?: string | null }
 interface Account { id: string; name: string; current_balance: number; balance_as_of: string | null; buffer: number }
@@ -10,7 +11,7 @@ interface Account { id: string; name: string; current_balance: number; balance_a
 const num = (v: string) => parseFloat(String(v).replace(/[^0-9.\-]/g, '')) || 0 // tolerates "$55.66", "1,234"
 const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 })
 const money2 = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' })
-const todayISO = () => new Date().toISOString().slice(0, 10)
+const todayISO = today // local date, not UTC
 const AMBER = '#b7791f'
 const AMBER_SOFT = 'rgba(224, 161, 43, 0.16)'
 const inp: React.CSSProperties = {
@@ -81,7 +82,7 @@ function project(bills: Bill[], s: { current_balance: number; balance_as_of: str
   for (const { b, date } of upcoming) {
     bal = Math.round((bal - Number(b.amount)) * 100) / 100
     const covered = bal >= buffer // balance only decreases, so once below it stays below
-    const ev: TLEvent = { iso: date.toISOString().slice(0, 10), name: b.name, amount: Number(b.amount), balanceAfter: bal, covered }
+    const ev: TLEvent = { iso: ymd(date), name: b.name, amount: Number(b.amount), balanceAfter: bal, covered }
     if (covered) { coveredCount++; coveredThroughISO = ev.iso }
     else { remainingTotal += ev.amount; if (!firstShort) firstShort = ev }
     timeline.push(ev)

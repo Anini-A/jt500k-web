@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { ArrowLeft, SquarePen, History, ArrowUp, Sparkles, Trash2, Check, X } from 'lucide-react'
+import { today } from '@/lib/date'
 
 interface Msg { role: 'user' | 'assistant'; content: string; at?: number }
 interface Thread { id: string; msgs: Msg[]; updatedAt: number }
@@ -164,6 +165,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
         body: JSON.stringify({
           message: text,
           history: msgs.filter((m, i) => i > 0).map((m) => ({ role: m.role, content: m.content })),
+          clientDate: today(), // the user's LOCAL date, so "today/this month" is correct
         }),
       })
       const data = await res.json()
@@ -194,7 +196,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
     const j = (url: string, method: string, body?: any) =>
       fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined })
     switch (name) {
-      case 'add_transaction': return j('/api/transactions', 'POST', { date: a.date || new Date().toISOString().slice(0, 10), type: a.type, category: a.category, amount: Number(a.amount), description: a.description })
+      case 'add_transaction': return j('/api/transactions', 'POST', { date: a.date || today(), type: a.type, category: a.category, amount: Number(a.amount), description: a.description })
       case 'edit_transaction': return j('/api/transactions', 'PATCH', a)
       case 'delete_transaction': return fetch(`/api/transactions?id=${a.id}`, { method: 'DELETE' })
       case 'add_budget_item': return j('/api/budgets', 'POST', { name: a.name, category: a.category, amount: Number(a.amount) })
@@ -203,7 +205,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
       case 'add_recurring': return j('/api/recurring', 'POST', { name: a.name, type: a.type, category: a.category, amount: Number(a.amount), description: a.description })
       case 'edit_recurring': return j('/api/recurring', 'PATCH', a)
       case 'log_recurring': {
-        const date = a.date || new Date().toISOString().slice(0, 10)
+        const date = a.date || today()
         const list = await (await fetch('/api/recurring')).json()
         const ids = new Set((a.ids || []).map(String))
         const chosen = (Array.isArray(list) ? list : []).filter((r: any) => ids.has(String(r.id)) && r.active)

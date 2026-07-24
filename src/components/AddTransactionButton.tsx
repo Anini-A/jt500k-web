@@ -6,6 +6,7 @@ import { Plus, Trash2, ClipboardPaste, PencilLine, Repeat } from 'lucide-react'
 import IconPill from './IconPill'
 import CategorySelect from './CategorySelect'
 import { getJSON } from '@/lib/fresh'
+import { ymd, today } from '@/lib/date'
 
 interface Category { name: string; type: string }
 interface Row { date: string; description: string; category: string; type: string; amount: string }
@@ -31,7 +32,7 @@ function normalizeDate(s: string): string {
   s = (s || '').trim()
   if (isDate(s)) return s
   const d = new Date(s)
-  return isNaN(d.getTime()) ? s : d.toISOString().slice(0, 10)
+  return isNaN(d.getTime()) ? s : ymd(d)
 }
 
 function parsePaste(raw: string, cats: Category[]): Row[] {
@@ -62,13 +63,13 @@ export default function AddTransactionButton() {
   const [cats, setCats] = useState<Category[]>([])
   const [debts, setDebts] = useState<{ name: string }[]>([])
   const [form, setForm] = useState({
-    date: new Date().toISOString().slice(0, 10), type: 'expense', category: '', amount: '', description: '',
+    date: today(), type: 'expense', category: '', amount: '', description: '',
   })
   const [raw, setRaw] = useState('')
   const [rows, setRows] = useState<Row[] | null>(null)
   const [recs, setRecs] = useState<any[]>([])
   const [picked, setPicked] = useState<Set<string>>(new Set())
-  const [recDate, setRecDate] = useState(new Date().toISOString().slice(0, 10))
+  const [recDate, setRecDate] = useState(today())
   const [recEdit, setRecEdit] = useState<null | 'new' | string>(null) // manage recurring items
   const [recForm, setRecForm] = useState({ name: '', type: 'expense', category: '', amount: '', description: '' })
 
