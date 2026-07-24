@@ -287,6 +287,8 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
       const resume = () => { if (voiceModeRef.current && !iosRef.current) listenRef.current() }
       if (data.actions?.length) {
         setPending(data.actions)
+        // a change needs confirming — leave voice mode so the confirm card is visible/tappable
+        if (voiceModeRef.current) { setVoiceMode(false); voiceModeRef.current = false; stopSpeaking() }
       } else {
         const reply = data.reply || data.error || 'Something went wrong.'
         setMsgs([...next, { role: 'assistant', content: reply, at: Date.now() }])

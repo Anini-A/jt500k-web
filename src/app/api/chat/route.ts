@@ -489,6 +489,11 @@ export async function POST(req: NextRequest) {
       if (writes.length) {
         return NextResponse.json({ actions: writes.map((c: any) => ({ name: c.name, args: c.args || {}, label: describeAction(c.name, c.args || {}) })) })
       }
+      // Model returned only a tool call / no text → ask once more for a plain-text answer
+      if (!reply || !reply.trim()) {
+        const r3 = await geminiGenerate({ system: `${fullSystem}\n\nAnswer the user's question now in plain conversational text using the data above.`, contents })
+        if (r3.ok) reply = parseGemini(r3.data).reply || reply
+      }
       return NextResponse.json({ reply: reply || 'Sorry, I could not generate a response.' })
     }
 

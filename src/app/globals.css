@@ -95,10 +95,14 @@
   position: absolute; inset: 0; z-index: 12;
   display: flex; flex-direction: column;
   padding: 14px 14px calc(24px + env(safe-area-inset-bottom, 0px));
+  /* liquid glass: aurora tint over a frosted, translucent surface */
   background:
-    radial-gradient(130% 75% at 50% 26%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 68%),
-    radial-gradient(120% 60% at 50% 108%, color-mix(in srgb, var(--savings) 15%, transparent), transparent 70%),
-    var(--surface-1);
+    radial-gradient(130% 75% at 50% 26%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 68%),
+    radial-gradient(120% 60% at 50% 108%, color-mix(in srgb, var(--savings) 17%, transparent), transparent 70%),
+    color-mix(in srgb, var(--surface-1) 78%, transparent);
+  -webkit-backdrop-filter: blur(34px) saturate(160%);
+  backdrop-filter: blur(34px) saturate(160%);
+  box-shadow: var(--glass-sheen);
 }
 
 /* orb + ambient halo */
@@ -681,12 +685,19 @@ header.top h1 {
 }
 
 .modal-card {
+  position: relative;
   width: min(600px, 100%);
   border-radius: 22px;
   padding: 24px;
   max-height: 90vh;
   overflow-y: auto;
   animation: modalIn 0.24s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+/* liquid-glass: specular top highlight + inner light rim on the modal shell */
+.modal-card.glass { box-shadow: var(--glass-shadow), var(--glass-sheen), var(--glass-rim); }
+.modal-card.glass::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 120px;
+  border-radius: 22px 22px 0 0; background: var(--glass-specular); opacity: 0.7; pointer-events: none;
 }
 
 @keyframes backdropIn {
