@@ -389,7 +389,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'AI is not configured (add a free GEMINI_API_KEY).' }, { status: 500 })
   }
 
-  const { message, history, clientDate } = await req.json()
+  const { message, history, clientDate, voice } = await req.json()
   if (!message) return NextResponse.json({ error: 'message required' }, { status: 400 })
 
   const context = await buildContext(clientDate)
@@ -447,6 +447,10 @@ export async function POST(req: NextRequest) {
   let fullSystem = system
   if (marketRe.test(String(message))) {
     try { fullSystem += await getMarketContext() } catch { /* market feed optional */ }
+  }
+  // Voice conversation → keep it short and speakable
+  if (voice) {
+    fullSystem += `\n\n🎙️ VOICE MODE: the user is SPEAKING to you and will HEAR your reply. Answer in 1–2 short, natural sentences (~40 words max). Give the key number/answer directly. NO markdown, NO bullet lists, NO headings. If the full detail is long, give the headline and offer "want the breakdown?".`
   }
 
   const prior = Array.isArray(history) ? history : []

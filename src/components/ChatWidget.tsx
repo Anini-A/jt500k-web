@@ -113,6 +113,25 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
   const speakRef = useRef(true)
   const sendRef = useRef<(t: string) => void>(() => {})
   const listenRef = useRef<() => void>(() => {})
+  const voiceRef = useRef<SpeechSynthesisVoice | null>(null)
+
+  // pick the most natural-sounding English voice available
+  useEffect(() => {
+    const synth = window.speechSynthesis
+    if (!synth) return
+    const pick = () => {
+      const vs = synth.getVoices() || []
+      const en = vs.filter((v) => /^en/i.test(v.lang))
+      const pref = ['Google UK English Female', 'Google US English', 'Samantha', 'Ava', 'Serena', 'Karen', 'Moira', 'Microsoft Aria', 'Microsoft Jenny', 'Microsoft Michelle']
+      voiceRef.current =
+        pref.map((n) => en.find((v) => v.name.includes(n))).find(Boolean) ||
+        en.find((v) => /natural|neural|enhanced|premium/i.test(v.name)) ||
+        en.find((v) => v.localService) || en[0] || vs[0] || null
+    }
+    pick()
+    synth.onvoiceschanged = pick
+    return () => { synth.onvoiceschanged = null }
+  }, [])
 
   useEffect(() => { voiceModeRef.current = voiceMode }, [voiceMode])
   useEffect(() => { speakRef.current = speak }, [speak])
@@ -130,7 +149,9 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
     if (!synth || !text.trim() || !speakRef.current) { onDone?.(); return }
     synth.cancel()
     const u = new SpeechSynthesisUtterance(plain(text))
-    u.lang = 'en-CA'; u.rate = 1.03
+    if (voiceRef.current) u.voice = voiceRef.current
+    u.lang = voiceRef.current?.lang || 'en-CA'
+    u.rate = 1.0; u.pitch = 1.0 // natural cadence
     u.onend = () => onDone?.()
     u.onerror = () => onDone?.()
     synth.speak(u)
@@ -250,6 +271,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
           message: text,
           history: msgs.filter((m, i) => i > 0).map((m) => ({ role: m.role, content: m.content })),
           clientDate: today(), // the user's LOCAL date, so "today/this month" is correct
+          voice: voiceModeRef.current, // short, speakable answers in conversation mode
         }),
       })
       const data = await res.json()
@@ -370,7 +392,39 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
   return createPortal(
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-card glass" onClick={(e) => { e.stopPropagation(); setRecentOpen(false) }}
-        style={{ width: 'min(720px, 100%)', height: 'min(88vh, 760px)', maxHeight: '88vh', padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'var(--surface-1)' }}>
+        style={{ width: 'min(720px, 100%)', height: 'min(88vh, 760px)', maxHeight: '88vh', padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'var(--surface-1)', position: 'relative' }}>
+
+        {/* Hands-free voice UI — replaces the text chat while a conversation is on */}
+        {voiceMode && (
+          <div className="voice-overlay">
+            <button style={roundBtn} aria-label="Close voice" title="Back to chat" onClick={toggleVoice}><ArrowLeft size={20} /></button>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 26, padding: '0 24px', textAlign: 'center' }}>
+              <div className={`voice-orb ${listening ? 'is-listening' : busy ? 'is-thinking' : 'is-speaking'}`} />
+              <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: listening ? 'var(--expense)' : 'var(--accent)' }}>
+                {listening ? 'Listening' : busy ? 'Thinking' : 'Speaking'}
+              </div>
+              <div style={{ fontSize: 18, lineHeight: 1.5, color: 'var(--text-primary)', maxWidth: 440, minHeight: 54 }}>
+                {listening
+                  ? (input || <span style={{ color: 'var(--text-muted)' }}>Say something…</span>)
+                  : ([...msgs].reverse().find((m) => m.role === 'assistant')?.content || '')}
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, paddingBottom: 8 }}>
+              <button onClick={() => setSpeak((v) => { if (v) stopSpeaking(); return !v })} aria-label="Toggle voice output"
+                style={{ width: 52, height: 52, borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: speak ? 'var(--accent)' : 'var(--text-muted)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                {speak ? <Volume2 size={22} /> : <VolumeX size={22} />}
+              </button>
+              <button className={listening ? 'mic-live' : ''} onClick={startListen} aria-label="Listen now"
+                style={{ width: 68, height: 68, borderRadius: 999, border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', background: 'var(--expense)' }}>
+                <Mic size={28} />
+              </button>
+              <button onClick={toggleVoice} aria-label="End voice conversation"
+                style={{ width: 52, height: 52, borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-secondary)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                <X size={22} />
+              </button>
+            </div>
+          </div>
+        )}
         {/* Header — back (close) · title · history + new chat */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 14px', borderBottom: '1px solid var(--border)', position: 'relative' }}>
           <button style={roundBtn} aria-label="Close" title="Close" onClick={onClose}><ArrowLeft size={20} /></button>

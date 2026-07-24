@@ -90,6 +90,33 @@
 .wave > span:nth-child(7) { animation-delay: -0.1s; }
 @keyframes waveJump { 0%, 100% { transform: scaleY(0.28); } 50% { transform: scaleY(1); } }
 
+/* Hands-free voice UI overlay */
+.voice-overlay {
+  position: absolute; inset: 0; z-index: 12;
+  background: var(--surface-1);
+  display: flex; flex-direction: column;
+  padding: 14px 14px calc(18px + env(safe-area-inset-bottom, 0px));
+}
+.voice-orb {
+  width: 150px; height: 150px; border-radius: 50%;
+  background: linear-gradient(140deg, var(--accent), var(--savings) 55%, var(--income));
+  box-shadow: 0 0 60px color-mix(in srgb, var(--accent) 45%, transparent), var(--glass-sheen);
+  animation: orbBreath 3s ease-in-out infinite;
+}
+.voice-orb.is-listening {
+  background: linear-gradient(140deg, var(--expense), var(--savings) 60%, var(--accent));
+  box-shadow: 0 0 66px color-mix(in srgb, var(--expense) 48%, transparent), var(--glass-sheen);
+  animation: orbBreath 1.5s ease-in-out infinite;
+}
+.voice-orb.is-thinking { animation: orbBreath 2s ease-in-out infinite, orbSpin 1.3s linear infinite; }
+.voice-orb.is-speaking { animation: orbSpeak 0.7s ease-in-out infinite; }
+@keyframes orbBreath { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+@keyframes orbSpeak  { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.11); } }
+@keyframes orbSpin   { to { filter: hue-rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .voice-orb, .voice-orb.is-listening, .voice-orb.is-thinking, .voice-orb.is-speaking { animation: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .mic-live { animation: none; }
   .wave > span { animation: none; transform: scaleY(0.6); }
