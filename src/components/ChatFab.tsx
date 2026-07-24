@@ -10,7 +10,7 @@ export default function ChatFab() {
   const [open, setOpen] = useState(false)
   return (
     <>
-      <button className="chat-fab" aria-label="Ask AI" title="Ask AI" onClick={() => setOpen(true)}>
+      <button className="fab fab-chat" aria-label="Ask AI" title="Ask AI" onClick={() => setOpen(true)}>
         <MessageCircle size={26} strokeWidth={2.2} />
       </button>
       {open && <ChatWidget onClose={() => setOpen(false)} />}

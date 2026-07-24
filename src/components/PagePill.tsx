@@ -2,6 +2,8 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { nav } from '@/lib/nav'
 
 type Key = 'transactions' | 'home' | 'dashboard'
 // left → right order. Swipe right advances toward Dashboard, left toward Transactions.
@@ -11,7 +13,6 @@ const PAGES: { key: Key; label: string; href: string }[] = [
   { key: 'dashboard', label: 'Dashboard', href: '/dashboard' },
 ]
 
-// does the touch start inside a horizontally-scrollable element? (don't hijack it)
 function inHScroll(el: EventTarget | null): boolean {
   let n = el as HTMLElement | null
   while (n && n !== document.body) {
@@ -22,17 +23,22 @@ function inHScroll(el: EventTarget | null): boolean {
   return false
 }
 
-// Top-center section switcher: tap a segment, or swipe left/right to change page.
+// Top-center switcher: shows ONLY the current section; chevrons or a swipe move.
 export default function PagePill({ current }: { current: Key }) {
   const router = useRouter()
   const idx = PAGES.findIndex((p) => p.key === current)
+
+  const go = (next: number) => {
+    if (next < 0 || next >= PAGES.length || next === idx) return
+    nav.dir = next > idx ? 1 : -1 // remember the slide direction for the transition
+    router.push(PAGES[next].href)
+  }
 
   useEffect(() => {
     let x0 = 0, y0 = 0, active = false
     const onStart = (e: TouchEvent) => {
       if (e.touches.length !== 1) { active = false; return }
       const t = e.touches[0]
-      // ignore near screen edges (iOS back gesture) and inside horizontal scrollers
       if (t.clientX < 24 || t.clientX > window.innerWidth - 24 || inHScroll(e.target)) { active = false; return }
       x0 = t.clientX; y0 = t.clientY; active = true
     }
@@ -41,24 +47,19 @@ export default function PagePill({ current }: { current: Key }) {
       active = false
       const t = e.changedTouches[0]
       const dx = t.clientX - x0, dy = t.clientY - y0
-      if (Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx) * 0.7) return // not a clear horizontal swipe
-      const next = idx + (dx > 0 ? 1 : -1) // swipe right → toward Dashboard
-      if (next >= 0 && next < PAGES.length) router.push(PAGES[next].href)
+      if (Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx) * 0.7) return
+      go(idx + (dx > 0 ? 1 : -1)) // swipe right → toward Dashboard
     }
     window.addEventListener('touchstart', onStart, { passive: true })
     window.addEventListener('touchend', onEnd, { passive: true })
     return () => { window.removeEventListener('touchstart', onStart); window.removeEventListener('touchend', onEnd) }
-  }, [idx, router])
+  }, [idx]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="page-pill" role="tablist" aria-label="Sections">
-      {PAGES.map((p) => (
-        <button key={p.key} role="tab" aria-selected={p.key === current}
-          className={`page-seg ${p.key === current ? 'active' : ''}`}
-          onClick={() => { if (p.key !== current) router.push(p.href) }}>
-          {p.label}
-        </button>
-      ))}
+    <div className="page-pill">
+      <button className="page-nav" onClick={() => go(idx - 1)} disabled={idx === 0} aria-label="Previous section"><ChevronLeft size={17} /></button>
+      <span className="page-current" aria-live="polite">{PAGES[idx].label}</span>
+      <button className="page-nav" onClick={() => go(idx + 1)} disabled={idx === PAGES.length - 1} aria-label="Next section"><ChevronRight size={17} /></button>
     </div>
   )
 }

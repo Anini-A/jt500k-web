@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Settings } from 'lucide-react'
 import IconPill from './IconPill'
-import AddTransactionButton from './AddTransactionButton'
 import SettingsPanel from './SettingsPanel'
 
 type Page = 'home' | 'dashboard' | 'transactions' | 'settings'
@@ -16,7 +15,6 @@ export default function HeaderNav({ current }: { current: Page }) {
 
   return (
     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-      <AddTransactionButton />
       {current !== 'settings' && (
         <IconPill icon={<Settings />} label="Settings" onClick={() => setSettingsOpen(true)} />
       )}
