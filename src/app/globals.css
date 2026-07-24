@@ -450,6 +450,7 @@ header.top h1 {
 
 .tab {
   position: relative;
+  flex-shrink: 0; /* never collapse (esp. the active tab, whose overflow:hidden would let it shrink to a circle); the row scrolls instead */
   padding: 9px 18px;
   border-radius: 999px;
   border: none;
