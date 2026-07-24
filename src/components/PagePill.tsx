@@ -2,7 +2,6 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { nav } from '@/lib/nav'
 
 type Key = 'transactions' | 'home' | 'dashboard'
@@ -57,9 +56,21 @@ export default function PagePill({ current }: { current: Key }) {
 
   return (
     <div className="page-pill">
-      <button className="page-nav" onClick={() => go(idx - 1)} disabled={idx === 0} aria-label="Previous section"><ChevronLeft size={17} /></button>
-      <span className="page-current" aria-live="polite">{PAGES[idx].label}</span>
-      <button className="page-nav" onClick={() => go(idx + 1)} disabled={idx === PAGES.length - 1} aria-label="Next section"><ChevronRight size={17} /></button>
+      {/* desktop: full clickable segmented control */}
+      <div className="page-segs">
+        {PAGES.map((p, i) => (
+          <button key={p.key} className={`page-seg ${i === idx ? 'active' : ''}`} onClick={() => go(i)} aria-current={i === idx}>{p.label}</button>
+        ))}
+      </div>
+      {/* mobile: current label + dots (swipe to change) */}
+      <div className="page-compact">
+        <span className="page-current" aria-live="polite">{PAGES[idx].label}</span>
+        <div className="page-dots">
+          {PAGES.map((p, i) => (
+            <button key={p.key} className={`page-dot ${i === idx ? 'on' : ''}`} onClick={() => go(i)} aria-label={p.label} title={p.label} />
+          ))}
+        </div>
+      </div>
     </div>
   )
 }

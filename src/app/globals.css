@@ -138,44 +138,57 @@ header.top {
   box-shadow: var(--glass-shadow), var(--glass-sheen);
 }
 
-/* Top-center section pill — shows the CURRENT section only; chevrons/swipe change it */
-.page-pill {
-  justify-self: center;
+/* Top-center section pill.
+   Desktop → full clickable segmented control. Mobile → current label + dots + swipe. */
+.page-pill { justify-self: center; min-width: 0; }
+
+.page-segs {
   display: inline-flex;
-  align-items: center;
   gap: 2px;
   padding: 4px;
   border-radius: 999px;
   background: var(--kpi-bg);
   border: 1px solid var(--border);
 }
-.page-nav {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
+.page-seg {
+  flex-shrink: 0;
+  padding: 6px 16px;
   border-radius: 999px;
   border: none;
   background: transparent;
-  color: var(--text-secondary);
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 13px;
   cursor: pointer;
-  transition: background .15s ease, color .15s ease;
-}
-.page-nav:hover:not(:disabled) { background: var(--surface-1); color: var(--text-primary); }
-.page-nav:disabled { opacity: 0.28; cursor: default; }
-.page-current {
-  min-width: 96px;
-  text-align: center;
-  font-weight: 700;
-  font-size: 14px;
-  letter-spacing: -0.01em;
-  padding: 0 4px;
   white-space: nowrap;
+  font-family: inherit;
+  transition: background .2s ease, color .2s ease;
 }
+.page-seg:hover { color: var(--text-primary); }
+.page-seg.active {
+  background: var(--surface-1);
+  color: var(--text-primary);
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.page-compact { display: none; flex-direction: column; align-items: center; gap: 5px; }
+.page-current { font-weight: 700; font-size: 15px; letter-spacing: -0.01em; white-space: nowrap; }
+.page-dots { display: flex; gap: 3px; align-items: center; }
+.page-dot {
+  width: 18px; height: 14px; padding: 0; border: none; background: transparent; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.page-dot::before {
+  content: ''; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--text-muted); opacity: 0.4; transition: all .2s ease;
+}
+.page-dot.on::before { opacity: 1; background: var(--accent); width: 7px; height: 7px; }
+
 @media (max-width: 640px) {
-  header.top .brand span { display: none; } /* logo only — make room for the pill */
-  .page-current { min-width: 84px; font-size: 13px; }
+  header.top .brand span { display: none; }
+  .page-segs { display: none; }
+  .page-compact { display: flex; }
 }
 
 /* Page transition — the new page slides in from the swipe/tap direction */
