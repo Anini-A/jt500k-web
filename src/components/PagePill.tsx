@@ -47,7 +47,7 @@ export default function PagePill({ current }: { current: Key }) {
       const t = e.changedTouches[0]
       const dx = t.clientX - x0, dy = t.clientY - y0
       if (Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx) * 0.7) return
-      go(idx + (dx > 0 ? 1 : -1)) // swipe right → toward Dashboard
+      go(idx + (dx < 0 ? 1 : -1)) // swipe left → Dashboard, swipe right → Transactions
     }
     window.addEventListener('touchstart', onStart, { passive: true })
     window.addEventListener('touchend', onEnd, { passive: true })
