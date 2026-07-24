@@ -100,50 +100,88 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
   const [busy, setBusy] = useState(false)
   const [pending, setPending] = useState<{ name: string; args: any; label: string }[] | null>(null)
   const [recentOpen, setRecentOpen] = useState(false)
-  const [listening, setListening] = useState(false)
+  const [listening, setListening] = useState(false)   // mic actively capturing
+  const [voiceMode, setVoiceMode] = useState(false)   // hands-free conversation on
   const [micOK, setMicOK] = useState(false)
-  const [speak, setSpeak] = useState(true) // read answers aloud
+  const [speak, setSpeak] = useState(true)            // read answers aloud
   const scrollRef = useRef<HTMLDivElement>(null)
   const taRef = useRef<HTMLTextAreaElement>(null)
   const recogRef = useRef<any>(null)
+  const finalRef = useRef('')      // accumulated final transcript for the current turn
+  const emptyRef = useRef(0)       // consecutive empty listens (iOS ends early) — cap restarts
+  const voiceModeRef = useRef(false)
+  const speakRef = useRef(true)
+  const sendRef = useRef<(t: string) => void>(() => {})
+  const listenRef = useRef<() => void>(() => {})
 
+  useEffect(() => { voiceModeRef.current = voiceMode }, [voiceMode])
+  useEffect(() => { speakRef.current = speak }, [speak])
   useEffect(() => {
     setMicOK(!!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition))
     try { setSpeak(localStorage.getItem('jt-chat-speak') !== 'off') } catch { /* ignore */ }
   }, [])
   useEffect(() => { try { localStorage.setItem('jt-chat-speak', speak ? 'on' : 'off') } catch { /* ignore */ } }, [speak])
-  // stop listening / speaking if the chat closes/unmounts
-  useEffect(() => () => { try { recogRef.current?.stop(); window.speechSynthesis?.cancel() } catch { /* ignore */ } }, [])
+  useEffect(() => () => { try { recogRef.current?.abort?.(); window.speechSynthesis?.cancel() } catch { /* ignore */ } }, [])
 
-  // Text-to-speech — read an assistant reply aloud (free, browser-native)
-  const say = (text: string) => {
+  const stopSpeaking = () => { try { window.speechSynthesis?.cancel() } catch { /* ignore */ } }
+  // Text-to-speech — read a reply aloud, then run onDone (used to resume listening)
+  const say = (text: string, onDone?: () => void) => {
     const synth = window.speechSynthesis
-    if (!synth || !text.trim()) return
+    if (!synth || !text.trim() || !speakRef.current) { onDone?.(); return }
     synth.cancel()
     const u = new SpeechSynthesisUtterance(plain(text))
     u.lang = 'en-CA'; u.rate = 1.03
+    u.onend = () => onDone?.()
+    u.onerror = () => onDone?.()
     synth.speak(u)
   }
-  const stopSpeaking = () => { try { window.speechSynthesis?.cancel() } catch { /* ignore */ } }
 
-  // Voice input — Web Speech API transcribes into the composer (free, on-device/browser)
-  const toggleMic = () => {
+  // Start a listening turn. In voice mode, ending with speech auto-sends; ending
+  // empty restarts (handles iOS Safari ending recognition prematurely).
+  const startListen = () => {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
     if (!SR) return
-    if (listening) { try { recogRef.current?.stop() } catch { /* ignore */ } return }
+    try { recogRef.current?.abort?.() } catch { /* ignore */ }
     const r = new SR()
     r.lang = 'en-CA'; r.interimResults = true; r.continuous = false; r.maxAlternatives = 1
-    const base = input ? input.replace(/\s+$/, '') + ' ' : ''
+    finalRef.current = ''
     r.onresult = (e: any) => {
-      let txt = ''
-      for (let i = e.resultIndex; i < e.results.length; i++) txt += e.results[i][0].transcript
-      setInput(base + txt)
+      let interim = '', fin = ''
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const res = e.results[i]
+        if (res.isFinal) fin += res[0].transcript; else interim += res[0].transcript
+      }
+      if (fin) finalRef.current += fin
+      setInput((finalRef.current + interim).trim())
     }
-    r.onend = () => { setListening(false); recogRef.current = null; taRef.current?.focus() }
-    r.onerror = () => { setListening(false); recogRef.current = null }
+    r.onerror = (e: any) => {
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { setVoiceMode(false); voiceModeRef.current = false }
+    }
+    r.onend = () => {
+      setListening(false); recogRef.current = null
+      if (!voiceModeRef.current) return
+      const text = finalRef.current.trim()
+      if (text) { emptyRef.current = 0; setInput(''); sendRef.current(text) }        // heard something → send
+      else if (emptyRef.current++ < 5) setTimeout(() => { if (voiceModeRef.current) startListen() }, 180) // keep listening
+      else { setVoiceMode(false); voiceModeRef.current = false }
+    }
     recogRef.current = r
     setListening(true)
     try { r.start() } catch { setListening(false) }
+  }
+  listenRef.current = startListen
+
+  // mic button: toggle hands-free conversation
+  const toggleVoice = () => {
+    if (!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition)) return
+    if (voiceMode) {
+      setVoiceMode(false); voiceModeRef.current = false
+      try { recogRef.current?.abort?.() } catch { /* ignore */ }
+      stopSpeaking(); setListening(false)
+    } else {
+      stopSpeaking(); setVoiceMode(true); voiceModeRef.current = true; emptyRef.current = 0
+      startListen()
+    }
   }
 
   const active = threads.find((t) => t.id === activeId) || threads[0]
@@ -215,12 +253,13 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
         }),
       })
       const data = await res.json()
+      const resume = () => { if (voiceModeRef.current) listenRef.current() } // hands-free: listen again
       if (data.actions?.length) {
         setPending(data.actions)
       } else {
         const reply = data.reply || data.error || 'Something went wrong.'
         setMsgs([...next, { role: 'assistant', content: reply, at: Date.now() }])
-        if (speak && data.reply) say(reply)
+        if (data.reply) say(reply, resume); else resume()
       }
     } catch {
       setMsgs([...next, { role: 'assistant', content: 'Network error — please try again.', at: Date.now() }])
@@ -228,6 +267,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
       setBusy(false)
     }
   }
+  sendRef.current = send
 
   // resolve a bill-account by name (falls back to the only account if there's one)
   const findBillAccount = async (nameLike: string) => {
@@ -422,9 +462,9 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
               style={{ flex: 1, minWidth: 0, padding: '11px 16px', borderRadius: 22, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 16, fontFamily: 'inherit', lineHeight: 1.4, resize: 'none', maxHeight: 160, overflowY: 'auto' }}
             />
             {micOK && (
-              <button type="button" onClick={toggleMic} aria-label={listening ? 'Stop voice input' : 'Voice input'} title={listening ? 'Stop' : 'Speak'}
+              <button type="button" onClick={toggleVoice} aria-label={voiceMode ? 'Stop voice conversation' : 'Start voice conversation'} title={voiceMode ? 'Stop voice' : 'Talk (hands-free)'}
                 className={listening ? 'mic-live' : ''}
-                style={{ width: 44, height: 44, flexShrink: 0, borderRadius: 999, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: listening ? 'var(--expense)' : 'var(--kpi-bg)', color: listening ? '#fff' : 'var(--text-secondary)', border: `1px solid ${listening ? 'var(--expense)' : 'var(--border)'}` }}>
+                style={{ width: 44, height: 44, flexShrink: 0, borderRadius: 999, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: voiceMode ? 'var(--expense)' : 'var(--kpi-bg)', color: voiceMode ? '#fff' : 'var(--text-secondary)', border: `1px solid ${voiceMode ? 'var(--expense)' : 'var(--border)'}` }}>
                 <Mic size={20} />
               </button>
             )}
@@ -438,6 +478,8 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
               <span className="wave" aria-hidden="true"><span /><span /><span /><span /><span /><span /><span /></span>
               <span style={{ fontSize: 12, color: 'var(--expense)', fontWeight: 600 }}>Listening…</span>
             </div>
+          ) : voiceMode ? (
+            <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--accent)', fontWeight: 600, marginTop: 7 }}>{busy ? 'Thinking…' : 'Speaking… tap the mic to end'}</div>
           ) : (
             <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--text-muted)', marginTop: 7 }}>Gemini can make mistakes — double-check important numbers.</div>
           )}
