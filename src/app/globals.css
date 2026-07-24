@@ -144,6 +144,9 @@ header.top {
 
 .page-segs {
   display: inline-flex;
+  align-items: center;
+  min-height: 46px;
+  box-sizing: border-box;
   gap: 2px;
   padding: 4px;
   border-radius: 999px;
@@ -176,8 +179,10 @@ header.top {
 .page-compact {
   display: none;
   align-items: center;
+  min-height: 46px;
+  box-sizing: border-box;
   gap: 8px;
-  padding: 7px 14px;
+  padding: 0 16px;
   border-radius: 999px;
   background: var(--kpi-bg);
   border: 1px solid var(--border);
@@ -219,6 +224,8 @@ header.top .brand {
   color: inherit;
   cursor: pointer;
 }
+/* logo mark sized to match the Settings pill / section pill in the header */
+header.top .brand svg { width: 42px; height: 42px; }
 
 header.top h1 {
   font-size: 18px;
