@@ -350,7 +350,7 @@ async function getMarketContext(): Promise<string> {
 
 // Call Gemini with the tool set. Retries once on transient overload, then falls
 // back through other free Flash models so a spike on one doesn't fail the request.
-async function geminiGenerate({ system, contents }: { system: string; contents: any[] }) {
+async function geminiGenerate({ system, contents, noTools }: { system: string; contents: any[]; noTools?: boolean }) {
   const models = [GEMINI_MODEL, 'gemini-2.5-flash-lite', 'gemini-2.0-flash']
     .filter((m, i, a) => m && a.indexOf(m) === i)
   let lastErr = ''
@@ -361,7 +361,9 @@ async function geminiGenerate({ system, contents }: { system: string; contents: 
     const body = {
       system_instruction: { parts: [{ text: system }] },
       contents,
-      tools: TOOLS,
+      // omit tools entirely on the text-only retry — with no function to call,
+      // the model literally cannot return an empty "only a tool call" response
+      ...(noTools ? {} : { tools: TOOLS }),
       generationConfig: {
         maxOutputTokens: 4096,
         temperature: 0.4,
@@ -489,9 +491,10 @@ export async function POST(req: NextRequest) {
       if (writes.length) {
         return NextResponse.json({ actions: writes.map((c: any) => ({ name: c.name, args: c.args || {}, label: describeAction(c.name, c.args || {}) })) })
       }
-      // Model returned only a tool call / no text → ask once more for a plain-text answer
+      // Model returned only a tool call / no text → ask once more, WITHOUT tools this time
+      // so it's structurally impossible to get another empty "just a call" response back.
       if (!reply || !reply.trim()) {
-        const r3 = await geminiGenerate({ system: `${fullSystem}\n\nAnswer the user's question now in plain conversational text using the data above.`, contents })
+        const r3 = await geminiGenerate({ system: `${fullSystem}\n\nAnswer the user's question now in plain conversational text using the data above. You cannot call any tool right now — just answer directly.`, contents, noTools: true })
         if (r3.ok) reply = parseGemini(r3.data).reply || reply
       }
       return NextResponse.json({ reply: reply || 'Sorry, I could not generate a response.' })

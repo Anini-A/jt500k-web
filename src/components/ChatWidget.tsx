@@ -72,20 +72,24 @@ function Markdown({ text }: { text: string }) {
   return <>{blocks}</>
 }
 
+// Every time the chat opens it starts a NEW conversation (per user preference) —
+// older threads stay reachable via "Recent chats", they just aren't resumed automatically.
 function loadStore(): { threads: Thread[]; activeId: string } {
   const fresh: Thread = { id: uid(), msgs: [GREETING], updatedAt: Date.now() }
   if (typeof window === 'undefined') return { threads: [fresh], activeId: fresh.id }
   try {
     const s = JSON.parse(localStorage.getItem(STORE_KEY) || 'null')
     if (s && Array.isArray(s.threads) && s.threads.length) {
-      const activeId = s.threads.some((t: Thread) => t.id === s.activeId) ? s.activeId : s.threads[0].id
-      return { threads: s.threads, activeId }
+      const mostRecent = [...s.threads].sort((a: Thread, b: Thread) => b.updatedAt - a.updatedAt)[0]
+      // the last thread was never actually used — reuse it instead of piling up empty ones
+      if (mostRecent && mostRecent.msgs.length <= 1) return { threads: s.threads, activeId: mostRecent.id }
+      return { threads: [fresh, ...s.threads].slice(0, MAX_THREADS), activeId: fresh.id }
     }
     // migrate an old single-thread store if present
     const old = JSON.parse(localStorage.getItem('jt-chat') || 'null')
     if (Array.isArray(old) && old.length) {
       const t: Thread = { id: uid(), msgs: old, updatedAt: Date.now() }
-      return { threads: [t], activeId: t.id }
+      return { threads: [fresh, t], activeId: fresh.id }
     }
   } catch { /* ignore */ }
   return { threads: [fresh], activeId: fresh.id }
