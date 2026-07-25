@@ -105,6 +105,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
   const [voiceMode, setVoiceMode] = useState(false)   // hands-free conversation on
   const [micOK, setMicOK] = useState(false)
   const [speak, setSpeak] = useState(true)            // read answers aloud
+  const [voiceError, setVoiceError] = useState('')     // visible mic/permission error (was silently swallowed)
   const scrollRef = useRef<HTMLDivElement>(null)
   const taRef = useRef<HTMLTextAreaElement>(null)
   const recogRef = useRef<any>(null)
@@ -208,12 +209,23 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
   listenRef.current = startListen
 
   // ── iOS path: record audio, transcribe with Gemini ──
-  const startRecord = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+  // NOTE: must be called DIRECTLY from a click handler (no await before it) —
+  // iOS only allows getUserMedia() inside a real user gesture, and any prior
+  // `await` (even a resolved one) breaks that chain and makes the prompt/call fail silently.
+  const startRecord = () => {
+    setVoiceError('')
+    if (!navigator.mediaDevices?.getUserMedia) { setVoiceError('This browser has no microphone access API (getUserMedia unavailable).'); return }
+    navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
       streamRef.current = stream
-      const mime = ['audio/mp4', 'audio/webm', 'audio/aac'].find((m) => (window as any).MediaRecorder?.isTypeSupported?.(m)) || ''
-      const mr = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined)
+      let mr: MediaRecorder
+      try {
+        const mime = ['audio/mp4', 'audio/webm', 'audio/aac'].find((m) => (window as any).MediaRecorder?.isTypeSupported?.(m)) || ''
+        mr = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined)
+      } catch (e: any) {
+        setVoiceError('Could not start the recorder: ' + (e?.message || e)); setListening(false)
+        try { stream.getTracks().forEach((t) => t.stop()) } catch { /* ignore */ }
+        return
+      }
       chunksRef.current = []
       mr.ondataavailable = (e) => { if (e.data && e.data.size) chunksRef.current.push(e.data) }
       mr.onstop = async () => {
@@ -221,7 +233,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
         streamRef.current = null
         setListening(false)
         const blob = new Blob(chunksRef.current, { type: mr.mimeType || 'audio/mp4' })
-        if (!blob.size) return
+        if (!blob.size) { setVoiceError('No audio was captured — try again.'); return }
         setBusy(true)
         try {
           const b64 = await new Promise<string>((res, rej) => {
@@ -232,26 +244,38 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
           })
           const r = await fetch('/api/transcribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ audio: b64, mime: blob.type }) })
           const d = await r.json()
-          const text = (d.text || '').trim()
           setBusy(false)
+          if (!r.ok) { setVoiceError(d.error || 'Transcription failed.'); return }
+          const text = (d.text || '').trim()
           if (text) { setInput(''); sendRef.current(text) }
-        } catch { setBusy(false) }
+          else setVoiceError("Didn't catch that — try again.")
+        } catch (e: any) { setBusy(false); setVoiceError('Transcription request failed: ' + (e?.message || e)) }
       }
       mediaRef.current = mr
       setListening(true)
       mr.start()
-    } catch { setListening(false) } // permission denied / no mic
+    }).catch((e: any) => {
+      setListening(false)
+      // The real, specific reason — instead of silently doing nothing
+      setVoiceError(
+        e?.name === 'NotAllowedError' ? 'Microphone access denied. Enable it in Settings → Safari → Microphone (or the site permissions) and try again.'
+        : e?.name === 'NotFoundError' ? 'No microphone was found on this device.'
+        : `Microphone error: ${e?.name || ''} ${e?.message || e}`.trim()
+      )
+    })
   }
   const stopRecord = () => { try { mediaRef.current?.stop() } catch { /* ignore */ } }
 
   // one place the orb/mic calls — record (iOS) vs SpeechRecognition (elsewhere)
   const onTalk = () => {
+    setVoiceError('')
     stopSpeaking()
     if (useRecorderRef.current) { listening ? stopRecord() : startRecord() }
     else startListen()
   }
 
-  // mic button: toggle hands-free conversation
+  // mic button: toggle hands-free conversation. Starts listening/recording in the
+  // SAME tap (required for iOS) rather than opening an idle screen and waiting for a 2nd tap.
   const toggleVoice = () => {
     if (!micOK) return
     if (voiceMode) {
@@ -259,9 +283,9 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
       try { recogRef.current?.abort?.(); mediaRef.current?.stop() } catch { /* ignore */ }
       stopSpeaking(); setListening(false)
     } else {
+      setVoiceError('')
       stopSpeaking(); setVoiceMode(true); voiceModeRef.current = true; emptyRef.current = 0
-      // iOS taps to talk; desktop/Android auto-starts the listen loop
-      if (!iosRef.current) startListen()
+      onTalk()
     }
   }
 
@@ -481,13 +505,15 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
                 </>
               ) : (
                 <>
-                  <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: listening ? 'var(--expense)' : 'var(--accent)' }}>
-                    {listening ? 'Listening' : busy ? 'Thinking' : speaking ? 'Speaking' : 'Tap to talk'}
+                  <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: voiceError ? 'var(--expense)' : listening ? 'var(--expense)' : 'var(--accent)' }}>
+                    {voiceError ? 'Mic error' : listening ? 'Listening' : busy ? 'Thinking' : speaking ? 'Speaking' : 'Tap to talk'}
                   </div>
-                  <div style={{ fontSize: 19, lineHeight: 1.55, fontWeight: 500, letterSpacing: '-0.01em', color: 'var(--text-primary)', maxWidth: 460, minHeight: 62 }}>
-                    {listening
-                      ? (input || <span style={{ color: 'var(--text-muted)' }}>{useRecorderRef.current ? 'Recording… tap the orb when done.' : 'Say something…'}</span>)
-                      : ([...msgs].reverse().find((m) => m.role === 'assistant')?.content || <span style={{ color: 'var(--text-muted)' }}>Tap the orb and speak.</span>)}
+                  <div style={{ fontSize: 19, lineHeight: 1.55, fontWeight: 500, letterSpacing: '-0.01em', color: voiceError ? 'var(--expense)' : 'var(--text-primary)', maxWidth: 460, minHeight: 62 }}>
+                    {voiceError
+                      ? voiceError
+                      : listening
+                        ? (input || <span style={{ color: 'var(--text-muted)' }}>{useRecorderRef.current ? 'Recording… tap the orb when done.' : 'Say something…'}</span>)
+                        : ([...msgs].reverse().find((m) => m.role === 'assistant')?.content || <span style={{ color: 'var(--text-muted)' }}>Tap the orb and speak.</span>)}
                   </div>
                 </>
               )}
