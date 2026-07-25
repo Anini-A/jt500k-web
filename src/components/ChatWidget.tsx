@@ -110,6 +110,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
   const [micOK, setMicOK] = useState(false)
   const [speak, setSpeak] = useState(true)            // read answers aloud
   const [voiceError, setVoiceError] = useState('')     // visible mic/permission error (was silently swallowed)
+  const [voiceDbg, setVoiceDbg] = useState('')         // TEMP: which TTS path ran + why Live failed
   const scrollRef = useRef<HTMLDivElement>(null)
   const taRef = useRef<HTMLTextAreaElement>(null)
   const voiceModeRef = useRef(false)
@@ -316,7 +317,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
 
     let started = false          // has any audio arrived?
     let settled = false          // has this turn finished/failed?
-    const fail = () => { if (settled) return; settled = true; if (alive()) sayBatch(t, onDone, seq) }
+    const fail = (why?: string) => { if (settled) return; settled = true; setVoiceDbg('batch — live failed: ' + (why || '?')); if (alive()) sayBatch(t, onDone, seq) }
     const finish = () => {
       if (settled) return; settled = true
       if (!alive()) return
@@ -330,9 +331,9 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
       try {
         const r = await fetch('/api/live-token', { method: 'POST' })
         const d = await r.json()
-        if (!r.ok || !d.token) throw new Error(d.error || 'no token')
+        if (!r.ok || !d.token) throw new Error(d.error || d.detail || ('token http ' + r.status))
         token = d.token
-      } catch { fail(); return }
+      } catch (e: any) { fail('token: ' + (e?.message || e)); return }
       if (!alive()) return
 
       const MODEL = 'models/gemini-2.0-flash-live-001'
@@ -367,7 +368,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
           const parts = msg.serverContent?.modelTurn?.parts || []
           for (const p of parts) {
             const data = p.inlineData?.data
-            if (data && alive()) { started = true; clearTimeout(watchdog); playPcmChunk(data) }
+            if (data && alive()) { if (!started) setVoiceDbg('live ✓ streaming'); started = true; clearTimeout(watchdog); playPcmChunk(data) }
           }
           if (msg.serverContent?.turnComplete || msg.serverContent?.generationComplete) {
             clearTimeout(watchdog)
@@ -375,8 +376,8 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
           }
         } catch { /* ignore malformed frames */ }
       }
-      ws.onerror = () => { clearTimeout(watchdog); if (!started) fail() }
-      ws.onclose = () => { clearTimeout(watchdog); if (liveWsRef.current === ws) liveWsRef.current = null; started ? finish() : fail() }
+      ws.onerror = () => { clearTimeout(watchdog); if (!started) fail('ws error') }
+      ws.onclose = (e) => { clearTimeout(watchdog); if (liveWsRef.current === ws) liveWsRef.current = null; started ? finish() : fail('ws closed ' + e.code + ' ' + (e.reason || '')) }
     })()
   }
 
@@ -810,6 +811,11 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
                           ? (lastHeardRef.current ? <span style={{ color: 'var(--text-secondary)' }}>“{lastHeardRef.current}”</span> : <span style={{ color: 'var(--text-muted)' }}>…</span>)
                           : ([...msgs].reverse().find((m) => m.role === 'assistant')?.content || <span style={{ color: 'var(--text-muted)' }}>Tap the orb and speak.</span>)}
                   </div>
+                  {voiceDbg && (
+                    <div style={{ marginTop: 8, fontSize: 11, fontFamily: 'monospace', color: 'var(--text-muted)', maxWidth: 460, wordBreak: 'break-word' }}>
+                      {voiceDbg}
+                    </div>
+                  )}
                 </>
               )}
             </div>
