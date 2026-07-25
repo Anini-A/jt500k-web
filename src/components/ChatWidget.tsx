@@ -138,6 +138,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
   const [liveText, setLiveText] = useState('')
   const lastHeardRef = useRef('') // your last question — stays on screen while Thinking
   const audioElRef = useRef<HTMLAudioElement | null>(null) // plays the natural (Gemini) voice
+  const speakSeqRef = useRef(0) // invalidates an in-flight speech chain when stopped/superseded
 
   const SPEAK_THRESHOLD = 0.035        // RMS level that counts as "you're talking"
   const SILENCE_HANG_MS = 1200         // stop the segment after this much quiet following speech
@@ -184,6 +185,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
   }, [])
 
   const stopSpeaking = () => {
+    speakSeqRef.current++ // cancels any in-flight streamed-chunk chain
     try { window.speechSynthesis?.cancel() } catch { /* ignore */ }
     try { if (audioElRef.current) { audioElRef.current.onended = null; audioElRef.current.pause() } } catch { /* ignore */ }
     setSpeaking(false)
@@ -215,24 +217,62 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
     synth.speak(u)
   }
 
-  // Text-to-speech — natural Gemini voice first, robotic browser voice as fallback.
+  // Split into speakable chunks so the first sentence can start playing while the
+  // rest are still being generated — this kills the "waits for the whole answer" delay.
+  const chunkForSpeech = (t: string): string[] => {
+    const parts = t.match(/[^.!?\n]+[.!?]*\s*/g) || [t]
+    const out: string[] = []
+    let buf = ''
+    for (const p of parts) {
+      buf += p
+      if (buf.trim().length >= 60) { out.push(buf.trim()); buf = '' } // batch tiny sentences
+    }
+    if (buf.trim()) out.push(buf.trim())
+    return out.length ? out : [t]
+  }
+
+  // fetch one chunk's WAV as a data: URL (null → let caller fall back)
+  const fetchTts = async (text: string): Promise<string | null> => {
+    try {
+      const r = await fetch('/api/tts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) })
+      const d = await r.json()
+      if (!r.ok || !d.audio) return null
+      return `data:${d.mime || 'audio/wav'};base64,${d.audio}`
+    } catch { return null }
+  }
+
+  // Text-to-speech — natural Gemini voice, streamed sentence-by-sentence so playback
+  // starts as soon as the first chunk is ready. Robotic browser voice as fallback.
   const say = (text: string, onDone?: () => void) => {
     const t = plain(text)
     if (!t || !speakRef.current) { onDone?.(); return }
     setSpeaking(true)
-    fetch('/api/tts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: t }) })
-      .then(async (r) => {
-        const d = await r.json()
-        if (!r.ok || !d.audio) throw new Error(d.error || 'tts failed')
-        const a = audioElRef.current || new Audio()
-        audioElRef.current = a
-        a.src = `data:${d.mime || 'audio/wav'};base64,${d.audio}`
-        const done = () => { setSpeaking(false); onDone?.() }
-        a.onended = done
-        a.onerror = done
-        return a.play().catch(() => { synthSay(t, onDone) }) // playback blocked → fallback
+    const seq = ++speakSeqRef.current // any newer say()/stopSpeaking() invalidates this run
+    const alive = () => speakSeqRef.current === seq
+
+    const chunks = chunkForSpeech(t)
+    // kick off ALL chunk generations up front (parallel) — first one finishes fast
+    const jobs = chunks.map((c) => fetchTts(c))
+    const a = audioElRef.current || new Audio()
+    audioElRef.current = a
+
+    const playFrom = async (i: number) => {
+      if (!alive()) return
+      if (i >= jobs.length) { setSpeaking(false); onDone?.(); return }
+      const url = await jobs[i]
+      if (!alive()) return
+      if (!url) { // a chunk failed → speak the rest with the browser voice, then done
+        synthSay(chunks.slice(i).join(' '), () => { if (alive()) { setSpeaking(false); onDone?.() } })
+        return
+      }
+      a.src = url
+      a.onended = () => playFrom(i + 1)
+      a.onerror = () => playFrom(i + 1)
+      a.play().catch(() => { // playback blocked → whole-answer browser fallback
+        if (alive()) synthSay(chunks.slice(i).join(' '), () => { if (alive()) { setSpeaking(false); onDone?.() } })
       })
-      .catch(() => synthSay(t, onDone)) // endpoint failed → fallback
+    }
+    playFrom(0)
   }
 
   // ── unified voice engine — same recording/silence/transcribe pipeline everywhere ──
