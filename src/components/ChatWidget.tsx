@@ -137,6 +137,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
   const liveTextRef = useRef('')
   const [liveText, setLiveText] = useState('')
   const lastHeardRef = useRef('') // your last question — stays on screen while Thinking
+  const audioElRef = useRef<HTMLAudioElement | null>(null) // plays the natural (Gemini) voice
 
   const SPEAK_THRESHOLD = 0.035        // RMS level that counts as "you're talking"
   const SILENCE_HANG_MS = 1200         // stop the segment after this much quiet following speech
@@ -182,21 +183,56 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
     } catch { /* ignore */ }
   }, [])
 
-  const stopSpeaking = () => { try { window.speechSynthesis?.cancel() } catch { /* ignore */ } setSpeaking(false) }
-  // Text-to-speech — read a reply aloud, then run onDone (used to resume listening)
-  const say = (text: string, onDone?: () => void) => {
+  const stopSpeaking = () => {
+    try { window.speechSynthesis?.cancel() } catch { /* ignore */ }
+    try { if (audioElRef.current) { audioElRef.current.onended = null; audioElRef.current.pause() } } catch { /* ignore */ }
+    setSpeaking(false)
+  }
+
+  // iOS only lets audio play if the element was first "touched" inside a real tap —
+  // call this from every voice-related click so later programmatic playback works.
+  const unlockAudio = () => {
+    if (audioElRef.current) return
+    const a = new Audio()
+    // a tiny silent wav — playing it inside the gesture unlocks the element
+    a.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA='
+    a.play().catch(() => {})
+    audioElRef.current = a
+  }
+
+  // fallback: the browser's built-in (robotic) synthesizer
+  const synthSay = (text: string, onDone?: () => void) => {
     const synth = window.speechSynthesis
-    if (!synth || !text.trim() || !speakRef.current) { onDone?.(); return }
+    if (!synth) { onDone?.(); return }
     synth.cancel()
-    const u = new SpeechSynthesisUtterance(plain(text))
+    const u = new SpeechSynthesisUtterance(text)
     if (voiceRef.current) u.voice = voiceRef.current
     u.lang = voiceRef.current?.lang || 'en-CA'
-    u.rate = 1.0; u.pitch = 1.0 // natural cadence
+    u.rate = 1.0; u.pitch = 1.0
     const done = () => { setSpeaking(false); onDone?.() }
     u.onend = done
     u.onerror = done
-    setSpeaking(true)
     synth.speak(u)
+  }
+
+  // Text-to-speech — natural Gemini voice first, robotic browser voice as fallback.
+  const say = (text: string, onDone?: () => void) => {
+    const t = plain(text)
+    if (!t || !speakRef.current) { onDone?.(); return }
+    setSpeaking(true)
+    fetch('/api/tts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: t }) })
+      .then(async (r) => {
+        const d = await r.json()
+        if (!r.ok || !d.audio) throw new Error(d.error || 'tts failed')
+        const a = audioElRef.current || new Audio()
+        audioElRef.current = a
+        a.src = `data:${d.mime || 'audio/wav'};base64,${d.audio}`
+        const done = () => { setSpeaking(false); onDone?.() }
+        a.onended = done
+        a.onerror = done
+        return a.play().catch(() => { synthSay(t, onDone) }) // playback blocked → fallback
+      })
+      .catch(() => synthSay(t, onDone)) // endpoint failed → fallback
   }
 
   // ── unified voice engine — same recording/silence/transcribe pipeline everywhere ──
@@ -358,6 +394,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
   // orb / center-mic tap: stop early if listening, else start (opening the stream on first use)
   const onTalk = () => {
     setVoiceError('')
+    unlockAudio() // inside the tap — lets the natural voice play later on iOS
     stopSpeaking()
     if (listening) { finishSegment(); return }
     if (!streamRef.current) { openVoiceStream(); return }
@@ -388,7 +425,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
   const toggleVoice = () => {
     if (!micOK) return
     if (voiceMode) endVoiceConversation(false)
-    else { setVoiceError(''); stopSpeaking(); setVoiceMode(true); voiceModeRef.current = true }
+    else { setVoiceError(''); unlockAudio(); stopSpeaking(); setVoiceMode(true); voiceModeRef.current = true }
   }
 
   const active = threads.find((t) => t.id === activeId) || threads[0]
