@@ -131,6 +131,12 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
   const silenceHangTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const speechDetectedRef = useRef(false)      // has THIS segment heard actual speech yet
   const silentAccumRef = useRef(0)             // ms of consecutive no-speech segments this session
+  // live captions (SpeechRecognition, best-effort): shows your words AS you speak and,
+  // when it produces a solid transcript, is used directly (faster than uploading audio)
+  const recogRef = useRef<any>(null)
+  const liveTextRef = useRef('')
+  const [liveText, setLiveText] = useState('')
+  const lastHeardRef = useRef('') // your last question — stays on screen while Thinking
 
   const SPEAK_THRESHOLD = 0.035        // RMS level that counts as "you're talking"
   const SILENCE_HANG_MS = 1200         // stop the segment after this much quiet following speech
@@ -168,6 +174,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
       if (noSpeechTimerRef.current) clearTimeout(noSpeechTimerRef.current)
       if (silenceHangTimerRef.current) clearTimeout(silenceHangTimerRef.current)
+      recogRef.current?.stop?.()
       mediaRef.current?.stop()
       streamRef.current?.getTracks().forEach((t) => t.stop())
       audioCtxRef.current?.close()
@@ -229,6 +236,33 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
     rafRef.current = requestAnimationFrame(monitorLoop)
   }
 
+  // best-effort live captions via SpeechRecognition — shows your words AS you speak.
+  // Where it works (desktop/Android Chrome) its transcript is also used directly, which
+  // is faster than uploading audio. Where it's blocked (iOS) the recorder still covers us.
+  const startLiveCaptions = () => {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (!SR) return
+    try {
+      const r = new SR()
+      r.lang = 'en-CA'; r.interimResults = true; r.continuous = true; r.maxAlternatives = 1
+      let finals = ''
+      r.onresult = (e: any) => {
+        let interim = ''
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          const res = e.results[i]
+          if (res.isFinal) finals += res[0].transcript; else interim += res[0].transcript
+        }
+        const t = (finals + ' ' + interim).replace(/\s+/g, ' ').trim()
+        liveTextRef.current = t
+        setLiveText(t)
+      }
+      r.onerror = () => { /* captions are optional — the recorder is the source of truth */ }
+      recogRef.current = r
+      r.start()
+    } catch { /* ignore */ }
+  }
+  const stopLiveCaptions = () => { try { recogRef.current?.stop?.() } catch { /* ignore */ } recogRef.current = null }
+
   // begin one recording "turn" on the already-open stream (no new permission needed)
   const beginSegment = () => {
     const stream = streamRef.current
@@ -236,6 +270,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
     setVoiceError('')
     speechDetectedRef.current = false
     chunksRef.current = []
+    liveTextRef.current = ''; setLiveText('')
     let mr: MediaRecorder
     try {
       const mime = ['audio/webm', 'audio/mp4', 'audio/aac'].find((m) => (window as any).MediaRecorder?.isTypeSupported?.(m)) || ''
@@ -246,6 +281,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
     mediaRef.current = mr
     setListening(true)
     mr.start()
+    startLiveCaptions()
     clearVoiceTimers()
     noSpeechTimerRef.current = setTimeout(() => finishSegment(), NO_SPEECH_TIMEOUT_MS)
     if (!rafRef.current) rafRef.current = requestAnimationFrame(monitorLoop)
@@ -255,6 +291,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
   const finishSegment = () => {
     clearVoiceTimers()
     if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null }
+    stopLiveCaptions()
     try { if (mediaRef.current?.state === 'recording') mediaRef.current.stop() } catch { /* ignore */ }
   }
 
@@ -270,6 +307,15 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
       return
     }
     silentAccumRef.current = 0 // real speech happened — reset the inactivity clock
+
+    // fast path: the live captions already produced the transcript — use it directly
+    const live = liveTextRef.current.trim()
+    if (live.length >= 2) {
+      lastHeardRef.current = live // keep the question on screen while Thinking
+      setInput(''); sendRef.current(live)
+      return
+    }
+
     setBusy(true)
     try {
       const b64 = await new Promise<string>((res, rej) => {
@@ -283,7 +329,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
       setBusy(false)
       if (!r.ok) { setVoiceError(d.error || 'Transcription failed.'); if (voiceModeRef.current) beginSegmentRef.current(); return }
       const text = (d.text || '').trim()
-      if (text) { setInput(''); sendRef.current(text) } // send() speaks the reply, then resumes listening
+      if (text) { lastHeardRef.current = text; setLiveText(text); setInput(''); sendRef.current(text) } // send() speaks the reply, then resumes listening
       else { setVoiceError("Didn't catch that — try again."); if (voiceModeRef.current) beginSegmentRef.current() }
     } catch (e: any) {
       setBusy(false); setVoiceError('Transcription failed: ' + (e?.message || e))
@@ -323,6 +369,8 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
   const endVoiceConversation = (fullClose: boolean) => {
     clearVoiceTimers()
     if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null }
+    stopLiveCaptions()
+    liveTextRef.current = ''; setLiveText(''); lastHeardRef.current = ''
     try { mediaRef.current?.stop() } catch { /* ignore */ }
     mediaRef.current = null
     try { streamRef.current?.getTracks().forEach((t) => t.stop()) } catch { /* ignore */ }
@@ -566,8 +614,10 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
                     {voiceError
                       ? voiceError
                       : listening
-                        ? <span style={{ color: 'var(--text-muted)' }}>Recording… pause when you're done talking.</span>
-                        : ([...msgs].reverse().find((m) => m.role === 'assistant')?.content || <span style={{ color: 'var(--text-muted)' }}>Tap the orb and speak.</span>)}
+                        ? (liveText || <span style={{ color: 'var(--text-muted)' }}>Say something…</span>)
+                        : busy
+                          ? (lastHeardRef.current ? <span style={{ color: 'var(--text-secondary)' }}>“{lastHeardRef.current}”</span> : <span style={{ color: 'var(--text-muted)' }}>…</span>)
+                          : ([...msgs].reverse().find((m) => m.role === 'assistant')?.content || <span style={{ color: 'var(--text-muted)' }}>Tap the orb and speak.</span>)}
                   </div>
                 </>
               )}
