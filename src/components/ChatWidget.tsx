@@ -139,6 +139,9 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
   const lastHeardRef = useRef('') // your last question — stays on screen while Thinking
   const audioElRef = useRef<HTMLAudioElement | null>(null) // plays the natural (Gemini) voice
   const speakSeqRef = useRef(0) // invalidates an in-flight speech chain when stopped/superseded
+  const playCtxRef = useRef<AudioContext | null>(null) // separate context for streamed TTS playback
+  const playCursorRef = useRef(0) // scheduling cursor so streamed PCM chunks play gaplessly
+  const liveWsRef = useRef<WebSocket | null>(null) // active Gemini Live socket (streamed voice)
 
   const SPEAK_THRESHOLD = 0.035        // RMS level that counts as "you're talking"
   const SILENCE_HANG_MS = 1200         // stop the segment after this much quiet following speech
@@ -188,18 +191,33 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
     speakSeqRef.current++ // cancels any in-flight streamed-chunk chain
     try { window.speechSynthesis?.cancel() } catch { /* ignore */ }
     try { if (audioElRef.current) { audioElRef.current.onended = null; audioElRef.current.pause() } } catch { /* ignore */ }
+    try { if (liveWsRef.current) { liveWsRef.current.onclose = null; liveWsRef.current.close() } } catch { /* ignore */ }
+    liveWsRef.current = null
+    playCursorRef.current = 0
     setSpeaking(false)
   }
 
-  // iOS only lets audio play if the element was first "touched" inside a real tap —
-  // call this from every voice-related click so later programmatic playback works.
+  // iOS only lets audio play if it was first "touched" inside a real tap — call this
+  // from every voice-related click so later programmatic playback works. Unlocks BOTH
+  // the <audio> element (batch-WAV fallback) and the Web Audio context (streamed voice).
   const unlockAudio = () => {
-    if (audioElRef.current) return
-    const a = new Audio()
-    // a tiny silent wav — playing it inside the gesture unlocks the element
-    a.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA='
-    a.play().catch(() => {})
-    audioElRef.current = a
+    if (!audioElRef.current) {
+      const a = new Audio()
+      // a tiny silent wav — playing it inside the gesture unlocks the element
+      a.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA='
+      a.play().catch(() => {})
+      audioElRef.current = a
+    }
+    try {
+      const AC = (window as any).AudioContext || (window as any).webkitAudioContext
+      if (!playCtxRef.current) playCtxRef.current = new AC()
+      const ctx = playCtxRef.current!
+      if (ctx.state === 'suspended') ctx.resume().catch(() => {})
+      // play one silent sample to fully unlock streamed playback on iOS
+      const buf = ctx.createBuffer(1, 1, 24000)
+      const src = ctx.createBufferSource()
+      src.buffer = buf; src.connect(ctx.destination); src.start(0)
+    } catch { /* ignore */ }
   }
 
   // fallback: the browser's built-in (robotic) synthesizer
@@ -241,38 +259,133 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
     } catch { return null }
   }
 
-  // Text-to-speech — natural Gemini voice, streamed sentence-by-sentence so playback
-  // starts as soon as the first chunk is ready. Robotic browser voice as fallback.
-  const say = (text: string, onDone?: () => void) => {
-    const t = plain(text)
-    if (!t || !speakRef.current) { onDone?.(); return }
-    setSpeaking(true)
-    const seq = ++speakSeqRef.current // any newer say()/stopSpeaking() invalidates this run
-    const alive = () => speakSeqRef.current === seq
-
+  // BATCH fallback — natural Gemini voice via the (slow ~20s) non-streaming TTS model,
+  // sentence-chunked so the first sentence starts before the rest finish. Used only if
+  // the streaming Live path fails.
+  const sayBatch = (t: string, onDone?: () => void, seq?: number) => {
+    const mySeq = seq ?? speakSeqRef.current
+    const alive = () => speakSeqRef.current === mySeq
     const chunks = chunkForSpeech(t)
-    // kick off ALL chunk generations up front (parallel) — first one finishes fast
-    const jobs = chunks.map((c) => fetchTts(c))
+    const jobs = chunks.map((c) => fetchTts(c)) // parallel generation
     const a = audioElRef.current || new Audio()
     audioElRef.current = a
-
     const playFrom = async (i: number) => {
       if (!alive()) return
       if (i >= jobs.length) { setSpeaking(false); onDone?.(); return }
       const url = await jobs[i]
       if (!alive()) return
-      if (!url) { // a chunk failed → speak the rest with the browser voice, then done
-        synthSay(chunks.slice(i).join(' '), () => { if (alive()) { setSpeaking(false); onDone?.() } })
-        return
-      }
+      if (!url) { synthSay(chunks.slice(i).join(' '), () => { if (alive()) { setSpeaking(false); onDone?.() } }); return }
       a.src = url
       a.onended = () => playFrom(i + 1)
       a.onerror = () => playFrom(i + 1)
-      a.play().catch(() => { // playback blocked → whole-answer browser fallback
-        if (alive()) synthSay(chunks.slice(i).join(' '), () => { if (alive()) { setSpeaking(false); onDone?.() } })
-      })
+      a.play().catch(() => { if (alive()) synthSay(chunks.slice(i).join(' '), () => { if (alive()) { setSpeaking(false); onDone?.() } }) })
     }
     playFrom(0)
+  }
+
+  // schedule one PCM (16-bit, 24kHz mono) chunk to play right after the previous one
+  const playPcmChunk = (b64: string) => {
+    const ctx = playCtxRef.current
+    if (!ctx) return
+    const bin = atob(b64)
+    const bytes = new Uint8Array(bin.length)
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+    const pcm = new Int16Array(bytes.buffer)
+    if (!pcm.length) return
+    const buf = ctx.createBuffer(1, pcm.length, 24000)
+    const ch = buf.getChannelData(0)
+    for (let i = 0; i < pcm.length; i++) ch[i] = pcm[i] / 32768 // Int16 → Float32
+    const src = ctx.createBufferSource()
+    src.buffer = buf
+    src.connect(ctx.destination)
+    const startAt = Math.max(ctx.currentTime + 0.02, playCursorRef.current)
+    src.start(startAt)
+    playCursorRef.current = startAt + buf.duration
+  }
+
+  // STREAMING natural voice via the Gemini Live API — audio streams AS it's generated,
+  // so speech starts in ~1s instead of waiting ~20s for the whole clip. Falls back to
+  // sayBatch (then the browser voice) if anything goes wrong.
+  const sayLive = (t: string, onDone?: () => void) => {
+    const seq = ++speakSeqRef.current
+    const alive = () => speakSeqRef.current === seq
+    const ctx = playCtxRef.current
+    if (!ctx || typeof WebSocket === 'undefined') { sayBatch(t, onDone, seq); return }
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {})
+    playCursorRef.current = 0
+
+    let started = false          // has any audio arrived?
+    let settled = false          // has this turn finished/failed?
+    const fail = () => { if (settled) return; settled = true; if (alive()) sayBatch(t, onDone, seq) }
+    const finish = () => {
+      if (settled) return; settled = true
+      if (!alive()) return
+      // wait for the already-scheduled audio to finish, then relisten
+      const remaining = Math.max(0, (playCursorRef.current - ctx.currentTime) * 1000)
+      setTimeout(() => { if (alive()) { setSpeaking(false); onDone?.() } }, remaining + 120)
+    }
+
+    ;(async () => {
+      let token: string
+      try {
+        const r = await fetch('/api/live-token', { method: 'POST' })
+        const d = await r.json()
+        if (!r.ok || !d.token) throw new Error(d.error || 'no token')
+        token = d.token
+      } catch { fail(); return }
+      if (!alive()) return
+
+      const MODEL = 'models/gemini-2.0-flash-live-001'
+      const url = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BiDiGenerateContent?access_token=${encodeURIComponent(token)}`
+      let ws: WebSocket
+      try { ws = new WebSocket(url) } catch { fail(); return }
+      liveWsRef.current = ws
+      const watchdog = setTimeout(() => { if (!started) { try { ws.close() } catch {} ; fail() } }, 8000)
+
+      ws.onopen = () => {
+        ws.send(JSON.stringify({
+          setup: {
+            model: MODEL,
+            generationConfig: {
+              responseModalities: ['AUDIO'],
+              speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Aoede' } } },
+            },
+            systemInstruction: { parts: [{ text: 'You are a text-to-speech engine. Speak the user message aloud verbatim in a warm, natural tone. Do not add, answer, summarize, or comment — only voice the exact words given.' }] },
+          },
+        }))
+      }
+
+      ws.onmessage = async (ev) => {
+        try {
+          const raw = typeof ev.data === 'string' ? ev.data : await (ev.data as Blob).text()
+          const msg = JSON.parse(raw)
+          if (msg.setupComplete) {
+            ws.send(JSON.stringify({ clientContent: { turns: [{ role: 'user', parts: [{ text: t }] }], turnComplete: true } }))
+            return
+          }
+          const parts = msg.serverContent?.modelTurn?.parts || []
+          for (const p of parts) {
+            const data = p.inlineData?.data
+            if (data && alive()) { started = true; clearTimeout(watchdog); playPcmChunk(data) }
+          }
+          if (msg.serverContent?.turnComplete || msg.serverContent?.generationComplete) {
+            clearTimeout(watchdog)
+            try { ws.close() } catch { /* ignore */ }
+          }
+        } catch { /* ignore malformed frames */ }
+      }
+      ws.onerror = () => { clearTimeout(watchdog); if (!started) fail() }
+      ws.onclose = () => { clearTimeout(watchdog); if (liveWsRef.current === ws) liveWsRef.current = null; started ? finish() : fail() }
+    })()
+  }
+
+  // Text-to-speech dispatcher — natural STREAMING Live voice first (fast), with the
+  // batch Gemini voice and finally the browser voice as automatic fallbacks.
+  const say = (text: string, onDone?: () => void) => {
+    const t = plain(text)
+    if (!t || !speakRef.current) { onDone?.(); return }
+    setSpeaking(true)
+    sayLive(t, onDone)
   }
 
   // ── unified voice engine — same recording/silence/transcribe pipeline everywhere ──
