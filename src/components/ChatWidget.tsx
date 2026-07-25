@@ -336,7 +336,8 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
       if (!alive()) return
 
       const MODEL = 'models/gemini-2.0-flash-live-001'
-      const url = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BiDiGenerateContent?access_token=${encodeURIComponent(token)}`
+      // ephemeral token names ("auth_tokens/…") are accepted in the same `key` slot as an API key
+      const url = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${encodeURIComponent(token)}`
       let ws: WebSocket
       try { ws = new WebSocket(url) } catch { fail(); return }
       liveWsRef.current = ws
