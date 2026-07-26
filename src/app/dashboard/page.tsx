@@ -293,13 +293,13 @@ export default function Dashboard() {
         )}
 
         {/* DEBTS */}
-        {/* DEBTS — time-range filter, then debt management, then the payments list */}
+        {/* DEBTS — debt management, then a time-range filter that only scopes the payments list */}
         {tab === 'debts' && (
           <>
-            {debtFilterBar}
             <section className="block">
               <DebtManager />
             </section>
+            {debtFilterBar}
             <RecentList
               title="Recent Debt Payments"
               txns={debtPayments.slice().reverse()}
