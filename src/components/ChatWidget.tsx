@@ -327,16 +327,16 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
     }
 
     ;(async () => {
-      let token: string
+      let token: string, MODEL: string
       try {
         const r = await fetch('/api/live-token', { method: 'POST' })
         const d = await r.json()
         if (!r.ok || !d.token) throw new Error(d.error || d.detail || ('token http ' + r.status))
         token = d.token
+        MODEL = d.model || 'models/gemini-3.1-flash-live-preview' // server is the source of truth
       } catch (e: any) { fail('token: ' + (e?.message || e)); return }
       if (!alive()) return
 
-      const MODEL = 'models/gemini-2.0-flash-live-001'
       // ephemeral tokens are minted on v1alpha, so the socket path AND version must match;
       // the token name ("auth_tokens/…") goes in `key` RAW — encoding its slash to %2F
       // makes the server read it as an invalid key (1007)

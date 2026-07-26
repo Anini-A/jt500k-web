@@ -6,7 +6,7 @@ export const maxDuration = 30
 // Speech-to-text via Gemini audio understanding — works in the iOS installed PWA
 // (where the browser SpeechRecognition API is blocked). Reuses the free Gemini key.
 const GEMINI_KEY = process.env.GEMINI_API_KEY
-const MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest'
+const MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite'
 
 export async function POST(req: NextRequest) {
   if (!GEMINI_KEY) return NextResponse.json({ error: 'Transcription not configured' }, { status: 500 })
