@@ -341,10 +341,11 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
 
       // We're unsure which auth param + version the Bidi socket wants for an ephemeral
       // token, so try the plausible combinations in order until one streams audio.
-      // per the docs: ephemeral tokens are v1beta-only and authed via the access_token param
+      // per the docs: ephemeral tokens are v1beta-only, use the DEDICATED "Constrained"
+      // method, and auth via the access_token param (the plain method rejects them → 1008)
       const base = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage'
       const strategies = [
-        `${base}.v1beta.GenerativeService.BidiGenerateContent?access_token=${token}`,
+        `${base}.v1beta.GenerativeService.BidiGenerateContentConstrained?access_token=${token}`,
       ]
 
       const errs: string[] = []
