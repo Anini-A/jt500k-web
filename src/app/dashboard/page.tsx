@@ -63,6 +63,10 @@ export default function Dashboard() {
   const [preset, setPreset] = useState<Preset>('ytd') // default range for Income/Expenses/Savings
   const [customFrom, setCustomFrom] = useState('')
   const [customTo, setCustomTo] = useState('')
+  // Debts get their OWN time-range filter (default MTD), independent of the tabs above
+  const [debtPreset, setDebtPreset] = useState<Preset>('mtd')
+  const [debtCustomFrom, setDebtCustomFrom] = useState('')
+  const [debtCustomTo, setDebtCustomTo] = useState('')
   const [tab, setTab] = useState<Tab>('income')
 
   // Remember the active tab across refreshes
@@ -87,21 +91,28 @@ export default function Dashboard() {
   const maxDate = txns.length ? txns[txns.length - 1].date : today()
   const minDate = txns.length ? txns[0].date : '2024-01-01'
 
-  // resolve active date range from the preset (anchored to today so MTD/ranges are
-  // the real calendar month, not shifted by future-dated entries)
-  const { from, to } = useMemo(() => {
+  // resolve a preset (+ custom bounds) into a real date range, anchored to today so
+  // MTD/ranges are the true calendar month, not shifted by future-dated entries
+  const resolveRange = useCallback((p: Preset, cf: string, ct: string) => {
     const t = today()
-    if (preset === 'custom') return { from: customFrom || minDate, to: customTo || maxDate }
-    if (preset === 'all') return { from: minDate, to: maxDate }
-    if (preset === 'ytd') return { from: t.slice(0, 4) + '-01-01', to: t }
-    if (preset === 'mtd') return { from: t.slice(0, 7) + '-01', to: t }
-    const n = preset === '12m' ? 12 : preset === '6m' ? 6 : 3
+    if (p === 'custom') return { from: cf || minDate, to: ct || maxDate }
+    if (p === 'all') return { from: minDate, to: maxDate }
+    if (p === 'ytd') return { from: t.slice(0, 4) + '-01-01', to: t }
+    if (p === 'mtd') return { from: t.slice(0, 7) + '-01', to: t }
+    const n = p === '12m' ? 12 : p === '6m' ? 6 : 3
     return { from: subMonths(t, n), to: t }
-  }, [preset, customFrom, customTo, minDate, maxDate])
+  }, [minDate, maxDate])
+
+  const { from, to } = useMemo(() => resolveRange(preset, customFrom, customTo), [resolveRange, preset, customFrom, customTo])
+  const debtRange = useMemo(() => resolveRange(debtPreset, debtCustomFrom, debtCustomTo), [resolveRange, debtPreset, debtCustomFrom, debtCustomTo])
 
   const filtered = useMemo(
     () => txns.filter((t) => t.date >= from && t.date <= to),
     [txns, from, to],
+  )
+  const debtPayments = useMemo(
+    () => txns.filter((t) => t.category === 'Debt Repayment' && t.date >= debtRange.from && t.date <= debtRange.to),
+    [txns, debtRange],
   )
 
   const agg = useMemo(() => {
@@ -144,28 +155,34 @@ export default function Dashboard() {
   const topSaving = agg.savingsCat[0]
   const savingsRate = agg.income > 0 ? Math.round((agg.savings / agg.income) * 100) : 0
 
-  const filterBar = (
+  const renderFilterBar = (
+    p: Preset, setP: (v: Preset) => void,
+    cf: string, setCf: (v: string) => void, ct: string, setCt: (v: string) => void,
+    rng: { from: string; to: string }, count: number, noun = 'transactions',
+  ) => (
     <section className="block">
       <div className="card glass" style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {PRESETS.map((p) => (
-            <button key={p.key} onClick={() => setPreset(p.key)}
-              className={`chip ${preset === p.key ? 'chip-active' : ''}`}>{p.label}</button>
+          {PRESETS.map((preset) => (
+            <button key={preset.key} onClick={() => setP(preset.key)}
+              className={`chip ${p === preset.key ? 'chip-active' : ''}`}>{preset.label}</button>
           ))}
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <input type="date" value={preset === 'custom' ? (customFrom || minDate) : from} min={minDate} max={maxDate}
-            onChange={(e) => { setPreset('custom'); setCustomFrom(e.target.value) }} className="date-input" />
+          <input type="date" value={p === 'custom' ? (cf || minDate) : rng.from} min={minDate} max={maxDate}
+            onChange={(e) => { setP('custom'); setCf(e.target.value) }} className="date-input" />
           <span className="stat-label">to</span>
-          <input type="date" value={preset === 'custom' ? (customTo || maxDate) : to} min={minDate} max={maxDate}
-            onChange={(e) => { setPreset('custom'); setCustomTo(e.target.value) }} className="date-input" />
+          <input type="date" value={p === 'custom' ? (ct || maxDate) : rng.to} min={minDate} max={maxDate}
+            onChange={(e) => { setP('custom'); setCt(e.target.value) }} className="date-input" />
         </div>
       </div>
       <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 8, textAlign: 'center' }}>
-        {from} → {to} · {filtered.length} transactions
+        {rng.from} → {rng.to} · {count} {noun}
       </div>
     </section>
   )
+  const filterBar = renderFilterBar(preset, setPreset, customFrom, setCustomFrom, customTo, setCustomTo, { from, to }, filtered.length)
+  const debtFilterBar = renderFilterBar(debtPreset, setDebtPreset, debtCustomFrom, setDebtCustomFrom, debtCustomTo, setDebtCustomTo, debtRange, debtPayments.length, 'payments')
 
   if (loading) {
     return (
@@ -276,10 +293,20 @@ export default function Dashboard() {
         )}
 
         {/* DEBTS */}
+        {/* DEBTS — time-range filter, then debt management, then the payments list */}
         {tab === 'debts' && (
-          <section className="block">
-            <DebtManager />
-          </section>
+          <>
+            {debtFilterBar}
+            <section className="block">
+              <DebtManager />
+            </section>
+            <RecentList
+              title="Recent Debt Payments"
+              txns={debtPayments.slice().reverse()}
+              emptyLabel="No debt payments in this period."
+              maxHeight={360}
+            />
+          </>
         )}
 
         {/* INVESTMENTS */}
@@ -304,17 +331,14 @@ export default function Dashboard() {
           </section>
         )}
 
-        {/* On Debts, the filter sits here (it only reshapes the payments below, not balances) */}
-        {tab === 'debts' && filterBar}
-
-        {/* Recent — only on the transaction-backed tabs */}
-        {(tab === 'income' || tab === 'expenses' || tab === 'savings' || tab === 'debts') && (
+        {/* Recent — the income/expenses/savings tabs (Debts has its own list above) */}
+        {(tab === 'income' || tab === 'expenses' || tab === 'savings') && (
           <RecentList
-            title={tab === 'debts' ? 'Recent Debt Payments' : `Recent ${TABS.find((t) => t.key === tab)!.label}`}
+            title={`Recent ${TABS.find((t) => t.key === tab)!.label}`}
             txns={filtered
-              .filter((t) => tab === 'debts' ? t.category === 'Debt Repayment' : (tabType && t.type === tabType))
+              .filter((t) => tabType && t.type === tabType)
               .slice().reverse().slice(0, 12)}
-            emptyLabel={tab === 'debts' ? 'No debt payments in this period.' : `No ${TABS.find((t) => t.key === tab)!.label.toLowerCase()} in this period.`}
+            emptyLabel={`No ${TABS.find((t) => t.key === tab)!.label.toLowerCase()} in this period.`}
           />
         )}
       </div>
@@ -372,7 +396,7 @@ const iconBtn: React.CSSProperties = {
   background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer',
 }
 
-function RecentList({ title, txns, emptyLabel }: { title: string; txns: Txn[]; emptyLabel: string }) {
+function RecentList({ title, txns, emptyLabel, maxHeight }: { title: string; txns: Txn[]; emptyLabel: string; maxHeight?: number }) {
   const [editTx, setEditTx] = useState<Txn | null>(null)
   const [openId, setOpenId] = useState<string | null>(null)
 
@@ -391,7 +415,7 @@ function RecentList({ title, txns, emptyLabel }: { title: string; txns: Txn[]; e
         {txns.length === 0 ? (
           <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)' }}>{emptyLabel}</div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 2 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 2, ...(maxHeight ? { maxHeight, overflowY: 'auto', overscrollBehavior: 'contain' } : {}) }}>
             {txns.map((t) => (
               <div key={t.id} className={`list-row ${openId === t.id ? 'open' : ''}`}
                 onClick={() => setOpenId((id) => (id === t.id ? null : t.id))}
