@@ -110,7 +110,6 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
   const [micOK, setMicOK] = useState(false)
   const [speak, setSpeak] = useState(true)            // read answers aloud
   const [voiceError, setVoiceError] = useState('')     // visible mic/permission error (was silently swallowed)
-  const [voiceDbg, setVoiceDbg] = useState('')         // TEMP: which audio path played (diagnosing desktop)
   const scrollRef = useRef<HTMLDivElement>(null)
   const taRef = useRef<HTMLTextAreaElement>(null)
   const voiceModeRef = useRef(false)
@@ -225,8 +224,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
   // fallback: the browser's built-in (robotic) synthesizer
   const synthSay = (text: string, onDone?: () => void) => {
     const synth = window.speechSynthesis
-    setVoiceDbg((d) => d + ' → browser')
-    if (!synth) { setVoiceDbg((d) => d + '(none!)'); onDone?.(); return }
+    if (!synth) { onDone?.(); return }
     synth.cancel()
     const u = new SpeechSynthesisUtterance(text)
     if (voiceRef.current) u.voice = voiceRef.current
@@ -305,7 +303,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
     const startAt = Math.max(ctx.currentTime + 0.02, playCursorRef.current)
     src.start(startAt)
     playCursorRef.current = startAt + buf.duration
-    } catch (e: any) { setVoiceDbg((d) => d + ' pcmErr:' + (e?.message || e)) }
+    } catch { /* a bad chunk shouldn't break the stream */ }
   }
 
   // STREAMING natural voice via the Gemini Live API — audio streams AS it's generated,
@@ -315,14 +313,13 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
     const seq = ++speakSeqRef.current
     const alive = () => speakSeqRef.current === seq
     const ctx = playCtxRef.current
-    setVoiceDbg('live: ctx=' + (ctx ? ctx.state : 'MISSING') + ' ws=' + (typeof WebSocket !== 'undefined'))
-    if (!ctx || typeof WebSocket === 'undefined') { setVoiceDbg((d) => d + ' → batch(noctx)'); sayBatch(t, onDone, seq); return }
+    if (!ctx || typeof WebSocket === 'undefined') { sayBatch(t, onDone, seq); return }
     if (ctx.state === 'suspended') ctx.resume().catch(() => {})
     playCursorRef.current = 0
 
     let started = false          // has any audio arrived?
     let settled = false          // has this turn finished/failed?
-    const fail = (why?: string) => { if (settled) return; settled = true; setVoiceDbg((d) => d + ' → batch(' + (why || '?') + ')'); if (alive()) sayBatch(t, onDone, seq) }
+    const fail = () => { if (settled) return; settled = true; if (alive()) sayBatch(t, onDone, seq) }
     const finish = () => {
       if (settled) return; settled = true
       if (!alive()) return
@@ -339,7 +336,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
         if (!r.ok || !d.token) throw new Error(d.detail || d.error || ('token http ' + r.status))
         token = d.token
         MODEL = d.model || 'models/gemini-3.1-flash-live-preview' // server is the source of truth
-      } catch (e: any) { fail('token:' + (e?.message || e)); return }
+      } catch { fail(); return }
       if (!alive()) return
 
       // Ephemeral tokens are v1beta-only, use the DEDICATED "Constrained" bidi method, and
@@ -347,9 +344,9 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
       // and the `key` param both reject ephemeral tokens).
       const url = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContentConstrained?access_token=${token}`
       let ws: WebSocket
-      try { ws = new WebSocket(url) } catch { fail('ws ctor'); return }
+      try { ws = new WebSocket(url) } catch { fail(); return }
       liveWsRef.current = ws
-      const watchdog = setTimeout(() => { if (!started) { try { ws.close() } catch { /* ignore */ } ; fail('timeout') } }, 8000)
+      const watchdog = setTimeout(() => { if (!started) { try { ws.close() } catch { /* ignore */ } ; fail() } }, 8000)
 
       ws.onopen = () => {
         ws.send(JSON.stringify({
@@ -374,7 +371,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
           const parts = msg.serverContent?.modelTurn?.parts || []
           for (const p of parts) {
             const data = p.inlineData?.data
-            if (data && alive()) { if (!started) setVoiceDbg((d) => d + ' → live✓playing'); started = true; clearTimeout(watchdog); playPcmChunk(data) }
+            if (data && alive()) { started = true; clearTimeout(watchdog); playPcmChunk(data) }
           }
           if (msg.serverContent?.turnComplete || msg.serverContent?.generationComplete) {
             clearTimeout(watchdog)
@@ -382,8 +379,8 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
           }
         } catch { /* ignore malformed frames */ }
       }
-      ws.onerror = () => { clearTimeout(watchdog); if (!started) fail('ws err') }
-      ws.onclose = (e) => { clearTimeout(watchdog); if (liveWsRef.current === ws) liveWsRef.current = null; started ? finish() : fail('closed ' + e.code) }
+      ws.onerror = () => { clearTimeout(watchdog); if (!started) fail() }
+      ws.onclose = () => { clearTimeout(watchdog); if (liveWsRef.current === ws) liveWsRef.current = null; started ? finish() : fail() }
     })()
   }
 
@@ -874,9 +871,6 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
                           : ([...msgs].reverse().find((m) => m.role === 'assistant')?.content || <span style={{ color: 'var(--text-muted)' }}>Tap the center to speak.</span>)}
                   </div>
                 </>
-              )}
-              {voiceDbg && (
-                <div style={{ marginTop: 6, fontSize: 10, fontFamily: 'monospace', color: 'var(--text-muted)', maxWidth: 460, wordBreak: 'break-word', opacity: 0.8 }}>{voiceDbg}</div>
               )}
             </div>
           </div>
