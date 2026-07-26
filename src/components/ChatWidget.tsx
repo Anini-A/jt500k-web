@@ -338,8 +338,9 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
 
       const MODEL = 'models/gemini-2.0-flash-live-001'
       // ephemeral tokens are minted on v1alpha, so the socket path AND version must match;
-      // the token name goes in the `key` param (same slot the SDK uses for it)
-      const url = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${encodeURIComponent(token)}`
+      // the token name ("auth_tokens/…") goes in `key` RAW — encoding its slash to %2F
+      // makes the server read it as an invalid key (1007)
+      const url = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${token}`
       let ws: WebSocket
       try { ws = new WebSocket(url) } catch { fail(); return }
       liveWsRef.current = ws
