@@ -331,7 +331,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
       try {
         const r = await fetch('/api/live-token', { method: 'POST' })
         const d = await r.json()
-        if (!r.ok || !d.token) throw new Error(d.error || d.detail || ('token http ' + r.status))
+        if (!r.ok || !d.token) throw new Error(d.detail || d.error || ('token http ' + r.status))
         token = d.token
         MODEL = d.model || 'models/gemini-3.1-flash-live-preview' // server is the source of truth
       } catch (e: any) { fail('token: ' + (e?.message || e)); return }
