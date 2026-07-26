@@ -679,7 +679,8 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
       } else {
         const reply = data.reply || data.error || 'Something went wrong.'
         setMsgs([...next, { role: 'assistant', content: reply, at: Date.now() }])
-        if (data.reply) say(reply, resume); else resume()
+        // only speak in voice mode — chat mode is text-only, never triggers the voice
+        if (voiceModeRef.current && data.reply) say(reply, resume); else resume()
       }
     } catch {
       setMsgs([...next, { role: 'assistant', content: 'Network error — please try again.', at: Date.now() }])
