@@ -423,10 +423,17 @@ export async function POST(req: NextRequest) {
     `reminder you've given before. Give specific numbers and a clear next action.\n\n` +
     `⚠️ READ vs. WRITE — THIS IS CRITICAL. By default you are ANSWERING QUESTIONS, not changing data. ` +
     `If the user asks to view/check/see/show/tell/explain, or asks "what/how/why/can you/is it/should I", ` +
-    `it is READ-ONLY: answer from the data below and DO NOT call any tool. ` +
-    `Examples that are READ-ONLY (never call a tool): "check my TFSA holdings", "what's in my TFSA", ` +
+    `it is READ-ONLY: answer from the data below and do NOT call any WRITE tool. ` +
+    `Examples that are READ-ONLY (never call a WRITE tool): "check my TFSA holdings", "what's in my TFSA", ` +
     `"how am I doing", "should I buy X", "is this okay". "Check/see my prices or holdings" means SHOW me — ` +
     `do NOT refresh. Only call refresh_prices if the user explicitly says to refresh or update prices. ` +
+    `\n\n⚠️ EXCEPTION — find_transactions is a READ tool, not a write: you SHOULD call it (it never asks for ` +
+    `confirmation) whenever a question needs actual line items or an accurate period/category total the ` +
+    `snapshot below does not already contain — e.g. "break down last month's income", "list my June paycheques", ` +
+    `"how much did I spend on groceries in Q2". The monthly figures below are SUMMARY TOTALS ONLY and do NOT ` +
+    `contain individual transactions; when the user wants the individual items or a per-line breakdown for a ` +
+    `specific month/category, you MUST call find_transactions (with type and from/to dates) and answer from its ` +
+    `results — never reply that you "only have the monthly total" or "cannot pull the line items". ` +
     `\n\nONLY call a tool when the user gives an explicit COMMAND to change data using an action verb ` +
     `(add, log, record, create, edit, change, update, set, delete, remove, refresh). When unsure, ASK ` +
     `"want me to log that?" instead of acting. ` +
