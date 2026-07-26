@@ -232,33 +232,43 @@
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 26px; padding: 0 24px; text-align: center; width: 100%;
 }
-/* the tappable center — glassy accent core with concentric rings */
-.voice-core {
-  position: relative; width: 132px; height: 132px; flex-shrink: 0;
-  border-radius: 999px; cursor: pointer; border: 1px solid var(--glass-border);
-  background:
-    radial-gradient(circle at 38% 32%, rgba(255,255,255,.7), rgba(255,255,255,0) 42%),
-    radial-gradient(circle at 50% 60%, rgba(var(--accent-rgb), .9), rgba(var(--accent-rgb), .55));
-  box-shadow: 0 10px 30px rgba(var(--accent-rgb), .4), var(--glass-rim), var(--glass-sheen);
-  transition: transform .15s ease, box-shadow .2s ease;
-  animation: coreBreath 4s ease-in-out infinite;
+/* the tappable center — an audio-reactive equalizer (5 glassy accent bars) */
+.voice-viz {
+  --amp: .18;                       /* motion amplitude, raised per state / by mic level */
+  display: flex; align-items: center; justify-content: center; gap: 9px;
+  height: 116px; padding: 0 26px; flex-shrink: 0;
+  border: none; background: transparent; cursor: pointer;
 }
-.voice-core:active { transform: scale(.94); }
-.voice-core::before, .voice-core::after {
-  content: ''; position: absolute; inset: -14px; border-radius: 999px;
-  border: 1px solid rgba(var(--accent-rgb), .4); opacity: 0;
+.voice-viz > span {
+  display: block; width: 12px; height: 34px; border-radius: 999px;
+  background: linear-gradient(180deg, rgba(var(--accent-rgb), 1), rgba(var(--accent-rgb), .62));
+  box-shadow: 0 4px 14px rgba(var(--accent-rgb), .4), var(--glass-sheen);
+  transform-origin: center; transform: scaleY(.45);
+  transition: transform .09s ease-out;
+  animation: eqBounce 1.1s ease-in-out infinite;
 }
-.voice-body.is-listening .voice-core {
-  transform: scale(calc(1 + var(--vlevel) * .16));
-  box-shadow: 0 10px 34px rgba(var(--accent-rgb), calc(.45 + var(--vlevel) * .4)), var(--glass-rim);
-  animation: none;
+.voice-viz > span:nth-child(1) { animation-delay: -.9s; }
+.voice-viz > span:nth-child(2) { animation-delay: -.4s; height: 52px; }
+.voice-viz > span:nth-child(3) { animation-delay: -.15s; height: 68px; }
+.voice-viz > span:nth-child(4) { animation-delay: -.6s; height: 52px; }
+.voice-viz > span:nth-child(5) { animation-delay: -.25s; }
+.voice-viz:active { transform: scale(.96); }
+@keyframes eqBounce {
+  0%, 100% { transform: scaleY(calc(.35 + var(--amp) * .3)); }
+  50%      { transform: scaleY(calc(.6 + var(--amp) * 1.1)); }
 }
-.voice-body.is-listening .voice-core::before { animation: ripple 1.8s ease-out infinite; }
-.voice-body.is-listening .voice-core::after  { animation: ripple 1.8s ease-out infinite .9s; }
-.voice-body.is-speaking .voice-core { animation: coreSpeak .72s ease-in-out infinite; }
-.voice-body.is-thinking .voice-core { animation: coreBreath 2s ease-in-out infinite; }
-@keyframes coreBreath { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
-@keyframes coreSpeak  { 0%,100% { transform: scale(1); } 50% { transform: scale(1.09); } }
+/* thinking = gentle; speaking = lively; idle = calm; listening = REAL mic level (no anim) */
+.voice-body.is-idle     .voice-viz { --amp: .16; }
+.voice-body.is-thinking .voice-viz { --amp: .3; }
+.voice-body.is-thinking .voice-viz > span { animation-duration: .8s; }
+.voice-body.is-speaking .voice-viz { --amp: .85; }
+.voice-body.is-speaking .voice-viz > span { animation-duration: .5s; }
+.voice-body.is-listening .voice-viz > span { animation: none; }
+/* live mic level drives each bar; the middle bars react a touch more for a natural shape */
+.voice-body.is-listening .voice-viz > span             { transform: scaleY(calc(.35 + var(--vlevel) * 1.6)); }
+.voice-body.is-listening .voice-viz > span:nth-child(2),
+.voice-body.is-listening .voice-viz > span:nth-child(4){ transform: scaleY(calc(.4 + var(--vlevel) * 2.0)); }
+.voice-body.is-listening .voice-viz > span:nth-child(3){ transform: scaleY(calc(.45 + var(--vlevel) * 2.4)); }
 
 .voice-status {
   font-size: 12px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase;
@@ -270,8 +280,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .voice-dots, .voice-body.is-listening .voice-dots, .voice-body.is-speaking .voice-dots, .voice-body.is-thinking .voice-dots,
-  .voice-core, .voice-body.is-listening .voice-core, .voice-body.is-speaking .voice-core, .voice-body.is-thinking .voice-core,
-  .voice-body.is-listening .voice-core::before, .voice-body.is-listening .voice-core::after { animation: none; }
+  .voice-viz > span, .voice-body.is-thinking .voice-viz > span, .voice-body.is-speaking .voice-viz > span { animation: none; }
 }
 
 html {
