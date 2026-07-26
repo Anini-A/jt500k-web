@@ -32,9 +32,7 @@ export async function POST() {
     const data = await res.json()
     // data.name looks like "auth_tokens/abc..." — that whole string is the ephemeral key.
     // return the model too so the client's socket setup always matches the token.
-    // dbg: the response field names + token prefix, to confirm we're passing the right value.
-    const dbg = 'keys=' + Object.keys(data || {}).join(',') + ' name=' + String(data?.name || '').slice(0, 18)
-    return NextResponse.json({ token: data.name, model: `models/${LIVE_MODEL}`, dbg })
+    return NextResponse.json({ token: data.name, model: `models/${LIVE_MODEL}` })
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 })
   }

@@ -110,7 +110,6 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
   const [micOK, setMicOK] = useState(false)
   const [speak, setSpeak] = useState(true)            // read answers aloud
   const [voiceError, setVoiceError] = useState('')     // visible mic/permission error (was silently swallowed)
-  const [voiceDbg, setVoiceDbg] = useState('')         // TEMP: which TTS path ran + why Live failed
   const scrollRef = useRef<HTMLDivElement>(null)
   const taRef = useRef<HTMLTextAreaElement>(null)
   const voiceModeRef = useRef(false)
@@ -317,7 +316,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
 
     let started = false          // has any audio arrived?
     let settled = false          // has this turn finished/failed?
-    const fail = (why?: string) => { if (settled) return; settled = true; setVoiceDbg('batch — live failed: ' + (why || '?')); if (alive()) sayBatch(t, onDone, seq) }
+    const fail = () => { if (settled) return; settled = true; if (alive()) sayBatch(t, onDone, seq) }
     const finish = () => {
       if (settled) return; settled = true
       if (!alive()) return
@@ -326,7 +325,6 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
       setTimeout(() => { if (alive()) { setSpeaking(false); onDone?.() } }, remaining + 120)
     }
 
-    let tokDbg = ''
     ;(async () => {
       let token: string, MODEL: string
       try {
@@ -334,70 +332,52 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
         const d = await r.json()
         if (!r.ok || !d.token) throw new Error(d.detail || d.error || ('token http ' + r.status))
         token = d.token
-        tokDbg = d.dbg || ''
         MODEL = d.model || 'models/gemini-3.1-flash-live-preview' // server is the source of truth
-      } catch (e: any) { fail('token: ' + (e?.message || e)); return }
+      } catch { fail(); return }
       if (!alive()) return
 
-      // We're unsure which auth param + version the Bidi socket wants for an ephemeral
-      // token, so try the plausible combinations in order until one streams audio.
-      // per the docs: ephemeral tokens are v1beta-only, use the DEDICATED "Constrained"
-      // method, and auth via the access_token param (the plain method rejects them → 1008)
-      const base = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage'
-      const strategies = [
-        `${base}.v1beta.GenerativeService.BidiGenerateContentConstrained?access_token=${token}`,
-      ]
+      // Ephemeral tokens are v1beta-only, use the DEDICATED "Constrained" bidi method, and
+      // authenticate via the access_token query param (the plain BidiGenerateContent method
+      // and the `key` param both reject ephemeral tokens).
+      const url = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContentConstrained?access_token=${token}`
+      let ws: WebSocket
+      try { ws = new WebSocket(url) } catch { fail(); return }
+      liveWsRef.current = ws
+      const watchdog = setTimeout(() => { if (!started) { try { ws.close() } catch { /* ignore */ } ; fail() } }, 8000)
 
-      const errs: string[] = []
-      const tryStrategy = (i: number) => {
-        if (settled || !alive()) return
-        if (i >= strategies.length) { fail('all failed — ' + errs.join(' | ')); return }
-        let ws: WebSocket
-        try { ws = new WebSocket(strategies[i]) } catch { errs.push('#' + i + ' ctor'); tryStrategy(i + 1); return }
-        liveWsRef.current = ws
-        let advanced = false
-        const next = (why: string) => { if (advanced) return; advanced = true; clearTimeout(watchdog); if (!started) { errs.push('#' + i + ' ' + why); tryStrategy(i + 1) } }
-        const watchdog = setTimeout(() => { try { ws.close() } catch {} ; next('timeout') }, 6000)
-
-        ws.onopen = () => {
-          ws.send(JSON.stringify({
-            setup: {
-              model: MODEL,
-              generationConfig: {
-                responseModalities: ['AUDIO'],
-                speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Aoede' } } },
-              },
-              systemInstruction: { parts: [{ text: 'You are a text-to-speech engine. Speak the user message aloud verbatim in a warm, natural tone. Do not add, answer, summarize, or comment — only voice the exact words given.' }] },
+      ws.onopen = () => {
+        ws.send(JSON.stringify({
+          setup: {
+            model: MODEL,
+            generationConfig: {
+              responseModalities: ['AUDIO'],
+              speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Aoede' } } },
             },
-          }))
-        }
-        ws.onmessage = async (ev) => {
-          try {
-            const raw = typeof ev.data === 'string' ? ev.data : await (ev.data as Blob).text()
-            const msg = JSON.parse(raw)
-            if (msg.setupComplete) {
-              ws.send(JSON.stringify({ clientContent: { turns: [{ role: 'user', parts: [{ text: t }] }], turnComplete: true } }))
-              return
-            }
-            const parts = msg.serverContent?.modelTurn?.parts || []
-            for (const p of parts) {
-              const data = p.inlineData?.data
-              if (data && alive()) { if (!started) setVoiceDbg('live ✓ streaming (try#' + i + ')'); started = true; advanced = true; clearTimeout(watchdog); playPcmChunk(data) }
-            }
-            if (msg.serverContent?.turnComplete || msg.serverContent?.generationComplete) {
-              clearTimeout(watchdog)
-              try { ws.close() } catch { /* ignore */ }
-            }
-          } catch { /* ignore malformed frames */ }
-        }
-        ws.onerror = () => { if (!started) next('err') }
-        ws.onclose = (e) => {
-          if (liveWsRef.current === ws) liveWsRef.current = null
-          if (started) { finish(); return }
-          next('closed ' + e.code + ' ' + (e.reason || '').slice(0, 60))
-        }
+            systemInstruction: { parts: [{ text: 'You are a text-to-speech engine. Speak the user message aloud verbatim in a warm, natural tone. Do not add, answer, summarize, or comment — only voice the exact words given.' }] },
+          },
+        }))
       }
-      tryStrategy(0)
+      ws.onmessage = async (ev) => {
+        try {
+          const raw = typeof ev.data === 'string' ? ev.data : await (ev.data as Blob).text()
+          const msg = JSON.parse(raw)
+          if (msg.setupComplete) {
+            ws.send(JSON.stringify({ clientContent: { turns: [{ role: 'user', parts: [{ text: t }] }], turnComplete: true } }))
+            return
+          }
+          const parts = msg.serverContent?.modelTurn?.parts || []
+          for (const p of parts) {
+            const data = p.inlineData?.data
+            if (data && alive()) { started = true; clearTimeout(watchdog); playPcmChunk(data) }
+          }
+          if (msg.serverContent?.turnComplete || msg.serverContent?.generationComplete) {
+            clearTimeout(watchdog)
+            try { ws.close() } catch { /* ignore */ }
+          }
+        } catch { /* ignore malformed frames */ }
+      }
+      ws.onerror = () => { clearTimeout(watchdog); if (!started) fail() }
+      ws.onclose = () => { clearTimeout(watchdog); if (liveWsRef.current === ws) liveWsRef.current = null; started ? finish() : fail() }
     })()
   }
 
@@ -831,11 +811,6 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
                           ? (lastHeardRef.current ? <span style={{ color: 'var(--text-secondary)' }}>“{lastHeardRef.current}”</span> : <span style={{ color: 'var(--text-muted)' }}>…</span>)
                           : ([...msgs].reverse().find((m) => m.role === 'assistant')?.content || <span style={{ color: 'var(--text-muted)' }}>Tap the orb and speak.</span>)}
                   </div>
-                  {voiceDbg && (
-                    <div style={{ marginTop: 8, fontSize: 11, fontFamily: 'monospace', color: 'var(--text-muted)', maxWidth: 460, wordBreak: 'break-word' }}>
-                      {voiceDbg}
-                    </div>
-                  )}
                 </>
               )}
             </div>
