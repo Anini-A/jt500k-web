@@ -60,7 +60,7 @@ function subMonths(iso: string, n: number) {
 export default function Dashboard() {
   const [txns, setTxns] = useState<Txn[]>([])
   const [loading, setLoading] = useState(true)
-  const [preset, setPreset] = useState<Preset>('mtd') // Debts filter default
+  const [preset, setPreset] = useState<Preset>('ytd') // default range for Income/Expenses/Savings
   const [customFrom, setCustomFrom] = useState('')
   const [customTo, setCustomTo] = useState('')
   const [tab, setTab] = useState<Tab>('income')
