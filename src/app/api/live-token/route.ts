@@ -14,22 +14,15 @@ export async function POST() {
   if (!GEMINI_KEY) return NextResponse.json({ error: 'not configured' }, { status: 500 })
   try {
     const now = Date.now()
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1alpha/auth_tokens?key=${GEMINI_KEY}`, {
+    // ephemeral tokens are minted on v1beta and authed with the x-goog-api-key header
+    // (per the Gemini API docs); the token then connects the Live socket via access_token.
+    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/auth_tokens', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': GEMINI_KEY! },
       body: JSON.stringify({
         uses: 1,                                                    // one session
         expireTime: new Date(now + 2 * 60 * 1000).toISOString(),   // token dead after 2 min
         newSessionExpireTime: new Date(now + 60 * 1000).toISOString(), // must connect within 1 min
-        // bind the token to the exact Live setup — an unconstrained token is rejected by
-        // the Bidi socket ("API key not valid"). REST field is bidiGenerateContentSetup.
-        bidiGenerateContentSetup: {
-          model: `models/${LIVE_MODEL}`,
-          generationConfig: {
-            responseModalities: ['AUDIO'],
-            speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Aoede' } } },
-          },
-        },
       }),
     })
     if (!res.ok) {
