@@ -7,6 +7,7 @@
   --gridline: #e1e0d9;
   --border: rgba(11, 11, 11, 0.1);
   --accent: #2a78d6;
+  --accent-rgb: 42, 120, 214;
   --accent-soft: #cde2fb;
   --income: #1baf7a;
   --income-soft: #d3f2e7;
@@ -36,6 +37,7 @@
     --gridline: #2c2c2a;
     --border: rgba(255, 255, 255, 0.1);
     --accent: #3987e5;
+    --accent-rgb: 57, 135, 229;
     --accent-soft: #184f95;
     --income: #199e70;
     --income-soft: #123d31;
@@ -172,6 +174,104 @@
 @media (prefers-reduced-motion: reduce) {
   .mic-live { animation: none; }
   .wave > span { animation: none; transform: scaleY(0.6); }
+}
+
+/* ── Chat/Voice mode pill (header center) ── */
+.mode-pill {
+  display: inline-flex; align-items: center; gap: 2px; padding: 3px;
+  border-radius: 999px; border: 1px solid var(--border); background: var(--kpi-bg);
+  box-shadow: var(--glass-sheen);
+}
+.mode-seg {
+  display: inline-flex; align-items: center; gap: 6px; padding: 7px 15px;
+  border: none; border-radius: 999px; cursor: pointer; font: inherit;
+  font-size: 13px; font-weight: 600; color: var(--text-muted); background: transparent;
+  transition: color .18s ease, background .18s ease, box-shadow .18s ease;
+}
+.mode-seg:disabled { opacity: .45; cursor: not-allowed; }
+.mode-seg.is-active {
+  color: #fff; background: var(--accent);
+  box-shadow: 0 2px 8px rgba(var(--accent-rgb), .35);
+}
+
+/* ── Voice mode body — animated dotted canvas, glassy, reacts to speech ── */
+.voice-body {
+  --vlevel: 0;               /* live mic level (0..1), set from JS during listening */
+  position: relative; flex: 1; min-height: 0; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  background:
+    radial-gradient(120% 90% at 50% 12%, rgba(var(--accent-rgb), .16), transparent 60%),
+    radial-gradient(120% 120% at 50% 108%, rgba(var(--accent-rgb), .12), transparent 55%);
+}
+/* the dotted layer: a tiled dot grid that gently drifts + swells with the voice */
+.voice-dots {
+  position: absolute; inset: -30%;
+  background-image: radial-gradient(rgba(var(--accent-rgb), .55) 1.4px, transparent 1.6px);
+  background-size: 22px 22px;
+  -webkit-mask-image: radial-gradient(circle at 50% 46%, #000 0%, rgba(0,0,0,.55) 34%, transparent 70%);
+  mask-image: radial-gradient(circle at 50% 46%, #000 0%, rgba(0,0,0,.55) 34%, transparent 70%);
+  opacity: calc(.32 + var(--vlevel) * .5);
+  transform: scale(calc(1 + var(--vlevel) * .12));
+  transition: opacity .12s linear, transform .12s ease-out;
+  animation: dotDrift 18s ease-in-out infinite;
+}
+@keyframes dotDrift {
+  0%, 100% { background-position: 0 0; }
+  50%      { background-position: 16px 12px; }
+}
+/* per-state “breathing” of the whole field */
+.voice-body.is-listening .voice-dots { animation: dotDrift 12s ease-in-out infinite, dotPulseFast 1.5s ease-in-out infinite; }
+.voice-body.is-speaking  .voice-dots { animation: dotDrift 14s ease-in-out infinite, dotPulse 0.9s ease-in-out infinite; }
+.voice-body.is-thinking  .voice-dots { animation: dotDrift 16s linear infinite, dotSpin 8s linear infinite; }
+@keyframes dotPulse     { 0%,100% { opacity: .34; } 50% { opacity: .7; } }
+@keyframes dotPulseFast { 0%,100% { opacity: .4; transform: scale(1.02); } 50% { opacity: .78; transform: scale(1.09); } }
+@keyframes dotSpin      { to { transform: rotate(6deg); } }
+
+.voice-body-inner {
+  position: relative; z-index: 1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 26px; padding: 0 24px; text-align: center; width: 100%;
+}
+/* the tappable center — glassy accent core with concentric rings */
+.voice-core {
+  position: relative; width: 132px; height: 132px; flex-shrink: 0;
+  border-radius: 999px; cursor: pointer; border: 1px solid var(--glass-border);
+  background:
+    radial-gradient(circle at 38% 32%, rgba(255,255,255,.7), rgba(255,255,255,0) 42%),
+    radial-gradient(circle at 50% 60%, rgba(var(--accent-rgb), .9), rgba(var(--accent-rgb), .55));
+  box-shadow: 0 10px 30px rgba(var(--accent-rgb), .4), var(--glass-rim), var(--glass-sheen);
+  transition: transform .15s ease, box-shadow .2s ease;
+  animation: coreBreath 4s ease-in-out infinite;
+}
+.voice-core:active { transform: scale(.94); }
+.voice-core::before, .voice-core::after {
+  content: ''; position: absolute; inset: -14px; border-radius: 999px;
+  border: 1px solid rgba(var(--accent-rgb), .4); opacity: 0;
+}
+.voice-body.is-listening .voice-core {
+  transform: scale(calc(1 + var(--vlevel) * .16));
+  box-shadow: 0 10px 34px rgba(var(--accent-rgb), calc(.45 + var(--vlevel) * .4)), var(--glass-rim);
+  animation: none;
+}
+.voice-body.is-listening .voice-core::before { animation: ripple 1.8s ease-out infinite; }
+.voice-body.is-listening .voice-core::after  { animation: ripple 1.8s ease-out infinite .9s; }
+.voice-body.is-speaking .voice-core { animation: coreSpeak .72s ease-in-out infinite; }
+.voice-body.is-thinking .voice-core { animation: coreBreath 2s ease-in-out infinite; }
+@keyframes coreBreath { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+@keyframes coreSpeak  { 0%,100% { transform: scale(1); } 50% { transform: scale(1.09); } }
+
+.voice-status {
+  font-size: 12px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase;
+}
+.voice-caption {
+  font-size: 18px; line-height: 1.55; font-weight: 500; letter-spacing: -.01em;
+  color: var(--text-primary); max-width: 460px; min-height: 60px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .voice-dots, .voice-body.is-listening .voice-dots, .voice-body.is-speaking .voice-dots, .voice-body.is-thinking .voice-dots,
+  .voice-core, .voice-body.is-listening .voice-core, .voice-body.is-speaking .voice-core, .voice-body.is-thinking .voice-core,
+  .voice-body.is-listening .voice-core::before, .voice-body.is-listening .voice-core::after { animation: none; }
 }
 
 html {

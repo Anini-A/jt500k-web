@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { ArrowLeft, SquarePen, History, ArrowUp, Sparkles, Trash2, Check, X, Mic, AudioLines, Volume2, VolumeX } from 'lucide-react'
+import { SquarePen, History, ArrowUp, Trash2, Check, X, AudioLines, MessageSquare } from 'lucide-react'
 import { today } from '@/lib/date'
 
 interface Msg { role: 'user' | 'assistant'; content: string; at?: number }
@@ -137,6 +137,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
   const liveTextRef = useRef('')
   const [liveText, setLiveText] = useState('')
   const lastHeardRef = useRef('') // your last question — stays on screen while Thinking
+  const voiceBgRef = useRef<HTMLDivElement | null>(null) // reactive dotted background (mic level → CSS var)
   const audioElRef = useRef<HTMLAudioElement | null>(null) // plays the natural (Gemini) voice
   const speakSeqRef = useRef(0) // invalidates an in-flight speech chain when stopped/superseded
   const playCtxRef = useRef<AudioContext | null>(null) // separate context for streamed TTS playback
@@ -145,8 +146,8 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
 
   const SPEAK_THRESHOLD = 0.035        // RMS level that counts as "you're talking"
   const SILENCE_HANG_MS = 1200         // stop the segment after this much quiet following speech
-  const NO_SPEECH_TIMEOUT_MS = 7000    // give up a segment if nothing is heard at all
-  const MAX_TOTAL_SILENCE_MS = 35000   // close the conversation after this much total silence
+  const NO_SPEECH_TIMEOUT_MS = 6000    // give up a segment if nothing is heard at all
+  const MAX_TOTAL_SILENCE_MS = 30000   // after this much total silence, idle to "tap to speak"
 
   // pick the most natural-sounding English voice available
   useEffect(() => {
@@ -385,7 +386,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
   // batch Gemini voice and finally the browser voice as automatic fallbacks.
   const say = (text: string, onDone?: () => void) => {
     const t = plain(text)
-    if (!t || !speakRef.current) { onDone?.(); return }
+    if (!t) { onDone?.(); return } // voice mode always speaks; chat mode never calls say()
     setSpeaking(true)
     sayLive(t, onDone)
   }
@@ -418,6 +419,8 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
       let sum = 0
       for (let i = 0; i < arr.length; i++) { const v = (arr[i] - 128) / 128; sum += v * v }
       const rms = Math.sqrt(sum / arr.length)
+      // drive the reactive dotted background — normalize RMS to a 0..1-ish level
+      if (voiceBgRef.current) voiceBgRef.current.style.setProperty('--vlevel', Math.min(1, rms * 9).toFixed(3))
       if (rms > SPEAK_THRESHOLD) {
         if (!speechDetectedRef.current) { speechDetectedRef.current = true; if (noSpeechTimerRef.current) { clearTimeout(noSpeechTimerRef.current); noSpeechTimerRef.current = null } }
         if (silenceHangTimerRef.current) clearTimeout(silenceHangTimerRef.current)
@@ -493,7 +496,8 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
     const blob = new Blob(chunksRef.current, { type: mimeType || 'audio/webm' })
     if (!hadSpeech || !blob.size) {
       silentAccumRef.current += NO_SPEECH_TIMEOUT_MS
-      if (silentAccumRef.current >= MAX_TOTAL_SILENCE_MS) { endVoiceConversation(true); return }
+      // ~30s of silence → stop listening and idle to "tap to speak" (stay in voice mode, don't close)
+      if (silentAccumRef.current >= MAX_TOTAL_SILENCE_MS) { finishSegment(); setListening(false); return }
       if (voiceModeRef.current) beginSegmentRef.current()
       return
     }
@@ -576,11 +580,22 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
     if (fullClose) onClose()
   }
 
-  // composer mic button: just opens/closes the voice screen — the orb tap does the talking
+  // mode pill: Chat ⇄ Voice. Entering Voice auto-starts listening (no extra tap needed).
   const toggleVoice = () => {
     if (!micOK) return
-    if (voiceMode) endVoiceConversation(false)
-    else { setVoiceError(''); unlockAudio(); stopSpeaking(); setVoiceMode(true); voiceModeRef.current = true }
+    if (voiceMode) { endVoiceConversation(false); return } // Voice → Chat (stops mic + any speech)
+    setVoiceError(''); unlockAudio(); stopSpeaking()
+    setVoiceMode(true); voiceModeRef.current = true
+    silentAccumRef.current = 0
+    openVoiceStream() // acquire mic + begin listening immediately (still inside the tap gesture)
+  }
+
+  // X button: close the whole widget from either mode, interrupting anything in flight
+  // (AI speaking, listening, thinking).
+  const closeAll = () => {
+    stopSpeaking()
+    endVoiceConversation(false) // tears down mic/audio; no-op cost if already in chat mode
+    onClose()
   }
 
   const active = threads.find((t) => t.id === activeId) || threads[0]
@@ -778,71 +793,19 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
       <div className="modal-card glass" onClick={(e) => { e.stopPropagation(); setRecentOpen(false) }}
         style={{ width: 'min(720px, 100%)', height: 'min(88vh, 760px)', maxHeight: '88vh', padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'var(--surface-1)', position: 'relative' }}>
 
-        {/* Hands-free voice UI — replaces the text chat while a conversation is on */}
-        {voiceMode && (
-          <div className="voice-overlay">
-            <button style={roundBtn} aria-label="Back to chat" title="Back to chat" onClick={toggleVoice}><ArrowLeft size={20} /></button>
-
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 30, padding: '0 24px', textAlign: 'center' }}>
-              <div className="voice-orb-wrap">
-                <button type="button" aria-label="Tap to talk" onClick={onTalk}
-                  className={`voice-orb ${pending ? 'is-idle' : listening ? 'is-listening' : busy ? 'is-thinking' : speaking ? 'is-speaking' : 'is-idle'}`} />
-              </div>
-              {pending ? (
-                <>
-                  <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--accent)' }}>Confirm {pending.length > 1 ? `${pending.length} changes` : 'this change'}</div>
-                  <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 8, maxWidth: 460, width: '100%' }}>
-                    {pending.map((p, i) => (
-                      <li key={i} style={{ fontSize: 16, fontWeight: 500, color: 'var(--text-primary)', background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '11px 14px' }}>{p.label}</li>
-                    ))}
-                  </ul>
-                </>
-              ) : (
-                <>
-                  <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: voiceError ? 'var(--expense)' : listening ? 'var(--expense)' : 'var(--accent)' }}>
-                    {voiceError ? 'Mic error' : listening ? 'Listening' : busy ? 'Thinking' : speaking ? 'Speaking' : 'Tap to talk'}
-                  </div>
-                  <div style={{ fontSize: 19, lineHeight: 1.55, fontWeight: 500, letterSpacing: '-0.01em', color: voiceError ? 'var(--expense)' : 'var(--text-primary)', maxWidth: 460, minHeight: 62 }}>
-                    {voiceError
-                      ? voiceError
-                      : listening
-                        ? (liveText || <span style={{ color: 'var(--text-muted)' }}>Say something…</span>)
-                        : busy
-                          ? (lastHeardRef.current ? <span style={{ color: 'var(--text-secondary)' }}>“{lastHeardRef.current}”</span> : <span style={{ color: 'var(--text-muted)' }}>…</span>)
-                          : ([...msgs].reverse().find((m) => m.role === 'assistant')?.content || <span style={{ color: 'var(--text-muted)' }}>Tap the orb and speak.</span>)}
-                  </div>
-                </>
-              )}
-            </div>
-
-            {pending ? (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, paddingBottom: 8 }}>
-                <button className="btn" onClick={cancelAction} disabled={busy} style={{ background: 'var(--kpi-bg)', color: 'var(--text-secondary)', border: '1px solid var(--border)', padding: '12px 22px' }}><X size={16} /> Cancel</button>
-                <button className="btn btn-primary" onClick={confirmAction} disabled={busy} style={{ padding: '12px 26px', gap: 6 }}><Check size={16} /> Confirm</button>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 22, paddingBottom: 8 }}>
-                <button className="voice-ctrl" onClick={() => setSpeak((v) => { if (v) stopSpeaking(); return !v })} aria-label="Toggle voice output" title={speak ? 'Mute' : 'Unmute'}
-                  style={{ color: speak ? 'var(--accent)' : 'var(--text-muted)' }}>
-                  {speak ? <Volume2 size={22} /> : <VolumeX size={22} />}
-                </button>
-                <button className={`voice-mic ${listening ? 'mic-live' : ''}`} onClick={onTalk} aria-label="Talk">
-                  <Mic size={30} />
-                </button>
-                <button className="voice-ctrl" onClick={toggleVoice} aria-label="End voice conversation" title="End">
-                  <X size={22} />
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-        {/* Header — back (close) · title · history + new chat */}
+        {/* Header — X (close/interrupt) · Chat|Voice pill · history + new chat */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 14px', borderBottom: '1px solid var(--border)', position: 'relative' }}>
-          <button style={roundBtn} aria-label="Close" title="Close" onClick={onClose}><ArrowLeft size={20} /></button>
-          <div style={{ flex: 1, textAlign: 'center', fontWeight: 700, fontSize: 17, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}><Sparkles size={17} /> Ask Gemini</div>
+          <button style={roundBtn} aria-label="Close" title="Close" onClick={closeAll}><X size={20} /></button>
+          <div style={{ flex: 1, display: 'flex', justifyContent: 'center', minWidth: 0 }}>
+            <div className="mode-pill" role="tablist" aria-label="Chat or voice mode">
+              <button role="tab" aria-selected={!voiceMode} className={`mode-seg ${!voiceMode ? 'is-active' : ''}`}
+                onClick={() => { if (voiceMode) toggleVoice() }}><MessageSquare size={15} /> Chat</button>
+              <button role="tab" aria-selected={voiceMode} disabled={!micOK} title={micOK ? '' : 'Microphone unavailable'}
+                className={`mode-seg ${voiceMode ? 'is-active' : ''}`}
+                onClick={() => { if (!voiceMode) toggleVoice() }}><AudioLines size={15} /> Voice</button>
+            </div>
+          </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-            <button style={{ ...roundBtn, color: speak ? 'var(--accent)' : 'var(--text-muted)' }} title={speak ? 'Mute voice replies' : 'Speak replies aloud'} aria-label="Toggle spoken replies"
-              onClick={() => { setSpeak((v) => { if (v) stopSpeaking(); return !v }) }}>{speak ? <Volume2 size={19} /> : <VolumeX size={19} />}</button>
             <button style={roundBtn} title="Recent chats" onClick={(e) => { e.stopPropagation(); setRecentOpen((v) => !v) }}><History size={19} /></button>
             <button style={roundBtn} title="New chat" onClick={newChat}><SquarePen size={19} /></button>
           </div>
@@ -869,6 +832,46 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
           )}
         </div>
 
+        {voiceMode ? (
+          /* ── VOICE MODE — animated dotted canvas, tap the center to speak ── */
+          <div ref={voiceBgRef}
+            className={`voice-body ${pending ? 'is-idle' : listening ? 'is-listening' : busy ? 'is-thinking' : speaking ? 'is-speaking' : 'is-idle'}`}>
+            <div className="voice-dots" aria-hidden />
+            <div className="voice-body-inner">
+              <button type="button" className="voice-core" aria-label="Tap to speak" onClick={onTalk} />
+              {pending ? (
+                <>
+                  <div className="voice-status" style={{ color: 'var(--accent)' }}>Confirm {pending.length > 1 ? `${pending.length} changes` : 'this change'}</div>
+                  <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 8, maxWidth: 460, width: '100%' }}>
+                    {pending.map((p, i) => (
+                      <li key={i} style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)', background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 14px' }}>{p.label}</li>
+                    ))}
+                  </ul>
+                  <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+                    <button className="btn" onClick={cancelAction} disabled={busy} style={{ background: 'var(--kpi-bg)', color: 'var(--text-secondary)', border: '1px solid var(--border)', padding: '11px 20px' }}><X size={16} /> Cancel</button>
+                    <button className="btn btn-primary" onClick={confirmAction} disabled={busy} style={{ padding: '11px 24px', gap: 6 }}><Check size={16} /> Confirm</button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="voice-status" style={{ color: voiceError ? 'var(--expense)' : listening ? 'var(--expense)' : 'var(--accent)' }}>
+                    {voiceError ? 'Mic error' : listening ? 'Listening' : busy ? 'Thinking' : speaking ? 'Speaking' : 'Tap to speak'}
+                  </div>
+                  <div className="voice-caption">
+                    {voiceError
+                      ? voiceError
+                      : listening
+                        ? (liveText || <span style={{ color: 'var(--text-muted)' }}>Say something…</span>)
+                        : busy
+                          ? (lastHeardRef.current ? <span style={{ color: 'var(--text-secondary)' }}>“{lastHeardRef.current}”</span> : <span style={{ color: 'var(--text-muted)' }}>…</span>)
+                          : ([...msgs].reverse().find((m) => m.role === 'assistant')?.content || <span style={{ color: 'var(--text-muted)' }}>Tap the center to speak.</span>)}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        ) : (
+        <>
         {/* Messages (the only part that scrolls) */}
         <div ref={scrollRef} style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
           {msgs.map((m, i) => (
@@ -926,12 +929,6 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
               /* fontSize 16 keeps iOS Safari from auto-zooming the page on focus */
               style={{ flex: 1, minWidth: 0, padding: '11px 16px', borderRadius: 22, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 16, fontFamily: 'inherit', lineHeight: 1.4, resize: 'none', maxHeight: 160, overflowY: 'auto' }}
             />
-            {micOK && (
-              <button type="button" onClick={toggleVoice} aria-label="Start voice conversation" title="Talk (voice mode)"
-                style={{ width: 44, height: 44, flexShrink: 0, borderRadius: 999, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'var(--kpi-bg)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
-                <AudioLines size={20} />
-              </button>
-            )}
             <button type="submit" disabled={busy || !input.trim()} aria-label="Send"
               style={{ width: 44, height: 44, flexShrink: 0, borderRadius: 999, border: 'none', cursor: input.trim() ? 'pointer' : 'default', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: input.trim() ? 'var(--accent)' : 'var(--border)', color: '#fff', opacity: busy ? 0.6 : 1 }}>
               <ArrowUp size={20} />
@@ -939,6 +936,8 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
           </div>
           <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--text-muted)', marginTop: 7 }}>Gemini can make mistakes — double-check important numbers.</div>
         </form>
+        </>
+        )}
       </div>
     </div>,
     document.body,
