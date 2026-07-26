@@ -326,6 +326,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
       setTimeout(() => { if (alive()) { setSpeaking(false); onDone?.() } }, remaining + 120)
     }
 
+    let tokDbg = ''
     ;(async () => {
       let token: string, MODEL: string
       try {
@@ -333,6 +334,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
         const d = await r.json()
         if (!r.ok || !d.token) throw new Error(d.detail || d.error || ('token http ' + r.status))
         token = d.token
+        tokDbg = d.dbg || ''
         MODEL = d.model || 'models/gemini-3.1-flash-live-preview' // server is the source of truth
       } catch (e: any) { fail('token: ' + (e?.message || e)); return }
       if (!alive()) return
@@ -378,8 +380,8 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
           }
         } catch { /* ignore malformed frames */ }
       }
-      ws.onerror = () => { clearTimeout(watchdog); if (!started) fail('ws error') }
-      ws.onclose = (e) => { clearTimeout(watchdog); if (liveWsRef.current === ws) liveWsRef.current = null; started ? finish() : fail('ws closed ' + e.code + ' ' + (e.reason || '')) }
+      ws.onerror = () => { clearTimeout(watchdog); if (!started) fail('ws error [' + tokDbg + ']') }
+      ws.onclose = (e) => { clearTimeout(watchdog); if (liveWsRef.current === ws) liveWsRef.current = null; started ? finish() : fail('ws closed ' + e.code + ' ' + (e.reason || '') + ' [' + tokDbg + ']') }
     })()
   }
 
