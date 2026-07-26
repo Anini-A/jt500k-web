@@ -348,14 +348,15 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
         `${base}.v1beta.GenerativeService.BidiGenerateContent?access_token=${token}`,
       ]
 
+      const errs: string[] = []
       const tryStrategy = (i: number) => {
         if (settled || !alive()) return
-        if (i >= strategies.length) { fail('all auth strategies failed [' + tokDbg + ']'); return }
+        if (i >= strategies.length) { fail('all failed — ' + errs.join(' | ')); return }
         let ws: WebSocket
-        try { ws = new WebSocket(strategies[i]) } catch { tryStrategy(i + 1); return }
+        try { ws = new WebSocket(strategies[i]) } catch { errs.push('#' + i + ' ctor'); tryStrategy(i + 1); return }
         liveWsRef.current = ws
         let advanced = false
-        const next = (why: string) => { if (advanced) return; advanced = true; clearTimeout(watchdog); if (!started) { setVoiceDbg('try#' + i + ' ' + why); tryStrategy(i + 1) } }
+        const next = (why: string) => { if (advanced) return; advanced = true; clearTimeout(watchdog); if (!started) { errs.push('#' + i + ' ' + why); tryStrategy(i + 1) } }
         const watchdog = setTimeout(() => { try { ws.close() } catch {} ; next('timeout') }, 6000)
 
         ws.onopen = () => {
