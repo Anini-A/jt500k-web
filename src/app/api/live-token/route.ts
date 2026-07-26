@@ -18,6 +18,15 @@ export async function POST() {
         uses: 1,                                                    // one session
         expireTime: new Date(now + 2 * 60 * 1000).toISOString(),   // token dead after 2 min
         newSessionExpireTime: new Date(now + 60 * 1000).toISOString(), // must connect within 1 min
+        // bind the token to the exact Live model+config — an unconstrained token is
+        // rejected by the Bidi socket ("API key not valid")
+        liveConnectConstraints: {
+          model: 'models/gemini-2.0-flash-live-001',
+          config: {
+            responseModalities: ['AUDIO'],
+            speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Aoede' } } },
+          },
+        },
       }),
     })
     if (!res.ok) {
