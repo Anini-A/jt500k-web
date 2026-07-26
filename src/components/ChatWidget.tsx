@@ -339,49 +339,64 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
       } catch (e: any) { fail('token: ' + (e?.message || e)); return }
       if (!alive()) return
 
-      // ephemeral tokens are minted on v1alpha, so the socket path AND version must match;
-      // the token name ("auth_tokens/…") goes in `key` RAW — encoding its slash to %2F
-      // makes the server read it as an invalid key (1007)
-      const url = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${token}`
-      let ws: WebSocket
-      try { ws = new WebSocket(url) } catch { fail(); return }
-      liveWsRef.current = ws
-      const watchdog = setTimeout(() => { if (!started) { try { ws.close() } catch {} ; fail() } }, 8000)
+      // We're unsure which auth param + version the Bidi socket wants for an ephemeral
+      // token, so try the plausible combinations in order until one streams audio.
+      const base = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage'
+      const strategies = [
+        `${base}.v1alpha.GenerativeService.BidiGenerateContent?access_token=${token}`,
+        `${base}.v1alpha.GenerativeService.BidiGenerateContent?key=${token}`,
+        `${base}.v1beta.GenerativeService.BidiGenerateContent?access_token=${token}`,
+      ]
 
-      ws.onopen = () => {
-        ws.send(JSON.stringify({
-          setup: {
-            model: MODEL,
-            generationConfig: {
-              responseModalities: ['AUDIO'],
-              speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Aoede' } } },
+      const tryStrategy = (i: number) => {
+        if (settled || !alive()) return
+        if (i >= strategies.length) { fail('all auth strategies failed [' + tokDbg + ']'); return }
+        let ws: WebSocket
+        try { ws = new WebSocket(strategies[i]) } catch { tryStrategy(i + 1); return }
+        liveWsRef.current = ws
+        let advanced = false
+        const next = (why: string) => { if (advanced) return; advanced = true; clearTimeout(watchdog); if (!started) { setVoiceDbg('try#' + i + ' ' + why); tryStrategy(i + 1) } }
+        const watchdog = setTimeout(() => { try { ws.close() } catch {} ; next('timeout') }, 6000)
+
+        ws.onopen = () => {
+          ws.send(JSON.stringify({
+            setup: {
+              model: MODEL,
+              generationConfig: {
+                responseModalities: ['AUDIO'],
+                speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Aoede' } } },
+              },
+              systemInstruction: { parts: [{ text: 'You are a text-to-speech engine. Speak the user message aloud verbatim in a warm, natural tone. Do not add, answer, summarize, or comment — only voice the exact words given.' }] },
             },
-            systemInstruction: { parts: [{ text: 'You are a text-to-speech engine. Speak the user message aloud verbatim in a warm, natural tone. Do not add, answer, summarize, or comment — only voice the exact words given.' }] },
-          },
-        }))
+          }))
+        }
+        ws.onmessage = async (ev) => {
+          try {
+            const raw = typeof ev.data === 'string' ? ev.data : await (ev.data as Blob).text()
+            const msg = JSON.parse(raw)
+            if (msg.setupComplete) {
+              ws.send(JSON.stringify({ clientContent: { turns: [{ role: 'user', parts: [{ text: t }] }], turnComplete: true } }))
+              return
+            }
+            const parts = msg.serverContent?.modelTurn?.parts || []
+            for (const p of parts) {
+              const data = p.inlineData?.data
+              if (data && alive()) { if (!started) setVoiceDbg('live ✓ streaming (try#' + i + ')'); started = true; advanced = true; clearTimeout(watchdog); playPcmChunk(data) }
+            }
+            if (msg.serverContent?.turnComplete || msg.serverContent?.generationComplete) {
+              clearTimeout(watchdog)
+              try { ws.close() } catch { /* ignore */ }
+            }
+          } catch { /* ignore malformed frames */ }
+        }
+        ws.onerror = () => { if (!started) next('err') }
+        ws.onclose = (e) => {
+          if (liveWsRef.current === ws) liveWsRef.current = null
+          if (started) { finish(); return }
+          next('closed ' + e.code + ' ' + (e.reason || '').slice(0, 60))
+        }
       }
-
-      ws.onmessage = async (ev) => {
-        try {
-          const raw = typeof ev.data === 'string' ? ev.data : await (ev.data as Blob).text()
-          const msg = JSON.parse(raw)
-          if (msg.setupComplete) {
-            ws.send(JSON.stringify({ clientContent: { turns: [{ role: 'user', parts: [{ text: t }] }], turnComplete: true } }))
-            return
-          }
-          const parts = msg.serverContent?.modelTurn?.parts || []
-          for (const p of parts) {
-            const data = p.inlineData?.data
-            if (data && alive()) { if (!started) setVoiceDbg('live ✓ streaming'); started = true; clearTimeout(watchdog); playPcmChunk(data) }
-          }
-          if (msg.serverContent?.turnComplete || msg.serverContent?.generationComplete) {
-            clearTimeout(watchdog)
-            try { ws.close() } catch { /* ignore */ }
-          }
-        } catch { /* ignore malformed frames */ }
-      }
-      ws.onerror = () => { clearTimeout(watchdog); if (!started) fail('ws error [' + tokDbg + ']') }
-      ws.onclose = (e) => { clearTimeout(watchdog); if (liveWsRef.current === ws) liveWsRef.current = null; started ? finish() : fail('ws closed ' + e.code + ' ' + (e.reason || '') + ' [' + tokDbg + ']') }
+      tryStrategy(0)
     })()
   }
 
