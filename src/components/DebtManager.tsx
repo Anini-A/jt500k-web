@@ -123,7 +123,7 @@ export default function DebtManager() {
         </div>
       ) : (
         <div style={{ display: 'grid', gap: 4 }}>
-          {debts.map((d) => {
+          {[...debts].sort((a, b) => b.remaining - a.remaining).map((d) => {
             const pct = d.amount > 0 ? Math.min(100, (d.paid / d.amount) * 100) : 0
             const done = d.remaining <= 0
             if (editing === d.id) {
