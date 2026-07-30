@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { ChevronDown } from 'lucide-react'
 import { getJSON } from '@/lib/fresh'
 
 interface NW {
@@ -18,7 +19,11 @@ export default function JourneyCard() {
   const [rateKey, setRateKey] = useState<'c' | 'm' | 'o'>('m')
   const [customRate, setCustomRate] = useState('9') // the editable "optimistic" rate
   const [override, setOverride] = useState('')        // custom monthly contribution
+  const [collapsed, setCollapsed] = useState(false)   // tap to show only the key numbers
   const seeded = useRef(false)
+
+  useEffect(() => { try { setCollapsed(localStorage.getItem('jt-journey-collapsed') === '1') } catch { /* ignore */ } }, [])
+  const toggle = () => setCollapsed((v) => { const n = !v; try { localStorage.setItem('jt-journey-collapsed', n ? '1' : '0') } catch { /* ignore */ } return n })
 
   const load = useCallback(() => {
     getJSON('/api/networth').then((x) => !x.error && setD(x)).catch(() => {})
@@ -69,6 +74,33 @@ export default function JourneyCard() {
     dateStr = dt.toLocaleDateString('en-CA', { month: 'long', year: 'numeric' })
   }
 
+  const etaSummary = reached ? 'Goal reached' : projectable ? dateStr : '—'
+
+  // Collapsed — just the headline numbers; tap anywhere to expand.
+  if (collapsed) {
+    return (
+      <div className="card glass" onClick={toggle} role="button" tabIndex={0}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle() } }}
+        aria-expanded={false} aria-label="Expand net worth details"
+        style={{ padding: 'clamp(16px, 3vw, 22px) clamp(20px, 4vw, 30px)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+        <div style={{ minWidth: 0 }}>
+          <Label>Net worth</Label>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
+            <span style={{ fontWeight: 700, fontSize: 'clamp(24px, 6vw, 32px)', letterSpacing: '-0.03em' }}>{money(nw)}</span>
+            <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{pct.toFixed(1)}% of {short(goal)}</span>
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ textAlign: 'right' }}>
+            <Label>ETA to {short(goal)}</Label>
+            <div style={{ fontWeight: 700, fontSize: 'clamp(18px, 4vw, 22px)', letterSpacing: '-0.02em', color: reached ? 'var(--income)' : 'var(--accent)' }}>{etaSummary}</div>
+          </div>
+          <ChevronDown size={20} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="card glass" style={{ padding: 'clamp(20px, 4vw, 30px)' }}>
       <div className="grid-2" style={{ gap: 'clamp(24px, 5vw, 48px)' }}>
@@ -76,11 +108,17 @@ export default function JourneyCard() {
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, minHeight: 34 }}>
             <Label>Net worth</Label>
-            {prev && (
-              <span style={{ fontWeight: 500, fontSize: 12, color: delta >= 0 ? 'var(--income)' : 'var(--expense)' }}>
-                {delta >= 0 ? '↑' : '↓'} {money(Math.abs(delta))}
-              </span>
-            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              {prev && (
+                <span style={{ fontWeight: 500, fontSize: 12, color: delta >= 0 ? 'var(--income)' : 'var(--expense)' }}>
+                  {delta >= 0 ? '↑' : '↓'} {money(Math.abs(delta))}
+                </span>
+              )}
+              <button onClick={toggle} aria-expanded={true} aria-label="Collapse net worth details" title="Collapse"
+                style={{ width: 28, height: 28, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-muted)', cursor: 'pointer', flexShrink: 0 }}>
+                <ChevronDown size={16} style={{ transform: 'rotate(180deg)' }} />
+              </button>
+            </div>
           </div>
           <div style={{ fontWeight: 700, fontSize: 'clamp(32px, 8vw, 44px)', color: 'var(--text-primary)', margin: '6px 0 4px', letterSpacing: '-0.03em' }}>{money(nw)}</div>
 
