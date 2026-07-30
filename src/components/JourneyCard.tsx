@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { ChevronDown } from 'lucide-react'
 import { getJSON } from '@/lib/fresh'
 
 interface NW {
@@ -19,11 +18,7 @@ export default function JourneyCard() {
   const [rateKey, setRateKey] = useState<'c' | 'm' | 'o'>('m')
   const [customRate, setCustomRate] = useState('9') // the editable "optimistic" rate
   const [override, setOverride] = useState('')        // custom monthly contribution
-  const [collapsed, setCollapsed] = useState(false)   // tap to show only the key numbers
   const seeded = useRef(false)
-
-  useEffect(() => { try { setCollapsed(localStorage.getItem('jt-journey-collapsed') === '1') } catch { /* ignore */ } }, [])
-  const toggle = () => setCollapsed((v) => { const n = !v; try { localStorage.setItem('jt-journey-collapsed', n ? '1' : '0') } catch { /* ignore */ } return n })
 
   const load = useCallback(() => {
     getJSON('/api/networth').then((x) => !x.error && setD(x)).catch(() => {})
@@ -74,32 +69,6 @@ export default function JourneyCard() {
     dateStr = dt.toLocaleDateString('en-CA', { month: 'long', year: 'numeric' })
   }
 
-  const etaSummary = reached ? 'Goal reached' : projectable ? dateStr : '—'
-
-  // Collapsed — just the headline numbers; tap anywhere to expand.
-  if (collapsed) {
-    return (
-      <div className="card glass" onClick={toggle} role="button" tabIndex={0}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle() } }}
-        aria-expanded={false} aria-label="Expand net worth details"
-        style={{ padding: 'clamp(16px, 3vw, 22px) clamp(20px, 4vw, 26px)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 'clamp(14px, 4vw, 28px)' }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <Label>Net worth</Label>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 2 }}>
-            <span style={{ fontWeight: 700, fontSize: 'clamp(24px, 6vw, 32px)', letterSpacing: '-0.03em', whiteSpace: 'nowrap' }}>{money(nw)}</span>
-            <span style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{pct.toFixed(1)}%</span>
-          </div>
-        </div>
-        <div style={{ width: 1, alignSelf: 'stretch', background: 'var(--border)', flexShrink: 0, minHeight: 36 }} />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <Label>ETA to {short(goal)}</Label>
-          <div style={{ fontWeight: 700, fontSize: 'clamp(18px, 4.5vw, 24px)', letterSpacing: '-0.02em', marginTop: 2, color: reached ? 'var(--income)' : 'var(--accent)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{etaSummary}</div>
-        </div>
-        <ChevronDown size={20} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-      </div>
-    )
-  }
-
   return (
     <div className="card glass" style={{ padding: 'clamp(20px, 4vw, 30px)' }}>
       <div className="grid-2" style={{ gap: 'clamp(24px, 5vw, 48px)' }}>
@@ -107,17 +76,11 @@ export default function JourneyCard() {
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, minHeight: 34 }}>
             <Label>Net worth</Label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              {prev && (
-                <span style={{ fontWeight: 500, fontSize: 12, color: delta >= 0 ? 'var(--income)' : 'var(--expense)' }}>
-                  {delta >= 0 ? '↑' : '↓'} {money(Math.abs(delta))}
-                </span>
-              )}
-              <button onClick={toggle} aria-expanded={true} aria-label="Collapse net worth details" title="Collapse"
-                style={{ width: 28, height: 28, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-muted)', cursor: 'pointer', flexShrink: 0 }}>
-                <ChevronDown size={16} style={{ transform: 'rotate(180deg)' }} />
-              </button>
-            </div>
+            {prev && (
+              <span style={{ fontWeight: 500, fontSize: 12, color: delta >= 0 ? 'var(--income)' : 'var(--expense)' }}>
+                {delta >= 0 ? '↑' : '↓'} {money(Math.abs(delta))}
+              </span>
+            )}
           </div>
           <div style={{ fontWeight: 700, fontSize: 'clamp(32px, 8vw, 44px)', color: 'var(--text-primary)', margin: '6px 0 4px', letterSpacing: '-0.03em' }}>{money(nw)}</div>
 
