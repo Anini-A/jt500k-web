@@ -82,21 +82,20 @@ export default function JourneyCard() {
       <div className="card glass" onClick={toggle} role="button" tabIndex={0}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle() } }}
         aria-expanded={false} aria-label="Expand net worth details"
-        style={{ padding: 'clamp(16px, 3vw, 22px) clamp(20px, 4vw, 30px)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
-        <div style={{ minWidth: 0 }}>
+        style={{ padding: 'clamp(16px, 3vw, 22px) clamp(20px, 4vw, 26px)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 'clamp(14px, 4vw, 28px)' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <Label>Net worth</Label>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
-            <span style={{ fontWeight: 700, fontSize: 'clamp(24px, 6vw, 32px)', letterSpacing: '-0.03em' }}>{money(nw)}</span>
-            <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{pct.toFixed(1)}% of {short(goal)}</span>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 2 }}>
+            <span style={{ fontWeight: 700, fontSize: 'clamp(24px, 6vw, 32px)', letterSpacing: '-0.03em', whiteSpace: 'nowrap' }}>{money(nw)}</span>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{pct.toFixed(1)}%</span>
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ textAlign: 'right' }}>
-            <Label>ETA to {short(goal)}</Label>
-            <div style={{ fontWeight: 700, fontSize: 'clamp(18px, 4vw, 22px)', letterSpacing: '-0.02em', color: reached ? 'var(--income)' : 'var(--accent)' }}>{etaSummary}</div>
-          </div>
-          <ChevronDown size={20} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+        <div style={{ width: 1, alignSelf: 'stretch', background: 'var(--border)', flexShrink: 0, minHeight: 36 }} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <Label>ETA to {short(goal)}</Label>
+          <div style={{ fontWeight: 700, fontSize: 'clamp(18px, 4.5vw, 24px)', letterSpacing: '-0.02em', marginTop: 2, color: reached ? 'var(--income)' : 'var(--accent)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{etaSummary}</div>
         </div>
+        <ChevronDown size={20} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
       </div>
     )
   }
