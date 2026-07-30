@@ -12,8 +12,6 @@ const num = (v: string) => parseFloat(String(v).replace(/[^0-9.\-]/g, '')) || 0 
 const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 })
 const money2 = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' })
 const todayISO = today // local date, not UTC
-const AMBER = '#b7791f'
-const AMBER_SOFT = 'rgba(224, 161, 43, 0.16)'
 // stale-balance banner uses red (not amber) so it clearly grabs attention
 const RED = '#e5484d'
 const RED_SOFT = 'rgba(229, 72, 77, 0.14)'
@@ -151,7 +149,7 @@ export default function BillRunway() {
             const ok = coverageOf(a)
             return (
               <button key={a.id} onClick={() => setActiveId(a.id)} className={`tab ${a.id === activeId ? 'tab-active' : ''}`}>
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: ok ? 'var(--income)' : AMBER, flexShrink: 0 }} />
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: ok ? 'var(--income)' : RED, flexShrink: 0 }} />
                 {a.name}
               </button>
             )
@@ -163,10 +161,10 @@ export default function BillRunway() {
       {/* VERDICT + BALANCE — side by side */}
       <div className="grid-2" style={{ marginBottom: 16 }}>
       {proj && (
-      <div className="card glass" style={{ borderLeft: `4px solid ${covered ? 'var(--income)' : AMBER}`, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+      <div className="card glass" style={{ borderLeft: `4px solid ${covered ? 'var(--income)' : RED}`, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: proj.timeline.length ? 12 : 0 }}>
           {covered ? <CheckCircle2 size={24} color="var(--income)" style={{ flexShrink: 0 }} />
-            : <TriangleAlert size={24} color={AMBER} style={{ flexShrink: 0 }} />}
+            : <TriangleAlert size={24} color={RED} style={{ flexShrink: 0 }} />}
           <div style={{ fontWeight: 700, fontSize: 'clamp(19px, 4.5vw, 24px)', letterSpacing: '-0.015em', minWidth: 0 }}>
             {proj.timeline.length === 0 ? 'No upcoming bills'
               : covered ? 'You’re covered'
@@ -186,14 +184,14 @@ export default function BillRunway() {
             </div>
             {/* needs top-up line */}
             {proj.firstShort ? (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, padding: '9px 12px', borderRadius: 10, background: AMBER_SOFT }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, padding: '9px 12px', borderRadius: 10, background: RED_SOFT }}>
                 <span style={{ fontSize: 13, color: 'var(--text-secondary)', minWidth: 0 }}>Top up for <b style={{ color: 'var(--text-primary)' }}>{proj.firstShort.name}</b>{proj.remainingCount > 1 ? ` +${proj.remainingCount - 1} more` : ''} · {fmtDay(proj.firstShort.iso)}</span>
-                <span style={{ fontWeight: 700, fontSize: 15, color: AMBER, whiteSpace: 'nowrap' }}>{money2(proj.remainingTotal)}</span>
+                <span style={{ fontWeight: 700, fontSize: 15, color: RED, whiteSpace: 'nowrap' }}>{money2(proj.remainingTotal)}</span>
               </div>
             ) : (
               <div style={{ fontSize: 13, color: 'var(--income)', fontWeight: 600, padding: '2px 2px' }}>Every upcoming bill covered.</div>
             )}
-            {stale && <div style={{ fontSize: 12, color: AMBER }}>Based on your {fmtDay(asOf)} balance.</div>}
+            {stale && <div style={{ fontSize: 12, color: RED }}>Based on your {fmtDay(asOf)} balance.</div>}
           </div>
         )}
       </div>
@@ -292,7 +290,7 @@ function CoverageTimeline({ proj, asOf }: { proj: Projection; asOf: string }) {
         <h3 style={{ margin: 0, fontSize: 15, display: 'flex', alignItems: 'center', gap: 8 }}><CalendarClock size={16} /> Coverage timeline</h3>
         <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>
           {proj.coveredThroughISO ? <>covers up to <b style={{ color: 'var(--text-primary)' }}>{fmtDay(proj.coveredThroughISO)}</b></> : 'what your balance covers'}
-          {proj.firstShort ? <> · <span style={{ color: AMBER, fontWeight: 600 }}>{proj.remainingCount} to top up · {money2(proj.remainingTotal)}</span></> : proj.timeline.length ? <> · <span style={{ color: 'var(--income)', fontWeight: 600 }}>all covered</span></> : null}
+          {proj.firstShort ? <> · <span style={{ color: RED, fontWeight: 600 }}>{proj.remainingCount} to top up · {money2(proj.remainingTotal)}</span></> : proj.timeline.length ? <> · <span style={{ color: 'var(--income)', fontWeight: 600 }}>all covered</span></> : null}
         </span>
       </div>
 
@@ -309,20 +307,20 @@ function CoverageTimeline({ proj, asOf }: { proj: Projection; asOf: string }) {
 
           {proj.timeline.map((e, i) => {
             const isCutoff = proj.firstShort != null && e === proj.firstShort
-            const tone = e.covered ? 'var(--income)' : AMBER
+            const tone = e.covered ? 'var(--income)' : RED
             return (
               <Fragment key={i}>
                 {isCutoff && (
-                  <div style={{ flex: '0 0 auto', width: 34, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, color: AMBER }} title="Balance runs out — top up">
+                  <div style={{ flex: '0 0 auto', width: 34, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, color: RED }} title="Balance runs out — top up">
                     <TriangleAlert size={15} />
-                    <div style={{ width: 2, flex: 1, minHeight: 40, background: AMBER, opacity: 0.5, borderRadius: 2 }} />
+                    <div style={{ width: 2, flex: 1, minHeight: 40, background: RED, opacity: 0.5, borderRadius: 2 }} />
                   </div>
                 )}
-                <div style={{ flex: '0 0 auto', width: 132, scrollSnapAlign: 'start', borderRadius: 12, padding: '11px 12px', background: e.covered ? 'var(--kpi-bg)' : AMBER_SOFT, borderTop: `3px solid ${tone}` }}>
+                <div style={{ flex: '0 0 auto', width: 132, scrollSnapAlign: 'start', borderRadius: 12, padding: '11px 12px', background: e.covered ? 'var(--kpi-bg)' : RED_SOFT, borderTop: `3px solid ${tone}` }}>
                   <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{fmtDay(e.iso)}</div>
                   <div style={{ fontWeight: 600, fontSize: 13, marginTop: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={e.name}>{e.name}</div>
                   <div style={{ fontWeight: 700, fontSize: 15, marginTop: 4 }}>−{money2(e.amount)}</div>
-                  <div style={{ fontSize: 12, marginTop: 3, color: e.covered ? 'var(--text-muted)' : AMBER }}>→ {money2(e.balanceAfter)}</div>
+                  <div style={{ fontSize: 12, marginTop: 3, color: e.covered ? 'var(--text-muted)' : RED }}>→ {money2(e.balanceAfter)}</div>
                 </div>
               </Fragment>
             )
