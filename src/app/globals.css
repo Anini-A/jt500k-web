@@ -884,6 +884,8 @@ header.top h1 {
 }
 
 /* Filter chips (glass) */
+.seg-group { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+
 .chip {
   padding: 7px 16px;
   border-radius: 999px;

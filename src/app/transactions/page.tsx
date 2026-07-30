@@ -117,34 +117,51 @@ export default function Transactions() {
           <HeaderNav current="transactions" />
         </header>
 
-        {/* Controls */}
+        {/* Controls — two labeled rows: Type (+ category/search) and Period (+ dates) */}
         <section className="block">
-          <div className="card glass" style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 10, alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', minWidth: 0 }}>
-              {TYPES.map((t) => (
-                <button key={t.key} onClick={() => setType(t.key)} className={`chip ${type === t.key ? 'chip-active' : ''}`} style={{ flexShrink: 0 }}>{t.label}</button>
-              ))}
-              <select value={cat} onChange={(e) => setCat(e.target.value)} className="date-input"
-                style={{ flexShrink: 1, maxWidth: 190, minWidth: 0 }} aria-label="Filter by category">
-                <option value="all">All categories</option>
-                {categories.map((c) => <option key={c} value={c}>{c}</option>)}
-              </select>
-              <div className={`search-expand ${q ? 'has-value' : ''}`} style={{ height: 38, flexShrink: 0 }}>
-                <Search />
-                <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" />
+          <div className="card glass" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {/* Row 1 — what to show */}
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', minWidth: 0 }}>
+                <span className="stat-label" style={{ flexShrink: 0 }}>Show</span>
+                <div className="seg-group">
+                  {TYPES.map((t) => (
+                    <button key={t.key} onClick={() => setType(t.key)} className={`chip ${type === t.key ? 'chip-active' : ''}`} style={{ flexShrink: 0 }}>{t.label}</button>
+                  ))}
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', minWidth: 0 }}>
+                <select value={cat} onChange={(e) => setCat(e.target.value)} className="date-input"
+                  style={{ flexShrink: 1, maxWidth: 200, minWidth: 0 }} aria-label="Filter by category">
+                  <option value="all">All categories</option>
+                  {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+                <div className={`search-expand ${q ? 'has-value' : ''}`} style={{ height: 38, flexShrink: 0 }}>
+                  <Search />
+                  <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" />
+                </div>
               </div>
             </div>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', minWidth: 0 }}>
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                {PRESETS.map((p) => (
-                  <button key={p.key} onClick={() => setPreset(p.key)} className={`chip ${preset === p.key ? 'chip-active' : ''}`} style={{ flexShrink: 0 }}>{p.label}</button>
-                ))}
+
+            <div style={{ height: 1, background: 'var(--border)' }} />
+
+            {/* Row 2 — time period */}
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', minWidth: 0 }}>
+                <span className="stat-label" style={{ flexShrink: 0 }}>Period</span>
+                <div className="seg-group">
+                  {PRESETS.map((p) => (
+                    <button key={p.key} onClick={() => setPreset(p.key)} className={`chip ${preset === p.key ? 'chip-active' : ''}`} style={{ flexShrink: 0 }}>{p.label}</button>
+                  ))}
+                </div>
               </div>
-              <input type="date" className="date-input" value={preset === 'custom' ? (from || minDate) : range.from || minDate} min={minDate} max={maxDate}
-                onChange={(e) => { setPreset('custom'); setFrom(e.target.value) }} />
-              <span className="stat-label">to</span>
-              <input type="date" className="date-input" value={preset === 'custom' ? (to || maxDate) : range.to || maxDate} min={minDate} max={maxDate}
-                onChange={(e) => { setPreset('custom'); setTo(e.target.value) }} />
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', minWidth: 0 }}>
+                <input type="date" className="date-input" value={preset === 'custom' ? (from || minDate) : range.from || minDate} min={minDate} max={maxDate}
+                  onChange={(e) => { setPreset('custom'); setFrom(e.target.value) }} />
+                <span className="stat-label">to</span>
+                <input type="date" className="date-input" value={preset === 'custom' ? (to || maxDate) : range.to || maxDate} min={minDate} max={maxDate}
+                  onChange={(e) => { setPreset('custom'); setTo(e.target.value) }} />
+              </div>
             </div>
           </div>
         </section>
