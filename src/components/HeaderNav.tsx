@@ -2,22 +2,26 @@
 
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Settings } from 'lucide-react'
+import { Settings, Sparkles } from 'lucide-react'
 import IconPill from './IconPill'
 import SettingsPanel from './SettingsPanel'
+import ChatWidget from './ChatWidget'
 
 type Page = 'home' | 'dashboard' | 'transactions' | 'settings'
 
-// Header actions (page navigation now lives in the centered PagePill). Just the
-// two things you reach for: Add a transaction, and Settings.
+// Header actions: the AI assistant (frequent) sits beside Settings (occasional),
+// both in the top-right action cluster. Page navigation lives in the centered PagePill.
 export default function HeaderNav({ current }: { current: Page }) {
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [chatOpen, setChatOpen] = useState(false)
 
   return (
     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+      <IconPill icon={<Sparkles />} label="Ask AI" accent onClick={() => setChatOpen(true)} />
       {current !== 'settings' && (
         <IconPill icon={<Settings />} label="Settings" onClick={() => setSettingsOpen(true)} />
       )}
+      {chatOpen && <ChatWidget onClose={() => setChatOpen(false)} />}
 
       {settingsOpen && createPortal(
         <div className="modal-backdrop" onClick={() => setSettingsOpen(false)}>
