@@ -14,6 +14,9 @@ const money2 = (n: number) => n.toLocaleString('en-CA', { style: 'currency', cur
 const todayISO = today // local date, not UTC
 const AMBER = '#b7791f'
 const AMBER_SOFT = 'rgba(224, 161, 43, 0.16)'
+// stale-balance banner uses red (not amber) so it clearly grabs attention
+const RED = '#e5484d'
+const RED_SOFT = 'rgba(229, 72, 77, 0.14)'
 const inp: React.CSSProperties = {
   padding: '9px 11px', borderRadius: 10, border: '1px solid var(--border)',
   background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 16, width: '100%',
@@ -209,11 +212,11 @@ export default function BillRunway() {
             {!stale && <button className="chip btn-accent" onClick={() => setEditBalance(true)}>Update balance</button>}
           </div>
           {stale && (
-            <div style={{ marginTop: 12, padding: '12px 14px', background: AMBER_SOFT, borderRadius: 12, display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center', color: AMBER, fontSize: 13, fontWeight: 600, minWidth: 0, flex: 1 }}>
+            <div style={{ marginTop: 12, padding: '12px 14px', background: RED_SOFT, borderRadius: 12, display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', color: RED, fontSize: 13, fontWeight: 600, minWidth: 0, flex: 1 }}>
                 <TriangleAlert size={15} style={{ flexShrink: 0 }} /> Last updated {fmtDay(asOf)} · {staleDays} day{staleDays === 1 ? '' : 's'} ago — update your balance so the forecast stays accurate.
               </div>
-              <button className="btn-warn" style={{ flexShrink: 0, padding: '7px 16px', borderRadius: 999, fontSize: 13, fontWeight: 600, background: 'transparent', border: `1px solid ${AMBER}`, cursor: 'pointer' }} onClick={() => setEditBalance(true)}>Update balance</button>
+              <button className="btn-warn-red" style={{ flexShrink: 0, padding: '7px 16px', borderRadius: 999, fontSize: 13, fontWeight: 600, background: 'transparent', border: `1px solid ${RED}`, cursor: 'pointer' }} onClick={() => setEditBalance(true)}>Update balance</button>
             </div>
           )}
           <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>

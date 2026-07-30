@@ -1008,6 +1008,19 @@ header.top h1 {
 }
 @media (prefers-reduced-motion: reduce) { .btn-warn { animation: none; } }
 
+.btn-warn-red {
+  color: #e5484d;
+  transition: transform .15s ease, box-shadow .24s ease, background .2s ease;
+  animation: btnWarnRed 1.8s ease-in-out infinite;
+}
+.btn-warn-red:hover { background: rgba(229, 72, 77, 0.14); transform: translateY(-1px); }
+.btn-warn-red:active { transform: translateY(0); }
+@keyframes btnWarnRed {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(229, 72, 77, 0.0); }
+  50%      { box-shadow: 0 0 0 6px rgba(229, 72, 77, 0.24); }
+}
+@media (prefers-reduced-motion: reduce) { .btn-warn-red { animation: none; } }
+
 /* Gentle attention pulse — used when action is urgent (balance running short) */
 .btn-pulse {
   border-color: var(--expense);
