@@ -41,14 +41,13 @@ interface Txn {
 const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 })
 const money2 = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' })
 
-type Preset = 'all' | 'ytd' | '12m' | '6m' | '3m' | 'mtd' | 'month' | 'custom'
+type Preset = 'all' | 'ytd' | '12m' | '6m' | '3m' | 'month' | 'custom'
 const PRESETS: { key: Preset; label: string }[] = [
   { key: 'all', label: 'All' },
   { key: 'ytd', label: 'YTD' },
   { key: '12m', label: '12M' },
   { key: '6m', label: '6M' },
   { key: '3m', label: '3M' },
-  { key: 'mtd', label: 'MTD' },
   { key: 'month', label: 'This month' },
 ]
 
@@ -65,7 +64,7 @@ export default function Dashboard() {
   const [customFrom, setCustomFrom] = useState('')
   const [customTo, setCustomTo] = useState('')
   // Debts get their OWN time-range filter (default MTD), independent of the tabs above
-  const [debtPreset, setDebtPreset] = useState<Preset>('mtd')
+  const [debtPreset, setDebtPreset] = useState<Preset>('month')
   const [debtCustomFrom, setDebtCustomFrom] = useState('')
   const [debtCustomTo, setDebtCustomTo] = useState('')
   const [tab, setTab] = useState<Tab>('income')
@@ -99,7 +98,6 @@ export default function Dashboard() {
     if (p === 'custom') return { from: cf || minDate, to: ct || maxDate }
     if (p === 'all') return { from: minDate, to: maxDate }
     if (p === 'ytd') return { from: t.slice(0, 4) + '-01-01', to: t }
-    if (p === 'mtd') return { from: t.slice(0, 7) + '-01', to: t }
     // full calendar month (incl. future-dated entries this month) — matches the budget
     if (p === 'month') return { from: t.slice(0, 7) + '-01', to: ymd(new Date(Number(t.slice(0, 4)), Number(t.slice(5, 7)), 0)) }
     const n = p === '12m' ? 12 : p === '6m' ? 6 : 3
