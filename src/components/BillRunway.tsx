@@ -47,18 +47,29 @@ function nextDateForDay(from: Date, day: number): Date {
   return new Date(y, m, Math.min(day, daysInMonth(y, m)))
 }
 
-// the next date a bill lands on or after `from` (monthly by day, or quarterly from next_due)
-function nextOccurrence(bill: Bill, from: Date): Date | null {
+// every date a bill lands on between `from` and `horizon` (inclusive) — monthly by day,
+// or quarterly stepping from next_due. Lets the forecast see next month's recurrences too.
+function occurrencesUpTo(bill: Bill, from: Date, horizon: Date): Date[] {
+  const out: Date[] = []
   if (bill.quarterly) {
-    if (!bill.next_due) return null
-    const occ = stripTime(new Date(bill.next_due + 'T00:00:00'))
+    if (!bill.next_due) return out
+    const base = stripTime(new Date(bill.next_due + 'T00:00:00'))
     for (let k = 0; k < 40; k++) {
-      const d = new Date(occ.getFullYear(), occ.getMonth() + k * 3, occ.getDate())
-      if (d >= from) return d
+      const d = new Date(base.getFullYear(), base.getMonth() + k * 3, base.getDate())
+      if (d < from) continue
+      if (d > horizon) break
+      out.push(d)
     }
-    return null
+    return out
   }
-  return nextDateForDay(from, bill.day)
+  // monthly: first occurrence on/after `from`, then step a month at a time (clamping the day)
+  let d = nextDateForDay(from, bill.day)
+  while (d <= horizon) {
+    out.push(d)
+    const ny = d.getFullYear(), nm = d.getMonth() + 1
+    d = new Date(ny, nm, Math.min(bill.day, daysInMonth(ny, nm)))
+  }
+  return out
 }
 
 function project(bills: Bill[], s: { current_balance: number; balance_as_of: string | null; buffer: number }): Projection {
@@ -66,10 +77,11 @@ function project(bills: Bill[], s: { current_balance: number; balance_as_of: str
   const today = stripTime(new Date(todayISO() + 'T00:00:00'))
   const from = start < today ? today : start // never project into the past
   const buffer = Number(s.buffer) || 0
+  // look ahead through the END of NEXT month so next-month bills are flagged on every account
+  const horizon = new Date(from.getFullYear(), from.getMonth() + 2, 0)
 
   const upcoming = bills
-    .map((b) => ({ b, date: nextOccurrence(b, from) }))
-    .filter((x): x is { b: Bill; date: Date } => x.date != null)
+    .flatMap((b) => occurrencesUpTo(b, from, horizon).map((date) => ({ b, date })))
     .sort((a, b) => a.date.getTime() - b.date.getTime())
 
   let bal = Number(s.current_balance) || 0
