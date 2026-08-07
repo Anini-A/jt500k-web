@@ -41,7 +41,7 @@ interface Txn {
 const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 })
 const money2 = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' })
 
-type Preset = 'all' | 'ytd' | '12m' | '6m' | '3m' | 'mtd' | 'custom'
+type Preset = 'all' | 'ytd' | '12m' | '6m' | '3m' | 'mtd' | 'month' | 'custom'
 const PRESETS: { key: Preset; label: string }[] = [
   { key: 'all', label: 'All' },
   { key: 'ytd', label: 'YTD' },
@@ -49,6 +49,7 @@ const PRESETS: { key: Preset; label: string }[] = [
   { key: '6m', label: '6M' },
   { key: '3m', label: '3M' },
   { key: 'mtd', label: 'MTD' },
+  { key: 'month', label: 'This month' },
 ]
 
 function subMonths(iso: string, n: number) {
@@ -99,6 +100,8 @@ export default function Dashboard() {
     if (p === 'all') return { from: minDate, to: maxDate }
     if (p === 'ytd') return { from: t.slice(0, 4) + '-01-01', to: t }
     if (p === 'mtd') return { from: t.slice(0, 7) + '-01', to: t }
+    // full calendar month (incl. future-dated entries this month) — matches the budget
+    if (p === 'month') return { from: t.slice(0, 7) + '-01', to: ymd(new Date(Number(t.slice(0, 4)), Number(t.slice(5, 7)), 0)) }
     const n = p === '12m' ? 12 : p === '6m' ? 6 : 3
     return { from: subMonths(t, n), to: t }
   }, [minDate, maxDate])
