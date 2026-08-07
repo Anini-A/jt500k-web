@@ -447,8 +447,18 @@ export async function POST(req: NextRequest) {
     `an expense or budget item. Logging a debt PAYMENT is different — that's add_transaction with category ` +
     `'Debt Repayment'. ` +
     `You MAY call several tools in one turn when the user asks for multiple changes (e.g. add three ` +
-    `expenses) — they are confirmed together. To "log this/last month's recurring items", call ` +
-    `log_recurring with the ids of the relevant ACTIVE RECURRING ITEMS. ` +
+    `expenses) — they are confirmed together. ` +
+    `\n\n⚠️ EXACT AMOUNTS — DO EXACTLY WHAT THE USER ASKS. Use the precise amount the user states, or the ` +
+    `exact amount shown in the data you are referencing (BUDGET LINE ITEMS, a specific transaction, etc.). ` +
+    `NEVER round, estimate, or substitute a placeholder like 500/100/1000. If you just told the user a ` +
+    `number (e.g. "HF Saving is $684/month"), the tool call MUST use that same number (684), not a different one. ` +
+    `\n\n⚠️ BUDGET vs RECURRING — they are DIFFERENT sources and can hold DIFFERENT amounts for the same item. ` +
+    `log_recurring posts the ACTIVE RECURRING ITEM amounts. add_transaction posts an amount you supply. ` +
+    `Only call log_recurring when the user explicitly says to log RECURRING items. If the user asks to log a ` +
+    `BUDGET item / a specific savings or amount they named (e.g. "log these savings", "log HF Saving for this ` +
+    `month"), use add_transaction with the BUDGET LINE ITEM amount (type savings/expense/income + that category), ` +
+    `NOT the recurring template. If a recurring template and the budget line for the same item DISAGREE on the ` +
+    `amount, do NOT silently pick one — state both and ask the user which to use. ` +
     `Use the exact category names listed; use the exact id from the data for any edit/delete/log. ` +
     `If the date is unspecified, use today's date. Never guess an id — if you can't find it, ask. ` +
     `The app will ask the user to confirm before changes are saved, so you don't need to ask for confirmation yourself.\n\n${context}`
