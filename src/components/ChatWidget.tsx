@@ -80,10 +80,11 @@ function loadStore(): { threads: Thread[]; activeId: string } {
   try {
     const s = JSON.parse(localStorage.getItem(STORE_KEY) || 'null')
     if (s && Array.isArray(s.threads) && s.threads.length) {
-      const mostRecent = [...s.threads].sort((a: Thread, b: Thread) => b.updatedAt - a.updatedAt)[0]
-      // the last thread was never actually used — reuse it instead of piling up empty ones
-      if (mostRecent && mostRecent.msgs.length <= 1) return { threads: s.threads, activeId: mostRecent.id }
-      return { threads: [fresh, ...s.threads].slice(0, MAX_THREADS), activeId: fresh.id }
+      // reopen the last active conversation (fall back to the most recent one)
+      const active = s.threads.some((t: Thread) => t.id === s.activeId)
+        ? s.activeId
+        : [...s.threads].sort((a: Thread, b: Thread) => b.updatedAt - a.updatedAt)[0].id
+      return { threads: s.threads, activeId: active }
     }
     // migrate an old single-thread store if present
     const old = JSON.parse(localStorage.getItem('jt-chat') || 'null')
