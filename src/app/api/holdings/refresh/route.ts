@@ -43,7 +43,10 @@ function yahooTicker(symbol: string, currency: string): string {
 }
 
 // POST /api/holdings/refresh — pull live prices, recompute CAD values.
-export async function POST() {
+export async function POST(req: Request) {
+  // use the caller's LOCAL date for as_of (the server clock is UTC → would show tomorrow at night)
+  const clientToday = await req.json().then((b) => b?.today).catch(() => null)
+  const asOfDate = typeof clientToday === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(clientToday) ? clientToday : null
   const { data: holds, error } = await supabaseAdmin.from('holdings').select('*')
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   const rows = holds ?? []
@@ -68,7 +71,7 @@ export async function POST() {
     await sleep(120)
   }
 
-  const today = new Date().toISOString().slice(0, 10)
+  const today = asOfDate || new Date().toISOString().slice(0, 10)
   const failed = new Set<string>()
   let updated = 0
 

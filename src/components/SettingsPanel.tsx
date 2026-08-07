@@ -5,6 +5,7 @@ import { Database, Target, BarChart3, LifeBuoy, Lock, LogOut, Download, Cloud, R
 import CategoryManager from './CategoryManager'
 import SectionTitle from './SectionTitle'
 import { getJSON } from '@/lib/fresh'
+import { today } from '@/lib/date'
 
 interface Settings {
   name: string
@@ -200,7 +201,7 @@ function BackupButton() {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `jt500k-backup-${new Date().toISOString().slice(0, 10)}.json`
+      a.download = `jt500k-backup-${today()}.json`
       document.body.appendChild(a); a.click(); a.remove()
       URL.revokeObjectURL(url)
       setDone(true); setTimeout(() => setDone(false), 3000)

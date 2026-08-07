@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import { Upload, RefreshCw, Plus, Pencil, Trash2, LineChart } from 'lucide-react'
 import { Donut } from './DashCharts'
 import { getJSON } from '@/lib/fresh'
+import { today } from '@/lib/date'
 
 interface Holding {
   id: string; owner: string; account_type: string; account_number: string
@@ -49,7 +50,7 @@ function parseCSVLine(line: string): string[] {
 function parseHoldingsCSV(text: string) {
   const lines = text.split(/\r?\n/).filter((l) => l.trim())
   const asOfM = text.match(/As of\s+(\d{4}-\d{2}-\d{2})/)
-  const asOf = asOfM ? asOfM[1] : new Date().toISOString().slice(0, 10)
+  const asOf = asOfM ? asOfM[1] : today() // local date, not UTC
   const rows: any[] = []
   for (const line of lines) {
     const c = parseCSVLine(line)
@@ -100,7 +101,7 @@ export default function InvestmentsPanel() {
     setRefreshing(true)
     if (!silent) setRefreshMsg('')
     try {
-      const r = await fetch('/api/holdings/refresh', { method: 'POST' })
+      const r = await fetch('/api/holdings/refresh', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ today: today() }) })
       const d = await r.json()
       if (!r.ok) { if (!silent) setRefreshMsg('Refresh failed — showing last import.'); return }
       try { localStorage.setItem(REFRESH_KEY, String(Date.now())) } catch { /* ignore */ }
