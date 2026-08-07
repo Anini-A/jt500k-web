@@ -44,8 +44,6 @@ export default function JourneyCard() {
   if (!d || avgSave === null) return null
 
   const nw = d.netWorth
-  const prev = d.history.length > 1 ? d.history[d.history.length - 2] : null
-  const delta = prev ? nw - prev.net : 0
   const pct = Math.min(100, (nw / goal) * 100)
   const remaining = Math.max(0, goal - nw)
   const reached = nw >= goal
@@ -74,13 +72,8 @@ export default function JourneyCard() {
       <div className="grid-2" style={{ gap: 'clamp(24px, 5vw, 48px)' }}>
         {/* LEFT — where you are */}
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, minHeight: 34 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minHeight: 34 }}>
             <Label>Net worth</Label>
-            {prev && (
-              <span style={{ fontWeight: 500, fontSize: 12, color: delta >= 0 ? 'var(--income)' : 'var(--expense)' }}>
-                {delta >= 0 ? '↑' : '↓'} {money(Math.abs(delta))}
-              </span>
-            )}
           </div>
           <div style={{ fontWeight: 700, fontSize: 'clamp(32px, 8vw, 44px)', color: 'var(--text-primary)', margin: '6px 0 4px', letterSpacing: '-0.03em' }}>{money(nw)}</div>
 
