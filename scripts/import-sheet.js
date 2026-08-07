@@ -39,6 +39,10 @@ const CATEGORY_TYPE = {
 }
 const COLORS = { income: '#1baf7a', expense: '#eb6834', savings: '#6366f1' }
 
+// Sheet categories that merge into one app category (person moves to the description).
+const CATEGORY_RENAME = { 'HF Fun M': 'Fun Money', 'JA Fun M': 'Fun Money' }
+const renameCat = (name) => CATEGORY_RENAME[name] || name
+
 // --- tiny CSV parser (handles quoted fields with commas) ---
 function parseCSV(text) {
   const rows = []
@@ -88,15 +92,16 @@ async function main() {
   for (let r = headerIdx + 1; r < rows.length; r++) {
     const row = rows[r]
     const date = (row[iDate] || '').trim()
-    const category = (row[iCat] || '').trim()
+    const rawCat = (row[iCat] || '').trim()
     const amount = parseAmount(row[iAmt])
-    if (!date || !category || !amount || isNaN(amount)) continue // skip blanks / "Starting balance"
-    const type = CATEGORY_TYPE[category]
-    if (!type) { unknown.add(category); continue }
-    parsed.push({
-      date, category, amount, type,
-      description: (row[iDesc] || '').trim() || null,
-    })
+    if (!date || !rawCat || !amount || isNaN(amount)) continue // skip blanks / "Starting balance"
+    const type = CATEGORY_TYPE[rawCat]
+    if (!type) { unknown.add(rawCat); continue }
+    const category = renameCat(rawCat)
+    let description = (row[iDesc] || '').trim() || null
+    // merged Fun Money: preserve the HF/JA distinction in the description
+    if (category === 'Fun Money') description = rawCat.startsWith('HF') ? 'HF Fun money' : 'JA Fun money'
+    parsed.push({ date, category, amount, type, description })
   }
 
   if (unknown.size) {
@@ -119,10 +124,13 @@ async function main() {
 
   await sb.from('users').insert({ household_id: household.id, name: 'You', email: process.env.OWNER_EMAIL || null })
 
-  // categories from the type map
-  const catRows = Object.entries(CATEGORY_TYPE).map(([name, type]) => ({
-    household_id: household.id, name, type, color: COLORS[type],
-  }))
+  // categories from the type map (applying merges, deduped so "Fun Money" appears once)
+  const catByName = new Map()
+  for (const [raw, type] of Object.entries(CATEGORY_TYPE)) {
+    const name = renameCat(raw)
+    if (!catByName.has(name)) catByName.set(name, { household_id: household.id, name, type, color: COLORS[type] })
+  }
+  const catRows = [...catByName.values()]
   const { data: cats, error: cErr } = await sb.from('categories').insert(catRows).select()
   if (cErr) { console.error('Category error:', cErr.message); process.exit(1) }
   const catId = Object.fromEntries(cats.map((c) => [c.name, c.id]))

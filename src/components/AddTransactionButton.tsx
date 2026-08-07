@@ -21,8 +21,9 @@ const cell: React.CSSProperties = { ...inp, height: 38, padding: '0 8px', fontSi
 // Old sheet names → current category names (user still copies from the old sheet)
 const ALIASES: Record<string, string> = {
   'transpo': 'Transportation', 'perso': 'Personal', 'subs': 'Subscriptions',
-  'entmt': 'Entertainment', 'edu': 'Education', 'hf fun m': 'HF Fun Money',
-  'ja fun m': 'JA Fun Money', 'baby exp': 'Baby',
+  'entmt': 'Entertainment', 'edu': 'Education', 'hf fun m': 'Fun Money',
+  'ja fun m': 'Fun Money', 'hf fun money': 'Fun Money', 'ja fun money': 'Fun Money',
+  'baby exp': 'Baby',
 }
 
 const isDate = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s)
@@ -44,13 +45,18 @@ function parsePaste(raw: string, cats: Category[]): Row[] {
     const [d = '', desc = '', catRaw = '', amtRaw = ''] = parts.map((p) => p.trim())
     if (/^date$/i.test(d)) continue // header row
     const amt = parseFloat((amtRaw || '').replace(/[^0-9.\-]/g, ''))
-    let category = '', type = 'expense'
+    let category = '', type = 'expense', description = desc
     if (catRaw) {
       const aliased = ALIASES[catRaw.toLowerCase()] || catRaw
       const m = byLower.get(aliased.toLowerCase())
       if (m) { category = m.name; type = m.type }
     }
-    out.push({ date: normalizeDate(d), description: desc, category, type, amount: isNaN(amt) ? '' : String(amt) })
+    // Fun Money is one category now — keep the HF/JA distinction in the description
+    if (category === 'Fun Money') {
+      const who = /^hf/i.test(catRaw) ? 'HF' : /^ja/i.test(catRaw) ? 'JA' : ''
+      if (who && !/\b(hf|ja)\b/i.test(description)) description = description ? `${who} ${description}` : `${who} Fun money`
+    }
+    out.push({ date: normalizeDate(d), description, category, type, amount: isNaN(amt) ? '' : String(amt) })
   }
   return out
 }
