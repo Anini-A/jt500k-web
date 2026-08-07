@@ -7,7 +7,6 @@ import HeaderNav from '@/components/HeaderNav'
 import PagePill from '@/components/PagePill'
 import Logo from '@/components/Logo'
 import EditTransactionModal from '@/components/EditTransactionModal'
-import AddTransactionButton from '@/components/AddTransactionButton'
 import { getJSON } from '@/lib/fresh'
 import { today, ymd } from '@/lib/date'
 
@@ -214,8 +213,6 @@ export default function Transactions() {
           onSaved={() => { setEditTx(null); load() }}
         />
       )}
-
-      <AddTransactionButton />
     </div>
   )
 }

@@ -6,6 +6,7 @@ import { Settings, Sparkles } from 'lucide-react'
 import IconPill from './IconPill'
 import SettingsPanel from './SettingsPanel'
 import ChatWidget from './ChatWidget'
+import AddTransactionButton from './AddTransactionButton'
 
 type Page = 'home' | 'dashboard' | 'transactions' | 'settings'
 
@@ -18,6 +19,7 @@ export default function HeaderNav({ current }: { current: Page }) {
   return (
     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
       <IconPill icon={<Sparkles />} label="Ask AI" accent onClick={() => setChatOpen(true)} />
+      {current === 'transactions' && <AddTransactionButton />}
       {current !== 'settings' && (
         <IconPill icon={<Settings />} label="Settings" onClick={() => setSettingsOpen(true)} />
       )}

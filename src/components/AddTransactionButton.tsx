@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { Plus, Trash2, ClipboardPaste, PencilLine, Repeat } from 'lucide-react'
 import CategorySelect from './CategorySelect'
+import IconPill from './IconPill'
 import { getJSON } from '@/lib/fresh'
 import { ymd, today } from '@/lib/date'
 
@@ -177,9 +178,7 @@ export default function AddTransactionButton() {
 
   return (
     <>
-      <button className="fab fab-add" aria-label="Add transaction" title="Add transaction" onClick={() => setOpen(true)}>
-        <Plus size={26} strokeWidth={2.4} />
-      </button>
+      <IconPill icon={<Plus />} label="Add transaction" onClick={() => setOpen(true)} />
 
       {open && createPortal(
         <div className="modal-backdrop" onClick={close}>
