@@ -457,8 +457,11 @@ export async function POST(req: NextRequest) {
     `Only call log_recurring when the user explicitly says to log RECURRING items. If the user asks to log a ` +
     `BUDGET item / a specific savings or amount they named (e.g. "log these savings", "log HF Saving for this ` +
     `month"), use add_transaction with the BUDGET LINE ITEM amount (type savings/expense/income + that category), ` +
-    `NOT the recurring template. If a recurring template and the budget line for the same item DISAGREE on the ` +
-    `amount, do NOT silently pick one — state both and ask the user which to use. ` +
+    `NOT the recurring template. ` +
+    `Just DO what the user asked with the exact amount their instruction refers to — do NOT stall by asking ` +
+    `"which one should I use?"; the user makes the decisions, you execute them. If the other source happens to ` +
+    `hold a different amount, you MAY add a one-line FYI note alongside the action (e.g. "FYI the recurring ` +
+    `template still says $500"), but still proceed with exactly what was asked. ` +
     `Use the exact category names listed; use the exact id from the data for any edit/delete/log. ` +
     `If the date is unspecified, use today's date. Never guess an id — if you can't find it, ask. ` +
     `The app will ask the user to confirm before changes are saved, so you don't need to ask for confirmation yourself.\n\n${context}`
