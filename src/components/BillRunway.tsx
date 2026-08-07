@@ -121,8 +121,16 @@ export default function BillRunway() {
   const active = accounts.find((a) => a.id === activeId) || null
   const acctBills = useMemo(() => bills.filter((b) => b.account_id === activeId), [bills, activeId])
   const proj = useMemo(() => (active ? project(acctBills, active) : null), [acctBills, active])
-  // per-account coverage (for the pill status dots)
-  const coverageOf = useCallback((a: Account) => project(bills.filter((b) => b.account_id === a.id), a).firstShort == null, [bills])
+
+  // last day of the current calendar month — the horizon for "covered for THIS month"
+  const endOfMonthISO = useMemo(() => {
+    const t = new Date(todayISO() + 'T00:00:00')
+    return ymd(new Date(t.getFullYear(), t.getMonth() + 1, 0))
+  }, [])
+  // covered for the rest of this month = the first bill we can't cover (if any) falls in a LATER month
+  const coveredThisMonthOf = useCallback((p: Projection) => !p.firstShort || p.firstShort.iso > endOfMonthISO, [endOfMonthISO])
+  // per-account coverage for the pill status dots — green when this month is funded
+  const coverageOf = useCallback((a: Account) => coveredThisMonthOf(project(bills.filter((b) => b.account_id === a.id), a)), [bills, coveredThisMonthOf])
 
   if (loading) return <div className="card glass" style={{ padding: 40, textAlign: 'center' }}>Loading your bill runway…</div>
   if (!accounts.length) return (
@@ -133,7 +141,11 @@ export default function BillRunway() {
   if (!active) return null
 
   const monthlyTotal = acctBills.filter((b) => !b.quarterly).reduce((s, b) => s + b.amount, 0)
-  const covered = proj ? proj.firstShort == null : true
+  const covered = proj ? proj.firstShort == null : true        // every upcoming bill (incl. next month)
+  const coveredMonth = proj ? coveredThisMonthOf(proj) : true  // the rest of THIS month specifically
+  // the first bill we can't cover — and how imminent it is (drives calm heads-up vs urgent alert)
+  const daysToShort = proj?.firstShort ? Math.round((Date.parse(proj.firstShort.iso) - Date.parse(todayISO())) / 86400000) : Infinity
+  const topUpSoon = daysToShort <= 7 // within a week → escalate the top-up nudge
   const asOf = active.balance_as_of || todayISO()
   const staleDays = Math.max(0, Math.round((Date.parse(todayISO()) - Date.parse(asOf)) / 86400000))
   const stale = staleDays >= 1
@@ -161,14 +173,15 @@ export default function BillRunway() {
       {/* VERDICT + BALANCE — side by side */}
       <div className="grid-2" style={{ marginBottom: 16 }}>
       {proj && (
-      <div className="card glass" style={{ borderLeft: `4px solid ${covered ? 'var(--income)' : RED}`, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+      <div className="card glass" style={{ borderLeft: `4px solid ${coveredMonth ? 'var(--income)' : RED}`, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: proj.timeline.length ? 12 : 0 }}>
-          {covered ? <CheckCircle2 size={24} color="var(--income)" style={{ flexShrink: 0 }} />
+          {coveredMonth ? <CheckCircle2 size={24} color="var(--income)" style={{ flexShrink: 0 }} />
             : <TriangleAlert size={24} color={RED} style={{ flexShrink: 0 }} />}
           <div style={{ fontWeight: 700, fontSize: 'clamp(19px, 4.5vw, 24px)', letterSpacing: '-0.015em', minWidth: 0 }}>
             {proj.timeline.length === 0 ? 'No upcoming bills'
-              : covered ? 'You’re covered'
-              : proj.coveredCount > 0 ? <>Covered through {fmtDay(through!)}</>
+              : covered ? 'You’re fully covered'
+              : coveredMonth ? <>Covered for {new Date(todayISO() + 'T00:00:00').toLocaleDateString('en-CA', { month: 'long' })}</>
+              : proj.coveredCount > 0 ? <>Short this month — covered through {fmtDay(through!)}</>
               : 'Top up needed'}
           </div>
         </div>
@@ -182,14 +195,20 @@ export default function BillRunway() {
               <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Covers {proj.coveredCount} bill{proj.coveredCount === 1 ? '' : 's'}{through ? ` to ${fmtDay(through)}` : ''}</span>
               <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--income)' }}>{money2(proj.startBalance)}</span>
             </div>
-            {/* needs top-up line */}
-            {proj.firstShort ? (
+            {/* top-up line — URGENT (red) only when a bill THIS month is short or the next one is within a week;
+                otherwise a calm heads-up so being covered for the month reads as good news */}
+            {!proj.firstShort ? (
+              <div style={{ fontSize: 13, color: 'var(--income)', fontWeight: 600, padding: '2px 2px' }}>Every upcoming bill covered.</div>
+            ) : (!coveredMonth || topUpSoon) ? (
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, padding: '9px 12px', borderRadius: 10, background: RED_SOFT }}>
                 <span style={{ fontSize: 13, color: 'var(--text-secondary)', minWidth: 0 }}>Top up for <b style={{ color: 'var(--text-primary)' }}>{proj.firstShort.name}</b>{proj.remainingCount > 1 ? ` +${proj.remainingCount - 1} more` : ''} · {fmtDay(proj.firstShort.iso)}</span>
                 <span style={{ fontWeight: 700, fontSize: 15, color: RED, whiteSpace: 'nowrap' }}>{money2(proj.remainingTotal)}</span>
               </div>
             ) : (
-              <div style={{ fontSize: 13, color: 'var(--income)', fontWeight: 600, padding: '2px 2px' }}>Every upcoming bill covered.</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, padding: '9px 12px', borderRadius: 10, background: 'var(--kpi-bg)', border: '1px solid var(--border)' }}>
+                <span style={{ fontSize: 13, color: 'var(--text-muted)', minWidth: 0 }}>Next month: top up <b style={{ color: 'var(--text-secondary)' }}>{proj.firstShort.name}</b>{proj.remainingCount > 1 ? ` +${proj.remainingCount - 1} more` : ''} by {fmtDay(proj.firstShort.iso)}</span>
+                <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{money2(proj.remainingTotal)}</span>
+              </div>
             )}
             {stale && <div style={{ fontSize: 12, color: RED }}>Based on your {fmtDay(asOf)} balance.</div>}
           </div>
@@ -225,7 +244,7 @@ export default function BillRunway() {
       </div>
 
       {/* COVERAGE TIMELINE — full-width long card */}
-      {proj && <CoverageTimeline proj={proj} asOf={asOf} />}
+      {proj && <CoverageTimeline proj={proj} asOf={asOf} urgent={!coveredMonth || topUpSoon} />}
 
       {/* BILL SCHEDULE */}
       <div className="card glass" style={{ marginTop: 16 }}>
@@ -283,14 +302,14 @@ function MiniStat({ label, value, accent }: { label: string; value: string; acce
 
 // Horizontal "runway" — bills laid out left→right in date order as scrollable tiles.
 // Green tiles are covered by the balance; an amber marker shows where it runs out.
-function CoverageTimeline({ proj, asOf }: { proj: Projection; asOf: string }) {
+function CoverageTimeline({ proj, asOf, urgent }: { proj: Projection; asOf: string; urgent: boolean }) {
   return (
     <div className="card glass">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
         <h3 style={{ margin: 0, fontSize: 15, display: 'flex', alignItems: 'center', gap: 8 }}><CalendarClock size={16} /> Coverage timeline</h3>
         <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>
           {proj.coveredThroughISO ? <>covers up to <b style={{ color: 'var(--text-primary)' }}>{fmtDay(proj.coveredThroughISO)}</b></> : 'what your balance covers'}
-          {proj.firstShort ? <> · <span style={{ color: RED, fontWeight: 600 }}>{proj.remainingCount} to top up · {money2(proj.remainingTotal)}</span></> : proj.timeline.length ? <> · <span style={{ color: 'var(--income)', fontWeight: 600 }}>all covered</span></> : null}
+          {proj.firstShort ? <> · <span style={{ color: urgent ? RED : 'var(--text-muted)', fontWeight: 600 }}>{proj.remainingCount} to top up · {money2(proj.remainingTotal)}</span></> : proj.timeline.length ? <> · <span style={{ color: 'var(--income)', fontWeight: 600 }}>all covered</span></> : null}
         </span>
       </div>
 
