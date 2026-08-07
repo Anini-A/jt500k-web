@@ -220,9 +220,8 @@ export default function BillRunway() {
         <div className="card glass">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+              <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
                 {active.name} · as of {fmtDay(asOf)}
-                <button onClick={() => setEditBalance(true)} aria-label="Account settings" title="Rename / delete account" style={{ ...iconBtn, padding: 3 }}><Pencil size={12} /></button>
               </div>
               <div style={{ fontWeight: 700, fontSize: 28, letterSpacing: '-0.03em', marginTop: 4 }}>{money2(settings.current_balance)}</div>
             </div>
@@ -374,7 +373,7 @@ function AccountModal({ account, canDelete, onClose, onSaved }: { account: Accou
   const isNew = account == null
   const [name, setName] = useState(account?.name || '')
   const [bal, setBal] = useState(account ? String(account.current_balance || '') : '')
-  const [asOf, setAsOf] = useState(account?.balance_as_of || todayISO())
+  const [asOf, setAsOf] = useState(todayISO()) // default to today — you're stating today's balance
   const [buffer, setBuffer] = useState(account ? String(account.buffer || '') : '')
   const [saving, setSaving] = useState(false)
   const save = async () => {
