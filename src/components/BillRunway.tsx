@@ -141,7 +141,6 @@ export default function BillRunway() {
   if (!active) return null
 
   const monthlyTotal = acctBills.filter((b) => !b.quarterly).reduce((s, b) => s + b.amount, 0)
-  const covered = proj ? proj.firstShort == null : true        // every upcoming bill (incl. next month)
   const coveredMonth = proj ? coveredThisMonthOf(proj) : true  // the rest of THIS month specifically
   // the first bill we can't cover — and how imminent it is (drives calm heads-up vs urgent alert)
   const daysToShort = proj?.firstShort ? Math.round((Date.parse(proj.firstShort.iso) - Date.parse(todayISO())) / 86400000) : Infinity
@@ -179,7 +178,6 @@ export default function BillRunway() {
             : <TriangleAlert size={24} color={RED} style={{ flexShrink: 0 }} />}
           <div style={{ fontWeight: 700, fontSize: 'clamp(19px, 4.5vw, 24px)', letterSpacing: '-0.015em', minWidth: 0 }}>
             {proj.timeline.length === 0 ? 'No upcoming bills'
-              : covered ? 'You’re fully covered'
               : coveredMonth ? <>Covered for {new Date(todayISO() + 'T00:00:00').toLocaleDateString('en-CA', { month: 'long' })}</>
               : proj.coveredCount > 0 ? <>Short this month — covered through {fmtDay(through!)}</>
               : 'Top up needed'}
