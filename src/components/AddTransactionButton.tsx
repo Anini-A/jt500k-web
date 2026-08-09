@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { Plus, Trash2, ClipboardPaste, PencilLine, Repeat } from 'lucide-react'
 import CategorySelect from './CategorySelect'
@@ -9,7 +9,9 @@ import { getJSON } from '@/lib/fresh'
 import { ymd, today } from '@/lib/date'
 
 interface Category { name: string; type: string }
-interface Row { date: string; description: string; category: string; type: string; amount: string }
+interface Card { id: string; name: string }
+interface Row { date: string; description: string; category: string; type: string; amount: string; card?: string }
+interface Draft { id: string; name: string | null; rows: Row[]; updated_at: string }
 
 const inp: React.CSSProperties = {
   height: 44, padding: '0 12px', borderRadius: 10, border: '1px solid var(--border)',
@@ -72,7 +74,15 @@ export default function AddTransactionButton() {
     date: today(), type: 'expense', category: '', amount: '', description: '',
   })
   const [raw, setRaw] = useState('')
-  const [rows, setRows] = useState<Row[] | null>(null)
+  const [rows, setRows] = useState<Row[]>([])
+  // ── Smart Import (AI paste + per-card totals + saved drafts) ──
+  const [cards, setCards] = useState<Card[]>([])
+  const [selectedCard, setSelectedCard] = useState('')
+  const [drafts, setDrafts] = useState<Draft[]>([])
+  const [draftId, setDraftId] = useState<string | null>(null) // the draft currently being edited
+  const [pasteOpen, setPasteOpen] = useState(true)            // is the paste input showing
+  const [parsing, setParsing] = useState(false)
+  const [importErr, setImportErr] = useState('')
   const [recs, setRecs] = useState<any[]>([])
   const [picked, setPicked] = useState<Set<string>>(new Set())
   const [recDate, setRecDate] = useState(today())
@@ -94,7 +104,17 @@ export default function AddTransactionButton() {
     }
   }, [open, mode, recs.length])
 
-  const close = () => { setOpen(false); setMode('single'); setRaw(''); setRows(null) }
+  // Import tab: load the card list + saved drafts
+  const loadCards = useCallback(() => getJSON('/api/cards').then((d) => Array.isArray(d) && setCards(d)).catch(() => {}), [])
+  const loadDrafts = useCallback(() => getJSON('/api/drafts').then((d) => Array.isArray(d) && setDrafts(d)).catch(() => {}), [])
+  useEffect(() => { if (open && mode === 'batch') { loadCards(); loadDrafts() } }, [open, mode, loadCards, loadDrafts])
+  // default the card picker to the first card once loaded
+  useEffect(() => { if (!selectedCard && cards.length) setSelectedCard(cards[0].name) }, [cards, selectedCard])
+
+  const close = () => {
+    setOpen(false); setMode('single'); setRaw(''); setRows([])
+    setDraftId(null); setPasteOpen(true); setImportErr('')
+  }
 
   const logRecurring = async () => {
     const chosen = recs.filter((r) => picked.has(r.id))
@@ -156,15 +176,75 @@ export default function AddTransactionButton() {
           date: r.date, description: r.description, category: r.category, type: r.type, amount: parseFloat(r.amount),
         }))),
       })
-      if (res.ok) { close(); window.dispatchEvent(new CustomEvent('transaction-added')) }
-      else alert('Error: ' + ((await res.json()).error || 'could not save'))
+      if (!res.ok) { alert('Error: ' + ((await res.json()).error || 'could not save')); return }
+      // logged successfully → clear the draft it came from, then close
+      if (draftId) await fetch(`/api/drafts?id=${draftId}`, { method: 'DELETE' }).catch(() => {})
+      close(); window.dispatchEvent(new CustomEvent('transaction-added'))
     } finally { setSaving(false) }
+  }
+
+  // ── Smart Import handlers ──
+  const formatWithAI = async () => {
+    if (!raw.trim()) return
+    setParsing(true); setImportErr('')
+    try {
+      const res = await fetch('/api/import/parse', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: raw, today: today() }),
+      })
+      const d = await res.json()
+      if (!res.ok || !Array.isArray(d.rows)) { setImportErr(d.error || 'Could not read that. Try again.'); return }
+      if (d.rows.length === 0) { setImportErr('No transactions found in that text.'); return }
+      const tagged: Row[] = d.rows.map((r: any) => ({ ...r, amount: String(r.amount), card: selectedCard || undefined }))
+      setRows((prev) => [...prev, ...tagged])  // append so you can paste multiple cards into one batch
+      setRaw(''); setPasteOpen(false)
+    } catch (e: any) { setImportErr('Parse failed: ' + (e?.message || e)) } finally { setParsing(false) }
+  }
+
+  const addCard = async () => {
+    const name = prompt('Card name (e.g. WS Visa, PC Card)')?.trim()
+    if (!name) return
+    const res = await fetch('/api/cards', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) })
+    if (res.ok) { const c = await res.json(); await loadCards(); setSelectedCard(c.name) }
+    else alert('Could not add card.')
+  }
+
+  const currentRows = () => rows.map((r) => ({ ...r, amount: r.amount }))
+  const saveDraft = async () => {
+    if (!rows.length) return
+    setSaving(true)
+    try {
+      const payload = { rows: currentRows() }
+      const res = draftId
+        ? await fetch('/api/drafts', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: draftId, ...payload }) })
+        : await fetch('/api/drafts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+      if (!res.ok) { alert('Could not save draft.'); return }
+      const d = await res.json(); setDraftId(d.id); await loadDrafts()
+      setImportErr(''); alert('Draft saved.')
+    } finally { setSaving(false) }
+  }
+  const openDraft = (dr: Draft) => {
+    setRows((dr.rows || []).map((r) => ({ ...r, amount: String(r.amount) })))
+    setDraftId(dr.id); setPasteOpen(false); setImportErr('')
+  }
+  const deleteDraft = async (id: string) => {
+    if (!confirm('Delete this saved draft?')) return
+    await fetch(`/api/drafts?id=${id}`, { method: 'DELETE' }).catch(() => {})
+    await loadDrafts()
+    if (draftId === id) { setDraftId(null) }
   }
 
   const catsForType = cats.filter((c) => c.type === form.type)
   const grouped = { income: cats.filter((c) => c.type === 'income'), expense: cats.filter((c) => c.type === 'expense'), savings: cats.filter((c) => c.type === 'savings') }
   const validCount = (rows ?? []).filter(rowValid).length
   const invalidCount = (rows ?? []).length - validCount
+  // per-card subtotals for the review grid
+  const cardTotals = (() => {
+    const m = new Map<string, number>()
+    for (const r of rows) { const amt = parseFloat(r.amount); if (!isNaN(amt)) m.set(r.card || 'Unassigned', (m.get(r.card || 'Unassigned') || 0) + amt) }
+    return [...m.entries()]
+  })()
+  const grandTotal = rows.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0)
 
   // Recurring: group into the same buckets as the Budget tab
   const recGroup = (r: any) => r.type === 'income' ? 'income' : r.type === 'savings' ? 'saving' : r.category === 'Debt Repayment' ? 'debt' : 'spending'
@@ -179,7 +259,7 @@ export default function AddTransactionButton() {
   const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' })
 
   const updateRow = (i: number, patch: Partial<Row>) =>
-    setRows((prev) => prev!.map((r, idx) => idx === i ? { ...r, ...patch } : r))
+    setRows((prev) => prev.map((r, idx) => idx === i ? { ...r, ...patch } : r))
 
 
   return (
@@ -196,7 +276,7 @@ export default function AddTransactionButton() {
                   <PencilLine size={14} /> Single
                 </button>
                 <button className={`tab ${mode === 'batch' ? 'tab-active' : ''}`} style={{ flex: 1, justifyContent: 'center', padding: '7px 8px', fontSize: 13 }} onClick={() => setMode('batch')}>
-                  <ClipboardPaste size={14} /> Paste
+                  <ClipboardPaste size={14} /> Import
                 </button>
                 <button className={`tab ${mode === 'recurring' ? 'tab-active' : ''}`} style={{ flex: 1, justifyContent: 'center', padding: '7px 8px', fontSize: 13 }} onClick={() => setMode('recurring')}>
                   <Repeat size={14} /> Recurring
@@ -240,81 +320,117 @@ export default function AddTransactionButton() {
               </form>
             )}
 
-            {/* ---------------- BATCH ---------------- */}
-            {mode === 'batch' && !rows && (
+            {/* ---------------- IMPORT (AI paste + per-card totals + drafts) ---------------- */}
+            {mode === 'batch' && (
               <div style={{ display: 'grid', gap: 12 }}>
-                <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, margin: 0 }}>
-                  Paste rows copied from your sheet — columns in order: <strong>Date&nbsp;·&nbsp;Description&nbsp;·&nbsp;Category&nbsp;·&nbsp;Amount</strong> (a header row is fine, it's skipped). Old category names like “Baby Exp” map automatically.
-                </p>
-                <textarea value={raw} onChange={(e) => setRaw(e.target.value)} rows={9}
-                  placeholder={'2026-07-05\tUber Canada/Ubereats\tFood\t33.36\n2026-07-04\tCostco Wholesale\tFood\t127.61'}
-                  style={{ ...inp, height: 'auto', padding: 12, fontFamily: 'ui-monospace, monospace', fontSize: 13, lineHeight: 1.5, resize: 'vertical' }} />
-                <div style={{ display: 'flex', gap: 10 }}>
-                  <button type="button" className="btn btn-secondary" style={{ flex: '0 0 auto' }} onClick={close}>Cancel</button>
-                  <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} disabled={!raw.trim()}
-                    onClick={() => setRows(parsePaste(raw, cats))}>
-                    Preview {raw.trim() ? `(${raw.trim().split(/\r?\n/).filter((l) => l.trim() && !/^date/i.test(l.trim())).length} rows)` : ''}
+                {/* Saved drafts — only when starting fresh */}
+                {drafts.length > 0 && rows.length === 0 && (
+                  <div style={{ display: 'grid', gap: 6 }}>
+                    <span className="stat-label">Saved drafts</span>
+                    {drafts.map((dr) => {
+                      const tot = (dr.rows || []).reduce((s, r) => s + (parseFloat(String(r.amount)) || 0), 0)
+                      return (
+                        <div key={dr.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <button onClick={() => openDraft(dr)} style={{ flex: 1, minWidth: 0, display: 'flex', justifyContent: 'space-between', gap: 10, textAlign: 'left', padding: '9px 12px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--kpi-bg)', cursor: 'pointer', fontFamily: 'inherit', color: 'var(--text-primary)' }}>
+                            <span style={{ fontWeight: 600 }}>{(dr.rows || []).length} item{(dr.rows || []).length !== 1 ? 's' : ''} · {money(tot)}</span>
+                            <span className="stat-label" style={{ flexShrink: 0 }}>{new Date(dr.updated_at).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}</span>
+                          </button>
+                          <button onClick={() => deleteDraft(dr.id)} aria-label="Delete draft" title="Delete draft" style={{ flexShrink: 0, width: 30, height: 30, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}><Trash2 size={14} /></button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {/* Paste input */}
+                {pasteOpen ? (
+                  <div style={{ display: 'grid', gap: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <span className="stat-label" style={{ flexShrink: 0 }}>Card</span>
+                      <select value={selectedCard} onChange={(e) => setSelectedCard(e.target.value)} className="date-input" style={{ minWidth: 130 }}>
+                        {cards.length === 0 && <option value="">— add a card —</option>}
+                        {cards.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
+                      </select>
+                      <button type="button" onClick={addCard} className="btn btn-secondary" style={{ padding: '7px 12px' }}><Plus size={14} /> Card</button>
+                    </div>
+                    <textarea value={raw} onChange={(e) => setRaw(e.target.value)} rows={8}
+                      placeholder={'Paste anything from your bank or credit card — pending & posted, totals, times… the AI cleans it up.'}
+                      style={{ ...inp, height: 'auto', padding: 12, fontSize: 14, lineHeight: 1.5, resize: 'vertical' }} />
+                    {importErr && <div style={{ fontSize: 13, color: 'var(--expense)', fontWeight: 600 }}>{importErr}</div>}
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      {rows.length > 0 && <button type="button" className="btn btn-secondary" style={{ flex: '0 0 auto' }} onClick={() => { setPasteOpen(false); setRaw(''); setImportErr('') }}>Cancel</button>}
+                      <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} disabled={!raw.trim() || parsing} onClick={formatWithAI}>
+                        {parsing ? 'Reading…' : 'Format with AI'}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button type="button" className="btn btn-secondary" style={{ justifyContent: 'center' }} onClick={() => { setPasteOpen(true); setImportErr('') }}>
+                    <ClipboardPaste size={15} /> Paste more
                   </button>
-                </div>
-              </div>
-            )}
+                )}
 
-            {mode === 'batch' && rows && (
-              <div style={{ display: 'grid', gap: 12 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-                  <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>
-                    Review {rows.length} transaction{rows.length !== 1 ? 's' : ''} — edit anything, then log.
-                    {invalidCount > 0 && <span style={{ color: 'var(--expense)', fontWeight: 600 }}>&nbsp;{invalidCount} need attention</span>}
-                  </span>
-                  <button className="btn btn-secondary" style={{ padding: '6px 12px' }} onClick={() => setRows(null)}>← Edit paste</button>
-                </div>
+                {/* Review grid + per-card totals */}
+                {rows.length > 0 && (
+                  <>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                      {cardTotals.map(([card, tot]) => (
+                        <span key={card} style={{ fontSize: 12, fontWeight: 700, padding: '4px 11px', borderRadius: 999, background: 'var(--kpi-bg)', border: '1px solid var(--border)' }}>{card}: {money(tot)}</span>
+                      ))}
+                      <span style={{ fontSize: 13, fontWeight: 700, marginLeft: 'auto' }}>Grand total {money(grandTotal)}</span>
+                    </div>
+                    {invalidCount > 0 && <span style={{ fontSize: 12, color: 'var(--expense)', fontWeight: 600 }}>{invalidCount} row{invalidCount !== 1 ? 's' : ''} need attention</span>}
 
-                {/* header */}
-                <div style={{ overflowX: 'auto' }}>
-                <div style={{ minWidth: 620 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '130px 1fr 150px 100px 32px', gap: 8, padding: '0 2px' }}>
-                  {['Date', 'Description', 'Category', 'Amount', ''].map((h) => <span key={h} className="stat-label">{h}</span>)}
-                </div>
-
-                <div style={{ display: 'grid', gap: 6, maxHeight: '46vh', overflowY: 'auto' }}>
-                  {rows.map((r, i) => {
-                    const bad = !rowValid(r)
-                    return (
-                      <div key={i} style={{ display: 'grid', gridTemplateColumns: '130px 1fr 150px 100px 32px', gap: 8, alignItems: 'center' }}>
-                        <input type="date" value={r.date} onChange={(e) => updateRow(i, { date: e.target.value })}
-                          style={{ ...cell, borderColor: isDate(r.date) ? 'var(--border)' : 'var(--expense)' }} />
-                        <input type="text" value={r.description} onChange={(e) => updateRow(i, { description: e.target.value })} style={cell} placeholder="Description" />
-                        <select value={r.category}
-                          onChange={(e) => {
-                            const c = cats.find((x) => x.name === e.target.value)
-                            updateRow(i, { category: e.target.value, type: c?.type ?? r.type })
-                          }}
-                          style={{ ...cell, borderColor: r.category ? 'var(--border)' : 'var(--expense)' }}>
-                          <option value="">— pick —</option>
-                          <optgroup label="Income">{grouped.income.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}</optgroup>
-                          <optgroup label="Expense">{grouped.expense.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}</optgroup>
-                          <optgroup label="Savings">{grouped.savings.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}</optgroup>
-                        </select>
-                        <input type="number" step="0.01" value={r.amount} onChange={(e) => updateRow(i, { amount: e.target.value })}
-                          style={{ ...cell, borderColor: !isNaN(parseFloat(r.amount)) && parseFloat(r.amount) > 0 ? 'var(--border)' : 'var(--expense)' }} placeholder="0.00" />
-                        <button onClick={() => setRows((prev) => prev!.filter((_, idx) => idx !== i))} aria-label="Remove" title="Remove row"
-                          style={{ display: 'inline-flex', justifyContent: 'center', padding: 6, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                          <Trash2 size={15} />
-                        </button>
+                    <div style={{ overflowX: 'auto' }}>
+                      <div style={{ minWidth: 720 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr 130px 90px 110px 32px', gap: 8, padding: '0 2px' }}>
+                          {['Date', 'Description', 'Category', 'Amount', 'Card', ''].map((h) => <span key={h} className="stat-label">{h}</span>)}
+                        </div>
+                        <div style={{ display: 'grid', gap: 6, maxHeight: '42vh', overflowY: 'auto', marginTop: 6 }}>
+                          {rows.map((r, i) => (
+                            <div key={i} style={{ display: 'grid', gridTemplateColumns: '120px 1fr 130px 90px 110px 32px', gap: 8, alignItems: 'center' }}>
+                              <input type="date" value={r.date} onChange={(e) => updateRow(i, { date: e.target.value })}
+                                style={{ ...cell, borderColor: isDate(r.date) ? 'var(--border)' : 'var(--expense)' }} />
+                              <input type="text" value={r.description} onChange={(e) => updateRow(i, { description: e.target.value })} style={cell} placeholder="Description" />
+                              <select value={r.category}
+                                onChange={(e) => { const c = cats.find((x) => x.name === e.target.value); updateRow(i, { category: e.target.value, type: c?.type ?? r.type }) }}
+                                style={{ ...cell, borderColor: r.category ? 'var(--border)' : 'var(--expense)' }}>
+                                <option value="">— pick —</option>
+                                <optgroup label="Income">{grouped.income.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}</optgroup>
+                                <optgroup label="Expense">{grouped.expense.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}</optgroup>
+                                <optgroup label="Savings">{grouped.savings.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}</optgroup>
+                              </select>
+                              <input type="number" step="0.01" value={r.amount} onChange={(e) => updateRow(i, { amount: e.target.value })}
+                                style={{ ...cell, borderColor: !isNaN(parseFloat(r.amount)) && parseFloat(r.amount) > 0 ? 'var(--border)' : 'var(--expense)' }} placeholder="0.00" />
+                              <select value={r.card || ''} onChange={(e) => updateRow(i, { card: e.target.value || undefined })} style={cell}>
+                                <option value="">—</option>
+                                {cards.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
+                                {r.card && !cards.some((c) => c.name === r.card) && <option value={r.card}>{r.card}</option>}
+                              </select>
+                              <button onClick={() => setRows((prev) => prev.filter((_, idx) => idx !== i))} aria-label="Remove" title="Remove row"
+                                style={{ display: 'inline-flex', justifyContent: 'center', padding: 6, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                                <Trash2 size={15} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    )
-                  })}
-                </div>
-                </div>
-                </div>
+                    </div>
 
-                <div style={{ display: 'flex', gap: 10 }}>
-                  <button type="button" className="btn btn-secondary" style={{ flex: '0 0 auto' }} onClick={close}>Cancel</button>
-                  <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} disabled={saving || validCount === 0}
-                    onClick={logBatch}>
-                    {saving ? 'Logging…' : `Log ${validCount} transaction${validCount !== 1 ? 's' : ''}${invalidCount ? ` (skips ${invalidCount})` : ''}`}
-                  </button>
-                </div>
+                    <button type="button" onClick={() => setRows((prev) => [...prev, { date: today(), description: '', category: '', type: 'expense', amount: '', card: selectedCard || undefined }])}
+                      style={{ justifySelf: 'start', display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 999, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit' }}>
+                      <Plus size={14} /> Add row
+                    </button>
+
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                      <button type="button" className="btn btn-secondary" style={{ flex: '0 0 auto' }} onClick={close}>Close</button>
+                      <button type="button" className="btn btn-secondary" style={{ flex: '0 0 auto' }} disabled={saving} onClick={saveDraft}>💾 Save draft</button>
+                      <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center', minWidth: 160 }} disabled={saving || validCount === 0} onClick={logBatch}>
+                        {saving ? 'Logging…' : `Log ${validCount} transaction${validCount !== 1 ? 's' : ''}${invalidCount ? ` (skips ${invalidCount})` : ''}`}
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             )}
 
