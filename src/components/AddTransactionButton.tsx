@@ -352,7 +352,6 @@ export default function AddTransactionButton() {
                 {pasteOpen ? (
                   <div style={{ display: 'grid', gap: 8 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                      <span className="stat-label" style={{ flexShrink: 0 }}>Card</span>
                       {cards.map((c) => {
                         const on = selectedCard === c.name
                         return (
