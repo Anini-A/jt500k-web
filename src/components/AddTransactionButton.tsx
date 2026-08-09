@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { Plus, Trash2, ClipboardPaste, PencilLine, Repeat, X } from 'lucide-react'
+import { Plus, Trash2, ClipboardPaste, PencilLine, Repeat, Settings2 } from 'lucide-react'
 import CategorySelect from './CategorySelect'
 import IconPill from './IconPill'
 import { getJSON } from '@/lib/fresh'
@@ -81,6 +81,7 @@ export default function AddTransactionButton() {
   const [drafts, setDrafts] = useState<Draft[]>([])
   const [draftId, setDraftId] = useState<string | null>(null) // the draft currently being edited
   const [pasteOpen, setPasteOpen] = useState(true)            // is the paste input showing
+  const [manageCardsOpen, setManageCardsOpen] = useState(false)
   const [parsing, setParsing] = useState(false)
   const [importErr, setImportErr] = useState('')
   const [recs, setRecs] = useState<any[]>([])
@@ -352,23 +353,39 @@ export default function AddTransactionButton() {
                 {pasteOpen ? (
                   <div style={{ display: 'grid', gap: 8 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <button type="button" onClick={() => setManageCardsOpen((v) => !v)} title="Add or remove cards"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: 600, border: `1px solid ${manageCardsOpen ? 'var(--accent)' : 'var(--border)'}`, background: manageCardsOpen ? 'var(--accent-soft)' : 'transparent', color: 'var(--accent)', fontFamily: 'inherit' }}>
+                        <Settings2 size={14} /> Cards
+                      </button>
+                      {cards.length > 0 && <span style={{ width: 1, alignSelf: 'stretch', minHeight: 22, background: 'var(--border)' }} />}
                       {cards.map((c) => {
                         const on = selectedCard === c.name
                         return (
                           <span key={c.id} onClick={() => setSelectedCard(c.name)} title={`Tag this paste as ${c.name}`}
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 6px 6px 12px', borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: 600, border: `1px solid ${on ? 'var(--accent)' : 'var(--border)'}`, background: on ? 'var(--accent)' : 'var(--kpi-bg)', color: on ? '#fff' : 'var(--text-secondary)' }}>
+                            style={{ display: 'inline-flex', alignItems: 'center', padding: '7px 14px', borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: 600, border: `1px solid ${on ? 'var(--accent)' : 'var(--border)'}`, background: on ? 'var(--accent)' : 'var(--kpi-bg)', color: on ? '#fff' : 'var(--text-secondary)' }}>
                             {c.name}
-                            <button type="button" onClick={(e) => { e.stopPropagation(); deleteCard(c) }} aria-label={`Delete ${c.name}`} title="Delete card"
-                              style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 18, height: 18, borderRadius: 999, border: 'none', cursor: 'pointer', background: on ? 'rgba(255,255,255,0.25)' : 'var(--border)', color: on ? '#fff' : 'var(--text-muted)', padding: 0 }}>
-                              <X size={12} />
-                            </button>
                           </span>
                         )
                       })}
-                      <button type="button" onClick={addCard} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: 600, border: '1px dashed var(--border)', background: 'transparent', color: 'var(--accent)', fontFamily: 'inherit' }}>
-                        <Plus size={14} /> Add card
-                      </button>
+                      {cards.length === 0 && <span className="stat-label">No cards yet — tap “Cards” to add one.</span>}
                     </div>
+
+                    {/* Manage cards panel */}
+                    {manageCardsOpen && (
+                      <div style={{ display: 'grid', gap: 6, padding: 12, borderRadius: 12, border: '1px solid var(--border)', background: 'var(--kpi-bg)' }}>
+                        <span className="stat-label">Manage cards</span>
+                        {cards.map((c) => (
+                          <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '7px 4px', borderBottom: '1px solid var(--border)' }}>
+                            <span style={{ fontWeight: 600 }}>{c.name}</span>
+                            <button type="button" onClick={() => deleteCard(c)} aria-label={`Delete ${c.name}`} title="Delete card"
+                              style={{ display: 'inline-flex', padding: 6, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--expense)', cursor: 'pointer' }}><Trash2 size={15} /></button>
+                          </div>
+                        ))}
+                        <button type="button" onClick={addCard} style={{ justifySelf: 'start', display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 4, padding: '7px 14px', borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: 600, border: '1px dashed var(--border)', background: 'transparent', color: 'var(--accent)', fontFamily: 'inherit' }}>
+                          <Plus size={14} /> Add card
+                        </button>
+                      </div>
+                    )}
                     <textarea value={raw} onChange={(e) => setRaw(e.target.value)} rows={8}
                       placeholder={'Paste anything from your bank or credit card — pending & posted, totals, times… the AI cleans it up.'}
                       style={{ ...inp, height: 'auto', padding: 12, fontSize: 14, lineHeight: 1.5, resize: 'vertical' }} />
