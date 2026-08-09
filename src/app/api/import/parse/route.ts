@@ -14,9 +14,10 @@ const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite'
 export async function POST(req: NextRequest) {
   if (!GEMINI_KEY) return NextResponse.json({ error: 'AI parser not configured' }, { status: 500 })
   try {
-    const { text, today } = await req.json().catch(() => ({}))
+    const { text, images, today } = await req.json().catch(() => ({}))
     const raw = String(text || '').trim()
-    if (!raw) return NextResponse.json({ error: 'Nothing to parse.' }, { status: 400 })
+    const imgs = (Array.isArray(images) ? images : []).filter((i: any) => i?.data).slice(0, 8)
+    if (!raw && !imgs.length) return NextResponse.json({ error: 'Nothing to parse.' }, { status: 400 })
 
     const { data: cats } = await supabaseAdmin.from('categories').select('name, type')
     const catList = (cats ?? [])
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
     const weekday = new Date(todayStr + 'T12:00:00').toLocaleDateString('en-CA', { weekday: 'long' })
 
     const system =
-      `You extract transactions (both INCOME and EXPENSES) from a pasted bank or credit-card statement into JSON. ` +
+      `You extract transactions (both INCOME and EXPENSES) from a bank or credit-card statement — provided as pasted text and/or SCREENSHOTS — into JSON. ` +
       `Return ONLY a JSON array; each element: {"date":"YYYY-MM-DD","description":string,"category":string,"amount":number}. ` +
       `Rules:\n` +
       `- One element per real transaction. INCLUDE both pending and posted. ` +
@@ -56,9 +57,14 @@ export async function POST(req: NextRequest) {
       `If unsure, pick the most likely expense category (default "Misc" if it exists). Never invent a category outside the list.\n` +
       `Return [] if there are no transactions.`
 
+    const userParts: any[] = []
+    for (const im of imgs) userParts.push({ inlineData: { mimeType: im.mime || 'image/jpeg', data: im.data } })
+    if (raw) userParts.push({ text: raw })
+    else if (imgs.length) userParts.push({ text: 'Extract every transaction visible in the screenshot(s).' })
+
     const body = {
       systemInstruction: { parts: [{ text: system }] },
-      contents: [{ role: 'user', parts: [{ text: raw }] }],
+      contents: [{ role: 'user', parts: userParts }],
       generationConfig: { responseMimeType: 'application/json', temperature: 0 },
     }
 

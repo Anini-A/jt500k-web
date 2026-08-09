@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { Plus, Trash2, ClipboardPaste, PencilLine, Repeat, Settings2, RefreshCw } from 'lucide-react'
+import { Plus, Trash2, ClipboardPaste, PencilLine, Repeat, Settings2, RefreshCw, ImagePlus } from 'lucide-react'
 import CategorySelect from './CategorySelect'
 import IconPill from './IconPill'
 import { getJSON } from '@/lib/fresh'
@@ -85,6 +85,7 @@ export default function AddTransactionButton() {
   const [parsing, setParsing] = useState(false)
   const [savingDraft, setSavingDraft] = useState(false)
   const [importErr, setImportErr] = useState('')
+  const [images, setImages] = useState<{ id: string; data: string; mime: string; preview: string }[]>([])
   const [recs, setRecs] = useState<any[]>([])
   const [picked, setPicked] = useState<Set<string>>(new Set())
   const [recDate, setRecDate] = useState(today())
@@ -114,7 +115,7 @@ export default function AddTransactionButton() {
   useEffect(() => { if (!selectedCard && cards.length) setSelectedCard(cards[0].name) }, [cards, selectedCard])
 
   const close = () => {
-    setOpen(false); setMode('single'); setRaw(''); setRows([])
+    setOpen(false); setMode('single'); setRaw(''); setRows([]); setImages([])
     setDraftId(null); setPasteOpen(true); setImportErr('')
   }
 
@@ -186,20 +187,44 @@ export default function AddTransactionButton() {
   }
 
   // ── Smart Import handlers ──
+  // downscale a screenshot to keep the upload small/cheap (max ~1500px, JPEG)
+  const addImageFiles = (files: FileList | File[]) => {
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith('image/')) continue
+      const img = new Image()
+      const url = URL.createObjectURL(file)
+      img.onload = () => {
+        const scale = Math.min(1, 1500 / Math.max(img.width, img.height))
+        const w = Math.round(img.width * scale), h = Math.round(img.height * scale)
+        const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h
+        canvas.getContext('2d')?.drawImage(img, 0, 0, w, h)
+        const preview = canvas.toDataURL('image/jpeg', 0.85)
+        URL.revokeObjectURL(url)
+        setImages((prev) => [...prev, { id: Math.random().toString(36).slice(2), data: preview.split(',')[1], mime: 'image/jpeg', preview }])
+      }
+      img.onerror = () => URL.revokeObjectURL(url)
+      img.src = url
+    }
+  }
+  const onPasteInput = (e: React.ClipboardEvent) => {
+    const imgFiles = Array.from(e.clipboardData.items).filter((i) => i.type.startsWith('image/')).map((i) => i.getAsFile()).filter(Boolean) as File[]
+    if (imgFiles.length) { e.preventDefault(); addImageFiles(imgFiles) } // pasted a screenshot
+  }
+
   const formatWithAI = async () => {
-    if (!raw.trim()) return
+    if (!raw.trim() && images.length === 0) return
     setParsing(true); setImportErr('')
     try {
       const res = await fetch('/api/import/parse', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: raw, today: today() }),
+        body: JSON.stringify({ text: raw, images: images.map((i) => ({ data: i.data, mime: i.mime })), today: today() }),
       })
       const d = await res.json()
       if (!res.ok || !Array.isArray(d.rows)) { setImportErr(d.error || 'Could not read that. Try again.'); return }
-      if (d.rows.length === 0) { setImportErr('No transactions found in that text.'); return }
+      if (d.rows.length === 0) { setImportErr('No transactions found. Check the screenshot is clear, or edit manually.'); return }
       const tagged: Row[] = d.rows.map((r: any) => ({ ...r, amount: String(r.amount), card: selectedCard || undefined }))
       setRows((prev) => [...prev, ...tagged])  // append so you can paste multiple cards into one batch
-      setRaw(''); setPasteOpen(false)
+      setRaw(''); setImages([]); setPasteOpen(false)
     } catch (e: any) { setImportErr('Parse failed: ' + (e?.message || e)) } finally { setParsing(false) }
   }
 
@@ -246,7 +271,7 @@ export default function AddTransactionButton() {
   // start a fresh, independent batch (e.g. save card 1 as a draft, then log card 2 on its own)
   const newBatch = () => {
     if (rows.length && !draftId && !confirm('Start a fresh batch? Rows not saved as a draft will be lost.')) return
-    setRows([]); setDraftId(null); setRaw(''); setImportErr(''); setPasteOpen(true)
+    setRows([]); setDraftId(null); setRaw(''); setImages([]); setImportErr(''); setPasteOpen(true)
   }
   const openDraft = (dr: Draft) => {
     setRows((dr.rows || []).map((r) => ({ ...r, amount: String(r.amount) })))
@@ -413,14 +438,36 @@ export default function AddTransactionButton() {
                         </button>
                       </div>
                     )}
-                    <textarea value={raw} onChange={(e) => setRaw(e.target.value)} rows={8}
-                      placeholder={'Paste anything from your bank or credit card — pending & posted, totals, times… the AI cleans it up.'}
+                    <textarea value={raw} onChange={(e) => setRaw(e.target.value)} onPaste={onPasteInput} rows={7}
+                      placeholder={'Paste text from your bank/card — or add a screenshot below (you can also paste an image here). Pending, posted, totals, times… the AI cleans it up.'}
                       style={{ ...inp, height: 'auto', padding: 12, fontSize: 14, lineHeight: 1.5, resize: 'vertical' }} />
+
+                    {/* Screenshot attach + thumbnails */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                      <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: 600, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-secondary)' }}>
+                        <ImagePlus size={15} /> Add screenshot
+                        <input type="file" accept="image/*" multiple style={{ display: 'none' }}
+                          onChange={(e) => { if (e.target.files) addImageFiles(e.target.files); e.target.value = '' }} />
+                      </label>
+                      <span className="stat-label">or paste an image</span>
+                    </div>
+                    {images.length > 0 && (
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        {images.map((im) => (
+                          <div key={im.id} style={{ position: 'relative' }}>
+                            <img src={im.preview} alt="screenshot" style={{ height: 68, width: 'auto', maxWidth: 120, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--border)' }} />
+                            <button type="button" onClick={() => setImages((prev) => prev.filter((x) => x.id !== im.id))} aria-label="Remove"
+                              style={{ position: 'absolute', top: -7, right: -7, width: 20, height: 20, borderRadius: 999, border: 'none', background: 'var(--expense)', color: '#fff', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, lineHeight: 1 }}>✕</button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
                     {importErr && <div style={{ fontSize: 13, color: 'var(--expense)', fontWeight: 600 }}>{importErr}</div>}
                     <div style={{ display: 'flex', gap: 10 }}>
-                      {rows.length > 0 && <button type="button" className="btn btn-secondary" style={{ flex: '0 0 auto' }} onClick={() => { setPasteOpen(false); setRaw(''); setImportErr('') }}>Cancel</button>}
-                      <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} disabled={!raw.trim() || parsing} onClick={formatWithAI}>
-                        {parsing ? 'Reading…' : 'Format with AI'}
+                      {rows.length > 0 && <button type="button" className="btn btn-secondary" style={{ flex: '0 0 auto' }} onClick={() => { setPasteOpen(false); setRaw(''); setImages([]); setImportErr('') }}>Cancel</button>}
+                      <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} disabled={(!raw.trim() && images.length === 0) || parsing} onClick={formatWithAI}>
+                        {parsing ? 'Reading…' : `Format with AI${images.length ? ` · ${images.length} image${images.length !== 1 ? 's' : ''}` : ''}`}
                       </button>
                     </div>
                   </div>
