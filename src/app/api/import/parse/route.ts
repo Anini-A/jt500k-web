@@ -25,19 +25,27 @@ export async function POST(req: NextRequest) {
     const validNames = catList.map((c) => c.name)
 
     const todayStr = /^\d{4}-\d{2}-\d{2}$/.test(String(today)) ? today : new Date().toISOString().slice(0, 10)
+    const weekday = new Date(todayStr + 'T12:00:00').toLocaleDateString('en-CA', { weekday: 'long' })
 
     const system =
       `You extract credit-card / bank transactions from raw pasted text into JSON. ` +
       `Return ONLY a JSON array; each element: {"date":"YYYY-MM-DD","description":string,"category":string,"amount":number}. ` +
       `Rules:\n` +
       `- One element per real purchase/charge. INCLUDE both pending and posted transactions. ` +
-      `SKIP non-transaction lines: totals ("Total", "Grand Total"), card names/headers, "Pending transaction"/"Posted transactions" labels, balances, credit limits, times.\n` +
-      `- amount = a POSITIVE number (strip $ and commas). Payments/refunds/credits to the card are NOT purchases — skip them.\n` +
-      `- description = the clean merchant name (e.g. "UBER CANADA/UBEREATS", "REAL CDN SUPERSTORE #1").\n` +
-      `- date = the transaction date in YYYY-MM-DD. If a row shows only a time, use its date. If no year, assume ${todayStr.slice(0, 4)}.\n` +
+      `SKIP non-transaction lines: totals ("Total", "Grand Total"), card names/headers (e.g. "Wealthsimple credit card"), ` +
+      `"Purchase"/"Pending"/"Posted transactions" labels, balances, credit limits, currency codes, times.\n` +
+      `- amount = a POSITIVE number. Strip $, commas, currency codes (CAD/USD), and any minus sign — a purchase like "− $52.95 CAD" is amount 52.95. ` +
+      `Payments/refunds/credits to the card (money coming back) are NOT purchases — skip them.\n` +
+      `- description = the clean merchant name (e.g. "Walmart Store #3107", "UBER CANADA/UBEREATS").\n` +
+      `- date: TODAY is ${todayStr} (${weekday}). Output an absolute YYYY-MM-DD. Resolve relative dates: ` +
+      `"Today"→${todayStr}; "Yesterday"→the day before; "N days ago"→count back; a weekday name→its most recent PAST occurrence; ` +
+      `"Aug 5" with no year→assume ${todayStr.slice(0, 4)} (but never a future date — use last year if that would be in the future). ` +
+      `A date LINE that has no amount (e.g. "Yesterday", "August 5", "Mon") is a HEADER: apply it to every transaction listed below it until the next date header. ` +
+      `If a transaction has its own date/time, use that instead.\n` +
       `- category = the SINGLE best match from this EXACT list (use these strings verbatim): ${validNames.join(', ')}.\n` +
       `  Map bank categories to the closest one, e.g. "Food & groceries"→"Food", "Restaurants & bars"→"Food", ` +
-      `"Transportation & car"/"Gas"→"Transportation", "Shopping"→"Personal", "Home"→"Housing". ` +
+      `"Transportation & car"/"Gas"→"Transportation", "Shopping"→"Personal", "Home"→"Housing"; ` +
+      `by merchant when there's no bank category, e.g. Winners/Value Village→"Clothing", Walmart/Dollarama→"Misc". ` +
       `If unsure, pick the most likely expense category (default "Misc" if it exists). Never invent a category outside the list.\n` +
       `Return [] if there are no transactions.`
 
