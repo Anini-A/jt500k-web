@@ -403,7 +403,11 @@ export default function AddTransactionButton() {
 
                 {/* Paste input */}
                 {pasteOpen ? (
-                  <div style={{ display: 'grid', gap: 8 }}>
+                  <div style={{ display: 'grid', gap: 10, padding: 14, border: '1px solid var(--border)', borderRadius: 14, background: 'var(--kpi-bg)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                      <span style={{ fontWeight: 700, fontSize: 14 }}>Paste or screenshot your statement</span>
+                      {rows.length > 0 && <button type="button" onClick={() => { setPasteOpen(false); setRaw(''); setImages([]); setImportErr('') }} aria-label="Done adding" title="Done" style={{ display: 'inline-flex', padding: 4, borderRadius: 8, border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 18, lineHeight: 1 }}>✕</button>}
+                    </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                       <button type="button" onClick={() => setManageCardsOpen((v) => !v)} title="Add or remove cards"
                         style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: 600, border: `1px solid ${manageCardsOpen ? 'var(--accent)' : 'var(--border)'}`, background: manageCardsOpen ? 'var(--accent-soft)' : 'transparent', color: 'var(--accent)', fontFamily: 'inherit' }}>
@@ -464,12 +468,9 @@ export default function AddTransactionButton() {
                     )}
 
                     {importErr && <div style={{ fontSize: 13, color: 'var(--expense)', fontWeight: 600 }}>{importErr}</div>}
-                    <div style={{ display: 'flex', gap: 10 }}>
-                      {rows.length > 0 && <button type="button" className="btn btn-secondary" style={{ flex: '0 0 auto' }} onClick={() => { setPasteOpen(false); setRaw(''); setImages([]); setImportErr('') }}>Cancel</button>}
-                      <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} disabled={(!raw.trim() && images.length === 0) || parsing} onClick={formatWithAI}>
-                        {parsing ? 'Reading…' : `Format with AI${images.length ? ` · ${images.length} image${images.length !== 1 ? 's' : ''}` : ''}`}
-                      </button>
-                    </div>
+                    <button className="btn btn-primary" style={{ justifyContent: 'center' }} disabled={(!raw.trim() && images.length === 0) || parsing} onClick={formatWithAI}>
+                      {parsing ? 'Reading…' : `Format with AI${images.length ? ` · ${images.length} image${images.length !== 1 ? 's' : ''}` : ''}`}
+                    </button>
                   </div>
                 ) : (
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -485,22 +486,32 @@ export default function AddTransactionButton() {
                 {/* Review grid + per-card totals */}
                 {rows.length > 0 && (
                   <>
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                      {cardTotals.map(([card, tot]) => (
-                        <span key={card} style={{ fontSize: 12, fontWeight: 700, padding: '4px 11px', borderRadius: 999, background: 'var(--kpi-bg)', border: '1px solid var(--border)' }}>{card}: {money(tot)}</span>
-                      ))}
-                      <span style={{ fontSize: 13, fontWeight: 700, marginLeft: 'auto' }}>Grand total {money(grandTotal)}</span>
+                    {/* summary bar */}
+                    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                        <span style={{ fontWeight: 700, fontSize: 15 }}>Review</span>
+                        <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>
+                          {rows.length} item{rows.length !== 1 ? 's' : ''}{invalidCount > 0 && <span style={{ color: 'var(--expense)', fontWeight: 600 }}> · {invalidCount} to fix</span>}
+                        </span>
+                      </div>
+                      <span style={{ fontWeight: 700, fontSize: 17 }}>{money(grandTotal)}</span>
                     </div>
-                    {invalidCount > 0 && <span style={{ fontSize: 12, color: 'var(--expense)', fontWeight: 600 }}>{invalidCount} row{invalidCount !== 1 ? 's' : ''} need attention</span>}
+                    {cardTotals.length > 0 && (
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                        {cardTotals.map(([card, tot]) => (
+                          <span key={card} style={{ fontSize: 12, fontWeight: 700, padding: '4px 11px', borderRadius: 999, background: 'var(--kpi-bg)', border: '1px solid var(--border)' }}>{card} · {money(tot)}</span>
+                        ))}
+                      </div>
+                    )}
 
-                    <div style={{ overflowX: 'auto' }}>
-                      <div style={{ minWidth: 720 }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr 130px 90px 110px 32px', gap: 8, padding: '0 2px' }}>
-                          {['Date', 'Description', 'Category', 'Amount', 'Card', ''].map((h) => <span key={h} className="stat-label">{h}</span>)}
-                        </div>
-                        <div style={{ display: 'grid', gap: 6, maxHeight: '42vh', overflowY: 'auto', marginTop: 6 }}>
+                    <div style={{ border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+                      <div style={{ overflow: 'auto', maxHeight: '42vh' }}>
+                        <div style={{ minWidth: 720 }}>
+                          <div style={{ position: 'sticky', top: 0, zIndex: 1, background: 'var(--surface-1)', display: 'grid', gridTemplateColumns: '120px 1fr 130px 90px 110px 34px', gap: 8, padding: '9px 10px', borderBottom: '1px solid var(--border)' }}>
+                            {['Date', 'Description', 'Category', 'Amount', 'Card', ''].map((h) => <span key={h} className="stat-label">{h}</span>)}
+                          </div>
                           {rows.map((r, i) => (
-                            <div key={i} style={{ display: 'grid', gridTemplateColumns: '120px 1fr 130px 90px 110px 32px', gap: 8, alignItems: 'center' }}>
+                            <div key={i} style={{ display: 'grid', gridTemplateColumns: '120px 1fr 130px 90px 110px 34px', gap: 8, alignItems: 'center', padding: '6px 10px', background: i % 2 ? 'var(--kpi-bg)' : 'transparent' }}>
                               <input type="date" value={r.date} onChange={(e) => updateRow(i, { date: e.target.value })}
                                 style={{ ...cell, borderColor: isDate(r.date) ? 'var(--border)' : 'var(--expense)' }} />
                               <input type="text" value={r.description} onChange={(e) => updateRow(i, { description: e.target.value })} style={cell} placeholder="Description" />
@@ -520,19 +531,18 @@ export default function AddTransactionButton() {
                                 {r.card && !cards.some((c) => c.name === r.card) && <option value={r.card}>{r.card}</option>}
                               </select>
                               <button onClick={() => setRows((prev) => prev.filter((_, idx) => idx !== i))} aria-label="Remove" title="Remove row"
-                                style={{ display: 'inline-flex', justifyContent: 'center', padding: 6, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                                style={{ display: 'inline-flex', justifyContent: 'center', padding: 6, borderRadius: 8, border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}>
                                 <Trash2 size={15} />
                               </button>
                             </div>
                           ))}
                         </div>
                       </div>
+                      <button type="button" onClick={() => setRows((prev) => [...prev, { date: today(), description: '', category: '', type: 'expense', amount: '', card: selectedCard || undefined }])}
+                        style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '9px 12px', borderTop: '1px solid var(--border)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit' }}>
+                        <Plus size={14} /> Add row
+                      </button>
                     </div>
-
-                    <button type="button" onClick={() => setRows((prev) => [...prev, { date: today(), description: '', category: '', type: 'expense', amount: '', card: selectedCard || undefined }])}
-                      style={{ justifySelf: 'start', display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 999, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit' }}>
-                      <Plus size={14} /> Add row
-                    </button>
 
                     <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                       <button type="button" className="btn btn-secondary" style={{ flex: '0 0 auto' }} onClick={close}>Close</button>
