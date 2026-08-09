@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { Plus, Trash2, ClipboardPaste, PencilLine, Repeat, Settings2 } from 'lucide-react'
+import { Plus, Trash2, ClipboardPaste, PencilLine, Repeat, Settings2, RefreshCw } from 'lucide-react'
 import CategorySelect from './CategorySelect'
 import IconPill from './IconPill'
 import { getJSON } from '@/lib/fresh'
@@ -83,6 +83,7 @@ export default function AddTransactionButton() {
   const [pasteOpen, setPasteOpen] = useState(true)            // is the paste input showing
   const [manageCardsOpen, setManageCardsOpen] = useState(false)
   const [parsing, setParsing] = useState(false)
+  const [savingDraft, setSavingDraft] = useState(false)
   const [importErr, setImportErr] = useState('')
   const [recs, setRecs] = useState<any[]>([])
   const [picked, setPicked] = useState<Set<string>>(new Set())
@@ -216,19 +217,31 @@ export default function AddTransactionButton() {
     if (selectedCard === c.name) setSelectedCard('')
   }
 
-  const currentRows = () => rows.map((r) => ({ ...r, amount: r.amount }))
   const saveDraft = async () => {
     if (!rows.length) return
-    setSaving(true)
+    setSavingDraft(true)
     try {
-      const payload = { rows: currentRows() }
+      const payload = { rows }
       const res = draftId
         ? await fetch('/api/drafts', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: draftId, ...payload }) })
         : await fetch('/api/drafts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
       if (!res.ok) { alert('Could not save draft.'); return }
       const d = await res.json(); setDraftId(d.id); await loadDrafts()
       setImportErr(''); alert('Draft saved.')
-    } finally { setSaving(false) }
+    } finally { setSavingDraft(false) }
+  }
+  // append the current rows onto an existing draft, then clear the working area
+  const appendToDraft = async (dr: Draft) => {
+    if (!rows.length) return
+    setSavingDraft(true)
+    try {
+      const merged = [...(dr.rows || []).map((r) => ({ ...r, amount: String(r.amount) })), ...rows]
+      const res = await fetch('/api/drafts', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: dr.id, rows: merged }) })
+      if (!res.ok) { alert('Could not save to that draft.'); return }
+      await loadDrafts()
+      setRows([]); setDraftId(null); setPasteOpen(true); setImportErr('')
+      alert('Added to draft.')
+    } finally { setSavingDraft(false) }
   }
   const openDraft = (dr: Draft) => {
     setRows((dr.rows || []).map((r) => ({ ...r, amount: String(r.amount) })))
@@ -330,18 +343,27 @@ export default function AddTransactionButton() {
             {/* ---------------- IMPORT (AI paste + per-card totals + drafts) ---------------- */}
             {mode === 'batch' && (
               <div style={{ display: 'grid', gap: 12 }}>
-                {/* Saved drafts — only when starting fresh */}
-                {drafts.length > 0 && rows.length === 0 && (
+                {/* Saved drafts — always visible so saves show up immediately */}
+                {drafts.length > 0 && (
                   <div style={{ display: 'grid', gap: 6 }}>
-                    <span className="stat-label">Saved drafts</span>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span className="stat-label">Saved drafts</span>
+                      <button type="button" onClick={loadDrafts} aria-label="Refresh drafts" title="Refresh"
+                        style={{ display: 'inline-flex', padding: 5, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}><RefreshCw size={14} /></button>
+                    </div>
                     {drafts.map((dr) => {
                       const tot = (dr.rows || []).reduce((s, r) => s + (parseFloat(String(r.amount)) || 0), 0)
+                      const isCurrent = draftId === dr.id
                       return (
                         <div key={dr.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <button onClick={() => openDraft(dr)} style={{ flex: 1, minWidth: 0, display: 'flex', justifyContent: 'space-between', gap: 10, textAlign: 'left', padding: '9px 12px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--kpi-bg)', cursor: 'pointer', fontFamily: 'inherit', color: 'var(--text-primary)' }}>
-                            <span style={{ fontWeight: 600 }}>{(dr.rows || []).length} item{(dr.rows || []).length !== 1 ? 's' : ''} · {money(tot)}</span>
+                          <button onClick={() => openDraft(dr)} style={{ flex: 1, minWidth: 0, display: 'flex', justifyContent: 'space-between', gap: 10, textAlign: 'left', padding: '9px 12px', borderRadius: 10, border: `1px solid ${isCurrent ? 'var(--accent)' : 'var(--border)'}`, background: isCurrent ? 'var(--accent-soft)' : 'var(--kpi-bg)', cursor: 'pointer', fontFamily: 'inherit', color: 'var(--text-primary)' }}>
+                            <span style={{ fontWeight: 600 }}>{(dr.rows || []).length} item{(dr.rows || []).length !== 1 ? 's' : ''} · {money(tot)}{isCurrent ? ' · editing' : ''}</span>
                             <span className="stat-label" style={{ flexShrink: 0 }}>{new Date(dr.updated_at).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}</span>
                           </button>
+                          {rows.length > 0 && !isCurrent && (
+                            <button onClick={() => appendToDraft(dr)} disabled={savingDraft} aria-label="Add current rows to this draft" title="Add current rows here"
+                              style={{ flexShrink: 0, height: 30, padding: '0 10px', borderRadius: 8, border: '1px solid var(--accent)', background: 'transparent', color: 'var(--accent)', cursor: 'pointer', fontSize: 12, fontWeight: 600, fontFamily: 'inherit' }}>+ Add here</button>
+                          )}
                           <button onClick={() => deleteDraft(dr.id)} aria-label="Delete draft" title="Delete draft" style={{ flexShrink: 0, width: 30, height: 30, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}><Trash2 size={14} /></button>
                         </div>
                       )
@@ -457,8 +479,10 @@ export default function AddTransactionButton() {
 
                     <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                       <button type="button" className="btn btn-secondary" style={{ flex: '0 0 auto' }} onClick={close}>Close</button>
-                      <button type="button" className="btn btn-secondary" style={{ flex: '0 0 auto' }} disabled={saving} onClick={saveDraft}>💾 Save draft</button>
-                      <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center', minWidth: 160 }} disabled={saving || validCount === 0} onClick={logBatch}>
+                      <button type="button" className="btn btn-secondary" style={{ flex: '0 0 auto' }} disabled={saving || savingDraft} onClick={saveDraft}>
+                        {savingDraft ? 'Saving…' : <>💾 {draftId ? 'Update draft' : 'Save draft'}</>}
+                      </button>
+                      <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center', minWidth: 160 }} disabled={saving || savingDraft || validCount === 0} onClick={logBatch}>
                         {saving ? 'Logging…' : `Log ${validCount} transaction${validCount !== 1 ? 's' : ''}${invalidCount ? ` (skips ${invalidCount})` : ''}`}
                       </button>
                     </div>
