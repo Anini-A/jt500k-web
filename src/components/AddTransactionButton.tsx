@@ -243,6 +243,11 @@ export default function AddTransactionButton() {
       alert('Added to draft.')
     } finally { setSavingDraft(false) }
   }
+  // start a fresh, independent batch (e.g. save card 1 as a draft, then log card 2 on its own)
+  const newBatch = () => {
+    if (rows.length && !draftId && !confirm('Start a fresh batch? Rows not saved as a draft will be lost.')) return
+    setRows([]); setDraftId(null); setRaw(''); setImportErr(''); setPasteOpen(true)
+  }
   const openDraft = (dr: Draft) => {
     setRows((dr.rows || []).map((r) => ({ ...r, amount: String(r.amount) })))
     setDraftId(dr.id); setPasteOpen(false); setImportErr('')
@@ -420,9 +425,14 @@ export default function AddTransactionButton() {
                     </div>
                   </div>
                 ) : (
-                  <button type="button" className="btn btn-secondary" style={{ justifyContent: 'center' }} onClick={() => { setPasteOpen(true); setImportErr('') }}>
-                    <ClipboardPaste size={15} /> Paste more
-                  </button>
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                    <button type="button" className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center', minWidth: 130 }} onClick={() => { setPasteOpen(true); setImportErr('') }}>
+                      <ClipboardPaste size={15} /> Paste more
+                    </button>
+                    <button type="button" className="btn btn-secondary" style={{ flex: '0 0 auto' }} onClick={newBatch} title="Start a fresh batch (e.g. a different card)">
+                      <Plus size={15} /> New batch
+                    </button>
+                  </div>
                 )}
 
                 {/* Review grid + per-card totals */}
