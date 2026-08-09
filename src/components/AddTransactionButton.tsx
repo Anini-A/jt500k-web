@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { Plus, Trash2, ClipboardPaste, PencilLine, Repeat, Settings2, RefreshCw, ImagePlus } from 'lucide-react'
+import { Plus, Trash2, ClipboardPaste, PencilLine, Repeat, Settings2, ImagePlus, RotateCcw } from 'lucide-react'
 import CategorySelect from './CategorySelect'
 import IconPill from './IconPill'
 import { getJSON } from '@/lib/fresh'
@@ -117,6 +117,14 @@ export default function AddTransactionButton() {
   const close = () => {
     setOpen(false); setMode('single'); setRaw(''); setRows([]); setImages([])
     setDraftId(null); setPasteOpen(true); setImportErr('')
+  }
+
+  // Reset the whole card WITHOUT closing it — clears every mode's working state, keeps the tab you're on.
+  const resetAll = () => {
+    setForm({ date: today(), type: 'expense', category: '', amount: '', description: '' })
+    setRaw(''); setRows([]); setImages([]); setDraftId(null); setPasteOpen(true); setImportErr(''); setManageCardsOpen(false)
+    setPicked(new Set()); setRecEdit(null); setRecDate(today())
+    setRecForm({ name: '', type: 'expense', category: '', amount: '', description: '' })
   }
 
   const logRecurring = async () => {
@@ -320,7 +328,13 @@ export default function AddTransactionButton() {
         <div className="modal-backdrop" onClick={close}>
           <div className="modal-card glass" style={{ width: 'min(820px, 100%)', minHeight: 'min(78vh, 540px)', background: 'var(--surface-1)' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ marginBottom: 14 }}>
-              <h2 style={{ margin: 0, fontSize: 18, display: 'flex', alignItems: 'center', gap: 8 }}><Plus size={18} /> Add Transaction</h2>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                <h2 style={{ margin: 0, fontSize: 18, display: 'flex', alignItems: 'center', gap: 8 }}><Plus size={18} /> Add Transaction</h2>
+                <button type="button" onClick={resetAll} title="Reset this card" aria-label="Reset"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>
+                  <RotateCcw size={14} /> Reset
+                </button>
+              </div>
               <div className="tabs" style={{ padding: 3, marginTop: 12 }}>
                 <button className={`tab ${mode === 'single' ? 'tab-active' : ''}`} style={{ flex: 1, justifyContent: 'center', padding: '7px 8px', fontSize: 13 }} onClick={() => setMode('single')}>
                   <PencilLine size={14} /> Single
@@ -376,11 +390,7 @@ export default function AddTransactionButton() {
                 {/* Saved drafts — always visible so saves show up immediately */}
                 {drafts.length > 0 && (
                   <div style={{ display: 'grid', gap: 6 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span className="stat-label">Saved drafts</span>
-                      <button type="button" onClick={loadDrafts} aria-label="Refresh drafts" title="Refresh"
-                        style={{ display: 'inline-flex', padding: 5, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}><RefreshCw size={14} /></button>
-                    </div>
+                    <span className="stat-label">Saved drafts</span>
                     {drafts.map((dr) => {
                       const tot = (dr.rows || []).reduce((s, r) => s + (parseFloat(String(r.amount)) || 0), 0)
                       const isCurrent = draftId === dr.id
