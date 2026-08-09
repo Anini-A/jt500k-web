@@ -449,11 +449,10 @@ export default function AddTransactionButton() {
                     {/* Screenshot attach + thumbnails */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                       <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: 600, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-secondary)' }}>
-                        <ImagePlus size={15} /> Add screenshot
+                        <ImagePlus size={15} /> Add image
                         <input type="file" accept="image/*" multiple style={{ display: 'none' }}
                           onChange={(e) => { if (e.target.files) addImageFiles(e.target.files); e.target.value = '' }} />
                       </label>
-                      <span className="stat-label">or paste an image</span>
                     </div>
                     {images.length > 0 && (
                       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
