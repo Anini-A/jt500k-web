@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { Plus, Trash2, ClipboardPaste, PencilLine, Repeat } from 'lucide-react'
+import { Plus, Trash2, ClipboardPaste, PencilLine, Repeat, X } from 'lucide-react'
 import CategorySelect from './CategorySelect'
 import IconPill from './IconPill'
 import { getJSON } from '@/lib/fresh'
@@ -208,6 +208,12 @@ export default function AddTransactionButton() {
     if (res.ok) { const c = await res.json(); await loadCards(); setSelectedCard(c.name) }
     else alert('Could not add card.')
   }
+  const deleteCard = async (c: Card) => {
+    if (!confirm(`Delete the card "${c.name}"? (Transactions already logged are unaffected.)`)) return
+    await fetch(`/api/cards?id=${c.id}`, { method: 'DELETE' }).catch(() => {})
+    await loadCards()
+    if (selectedCard === c.name) setSelectedCard('')
+  }
 
   const currentRows = () => rows.map((r) => ({ ...r, amount: r.amount }))
   const saveDraft = async () => {
@@ -347,11 +353,22 @@ export default function AddTransactionButton() {
                   <div style={{ display: 'grid', gap: 8 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                       <span className="stat-label" style={{ flexShrink: 0 }}>Card</span>
-                      <select value={selectedCard} onChange={(e) => setSelectedCard(e.target.value)} className="date-input" style={{ minWidth: 130 }}>
-                        {cards.length === 0 && <option value="">— add a card —</option>}
-                        {cards.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
-                      </select>
-                      <button type="button" onClick={addCard} className="btn btn-secondary" style={{ padding: '7px 12px' }}><Plus size={14} /> Card</button>
+                      {cards.map((c) => {
+                        const on = selectedCard === c.name
+                        return (
+                          <span key={c.id} onClick={() => setSelectedCard(c.name)} title={`Tag this paste as ${c.name}`}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 6px 6px 12px', borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: 600, border: `1px solid ${on ? 'var(--accent)' : 'var(--border)'}`, background: on ? 'var(--accent)' : 'var(--kpi-bg)', color: on ? '#fff' : 'var(--text-secondary)' }}>
+                            {c.name}
+                            <button type="button" onClick={(e) => { e.stopPropagation(); deleteCard(c) }} aria-label={`Delete ${c.name}`} title="Delete card"
+                              style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 18, height: 18, borderRadius: 999, border: 'none', cursor: 'pointer', background: on ? 'rgba(255,255,255,0.25)' : 'var(--border)', color: on ? '#fff' : 'var(--text-muted)', padding: 0 }}>
+                              <X size={12} />
+                            </button>
+                          </span>
+                        )
+                      })}
+                      <button type="button" onClick={addCard} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: 600, border: '1px dashed var(--border)', background: 'transparent', color: 'var(--accent)', fontFamily: 'inherit' }}>
+                        <Plus size={14} /> Add card
+                      </button>
                     </div>
                     <textarea value={raw} onChange={(e) => setRaw(e.target.value)} rows={8}
                       placeholder={'Paste anything from your bank or credit card — pending & posted, totals, times… the AI cleans it up.'}
