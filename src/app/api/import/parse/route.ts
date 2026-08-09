@@ -28,15 +28,22 @@ export async function POST(req: NextRequest) {
     const weekday = new Date(todayStr + 'T12:00:00').toLocaleDateString('en-CA', { weekday: 'long' })
 
     const system =
-      `You extract credit-card / bank transactions from raw pasted text into JSON. ` +
+      `You extract transactions (both INCOME and EXPENSES) from a pasted bank or credit-card statement into JSON. ` +
       `Return ONLY a JSON array; each element: {"date":"YYYY-MM-DD","description":string,"category":string,"amount":number}. ` +
       `Rules:\n` +
-      `- One element per real purchase/charge. INCLUDE both pending and posted transactions. ` +
-      `SKIP non-transaction lines: totals ("Total", "Grand Total"), card names/headers (e.g. "Wealthsimple credit card"), ` +
-      `"Purchase"/"Pending"/"Posted transactions" labels, balances, credit limits, currency codes, times.\n` +
-      `- amount = a POSITIVE number. Strip $, commas, currency codes (CAD/USD), and any minus sign — a purchase like "− $52.95 CAD" is amount 52.95. ` +
-      `Payments/refunds/credits to the card (money coming back) are NOT purchases — skip them.\n` +
-      `- description = the clean merchant name (e.g. "Walmart Store #3107", "UBER CANADA/UBEREATS").\n` +
+      `- One element per real transaction. INCLUDE both pending and posted. ` +
+      `SKIP non-transaction lines: totals ("Total", "Grand Total"), card/account names & headers (e.g. "Wealthsimple credit card"), ` +
+      `"Purchase"/"Deposit"/"Pending"/"Posted transactions" labels, balances, credit limits, currency codes, times.\n` +
+      `- SKIP transfers between the person's OWN accounts and credit-card payments — they are NOT income or expenses. ` +
+      `E.g. "PAYMENT - THANK YOU", "PYMT", "BILL PAYMENT ... VISA/MASTERCARD", "TRANSFER TO/FROM", "e-Transfer to self".\n` +
+      `- amount = a POSITIVE number always. Strip $, commas, currency codes (CAD/USD), and any +/− sign. "− $52.95 CAD" → 52.95.\n` +
+      `- DIRECTION → pick the right category. Money OUT (a purchase, withdrawal, fee, debit, a "−" on a card) → an EXPENSE category. ` +
+      `Money IN (a deposit/credit/"+" on a bank account) → the matching INCOME category by description: ` +
+      `payroll/salary/direct deposit/"PAY" → "Paycheck"; CRA/"Canada"/child benefit/CCB/carbon rebate/climate/GST/HST credit/EI → "Gov Benefits"; ` +
+      `a store/merchant refund or reversal → "Refund"; freelance/side gig → "Side Hustle". ` +
+      `A deposit into TFSA/RRSP/savings → the closest SAVINGS category if one exists. ` +
+      `(On a CREDIT-CARD statement a credit is usually a refund → "Refund"; a card payment → SKIP per above.)\n` +
+      `- description = the clean merchant/payer name (e.g. "Walmart Store #3107", "Canada Child Benefit").\n` +
       `- date: TODAY is ${todayStr} (${weekday}). Output an absolute YYYY-MM-DD. Resolve relative dates: ` +
       `"Today"→${todayStr}; "Yesterday"→the day before; "N days ago"→count back; a weekday name→its most recent PAST occurrence; ` +
       `"Aug 5" with no year→assume ${todayStr.slice(0, 4)} (but never a future date — use last year if that would be in the future). ` +
