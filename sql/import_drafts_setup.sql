@@ -22,3 +22,9 @@ create table if not exists import_drafts (
   updated_at timestamptz default now()
 );
 create index if not exists import_drafts_household_idx on import_drafts(household_id, updated_at desc);
+
+-- Row Level Security: lock these down like every other table. The app's
+-- server (API routes) uses the service-role key, which bypasses RLS.
+-- No public/anon access.
+alter table cards enable row level security;
+alter table import_drafts enable row level security;
