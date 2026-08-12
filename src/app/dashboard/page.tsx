@@ -367,13 +367,13 @@ function HeroRow({ stats }: { stats: Stat[] }) {
   const [primary, ...rest] = stats
   return (
     <section className="block">
-      <div className="card glass" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 16, flexWrap: 'wrap' }}>
-        <div style={{ minWidth: 0 }}>
+      <div className="card glass" style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', gap: 16, flexWrap: 'wrap' }}>
+        <div style={{ flex: '1 1 auto', minWidth: 0, textAlign: 'left' }}>
           <span className="hdr-label">{primary.label}</span>
           <div className={`stat-value ${primary.cls || ''}`} style={{ fontSize: 'clamp(30px, 8vw, 42px)', letterSpacing: '-0.03em', marginTop: 4 }}>{primary.value}</div>
         </div>
         {rest.length > 0 && (
-          <div style={{ display: 'grid', gap: 4, textAlign: 'right' }}>
+          <div style={{ flexShrink: 0, display: 'grid', gap: 4, textAlign: 'right' }}>
             {rest.map((s) => (
               <div key={s.label} style={{ fontSize: 13, color: 'var(--text-muted)' }}>
                 {s.label} <b style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>{s.value}</b>{s.sub ? ` · ${s.sub}` : ''}
