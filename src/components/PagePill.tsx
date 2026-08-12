@@ -5,11 +5,12 @@ import { useRouter } from 'next/navigation'
 import { nav } from '@/lib/nav'
 
 type Key = 'transactions' | 'home' | 'dashboard'
-// left → right order. Swipe right advances toward Dashboard, left toward Transactions.
+// left → right order (matches the bottom bar). Swipe left → next (toward Transactions),
+// swipe right → previous (toward Home).
 const PAGES: { key: Key; label: string; href: string }[] = [
-  { key: 'transactions', label: 'Transactions', href: '/transactions' },
   { key: 'home', label: 'Home', href: '/' },
   { key: 'dashboard', label: 'Dashboard', href: '/dashboard' },
+  { key: 'transactions', label: 'Transactions', href: '/transactions' },
 ]
 
 // nearest horizontally-scrollable ancestor (so a chip row scrolls instead of paging)
@@ -57,7 +58,7 @@ export default function PagePill({ current }: { current: Key }) {
         if (dx > 0 && !atStart) return // swipe right but the row can still scroll toward its start
         if (dx < 0 && !atEnd) return   // swipe left but the row can still scroll toward its end
       }
-      go(idx + (dx < 0 ? 1 : -1)) // swipe left → Dashboard, swipe right → Transactions
+      go(idx + (dx < 0 ? 1 : -1)) // swipe left → next (Dashboard → Transactions), right → previous (→ Home)
     }
     window.addEventListener('touchstart', onStart, { passive: true })
     window.addEventListener('touchend', onEnd, { passive: true })

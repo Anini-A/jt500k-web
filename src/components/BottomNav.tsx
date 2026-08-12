@@ -12,8 +12,8 @@ const ITEMS = [
   { key: 'dashboard', label: 'Dashboard', href: '/dashboard', Icon: LayoutDashboard },
   { key: 'transactions', label: 'Transactions', href: '/transactions', Icon: Receipt },
 ]
-// slide direction follows the actual page order (Transactions ← Home → Dashboard), not the bar order
-const PAGE_POS: Record<string, number> = { transactions: 0, home: 1, dashboard: 2 }
+// left → right page order (Home · Dashboard · Transactions) — drives the slide direction
+const PAGE_POS: Record<string, number> = { home: 0, dashboard: 1, transactions: 2 }
 
 // dashboard sub-tabs — long-press the Dashboard icon to jump straight to one
 const DASH_TABS: { key: string; label: string; Icon: LucideIcon }[] = [
