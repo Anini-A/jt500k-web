@@ -947,10 +947,10 @@ header.top h1 {
 /* Floating glass bottom bar (mobile only) — icons only, sections + AI chat */
 .bottom-nav {
   display: none;
-  position: fixed; left: 10px; right: 10px;
+  position: fixed; left: 50%; transform: translateX(-50%);
   bottom: max(10px, calc(env(safe-area-inset-bottom, 0px) - 4px));
-  z-index: 90; gap: 4px; align-items: center; justify-content: space-around;
-  padding: 6px 8px;
+  z-index: 90; gap: 6px; align-items: center;
+  padding: 6px 10px;
   border-radius: 26px;   /* rounded-rectangle corners echo the iPhone screen radius (not a full capsule) */
   background: var(--glass-specular), var(--glass-bg);
   -webkit-backdrop-filter: blur(30px) saturate(200%);
@@ -959,7 +959,7 @@ header.top h1 {
   box-shadow: 0 10px 34px rgba(20, 20, 25, 0.20), var(--glass-sheen), var(--glass-rim), inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 .bottom-nav button {
-  flex: 1; height: 46px; display: inline-flex; align-items: center; justify-content: center;
+  width: 54px; height: 46px; display: inline-flex; align-items: center; justify-content: center;
   border: none; background: transparent; cursor: pointer; color: var(--text-secondary);
   border-radius: 999px; transition: color .15s ease, background .18s ease, box-shadow .2s ease, transform .1s ease;
 }
