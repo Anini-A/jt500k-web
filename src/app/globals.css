@@ -308,11 +308,16 @@ button, a, label, select, input, textarea,
 .tab, .chip, .mode-seg, .icon-pill, .fab, .page-seg, .list-row {
   touch-action: manipulation;
 }
-/* UI chrome shouldn't be text-selectable or show the iOS callout — content still is */
-button, .tab, .chip, .mode-seg, .icon-pill, .fab, .page-pill, .tabs, .stat-label {
+/* App-like: no long-press text selection / copy callout anywhere except real inputs.
+   Stops the iOS "Copy · Look Up · Translate" popup when long-pressing the nav. */
+body {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
+}
+input, textarea, select, [contenteditable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
 }
 /* tactile press feedback */
 @media (hover: none) {
