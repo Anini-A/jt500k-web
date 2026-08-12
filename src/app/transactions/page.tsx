@@ -146,17 +146,18 @@ export default function Transactions() {
                 <button key={t.key} onClick={() => setType(t.key)} className={`chip ${type === t.key ? 'chip-active' : ''}`}>{t.label}</button>
               ))}
             </div>
-            {/* category + search */}
+            {/* category + search — category capped, search fills the rest */}
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', minWidth: 0 }}>
               <select value={cat} onChange={(e) => setCat(e.target.value)} className="date-input"
-                style={{ flex: 1, minWidth: 0 }} aria-label="Filter by category">
+                style={{ flex: '0 1 220px', minWidth: 120 }} aria-label="Filter by category">
                 <option value="all">All categories</option>
                 {categories.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
-              <div className={`search-expand ${q ? 'has-value' : ''}`} style={{ height: 40, flexShrink: 0 }}>
-                <Search />
-                <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" />
-              </div>
+              <label style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 8, height: 44, padding: '0 14px', borderRadius: 999, background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', boxShadow: 'var(--glass-sheen)' }}>
+                <Search style={{ width: 18, height: 18, flexShrink: 0, color: 'var(--text-secondary)' }} />
+                <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search transactions…"
+                  style={{ flex: 1, minWidth: 0, border: 'none', background: 'transparent', outline: 'none', color: 'var(--text-primary)', fontSize: 16, fontFamily: 'inherit' }} />
+              </label>
             </div>
           </div>
         </section>
