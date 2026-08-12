@@ -949,27 +949,28 @@ header.top h1 {
   z-index: 90; gap: 4px; align-items: center; justify-content: space-around;
   padding: 6px 8px;
   border-radius: 999px;
-  background: var(--glass-bg);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  backdrop-filter: blur(24px) saturate(180%);
+  background: var(--glass-specular), var(--glass-bg);
+  -webkit-backdrop-filter: blur(30px) saturate(200%);
+  backdrop-filter: blur(30px) saturate(200%);
   border: 1px solid var(--glass-border);
-  box-shadow: 0 8px 26px rgba(20, 20, 25, 0.16), var(--glass-sheen), var(--glass-rim);
+  box-shadow: 0 10px 34px rgba(20, 20, 25, 0.20), var(--glass-sheen), var(--glass-rim), inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 .bottom-nav button {
   flex: 1; height: 46px; display: inline-flex; align-items: center; justify-content: center;
   border: none; background: transparent; cursor: pointer; color: var(--text-secondary);
   border-radius: 999px; transition: color .15s ease, background .18s ease, box-shadow .2s ease, transform .1s ease;
 }
-/* active = a raised frosted-glass chip (not a solid colour) */
+/* active = a raised liquid-glass chip (specular + sheen + inner rim), not a solid colour */
 .bottom-nav button.active {
   color: var(--accent);
-  background: color-mix(in srgb, var(--surface-1) 90%, transparent);
-  box-shadow: 0 3px 10px rgba(20, 20, 25, 0.14), var(--glass-sheen), var(--glass-rim);
+  background: var(--glass-specular), color-mix(in srgb, var(--surface-1) 80%, transparent);
+  box-shadow: 0 4px 14px rgba(20, 20, 25, 0.16), var(--glass-sheen), var(--glass-rim), inset 0 1px 0 rgba(255, 255, 255, 0.55);
 }
 .bottom-nav button:active { transform: scale(0.92); }
 @media (max-width: 640px) {
   .bottom-nav { display: flex; }
   .page-compact { display: none; }        /* the header's mobile pill is replaced by the bar */
+  .ask-ai-desktop { display: none; }      /* Ask AI moves to the bottom bar on mobile */
 }
 
 /* Hero row: big number on the left, supporting stats on the right — always side-by-side */

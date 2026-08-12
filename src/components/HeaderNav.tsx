@@ -18,7 +18,8 @@ export default function HeaderNav({ current }: { current: Page }) {
 
   return (
     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-      <IconPill icon={<Sparkles />} label="Ask AI" accent onClick={() => setChatOpen(true)} />
+      {/* Ask AI lives in the bottom bar on mobile; keep it here only on desktop */}
+      <span className="ask-ai-desktop"><IconPill icon={<Sparkles />} label="Ask AI" accent onClick={() => setChatOpen(true)} /></span>
       {current === 'transactions' && <AddTransactionButton />}
       {current !== 'settings' && (
         <IconPill icon={<Settings />} label="Settings" onClick={() => setSettingsOpen(true)} />
