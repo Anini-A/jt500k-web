@@ -42,6 +42,7 @@ export default function Transactions() {
   const [preset, setPreset] = useState<Preset>('month')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
+  const [searchFocus, setSearchFocus] = useState(false)    // search expands to fill the row while focused
   const activePresetRef = useRef<HTMLButtonElement>(null) // keep the selected period visible in the scroll row
   useEffect(() => { activePresetRef.current?.scrollIntoView({ block: 'nearest', inline: 'center' }) }, [preset])
   const [editTx, setEditTx] = useState<Txn | null>(null)
@@ -146,16 +147,17 @@ export default function Transactions() {
                 <button key={t.key} onClick={() => setType(t.key)} className={`chip ${type === t.key ? 'chip-active' : ''}`}>{t.label}</button>
               ))}
             </div>
-            {/* category + search — category capped, search fills the rest */}
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', minWidth: 0 }}>
+            {/* category + search — search expands to fill while focused; category slides back on blur */}
+            <div style={{ display: 'flex', gap: searchFocus ? 0 : 8, alignItems: 'center', minWidth: 0 }}>
               <select value={cat} onChange={(e) => setCat(e.target.value)} className="date-input"
-                style={{ flex: '0 1 220px', minWidth: 120 }} aria-label="Filter by category">
+                style={{ flex: '0 1 220px', minWidth: searchFocus ? 0 : 120, maxWidth: searchFocus ? 0 : 220, opacity: searchFocus ? 0 : 1, paddingLeft: searchFocus ? 0 : undefined, paddingRight: searchFocus ? 0 : undefined, borderWidth: searchFocus ? 0 : 1, overflow: 'hidden', transition: 'max-width .25s ease, min-width .25s ease, opacity .18s ease' }} aria-label="Filter by category">
                 <option value="all">All categories</option>
                 {categories.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
-              <label style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 8, height: 44, padding: '0 14px', borderRadius: 999, background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', boxShadow: 'var(--glass-sheen)' }}>
+              <label style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 8, height: 44, padding: '0 14px', borderRadius: 999, background: 'var(--glass-bg)', border: `1px solid ${searchFocus ? 'var(--accent)' : 'var(--glass-border)'}`, boxShadow: 'var(--glass-sheen)', transition: 'border-color .18s ease' }}>
                 <Search style={{ width: 18, height: 18, flexShrink: 0, color: 'var(--text-secondary)' }} />
                 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search transactions…"
+                  onFocus={() => setSearchFocus(true)} onBlur={() => setSearchFocus(false)}
                   style={{ flex: 1, minWidth: 0, border: 'none', background: 'transparent', outline: 'none', color: 'var(--text-primary)', fontSize: 16, fontFamily: 'inherit' }} />
               </label>
             </div>
