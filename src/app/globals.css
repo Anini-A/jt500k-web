@@ -936,6 +936,16 @@ header.top h1 {
 /* Filter chips (glass) */
 .seg-group { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 
+/* Single-line, horizontally scrollable chip row (no wrap) — clean on mobile */
+.chip-scroll {
+  display: flex; gap: 6px; align-items: center;
+  overflow-x: auto; overflow-y: hidden; padding-bottom: 2px;
+  scrollbar-width: none; -ms-overflow-style: none;
+  scroll-snap-type: x proximity; overscroll-behavior-x: contain;
+}
+.chip-scroll::-webkit-scrollbar { display: none; }
+.chip-scroll > * { flex: 0 0 auto; scroll-snap-align: start; }
+
 .chip {
   padding: 7px 16px;
   border-radius: 999px;

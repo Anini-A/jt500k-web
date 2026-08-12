@@ -162,18 +162,18 @@ export default function Dashboard() {
     rng: { from: string; to: string }, count: number, noun = 'transactions',
   ) => (
     <section className="block">
-      <div className="card glass" style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+      <div className="card glass" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div className="chip-scroll">
           {PRESETS.map((preset) => (
             <button key={preset.key} onClick={() => setP(preset.key)}
               className={`chip ${p === preset.key ? 'chip-active' : ''}`}>{preset.label}</button>
           ))}
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <input type="date" value={p === 'custom' ? (cf || minDate) : rng.from} min={minDate} max={maxDate}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', minWidth: 0 }}>
+          <input type="date" style={{ flex: 1, minWidth: 0 }} value={p === 'custom' ? (cf || minDate) : rng.from} min={minDate} max={maxDate}
             onChange={(e) => { setP('custom'); setCf(e.target.value) }} className="date-input" />
           <span className="stat-label">to</span>
-          <input type="date" value={p === 'custom' ? (ct || maxDate) : rng.to} min={minDate} max={maxDate}
+          <input type="date" style={{ flex: 1, minWidth: 0 }} value={p === 'custom' ? (ct || maxDate) : rng.to} min={minDate} max={maxDate}
             onChange={(e) => { setP('custom'); setCt(e.target.value) }} className="date-input" />
         </div>
       </div>

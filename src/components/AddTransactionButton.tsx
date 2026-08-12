@@ -18,7 +18,7 @@ const inp: React.CSSProperties = {
   background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 14, width: '100%',
   fontFamily: 'inherit', boxSizing: 'border-box',
 }
-const cell: React.CSSProperties = { ...inp, height: 38, padding: '0 8px', fontSize: 13 }
+const cell: React.CSSProperties = { ...inp, height: 38, padding: '0 8px', fontSize: 13, minWidth: 0 }
 
 // Old sheet names → current category names (user still copies from the old sheet)
 const ALIASES: Record<string, string> = {
@@ -332,13 +332,10 @@ export default function AddTransactionButton() {
                 <h2 style={{ margin: 0, fontSize: 18, display: 'flex', alignItems: 'center', gap: 8 }}><Plus size={18} /> Add Transaction</h2>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <button type="button" onClick={resetAll} title="Reset this card" aria-label="Reset"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 34, padding: '0 14px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>
                     <RotateCcw size={14} /> Reset
                   </button>
-                  <button type="button" onClick={close} title="Close" aria-label="Close"
-                    style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 999, border: '1px solid var(--expense)', background: 'var(--expense-soft)', color: 'var(--expense)', cursor: 'pointer' }}>
-                    <X size={18} />
-                  </button>
+                  <button type="button" className="modal-x" onClick={close} title="Close" aria-label="Close"><X size={17} /></button>
                 </div>
               </div>
               <div className="tabs" style={{ padding: 3, marginTop: 12 }}>
@@ -438,7 +435,7 @@ export default function AddTransactionButton() {
                       <span style={{ fontWeight: 700, fontSize: 14 }}>Paste or screenshot your statement</span>
                       {rows.length > 0 && <button type="button" onClick={() => { setPasteOpen(false); setRaw(''); setImages([]); setImportErr('') }} aria-label="Done adding" title="Done" style={{ display: 'inline-flex', padding: 4, borderRadius: 8, border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 18, lineHeight: 1 }}>✕</button>}
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <div className="chip-scroll" style={{ gap: 8 }}>
                       <button type="button" onClick={() => setManageCardsOpen((v) => !v)} title="Add or remove cards"
                         style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: 600, border: `1px solid ${manageCardsOpen ? 'var(--accent)' : 'var(--border)'}`, background: manageCardsOpen ? 'var(--accent-soft)' : 'transparent', color: 'var(--accent)', fontFamily: 'inherit' }}>
                         <Settings2 size={14} /> Cards
@@ -535,12 +532,12 @@ export default function AddTransactionButton() {
 
                     <div style={{ border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
                       <div style={{ overflow: 'auto', maxHeight: '42vh' }}>
-                        <div style={{ minWidth: 720 }}>
-                          <div style={{ position: 'sticky', top: 0, zIndex: 1, background: 'var(--surface-1)', display: 'grid', gridTemplateColumns: '120px 1fr 130px 90px 110px 34px', gap: 8, padding: '9px 10px', borderBottom: '1px solid var(--border)' }}>
+                        <div style={{ minWidth: 760 }}>
+                          <div style={{ position: 'sticky', top: 0, zIndex: 1, background: 'var(--surface-1)', display: 'grid', gridTemplateColumns: '140px 1fr 130px 90px 110px 34px', gap: 8, padding: '9px 10px', borderBottom: '1px solid var(--border)' }}>
                             {['Date', 'Description', 'Category', 'Amount', 'Card', ''].map((h) => <span key={h} className="stat-label">{h}</span>)}
                           </div>
                           {rows.map((r, i) => (
-                            <div key={i} style={{ display: 'grid', gridTemplateColumns: '120px 1fr 130px 90px 110px 34px', gap: 8, alignItems: 'center', padding: '6px 10px', background: i % 2 ? 'var(--kpi-bg)' : 'transparent' }}>
+                            <div key={i} style={{ display: 'grid', gridTemplateColumns: '140px 1fr 130px 90px 110px 34px', gap: 8, alignItems: 'center', padding: '6px 10px', background: i % 2 ? 'var(--kpi-bg)' : 'transparent' }}>
                               <input type="date" value={r.date} onChange={(e) => updateRow(i, { date: e.target.value })}
                                 style={{ ...cell, borderColor: isDate(r.date) ? 'var(--border)' : 'var(--expense)' }} />
                               <input type="text" value={r.description} onChange={(e) => updateRow(i, { description: e.target.value })} style={cell} placeholder="Description" />

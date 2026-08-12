@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import { Trash2, Search, Pencil } from 'lucide-react'
 import Link from 'next/link'
 import HeaderNav from '@/components/HeaderNav'
@@ -42,6 +42,8 @@ export default function Transactions() {
   const [preset, setPreset] = useState<Preset>('month')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
+  const activePresetRef = useRef<HTMLButtonElement>(null) // keep the selected period visible in the scroll row
+  useEffect(() => { activePresetRef.current?.scrollIntoView({ block: 'nearest', inline: 'center' }) }, [preset])
   const [editTx, setEditTx] = useState<Txn | null>(null)
   const [openId, setOpenId] = useState<string | null>(null) // mobile: row whose actions are revealed
 
@@ -117,51 +119,43 @@ export default function Transactions() {
           <HeaderNav current="transactions" />
         </header>
 
-        {/* Controls — two labeled rows: Type (+ category/search) and Period (+ dates) */}
+        {/* Controls — minimalist: single-line scrollable chip rows */}
         <section className="block">
-          <div className="card glass" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {/* Row 1 — what to show */}
-            <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', minWidth: 0 }}>
-                <span className="stat-label" style={{ flexShrink: 0 }}>Show</span>
-                <div className="seg-group">
-                  {TYPES.map((t) => (
-                    <button key={t.key} onClick={() => setType(t.key)} className={`chip ${type === t.key ? 'chip-active' : ''}`} style={{ flexShrink: 0 }}>{t.label}</button>
-                  ))}
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', minWidth: 0 }}>
-                <select value={cat} onChange={(e) => setCat(e.target.value)} className="date-input"
-                  style={{ flexShrink: 1, maxWidth: 200, minWidth: 0 }} aria-label="Filter by category">
-                  <option value="all">All categories</option>
-                  {categories.map((c) => <option key={c} value={c}>{c}</option>)}
-                </select>
-                <div className={`search-expand ${q ? 'has-value' : ''}`} style={{ height: 38, flexShrink: 0 }}>
-                  <Search />
-                  <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" />
-                </div>
+          <div className="card glass" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {/* type */}
+            <div className="chip-scroll">
+              {TYPES.map((t) => (
+                <button key={t.key} onClick={() => setType(t.key)} className={`chip ${type === t.key ? 'chip-active' : ''}`}>{t.label}</button>
+              ))}
+            </div>
+            {/* category + search */}
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', minWidth: 0 }}>
+              <select value={cat} onChange={(e) => setCat(e.target.value)} className="date-input"
+                style={{ flex: 1, minWidth: 0 }} aria-label="Filter by category">
+                <option value="all">All categories</option>
+                {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+              <div className={`search-expand ${q ? 'has-value' : ''}`} style={{ height: 40, flexShrink: 0 }}>
+                <Search />
+                <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" />
               </div>
             </div>
 
             <div style={{ height: 1, background: 'var(--border)' }} />
 
-            {/* Row 2 — time period */}
-            <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', minWidth: 0 }}>
-                <span className="stat-label" style={{ flexShrink: 0 }}>Period</span>
-                <div className="seg-group">
-                  {PRESETS.map((p) => (
-                    <button key={p.key} onClick={() => setPreset(p.key)} className={`chip ${preset === p.key ? 'chip-active' : ''}`} style={{ flexShrink: 0 }}>{p.label}</button>
-                  ))}
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', minWidth: 0 }}>
-                <input type="date" className="date-input" value={preset === 'custom' ? (from || minDate) : range.from || minDate} min={minDate} max={maxDate}
-                  onChange={(e) => { setPreset('custom'); setFrom(e.target.value) }} />
-                <span className="stat-label">to</span>
-                <input type="date" className="date-input" value={preset === 'custom' ? (to || maxDate) : range.to || maxDate} min={minDate} max={maxDate}
-                  onChange={(e) => { setPreset('custom'); setTo(e.target.value) }} />
-              </div>
+            {/* period */}
+            <div className="chip-scroll">
+              {PRESETS.map((p) => (
+                <button key={p.key} ref={preset === p.key ? activePresetRef : null} onClick={() => setPreset(p.key)} className={`chip ${preset === p.key ? 'chip-active' : ''}`}>{p.label}</button>
+              ))}
+            </div>
+            {/* date range */}
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', minWidth: 0 }}>
+              <input type="date" className="date-input" style={{ flex: 1, minWidth: 0 }} value={preset === 'custom' ? (from || minDate) : range.from || minDate} min={minDate} max={maxDate}
+                onChange={(e) => { setPreset('custom'); setFrom(e.target.value) }} />
+              <span className="stat-label">to</span>
+              <input type="date" className="date-input" style={{ flex: 1, minWidth: 0 }} value={preset === 'custom' ? (to || maxDate) : range.to || maxDate} min={minDate} max={maxDate}
+                onChange={(e) => { setPreset('custom'); setTo(e.target.value) }} />
             </div>
           </div>
         </section>
