@@ -9,9 +9,9 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: '/',
     display: 'standalone',
     orientation: 'portrait',
-    // matched to the top of the aurora so the iOS status-bar band blends into the app
-    background_color: '#e9e7f1',
-    theme_color: '#e9e7f1',
+    // white to match iOS's white status bar; the app's top fades from white into the aurora
+    background_color: '#f9f9f7',
+    theme_color: '#f9f9f7',
     icons: [
       { src: '/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
       { src: '/apple-icon', sizes: '180x180', type: 'image/png' },

@@ -353,11 +353,13 @@ a:hover {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(900px circle at 50% -6%, rgba(96, 92, 180, 0.10), transparent 55%),
-    radial-gradient(640px circle at 12% 18%, rgba(42, 120, 214, 0.24), transparent 60%),
-    radial-gradient(560px circle at 88% 10%, rgba(235, 104, 52, 0.22), transparent 58%),
+    /* top fades from the status-bar white into the aurora — no seam under the white status bar */
+    linear-gradient(to bottom, #f9f9f7 0, #f9f9f7 calc(env(safe-area-inset-top, 0px) + 6px), rgba(249, 249, 247, 0) calc(env(safe-area-inset-top, 0px) + 120px)),
+    radial-gradient(640px circle at 12% 22%, rgba(42, 120, 214, 0.24), transparent 60%),
+    radial-gradient(560px circle at 88% 16%, rgba(235, 104, 52, 0.22), transparent 58%),
     radial-gradient(620px circle at 18% 88%, rgba(27, 175, 122, 0.18), transparent 60%),
     radial-gradient(600px circle at 90% 82%, rgba(74, 58, 167, 0.16), transparent 60%);
+  background-color: #f9f9f7;
 }
 
 .wrap {
@@ -945,12 +947,11 @@ header.top h1 {
 /* Floating glass bottom bar (mobile only) — icons only, sections + AI chat */
 .bottom-nav {
   display: none;
-  position: fixed; left: 8px; right: 8px;
-  /* sit low so it nests into the phone's rounded bottom corners */
-  bottom: max(6px, calc(env(safe-area-inset-bottom, 0px) - 22px));
+  position: fixed; left: 10px; right: 10px;
+  bottom: max(10px, calc(env(safe-area-inset-bottom, 0px) - 4px));
   z-index: 90; gap: 4px; align-items: center; justify-content: space-around;
   padding: 6px 8px;
-  border-radius: 999px;   /* fully-round capsule; wide + low so it nests into the screen's bottom curve */
+  border-radius: 26px;   /* rounded-rectangle corners echo the iPhone screen radius (not a full capsule) */
   background: var(--glass-specular), var(--glass-bg);
   -webkit-backdrop-filter: blur(30px) saturate(200%);
   backdrop-filter: blur(30px) saturate(200%);
