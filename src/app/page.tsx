@@ -5,11 +5,9 @@ import HeaderNav from '@/components/HeaderNav'
 import PagePill from '@/components/PagePill'
 import Logo from '@/components/Logo'
 import Link from 'next/link'
-import { Wallet } from 'lucide-react'
 import JourneyCard from '@/components/JourneyCard'
 import ActionItemsCard from '@/components/ActionItemsCard'
 import MoneyFlowCard from '@/components/MoneyFlowCard'
-import SectionTitle from '@/components/SectionTitle'
 import { getJSON } from '@/lib/fresh'
 
 interface Stats { currentBalance: number; savingsRate: number; transactionCount: number; asOf: string; totalSavings: number }
@@ -50,12 +48,12 @@ export default function Home() {
         <section className="block">
           <div className="grid-2">
             <div className="card glass" style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <SectionTitle icon={Wallet}>Current Balance</SectionTitle>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap', margin: '10px 0 0' }}>
-                <div style={{ fontSize: 'clamp(30px, 8vw, 40px)', fontWeight: 800, letterSpacing: '-0.02em', color: bal >= 0 ? 'var(--income)' : 'var(--expense)' }}>
-                  {stats ? money(bal) : '—'}
-                </div>
-                <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>As of {today}</span>
+              <span className="hdr-label">Current balance</span>
+              <div style={{ fontWeight: 700, fontSize: 'clamp(30px, 8vw, 42px)', letterSpacing: '-0.03em', marginTop: 4, color: bal >= 0 ? 'var(--text-primary)' : 'var(--expense)' }}>
+                {stats ? money(bal) : '—'}
+              </div>
+              <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>
+                As of {today}{stats ? <> · <b style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>{Math.round(stats.savingsRate)}%</b> savings rate</> : ''}
               </div>
             </div>
             <ActionItemsCard />

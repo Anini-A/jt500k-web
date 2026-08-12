@@ -933,6 +933,9 @@ header.top h1 {
   background: var(--accent-soft);
 }
 
+/* Minimalist card header label — small, uppercase, muted (matches the net-worth card) */
+.hdr-label { font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-muted); }
+
 /* Filter chips (glass) */
 .seg-group { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 

@@ -36,11 +36,8 @@ export default function MoneyFlowCard() {
 
   return (
     <div className="card glass">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 8, marginBottom: 4 }}>
-        <div>
-          <h2 style={{ marginTop: 0, marginBottom: 2 }}>Money Flow</h2>
-          <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, margin: 0 }}>Income vs Expenses vs Savings</p>
-        </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+        <span className="hdr-label">Money flow</span>
         <div style={{ display: 'flex', gap: 6 }}>
           {RANGES.map((r) => (
             <button key={r.key} onClick={() => setRange(r.key)}

@@ -1,8 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Bell, CheckCircle2 } from 'lucide-react'
-import SectionTitle from './SectionTitle'
+import { CheckCircle2 } from 'lucide-react'
 import { getJSON } from '@/lib/fresh'
 
 interface Notif { id: string; icon: string; title: string; detail: string; severity: 'info' | 'warn'; kind: 'action' | 'info'; dismissible: boolean }
@@ -43,7 +42,7 @@ export default function ActionItemsCard() {
   return (
     <div className="card glass" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-        <SectionTitle icon={Bell}>Alerts</SectionTitle>
+        <span className="hdr-label">Alerts</span>
         {(() => {
           const total = actions.length + infos.length
           if (!total) return null
