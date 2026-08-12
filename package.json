@@ -5,9 +5,18 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "ios:add": "cap add ios",
+    "ios:sync": "cap sync ios",
+    "ios:open": "cap open ios"
   },
   "dependencies": {
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/cli": "^8.5.0",
+    "@capacitor/core": "^8.5.0",
+    "@capacitor/ios": "^8.5.0",
+    "@capacitor/splash-screen": "^8.0.2",
+    "@capacitor/status-bar": "^8.0.3",
     "@supabase/supabase-js": "^2.45.0",
     "@vercel/analytics": "^2.0.1",
     "lucide-react": "^0.371.0",
