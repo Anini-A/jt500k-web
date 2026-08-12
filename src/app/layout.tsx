@@ -16,11 +16,15 @@ export const metadata: Metadata = {
   title: 'Journey to 500K',
   description: 'Household net-worth tracker on the road to $500K.',
   manifest: '/manifest.webmanifest',
-  appleWebApp: { capable: true, statusBarStyle: 'default', title: 'Journey 500K' },
+  // translucent status bar → the app fills the full screen, content flows under the status bar
+  appleWebApp: { capable: true, statusBarStyle: 'black-translucent', title: 'Journey 500K' },
 }
 
 export const viewport: Viewport = {
-  themeColor: '#1baf7a',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#f9f9f7' },
+    { media: '(prefers-color-scheme: dark)', color: '#0d0d0d' },
+  ],
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
