@@ -370,10 +370,10 @@ function HeroRow({ stats }: { stats: Stat[] }) {
       <div className="card glass hero-row">
         <div style={{ flex: '1 1 auto', minWidth: 0, textAlign: 'left' }}>
           <span className="hdr-label">{primary.label}</span>
-          <div className={`stat-value ${primary.cls || ''}`} style={{ fontSize: 'clamp(28px, 7vw, 42px)', letterSpacing: '-0.03em', marginTop: 4, whiteSpace: 'nowrap' }}>{primary.value}</div>
+          <div className={`stat-value ${primary.cls || ''}`} style={{ fontSize: 'clamp(24px, 6.5vw, 42px)', letterSpacing: '-0.03em', marginTop: 4, whiteSpace: 'nowrap' }}>{primary.value}</div>
         </div>
         {rest.length > 0 && (
-          <div className="hero-aside" style={{ flexShrink: 0, display: 'grid', gap: 4 }}>
+          <div className="hero-aside" style={{ display: 'grid', gap: 4, whiteSpace: 'nowrap' }}>
             {rest.map((s) => (
               <div key={s.label} style={{ fontSize: 13, color: 'var(--text-muted)' }}>
                 {s.label} <b style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>{s.value}</b>{s.sub ? ` · ${s.sub}` : ''}

@@ -79,7 +79,7 @@ export default function JourneyCard() {
       <div className="hero-row">
         <div style={{ minWidth: 0 }}>
           <Label>Net worth</Label>
-          <div style={{ fontWeight: 700, fontSize: 'clamp(28px, 7vw, 44px)', letterSpacing: '-0.03em', marginTop: 4, whiteSpace: 'nowrap' }}>{money(nw)}</div>
+          <div style={{ fontWeight: 700, fontSize: 'clamp(24px, 6.5vw, 44px)', letterSpacing: '-0.03em', marginTop: 4, whiteSpace: 'nowrap' }}>{money(nw)}</div>
         </div>
         <div className="hero-aside">
           <Label>ETA to {short(goal)}</Label>
