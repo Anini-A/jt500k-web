@@ -945,7 +945,8 @@ header.top h1 {
 .bottom-nav {
   display: none;
   position: fixed; left: 12px; right: 12px;
-  bottom: calc(1.5px + env(safe-area-inset-bottom, 0px));
+  /* sit low, near the home indicator (trim most of the safe-area gap) */
+  bottom: max(6px, calc(env(safe-area-inset-bottom, 0px) - 20px));
   z-index: 90; gap: 4px; align-items: center; justify-content: space-around;
   padding: 6px 8px;
   border-radius: 999px;
