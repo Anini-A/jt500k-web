@@ -1,10 +1,12 @@
 'use client'
 
+import { useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { Home, Receipt, LayoutDashboard } from 'lucide-react'
+import { Home, Receipt, LayoutDashboard, Sparkles } from 'lucide-react'
 import { nav } from '@/lib/nav'
+import ChatWidget from './ChatWidget'
 
-// Native-style bottom tab bar — mobile only (hidden on desktop, where the header pill is used).
+// Floating, glass bottom bar — mobile only. Section switching + the AI chat.
 const ITEMS = [
   { key: 'transactions', label: 'Transactions', href: '/transactions', Icon: Receipt },
   { key: 'home', label: 'Home', href: '/', Icon: Home },
@@ -14,6 +16,7 @@ const ITEMS = [
 export default function BottomNav() {
   const pathname = usePathname()
   const router = useRouter()
+  const [chatOpen, setChatOpen] = useState(false)
   const current = pathname === '/' ? 'home' : pathname.startsWith('/transactions') ? 'transactions' : pathname.startsWith('/dashboard') ? 'dashboard' : ''
   const idx = ITEMS.findIndex((i) => i.key === current)
 
@@ -24,17 +27,20 @@ export default function BottomNav() {
   }
 
   return (
-    <nav className="bottom-nav" aria-label="Sections">
-      {ITEMS.map((it, i) => {
-        const Icon = it.Icon
-        const active = i === idx
-        return (
-          <button key={it.key} onClick={() => go(i)} className={active ? 'active' : ''} aria-current={active}>
-            <Icon size={22} strokeWidth={active ? 2.4 : 2} />
-            <span>{it.label}</span>
-          </button>
-        )
-      })}
-    </nav>
+    <>
+      <nav className="bottom-nav" aria-label="Sections">
+        {ITEMS.map((it, i) => {
+          const Icon = it.Icon
+          const active = i === idx
+          return (
+            <button key={it.key} onClick={() => go(i)} className={active ? 'active' : ''} aria-label={it.label} aria-current={active}>
+              <Icon size={22} strokeWidth={active ? 2.4 : 2} />
+            </button>
+          )
+        })}
+        <button onClick={() => setChatOpen(true)} aria-label="Ask AI" title="Ask AI"><Sparkles size={22} /></button>
+      </nav>
+      {chatOpen && <ChatWidget onClose={() => setChatOpen(false)} />}
+    </>
   )
 }

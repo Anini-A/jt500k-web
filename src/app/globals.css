@@ -941,27 +941,30 @@ header.top h1 {
 /* Minimalist card header label — small, uppercase, muted (matches the net-worth card) */
 .hdr-label { font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-muted); }
 
-/* Native-style bottom tab bar (mobile only) */
+/* Floating glass bottom bar (mobile only) — icons only, sections + AI chat */
 .bottom-nav {
   display: none;
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 90;
-  gap: 4px; justify-content: space-around; align-items: stretch;
-  padding: 7px 10px calc(7px + env(safe-area-inset-bottom, 0px));
-  background: color-mix(in srgb, var(--surface-1) 84%, transparent);
-  -webkit-backdrop-filter: blur(22px) saturate(180%);
-  backdrop-filter: blur(22px) saturate(180%);
-  border-top: 1px solid var(--border);
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  z-index: 90; gap: 4px; align-items: center;
+  padding: 7px 9px;
+  border-radius: 999px;
+  max-width: calc(100vw - 24px);
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 10px 30px rgba(20, 20, 25, 0.18), var(--glass-sheen), var(--glass-rim);
 }
 .bottom-nav button {
-  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
-  padding: 5px 4px; border: none; background: transparent; cursor: pointer;
-  color: var(--text-muted); font-family: inherit; font-size: 11px; font-weight: 600;
-  border-radius: 12px; transition: color .15s ease, transform .1s ease;
+  width: 50px; height: 44px; display: inline-flex; align-items: center; justify-content: center;
+  border: none; background: transparent; cursor: pointer; color: var(--text-secondary);
+  border-radius: 999px; transition: color .15s ease, background .18s ease, transform .1s ease;
 }
-.bottom-nav button.active { color: var(--accent); }
-.bottom-nav button:active { transform: scale(0.94); }
+.bottom-nav button.active { background: var(--accent); color: #fff; box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.4); }
+.bottom-nav button:active { transform: scale(0.9); }
 @media (max-width: 640px) {
-  .bottom-nav { display: flex; }
+  .bottom-nav { display: inline-flex; }
   .page-compact { display: none; }        /* the header's mobile pill is replaced by the bar */
 }
 
