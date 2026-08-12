@@ -43,12 +43,13 @@ const money2 = (n: number) => n.toLocaleString('en-CA', { style: 'currency', cur
 
 type Preset = 'all' | 'ytd' | '12m' | '6m' | '3m' | 'month' | 'custom'
 const PRESETS: { key: Preset; label: string }[] = [
+  { key: 'month', label: 'This month' },
   { key: 'all', label: 'All' },
   { key: 'ytd', label: 'YTD' },
   { key: '12m', label: '12M' },
   { key: '6m', label: '6M' },
   { key: '3m', label: '3M' },
-  { key: 'month', label: 'This month' },
+  { key: 'custom', label: 'Custom' },
 ]
 
 function subMonths(iso: string, n: number) {
@@ -165,17 +166,20 @@ export default function Dashboard() {
       <div className="card glass" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div className="chip-scroll">
           {PRESETS.map((preset) => (
-            <button key={preset.key} onClick={() => setP(preset.key)}
+            <button key={preset.key}
+              onClick={() => { setP(preset.key); if (preset.key === 'custom') { if (!cf) setCf(rng.from); if (!ct) setCt(rng.to) } }}
               className={`chip ${p === preset.key ? 'chip-active' : ''}`}>{preset.label}</button>
           ))}
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', minWidth: 0 }}>
-          <input type="date" style={{ flex: 1, minWidth: 0 }} value={p === 'custom' ? (cf || minDate) : rng.from} min={minDate} max={maxDate}
-            onChange={(e) => { setP('custom'); setCf(e.target.value) }} className="date-input" />
-          <span className="stat-label">to</span>
-          <input type="date" style={{ flex: 1, minWidth: 0 }} value={p === 'custom' ? (ct || maxDate) : rng.to} min={minDate} max={maxDate}
-            onChange={(e) => { setP('custom'); setCt(e.target.value) }} className="date-input" />
-        </div>
+        {p === 'custom' && (
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', minWidth: 0 }}>
+            <input type="date" style={{ flex: 1, minWidth: 0 }} value={cf || minDate} min={minDate} max={maxDate}
+              onChange={(e) => setCf(e.target.value)} className="date-input" />
+            <span className="stat-label">to</span>
+            <input type="date" style={{ flex: 1, minWidth: 0 }} value={ct || maxDate} min={minDate} max={maxDate}
+              onChange={(e) => setCt(e.target.value)} className="date-input" />
+          </div>
+        )}
       </div>
       <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 8, textAlign: 'center' }}>
         {rng.from} → {rng.to} · {count} {noun}

@@ -28,8 +28,8 @@ const TYPES = [
 ]
 type Preset = 'all' | 'ytd' | '12m' | '6m' | '3m' | 'month' | 'custom'
 const PRESETS: { key: Preset; label: string }[] = [
-  { key: 'all', label: 'All' }, { key: 'ytd', label: 'YTD' }, { key: '12m', label: '12M' },
-  { key: '6m', label: '6M' }, { key: '3m', label: '3M' }, { key: 'month', label: 'This month' },
+  { key: 'month', label: 'This month' }, { key: 'all', label: 'All' }, { key: 'ytd', label: 'YTD' },
+  { key: '12m', label: '12M' }, { key: '6m', label: '6M' }, { key: '3m', label: '3M' }, { key: 'custom', label: 'Custom' },
 ]
 const subMonths = (iso: string, n: number) => { const d = new Date(iso + 'T12:00:00'); d.setMonth(d.getMonth() - n); return ymd(d) }
 
@@ -119,9 +119,27 @@ export default function Transactions() {
           <HeaderNav current="transactions" />
         </header>
 
-        {/* Controls — minimalist: single-line scrollable chip rows */}
+        {/* Controls — minimalist, all one-click: period · type · category+search (dates only for Custom) */}
         <section className="block">
           <div className="card glass" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {/* period — This month first, Custom last */}
+            <div className="chip-scroll">
+              {PRESETS.map((p) => (
+                <button key={p.key} ref={preset === p.key ? activePresetRef : null}
+                  onClick={() => { setPreset(p.key); if (p.key === 'custom') { if (!from) setFrom(range.from || minDate); if (!to) setTo(range.to || maxDate) } }}
+                  className={`chip ${preset === p.key ? 'chip-active' : ''}`}>{p.label}</button>
+              ))}
+            </div>
+            {/* dates — only when Custom is selected */}
+            {preset === 'custom' && (
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', minWidth: 0 }}>
+                <input type="date" className="date-input" style={{ flex: 1, minWidth: 0 }} value={from || minDate} min={minDate} max={maxDate}
+                  onChange={(e) => setFrom(e.target.value)} />
+                <span className="stat-label">to</span>
+                <input type="date" className="date-input" style={{ flex: 1, minWidth: 0 }} value={to || maxDate} min={minDate} max={maxDate}
+                  onChange={(e) => setTo(e.target.value)} />
+              </div>
+            )}
             {/* type */}
             <div className="chip-scroll">
               {TYPES.map((t) => (
@@ -139,23 +157,6 @@ export default function Transactions() {
                 <Search />
                 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" />
               </div>
-            </div>
-
-            <div style={{ height: 1, background: 'var(--border)' }} />
-
-            {/* period */}
-            <div className="chip-scroll">
-              {PRESETS.map((p) => (
-                <button key={p.key} ref={preset === p.key ? activePresetRef : null} onClick={() => setPreset(p.key)} className={`chip ${preset === p.key ? 'chip-active' : ''}`}>{p.label}</button>
-              ))}
-            </div>
-            {/* date range */}
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', minWidth: 0 }}>
-              <input type="date" className="date-input" style={{ flex: 1, minWidth: 0 }} value={preset === 'custom' ? (from || minDate) : range.from || minDate} min={minDate} max={maxDate}
-                onChange={(e) => { setPreset('custom'); setFrom(e.target.value) }} />
-              <span className="stat-label">to</span>
-              <input type="date" className="date-input" style={{ flex: 1, minWidth: 0 }} value={preset === 'custom' ? (to || maxDate) : range.to || maxDate} min={minDate} max={maxDate}
-                onChange={(e) => { setPreset('custom'); setTo(e.target.value) }} />
             </div>
           </div>
         </section>
