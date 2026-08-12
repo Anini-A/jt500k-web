@@ -1153,9 +1153,9 @@ header.top h1 {
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  border: 1px solid var(--border);
-  background: var(--kpi-bg);
-  color: var(--text-secondary);
+  border: 1px solid var(--expense);
+  background: var(--expense-soft);
+  color: var(--expense);
   font-size: 15px;
   cursor: pointer;
   line-height: 1;
@@ -1163,8 +1163,8 @@ header.top h1 {
 }
 
 .modal-x:hover {
-  background: var(--expense-soft);
-  color: var(--expense);
+  background: var(--expense);
+  color: #fff;
 }
 
 /* Stat grid */

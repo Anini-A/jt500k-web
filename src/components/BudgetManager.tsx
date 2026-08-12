@@ -160,8 +160,8 @@ export default function BudgetManager() {
           <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>No budget yet — add your first item above.</div>
         ) : (
           <>
-            {/* Group selector pills */}
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
+            {/* Group selector pills — single-line, scrollable */}
+            <div className="chip-scroll" style={{ marginBottom: 16 }}>
               <button className={`chip ${groupFilter === 'all' ? 'chip-active' : ''}`} onClick={() => setGroupFilter('all')}>All</button>
               {groups.filter((g) => g.envs.length > 0).map((g) => {
                 const GIcon = g.icon

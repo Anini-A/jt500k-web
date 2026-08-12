@@ -174,18 +174,18 @@ export default function InvestmentsPanel() {
 
   return (
     <>
-      {/* Person filter */}
-      <div className="card glass" style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+      {/* Person filter + actions — chips scroll on one line, actions on their own row */}
+      <div className="card glass" style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+        <div className="chip-scroll">
           {['Household', ...owners].map((o) => (
             <button key={o} className={`chip ${person === o ? 'chip-active' : ''}`} onClick={() => setPerson(o)}>{o}</button>
           ))}
         </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button className="btn btn-secondary" onClick={() => refresh(false)} disabled={refreshing}>
-            <RefreshCw size={15} style={{ animation: refreshing ? 'spin 0.8s linear infinite' : 'none' }} /> {refreshing ? 'Refreshing…' : 'Refresh Prices'}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => refresh(false)} disabled={refreshing}>
+            <RefreshCw size={15} style={{ animation: refreshing ? 'spin 0.8s linear infinite' : 'none' }} /> {refreshing ? 'Refreshing…' : 'Refresh prices'}
           </button>
-          <button className="btn btn-secondary" onClick={() => setImporting(true)}><Upload size={15} /> Update Holdings</button>
+          <button className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setImporting(true)}><Upload size={15} /> Update holdings</button>
         </div>
       </div>
       {refreshMsg && <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: -8, marginBottom: 16, textAlign: 'center' }}>{refreshMsg}</div>}
