@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { Plus, Trash2, ClipboardPaste, PencilLine, Repeat, Settings2, ImagePlus, RotateCcw } from 'lucide-react'
+import { Plus, Trash2, ClipboardPaste, PencilLine, Repeat, Settings2, ImagePlus, RotateCcw, X } from 'lucide-react'
 import CategorySelect from './CategorySelect'
 import IconPill from './IconPill'
 import { getJSON } from '@/lib/fresh'
@@ -330,10 +330,16 @@ export default function AddTransactionButton() {
             <div style={{ marginBottom: 14 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                 <h2 style={{ margin: 0, fontSize: 18, display: 'flex', alignItems: 'center', gap: 8 }}><Plus size={18} /> Add Transaction</h2>
-                <button type="button" onClick={resetAll} title="Reset this card" aria-label="Reset"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>
-                  <RotateCcw size={14} /> Reset
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <button type="button" onClick={resetAll} title="Reset this card" aria-label="Reset"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>
+                    <RotateCcw size={14} /> Reset
+                  </button>
+                  <button type="button" onClick={close} title="Close" aria-label="Close"
+                    style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 999, border: '1px solid var(--expense)', background: 'var(--expense-soft)', color: 'var(--expense)', cursor: 'pointer' }}>
+                    <X size={18} />
+                  </button>
+                </div>
               </div>
               <div className="tabs" style={{ padding: 3, marginTop: 12 }}>
                 <button className={`tab ${mode === 'single' ? 'tab-active' : ''}`} style={{ flex: 1, justifyContent: 'center', padding: '7px 8px', fontSize: 13 }} onClick={() => setMode('single')}>
@@ -376,7 +382,6 @@ export default function AddTransactionButton() {
                 <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Description</span>
                   <input type="text" placeholder="e.g. Groceries" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} style={inp} /></label>
                 <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-                  <button type="button" className="btn btn-secondary" style={{ flex: '0 0 auto' }} onClick={close}>Cancel</button>
                   <button className="btn btn-primary" type="submit" disabled={saving} style={{ flex: 1, justifyContent: 'center' }}>
                     {saving ? 'Saving…' : 'Save Transaction'}
                   </button>
@@ -565,7 +570,6 @@ export default function AddTransactionButton() {
                     </div>
 
                     <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                      <button type="button" className="btn btn-secondary" style={{ flex: '0 0 auto' }} onClick={close}>Close</button>
                       <button type="button" className="btn btn-secondary" style={{ flex: '0 0 auto' }} disabled={saving || savingDraft} onClick={saveDraft}>
                         {savingDraft ? 'Saving…' : <>💾 {draftId ? 'Update draft' : 'Save draft'}</>}
                       </button>
@@ -655,7 +659,6 @@ export default function AddTransactionButton() {
                       ))}
                     </div>
                     <div style={{ display: 'flex', gap: 10 }}>
-                      <button type="button" className="btn btn-secondary" style={{ flex: '0 0 auto' }} onClick={close}>Cancel</button>
                       <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} disabled={saving || picked.size === 0} onClick={logRecurring}>
                         {saving ? 'Logging…'
                           : picked.size === 0 ? 'Select items to log'
