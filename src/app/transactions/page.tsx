@@ -20,6 +20,15 @@ interface Txn {
 }
 
 const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' })
+const money0 = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 })
+// friendly day header: Today / Yesterday / "Mon, Aug 11"
+function dayLabel(iso: string): string {
+  const t = today()
+  if (iso === t) return 'Today'
+  const y = ymd(new Date(new Date(t + 'T12:00:00').getTime() - 86400000))
+  if (iso === y) return 'Yesterday'
+  return new Date(iso + 'T12:00:00').toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' })
+}
 const TYPES = [
   { key: 'all', label: 'All' },
   { key: 'income', label: 'Income' },
@@ -109,7 +118,22 @@ export default function Transactions() {
     else alert('Could not delete.')
   }
 
-  const total = filtered.reduce((s, t) => s + (t.type === 'expense' ? -t.amount : t.type === 'income' ? t.amount : 0), 0)
+  // running summary for the current filter
+  const summary = useMemo(() => {
+    let inc = 0, exp = 0
+    for (const t of filtered) { if (t.type === 'income') inc += t.amount; else if (t.type === 'expense') exp += t.amount }
+    return { inc, exp, count: filtered.length }
+  }, [filtered])
+  // group the (newest-first) list into consecutive-day buckets for sticky headers
+  const groups = useMemo(() => {
+    const out: { date: string; items: Txn[] }[] = []
+    for (const t of filtered) {
+      const last = out[out.length - 1]
+      if (last && last.date === t.date) last.items.push(t)
+      else out.push({ date: t.date, items: [t] })
+    }
+    return out
+  }, [filtered])
 
   return (
     <div className="bg-aurora">
@@ -167,36 +191,52 @@ export default function Transactions() {
         {/* List */}
         <section className="block" style={{ marginBottom: 64 }}>
           <div className="card glass">
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-              <span className="stat-label">{loading ? 'Loading…' : `${filtered.length} transactions`}</span>
+            {/* summary strip */}
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap', marginBottom: 6 }}>
+              <span className="hdr-label">{loading ? 'Loading…' : `${summary.count} transaction${summary.count !== 1 ? 's' : ''}`}</span>
+              {!loading && summary.count > 0 && (
+                <span style={{ fontSize: 13, color: 'var(--text-muted)', marginLeft: 'auto' }}>
+                  <b style={{ color: 'var(--income)', fontWeight: 700 }}>↑ {money0(summary.inc)}</b> in · <b style={{ color: 'var(--expense)', fontWeight: 700 }}>↓ {money0(summary.exp)}</b> out
+                </span>
+              )}
             </div>
+
             {!loading && filtered.length === 0 ? (
               <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>No matching transactions.</div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 2, maxHeight: 1140, overflowY: 'auto', overscrollBehavior: 'contain' }}>
-                {filtered.map((t) => (
-                  <div key={t.id} className={`list-row ${openId === t.id ? 'open' : ''}`}
-                    onClick={() => setOpenId((id) => (id === t.id ? null : t.id))}
-                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '11px 4px', borderBottom: '1px solid var(--border)' }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.description || t.category}</div>
-                      <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 2 }}>{t.date} · {t.category}</div>
+              <div style={{ maxHeight: 1140, overflowY: 'auto', overscrollBehavior: 'contain' }}>
+                {groups.map((g) => (
+                  <div key={g.date}>
+                    {/* sticky day header */}
+                    <div style={{ position: 'sticky', top: 0, zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, padding: '8px 4px 6px', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', background: 'color-mix(in srgb, var(--surface-1) 66%, transparent)' }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)' }}>{dayLabel(g.date)}</span>
+                      <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{g.date}</span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-                      <span className={`stat-value ${t.type}`} style={{ fontSize: 16, fontWeight: 700 }}>
-                        {t.type === 'income' ? '+' : t.type === 'expense' ? '−' : ''}{money(t.amount)}
-                      </span>
-                      <div className="row-actions">
-                        <button onClick={(e) => { e.stopPropagation(); setEditTx(t) }} aria-label="Edit" title="Edit"
-                          style={{ display: 'inline-flex', padding: 6, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                          <Pencil size={16} />
-                        </button>
-                        <button onClick={(e) => { e.stopPropagation(); del(t.id) }} aria-label="Delete" title="Delete"
-                          style={{ display: 'inline-flex', padding: 6, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                          <Trash2 size={16} />
-                        </button>
+                    {g.items.map((t) => (
+                      <div key={t.id} className={`list-row ${openId === t.id ? 'open' : ''}`}
+                        onClick={() => setOpenId((id) => (id === t.id ? null : t.id))}
+                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '10px 4px', borderBottom: '1px solid var(--border)' }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.description || t.category}</div>
+                          <span style={{ display: 'inline-block', marginTop: 4, fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 999, padding: '1px 9px' }}>{t.category}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                          <span className={`stat-value ${t.type}`} style={{ fontSize: 16, fontWeight: 700 }}>
+                            {t.type === 'income' ? '+' : t.type === 'expense' ? '−' : ''}{money(t.amount)}
+                          </span>
+                          <div className="row-actions">
+                            <button onClick={(e) => { e.stopPropagation(); setEditTx(t) }} aria-label="Edit" title="Edit"
+                              style={{ display: 'inline-flex', padding: 6, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                              <Pencil size={16} />
+                            </button>
+                            <button onClick={(e) => { e.stopPropagation(); del(t.id) }} aria-label="Delete" title="Delete"
+                              style={{ display: 'inline-flex', padding: 6, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    ))}
                   </div>
                 ))}
               </div>
