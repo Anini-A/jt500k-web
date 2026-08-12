@@ -76,12 +76,12 @@ export default function JourneyCard() {
   return (
     <div className="card glass" style={{ padding: 'clamp(20px, 4vw, 28px)' }}>
       {/* Hero — net worth (where you are) + ETA (where you're headed) */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 16, flexWrap: 'wrap' }}>
+      <div className="hero-row">
         <div style={{ minWidth: 0 }}>
           <Label>Net worth</Label>
-          <div style={{ fontWeight: 700, fontSize: 'clamp(30px, 8vw, 44px)', letterSpacing: '-0.03em', marginTop: 4 }}>{money(nw)}</div>
+          <div style={{ fontWeight: 700, fontSize: 'clamp(28px, 7vw, 44px)', letterSpacing: '-0.03em', marginTop: 4, whiteSpace: 'nowrap' }}>{money(nw)}</div>
         </div>
-        <div style={{ textAlign: 'right' }}>
+        <div className="hero-aside">
           <Label>ETA to {short(goal)}</Label>
           <div style={{ fontWeight: 700, fontSize: 'clamp(18px, 4.5vw, 24px)', letterSpacing: '-0.02em', marginTop: 3, color: reached ? 'var(--income)' : projectable ? 'var(--accent)' : 'var(--text-muted)' }}>
             {reached ? 'Goal reached' : projectable ? dateStr : 'Set a pace'}
