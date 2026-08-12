@@ -12,14 +12,15 @@ const PAGES: { key: Key; label: string; href: string }[] = [
   { key: 'dashboard', label: 'Dashboard', href: '/dashboard' },
 ]
 
-function inHScroll(el: EventTarget | null): boolean {
+// nearest horizontally-scrollable ancestor (so a chip row scrolls instead of paging)
+function hScroller(el: EventTarget | null): HTMLElement | null {
   let n = el as HTMLElement | null
   while (n && n !== document.body) {
     const s = getComputedStyle(n)
-    if ((s.overflowX === 'auto' || s.overflowX === 'scroll') && n.scrollWidth > n.clientWidth + 2) return true
+    if ((s.overflowX === 'auto' || s.overflowX === 'scroll') && n.scrollWidth > n.clientWidth + 2) return n
     n = n.parentElement
   }
-  return false
+  return null
 }
 
 // Top-center switcher: shows ONLY the current section; chevrons or a swipe move.
@@ -34,12 +35,14 @@ export default function PagePill({ current }: { current: Key }) {
   }
 
   useEffect(() => {
-    let x0 = 0, y0 = 0, active = false
+    let x0 = 0, y0 = 0, active = false, scroller: HTMLElement | null = null
     const onStart = (e: TouchEvent) => {
       if (e.touches.length !== 1) { active = false; return }
       const t = e.touches[0]
-      if (t.clientX < 24 || t.clientX > window.innerWidth - 24 || inHScroll(e.target)) { active = false; return }
+      // only the extreme edges are off-limits (iOS system gestures)
+      if (t.clientX < 16 || t.clientX > window.innerWidth - 16) { active = false; return }
       x0 = t.clientX; y0 = t.clientY; active = true
+      scroller = hScroller(e.target) // remember any horizontal scroller under the finger
     }
     const onEnd = (e: TouchEvent) => {
       if (!active) return
@@ -47,6 +50,13 @@ export default function PagePill({ current }: { current: Key }) {
       const t = e.changedTouches[0]
       const dx = t.clientX - x0, dy = t.clientY - y0
       if (Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx) * 0.7) return
+      // if a chip row can still scroll the way you swiped, let it scroll instead of paging
+      if (scroller) {
+        const atStart = scroller.scrollLeft <= 1
+        const atEnd = scroller.scrollLeft >= scroller.scrollWidth - scroller.clientWidth - 1
+        if (dx > 0 && !atStart) return // swipe right but the row can still scroll toward its start
+        if (dx < 0 && !atEnd) return   // swipe left but the row can still scroll toward its end
+      }
       go(idx + (dx < 0 ? 1 : -1)) // swipe left → Dashboard, swipe right → Transactions
     }
     window.addEventListener('touchstart', onStart, { passive: true })
