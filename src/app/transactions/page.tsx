@@ -207,11 +207,17 @@ export default function Transactions() {
               <div style={{ maxHeight: 1140, overflowY: 'auto', overscrollBehavior: 'contain' }}>
                 {groups.map((g) => (
                   <div key={g.date}>
-                    {/* sticky day header */}
-                    <div style={{ position: 'sticky', top: 0, zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, padding: '8px 4px 6px', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', background: 'color-mix(in srgb, var(--surface-1) 66%, transparent)' }}>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)' }}>{dayLabel(g.date)}</span>
-                      <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{g.date}</span>
-                    </div>
+                    {/* sticky day header — show the exact date only when the label is relative */}
+                    {(() => {
+                      const lbl = dayLabel(g.date)
+                      const rel = lbl === 'Today' || lbl === 'Yesterday'
+                      return (
+                        <div style={{ position: 'sticky', top: 0, zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, padding: '8px 4px 6px', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', background: 'color-mix(in srgb, var(--surface-1) 66%, transparent)' }}>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)' }}>{lbl}</span>
+                          {rel && <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{new Date(g.date + 'T12:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })}</span>}
+                        </div>
+                      )
+                    })()}
                     {g.items.map((t) => (
                       <div key={t.id} className={`list-row ${openId === t.id ? 'open' : ''}`}
                         onClick={() => setOpenId((id) => (id === t.id ? null : t.id))}
