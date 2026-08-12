@@ -945,7 +945,7 @@ header.top h1 {
 .bottom-nav {
   display: none;
   position: fixed; left: 12px; right: 12px;
-  bottom: calc(7px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(4px + env(safe-area-inset-bottom, 0px));
   z-index: 90; gap: 4px; align-items: center; justify-content: space-around;
   padding: 6px 8px;
   border-radius: 999px;
@@ -990,7 +990,6 @@ header.top h1 {
 .dash-menu button:active { transform: scale(0.97); }
 @media (max-width: 640px) {
   .bottom-nav { display: flex; }
-  .page-compact { display: none; }        /* the header's mobile pill is replaced by the bar */
   .ask-ai-desktop { display: none; }      /* Ask AI moves to the bottom bar on mobile */
 }
 
@@ -1353,15 +1352,33 @@ body {
       calc(12px + env(safe-area-inset-left, 0px));
   }
 
+  /* Blend the header into the status bar — no card, transparent, flush with the top */
   header.top {
-    padding: 9px 12px;
+    padding: 4px 4px 8px;
     gap: 8px;
-    border-radius: 18px;
+    border-radius: 0;
+    margin-bottom: 12px;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 
   header.top .brand {
     font-size: 15px;
   }
+
+  /* show the section name as a plain centered title (blended, no pill) */
+  .page-compact {
+    display: inline-flex;
+    min-height: 0;
+    padding: 0;
+    background: transparent;
+    border: none;
+  }
+  .page-compact .page-edge { display: none; }
+  .page-current { font-size: 17px; }
 
   header.top .long {
     display: none; /* keep header compact on phones */
