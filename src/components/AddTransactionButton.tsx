@@ -394,11 +394,22 @@ export default function AddTransactionButton() {
                     {drafts.map((dr) => {
                       const tot = (dr.rows || []).reduce((s, r) => s + (parseFloat(String(r.amount)) || 0), 0)
                       const isCurrent = draftId === dr.id
+                      // per-card breakdown inside this draft
+                      const byCard = new Map<string, number>()
+                      for (const r of dr.rows || []) { const a = parseFloat(String(r.amount)); if (!isNaN(a)) byCard.set(r.card || 'No card', (byCard.get(r.card || 'No card') || 0) + a) }
+                      const cardChips = [...byCard.entries()]
                       return (
                         <div key={dr.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <button onClick={() => openDraft(dr)} style={{ flex: 1, minWidth: 0, display: 'flex', justifyContent: 'space-between', gap: 10, textAlign: 'left', padding: '9px 12px', borderRadius: 10, border: `1px solid ${isCurrent ? 'var(--accent)' : 'var(--border)'}`, background: isCurrent ? 'var(--accent-soft)' : 'var(--kpi-bg)', cursor: 'pointer', fontFamily: 'inherit', color: 'var(--text-primary)' }}>
-                            <span style={{ fontWeight: 600 }}>{(dr.rows || []).length} item{(dr.rows || []).length !== 1 ? 's' : ''} · {money(tot)}{isCurrent ? ' · editing' : ''}</span>
-                            <span className="stat-label" style={{ flexShrink: 0 }}>{new Date(dr.updated_at).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}</span>
+                          <button onClick={() => openDraft(dr)} style={{ flex: 1, minWidth: 0, display: 'grid', gap: 6, textAlign: 'left', padding: '10px 12px', borderRadius: 10, border: `1px solid ${isCurrent ? 'var(--accent)' : 'var(--border)'}`, background: isCurrent ? 'var(--accent-soft)' : 'var(--kpi-bg)', cursor: 'pointer', fontFamily: 'inherit', color: 'var(--text-primary)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
+                              <span style={{ fontWeight: 600 }}>{(dr.rows || []).length} item{(dr.rows || []).length !== 1 ? 's' : ''} · {money(tot)}{isCurrent ? ' · editing' : ''}</span>
+                              <span className="stat-label" style={{ flexShrink: 0 }}>{new Date(dr.updated_at).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}</span>
+                            </div>
+                            <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                              {cardChips.map(([card, amt]) => (
+                                <span key={card} style={{ fontSize: 11, fontWeight: 600, padding: '2px 9px', borderRadius: 999, background: 'var(--surface-1)', border: '1px solid var(--border)', color: card === 'No card' ? 'var(--text-muted)' : 'var(--text-secondary)' }}>{card} · {money(amt)}</span>
+                              ))}
+                            </div>
                           </button>
                           {rows.length > 0 && !isCurrent && (
                             <button onClick={() => appendToDraft(dr)} disabled={savingDraft} aria-label="Add current rows to this draft" title="Add current rows here"
