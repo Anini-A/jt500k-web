@@ -944,27 +944,31 @@ header.top h1 {
 /* Floating glass bottom bar (mobile only) — icons only, sections + AI chat */
 .bottom-nav {
   display: none;
-  position: fixed; left: 50%; transform: translateX(-50%);
-  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
-  z-index: 90; gap: 4px; align-items: center;
-  padding: 7px 9px;
+  position: fixed; left: 12px; right: 12px;
+  bottom: calc(7px + env(safe-area-inset-bottom, 0px));
+  z-index: 90; gap: 4px; align-items: center; justify-content: space-around;
+  padding: 6px 8px;
   border-radius: 999px;
-  max-width: calc(100vw - 24px);
   background: var(--glass-bg);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   backdrop-filter: blur(24px) saturate(180%);
   border: 1px solid var(--glass-border);
-  box-shadow: 0 10px 30px rgba(20, 20, 25, 0.18), var(--glass-sheen), var(--glass-rim);
+  box-shadow: 0 8px 26px rgba(20, 20, 25, 0.16), var(--glass-sheen), var(--glass-rim);
 }
 .bottom-nav button {
-  width: 50px; height: 44px; display: inline-flex; align-items: center; justify-content: center;
+  flex: 1; height: 46px; display: inline-flex; align-items: center; justify-content: center;
   border: none; background: transparent; cursor: pointer; color: var(--text-secondary);
-  border-radius: 999px; transition: color .15s ease, background .18s ease, transform .1s ease;
+  border-radius: 999px; transition: color .15s ease, background .18s ease, box-shadow .2s ease, transform .1s ease;
 }
-.bottom-nav button.active { background: var(--accent); color: #fff; box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.4); }
-.bottom-nav button:active { transform: scale(0.9); }
+/* active = a raised frosted-glass chip (not a solid colour) */
+.bottom-nav button.active {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--surface-1) 90%, transparent);
+  box-shadow: 0 3px 10px rgba(20, 20, 25, 0.14), var(--glass-sheen), var(--glass-rim);
+}
+.bottom-nav button:active { transform: scale(0.92); }
 @media (max-width: 640px) {
-  .bottom-nav { display: inline-flex; }
+  .bottom-nav { display: flex; }
   .page-compact { display: none; }        /* the header's mobile pill is replaced by the bar */
 }
 
