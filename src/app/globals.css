@@ -290,10 +290,38 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
+  min-height: 100dvh; /* dynamic viewport — no jump as the mobile URL bar shows/hides */
   font-family: var(--font-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
   background: var(--page-plane);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;                 /* never scroll sideways */
+  overscroll-behavior-y: none;        /* kill the rubber-band / pull-to-refresh bounce */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* ── Native-app feel on touch devices ── */
+* { -webkit-tap-highlight-color: transparent; }           /* no grey flash on tap */
+/* remove the 300ms delay + double-tap zoom on controls; keep momentum scrolling */
+button, a, label, select, input, textarea,
+.tab, .chip, .mode-seg, .icon-pill, .fab, .page-seg, .list-row {
+  touch-action: manipulation;
+}
+/* UI chrome shouldn't be text-selectable or show the iOS callout — content still is */
+button, .tab, .chip, .mode-seg, .icon-pill, .fab, .page-pill, .tabs, .stat-label {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+/* tactile press feedback */
+@media (hover: none) {
+  button:active, .tab:active, .chip:active, .icon-pill:active, .list-row:active, .fab:active {
+    transform: scale(0.97);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  button:active, .tab:active, .chip:active, .icon-pill:active, .list-row:active, .fab:active { transform: none; }
 }
 
 /* Line up digits in money figures so columns don't jitter */
@@ -315,6 +343,7 @@ a:hover {
 .bg-aurora {
   position: relative;
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .bg-aurora::before {
@@ -809,6 +838,27 @@ header.top h1 {
   border-radius: 22px 22px 0 0; background: var(--glass-specular); opacity: 0.7; pointer-events: none;
 }
 
+/* ── Mobile: modals become native-style bottom sheets that slide up ── */
+@media (max-width: 640px) {
+  .modal-backdrop { align-items: flex-end; padding: 0; }
+  .modal-card {
+    width: 100% !important;
+    max-width: 100%;
+    border-radius: 22px 22px 0 0;
+    max-height: 92dvh;
+    padding: 22px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+    animation: sheetIn 0.3s cubic-bezier(0.2, 0.9, 0.3, 1);
+  }
+  .modal-card.glass::before { border-radius: 22px 22px 0 0; }
+  /* grab handle at the top of the sheet */
+  .modal-card::after {
+    content: ''; position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+    width: 38px; height: 4px; border-radius: 999px; background: var(--border); pointer-events: none;
+  }
+}
+@keyframes sheetIn { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .modal-card { animation: none; } }
+
 @keyframes backdropIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -1217,7 +1267,12 @@ body {
 /* Responsive */
 @media (max-width: 640px) {
   .wrap {
-    padding: 14px 12px 48px;
+    /* respect the notch / home indicator so nothing hides under system UI */
+    padding:
+      calc(14px + env(safe-area-inset-top, 0px))
+      calc(12px + env(safe-area-inset-right, 0px))
+      calc(48px + env(safe-area-inset-bottom, 0px))
+      calc(12px + env(safe-area-inset-left, 0px));
   }
 
   header.top {
