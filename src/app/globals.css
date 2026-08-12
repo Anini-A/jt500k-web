@@ -769,7 +769,12 @@ header.top h1 {
   box-shadow: var(--glass-shadow), var(--glass-sheen), var(--glass-rim);
   width: 100%;
   overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
+.tabs::-webkit-scrollbar { display: none; }
+/* when the row scrolls (many tabs), start from the left so no tab is unreachable */
+.tabs-scroll { justify-content: flex-start; }
 /* keep the specular from scrolling with tab content */
 .tabs::before { position: absolute; }
 

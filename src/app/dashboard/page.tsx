@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import { Wallet, CreditCard, PiggyBank, LineChart, Banknote, Target, Users, Receipt, Pencil, Trash2, type LucideIcon } from 'lucide-react'
 import HeaderNav from '@/components/HeaderNav'
@@ -15,7 +15,7 @@ import EditTransactionModal from '@/components/EditTransactionModal'
 import SectionTitle from '@/components/SectionTitle'
 import { getJSON } from '@/lib/fresh'
 import { ymd, today } from '@/lib/date'
-import { MonthlyArea, HBar, Donut, COLORS } from '@/components/DashCharts'
+import { MonthlyArea, HBar, COLORS } from '@/components/DashCharts'
 
 type Tab = 'income' | 'expenses' | 'savings' | 'debts' | 'investments' | 'budget' | 'bills' | 'household'
 const TABS: { key: Tab; label: string; Icon: LucideIcon; soon?: boolean }[] = [
@@ -69,6 +69,8 @@ export default function Dashboard() {
   const [debtCustomFrom, setDebtCustomFrom] = useState('')
   const [debtCustomTo, setDebtCustomTo] = useState('')
   const [tab, setTab] = useState<Tab>('income')
+  const activeTabRef = useRef<HTMLButtonElement>(null)
+  useEffect(() => { activeTabRef.current?.scrollIntoView({ block: 'nearest', inline: 'center' }) }, [tab])
 
   // Remember the active tab across refreshes
   useEffect(() => {
@@ -205,13 +207,13 @@ export default function Dashboard() {
       <div className="wrap">
         <DashHeader />
 
-        {/* Section pills — primary nav, on top */}
+        {/* Section pills — primary nav, on top (scrolls; active tab kept in view) */}
         <section className="block" style={{ display: 'flex', justifyContent: 'center' }}>
-          <div className="tabs">
+          <div className="tabs tabs-scroll">
             {TABS.map((t) => {
               const Icon = t.Icon
               return (
-                <button key={t.key} onClick={() => selectTab(t.key)}
+                <button key={t.key} ref={tab === t.key ? activeTabRef : null} onClick={() => selectTab(t.key)}
                   className={`tab ${tab === t.key ? 'tab-active' : ''}`}>
                   <Icon size={16} />{t.label}
                   {t.soon && <span style={{ fontSize: 9, opacity: 0.65, marginLeft: 2 }}>soon</span>}
@@ -235,11 +237,11 @@ export default function Dashboard() {
             <section className="block">
               <div className="grid-2">
                 <div className="card glass">
-                  <ChartHead title="Income Over Time" sub="Monthly income for the selected period" />
+                  <ChartHead title="Income over time" />
                   <MonthlyArea data={agg.monthly} series={[{ key: 'income', name: 'Income', color: COLORS.income }]} />
                 </div>
                 <div className="card glass">
-                  <ChartHead title="Income by Source" sub="Where your money comes from" />
+                  <ChartHead title="Income by source" />
                   <HBar data={agg.incomeCat} color={COLORS.income} />
                 </div>
               </div>
@@ -258,17 +260,13 @@ export default function Dashboard() {
             <section className="block">
               <div className="grid-2">
                 <div className="card glass">
-                  <ChartHead title="Expenses Over Time" sub="Monthly spending for the selected period" />
+                  <ChartHead title="Expenses over time" />
                   <MonthlyArea data={agg.monthly} series={[{ key: 'expense', name: 'Expenses', color: COLORS.expense }]} />
                 </div>
                 <div className="card glass">
-                  <ChartHead title="Spending Breakdown" sub="Share by category" />
-                  <Donut data={agg.expenseCat.slice(0, 8)} />
+                  <ChartHead title="Top categories" />
+                  <HBar data={agg.expenseCat.slice(0, 10)} color={COLORS.expense} />
                 </div>
-              </div>
-              <div className="card glass" style={{ marginTop: 16 }}>
-                <ChartHead title="Top Expense Categories" sub="Ranked by total spent" />
-                <HBar data={agg.expenseCat.slice(0, 10)} color={COLORS.expense} />
               </div>
             </section>
           </>
@@ -285,11 +283,11 @@ export default function Dashboard() {
             <section className="block">
               <div className="grid-2">
                 <div className="card glass">
-                  <ChartHead title="Savings Over Time" sub="Monthly amount set aside" />
+                  <ChartHead title="Savings over time" />
                   <MonthlyArea data={agg.monthly} series={[{ key: 'savings', name: 'Savings', color: COLORS.savings }]} />
                 </div>
                 <div className="card glass">
-                  <ChartHead title="Savings by Account" sub="Where you're building wealth" />
+                  <ChartHead title="Savings by account" />
                   <HBar data={agg.savingsCat} color={COLORS.savings} />
                 </div>
               </div>
@@ -363,36 +361,30 @@ function DashHeader() {
 
 interface Stat { label: string; value: string; sub?: string; cls?: string }
 
-function HeroStat({ label, value, sub, cls }: Stat) {
-  return (
-    <div style={{ minWidth: 0, textAlign: 'center' }}>
-      <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{label}</div>
-      <div className={`stat-value ${cls || ''}`} style={{ fontSize: 'clamp(24px, 5vw, 30px)', marginTop: 6, letterSpacing: '-0.02em' }}>{value}</div>
-      {sub && <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub}</div>}
-    </div>
-  )
-}
 
+// One hero stat (the number that matters) with the rest as a quiet supporting line.
 function HeroRow({ stats }: { stats: Stat[] }) {
+  const [primary, ...rest] = stats
   return (
     <section className="block">
       <div className="card glass">
-        <div className="stat-grid">
-          {stats.map((s) => <HeroStat key={s.label} {...s} />)}
-        </div>
+        <span className="hdr-label">{primary.label}</span>
+        <div className={`stat-value ${primary.cls || ''}`} style={{ fontSize: 'clamp(30px, 8vw, 42px)', letterSpacing: '-0.03em', marginTop: 4 }}>{primary.value}</div>
+        {rest.length > 0 && (
+          <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', marginTop: 10, fontSize: 13, color: 'var(--text-muted)' }}>
+            {rest.map((s) => (
+              <span key={s.label}>{s.label} <b style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>{s.value}</b>{s.sub ? ` · ${s.sub}` : ''}</span>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   )
 }
 
-
-function ChartHead({ title, sub }: { title: string; sub: string }) {
-  return (
-    <>
-      <h3 style={{ margin: '0 0 2px', fontSize: 15 }}>{title}</h3>
-      <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginBottom: 14 }}>{sub}</p>
-    </>
-  )
+// Minimalist chart header — just the label, matching the rest of the site.
+function ChartHead({ title }: { title: string; sub?: string }) {
+  return <div style={{ marginBottom: 12 }}><span className="hdr-label">{title}</span></div>
 }
 
 // ---- Recent transactions list (edit + delete inline) ----
