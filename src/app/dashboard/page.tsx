@@ -72,10 +72,13 @@ export default function Dashboard() {
   const activeTabRef = useRef<HTMLButtonElement>(null)
   useEffect(() => { activeTabRef.current?.scrollIntoView({ block: 'nearest', inline: 'center' }) }, [tab])
 
-  // Remember the active tab across refreshes
+  // Remember the active tab across refreshes; also jump when the bottom bar picks one
   useEffect(() => {
     const saved = localStorage.getItem('jt-dash-tab') as Tab | null
     if (saved && TABS.some((t) => t.key === saved)) setTab(saved)
+    const onJump = (e: Event) => { const k = (e as CustomEvent).detail as Tab; if (TABS.some((t) => t.key === k)) setTab(k) }
+    window.addEventListener('dash-tab', onJump)
+    return () => window.removeEventListener('dash-tab', onJump)
   }, [])
   const selectTab = useCallback((t: Tab) => { setTab(t); localStorage.setItem('jt-dash-tab', t) }, [])
 
