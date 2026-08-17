@@ -1,8 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, Pencil, Trash2, ChevronDown, Tag } from 'lucide-react'
-import SectionTitle from './SectionTitle'
+import { Plus, Pencil, Trash2, ChevronDown } from 'lucide-react'
 import CategorySelect from './CategorySelect'
 import { getJSON } from '@/lib/fresh'
 
@@ -54,7 +53,7 @@ export default function CategoryManager() {
   return (
     <div className="card glass">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <SectionTitle icon={Tag}>Categories</SectionTitle>
+        <span className="hdr-label">Categories</span>
         <button className="btn btn-secondary" onClick={() => { setAdding((v) => !v); setEditing(null) }}>
           <Plus size={16} /> {adding ? 'Cancel' : 'Add'}
         </button>

@@ -74,10 +74,7 @@ export default function SettingsPanel() {
               <span className="stat-label">Savings goal ($)</span>
               <input style={inp} type="number" step="1000" value={goal} onChange={(e) => setGoal(e.target.value)} placeholder="500000" />
             </label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <button className="btn btn-primary" type="submit" disabled={saving} style={{ flex: 1, maxWidth: 206, justifyContent: 'center' }}>{saving ? 'Saving…' : 'Save'}</button>
-              {saved && <span style={{ color: 'var(--income)', fontWeight: 600 }}>✓ Saved</span>}
-            </div>
+            <button className="btn btn-primary" type="submit" disabled={saving} style={{ justifyContent: 'center' }}>{saving ? 'Saving…' : saved ? '✓ Saved' : 'Save'}</button>
           </form>
         </div>
       </section>
@@ -125,7 +122,7 @@ export default function SettingsPanel() {
           <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, margin: '8px 0 14px' }}>
             Protected by a shared password, remembered once per device.
           </p>
-          <button className="btn btn-secondary" style={{ flex: 1, maxWidth: 206, justifyContent: 'center' }}
+          <button className="btn btn-secondary" style={{ width: '100%', maxWidth: 420, justifyContent: 'center' }}
             onClick={async () => { await fetch('/api/auth', { method: 'DELETE' }); window.location.href = '/login' }}>
             <LogOut size={15} /> Sign out
           </button>
