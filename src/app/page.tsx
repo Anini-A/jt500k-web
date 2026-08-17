@@ -8,6 +8,7 @@ import Link from 'next/link'
 import JourneyCard from '@/components/JourneyCard'
 import ActionItemsCard from '@/components/ActionItemsCard'
 import MoneyFlowCard from '@/components/MoneyFlowCard'
+import AddTransactionButton from '@/components/AddTransactionButton'
 import { getJSON } from '@/lib/fresh'
 
 interface Stats { currentBalance: number; savingsRate: number; transactionCount: number; asOf: string; totalSavings: number }
@@ -67,11 +68,15 @@ export default function Home() {
                 Chequing · as of {today}{stats ? <> · <b style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>{Math.round(stats.savingsRate)}%</b> saved</> : ''}
               </div>
 
-              {/* credit-card balances owed (from un-logged imports) */}
+              {/* credit-card balances owed (from un-logged imports) — tap to review/import */}
               {cards.length > 0 && (
-                <>
+                <button onClick={() => window.dispatchEvent(new CustomEvent('open-add-import'))}
+                  style={{ width: '100%', textAlign: 'left', background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit', color: 'inherit' }}>
                   <div style={{ height: 1, background: 'var(--border)', margin: '14px 0' }} />
-                  <span className="hdr-label">Credit cards</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 }}>
+                    <span className="hdr-label">Credit cards</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent)' }}>Import →</span>
+                  </div>
                   <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
                     {cards.map((c) => (
                       <div key={c.card} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, fontSize: 14 }}>
@@ -80,7 +85,7 @@ export default function Home() {
                       </div>
                     ))}
                   </div>
-                </>
+                </button>
               )}
             </div>
             <ActionItemsCard />
@@ -91,6 +96,9 @@ export default function Home() {
         <section className="block">
           <MoneyFlowCard />
         </section>
+
+        {/* headless — lets the Credit cards section open the Import tab */}
+        <AddTransactionButton trigger={false} />
 
         {/* Footer */}
         <footer style={{ textAlign: 'center', marginTop: 32, paddingBottom: 16 }}>
