@@ -1,9 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Database, Target, BarChart3, LifeBuoy, Lock, LogOut, Download, Cloud, RefreshCw, Landmark } from 'lucide-react'
+import { LogOut, Download, Cloud, RefreshCw, Landmark } from 'lucide-react'
 import CategoryManager from './CategoryManager'
-import SectionTitle from './SectionTitle'
 import { getJSON } from '@/lib/fresh'
 import { today } from '@/lib/date'
 
@@ -62,119 +61,73 @@ export default function SettingsPanel() {
 
   return (
     <>
-      {/* Quick actions (moved out of the header) */}
-      <section className="block">
-        <div className="card glass" style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          <button className="btn btn-secondary" onClick={() => window.location.reload()}><RefreshCw size={15} /> Refresh data</button>
-          <a className="btn btn-secondary" href="https://my.wealthsimple.com/app/login" target="_blank" rel="noopener noreferrer"><Landmark size={15} /> Open Wealthsimple</a>
-        </div>
-      </section>
-
-      {/* Connection status */}
+      {/* Goal & household */}
       <section className="block">
         <div className="card glass">
-          <SectionTitle icon={Database} style={{ marginBottom: 14 }}>Database</SectionTitle>
-          <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <span style={{
-            width: 12, height: 12, borderRadius: '50%', background: statusMeta.color,
-            boxShadow: `0 0 0 4px color-mix(in srgb, ${statusMeta.color} 22%, transparent)`,
-            flexShrink: 0,
-            animation: status === 'checking' ? 'pulse 1.2s ease-in-out infinite' : 'none',
-          }} />
-          <div>
-            <div style={{ fontWeight: 600 }}>Supabase — {statusMeta.label}</div>
-            <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>
-              {status === 'online' ? 'Your data is live and syncing.' : status === 'offline' ? 'Cannot reach the database right now.' : 'Testing connection…'}
-            </div>
-          </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Manage */}
-      <section className="block">
-        <div className="card glass">
-          <SectionTitle icon={Target} style={{ marginBottom: 14 }}>Goal &amp; Household</SectionTitle>
-          <form onSubmit={save} style={{ display: 'grid', gap: 16, maxWidth: 420 }}>
+          <span className="hdr-label">Goal &amp; household</span>
+          <form onSubmit={save} style={{ display: 'grid', gap: 14, maxWidth: 420, marginTop: 12 }}>
             <label style={{ display: 'grid', gap: 4 }}>
               <span className="stat-label">Household name</span>
               <input style={inp} value={name} onChange={(e) => setName(e.target.value)} placeholder="My Household" />
             </label>
             <label style={{ display: 'grid', gap: 4 }}>
-              <span className="stat-label">Savings goal target ($)</span>
+              <span className="stat-label">Savings goal ($)</span>
               <input style={inp} type="number" step="1000" value={goal} onChange={(e) => setGoal(e.target.value)} placeholder="500000" />
-              <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>
-                This drives the progress bar on your dashboard.
-              </span>
             </label>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <button className="btn btn-primary" type="submit" disabled={saving}>
-                {saving ? 'Saving…' : 'Save'}
-              </button>
+              <button className="btn btn-primary" type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
               {saved && <span style={{ color: 'var(--income)', fontWeight: 600 }}>✓ Saved</span>}
             </div>
           </form>
         </div>
       </section>
 
-      {/* Data summary */}
-      <section className="block">
-        <div className="card glass">
-          <SectionTitle icon={BarChart3} style={{ marginBottom: 14 }}>Your Data</SectionTitle>
-          <div className="stat-grid">
-            <div className="stat-card">
-              <div className="stat-label">Transactions</div>
-              <div className="stat-value">{s ? s.transactionCount.toLocaleString() : '—'}</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-label">Categories</div>
-              <div className="stat-value">{s ? s.categoryCount : '—'}</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-label">First record</div>
-              <div className="stat-value" style={{ fontSize: 18 }}>{s?.firstDate ?? '—'}</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-label">Latest record</div>
-              <div className="stat-value" style={{ fontSize: 18 }}>{s?.lastDate ?? '—'}</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Category management */}
+      {/* Categories (kept as-is) */}
       <section className="block">
         <CategoryManager />
+      </section>
+
+      {/* Your data — one compact line + connection dot + quick actions */}
+      <section className="block">
+        <div className="card glass">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+            <span className="hdr-label">Your data</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-secondary)' }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: statusMeta.color, flexShrink: 0, animation: status === 'checking' ? 'pulse 1.2s ease-in-out infinite' : 'none' }} />
+              {statusMeta.label}
+            </span>
+          </div>
+          <div style={{ fontSize: 14, color: 'var(--text-secondary)', marginTop: 10 }}>
+            {s ? <><b style={{ fontWeight: 600 }}>{s.transactionCount.toLocaleString()}</b> transactions · <b style={{ fontWeight: 600 }}>{s.categoryCount}</b> categories{s.firstDate ? <> · {s.firstDate} → {s.lastDate}</> : ''}</> : '—'}
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 14 }}>
+            <button className="btn btn-secondary" onClick={() => window.location.reload()}><RefreshCw size={15} /> Refresh</button>
+            <a className="btn btn-secondary" href="https://my.wealthsimple.com/app/login" target="_blank" rel="noopener noreferrer"><Landmark size={15} /> Wealthsimple</a>
+          </div>
+        </div>
       </section>
 
       {/* Backup */}
       <section className="block">
         <div className="card glass">
-          <SectionTitle icon={LifeBuoy} style={{ marginBottom: 14 }}>Backup</SectionTitle>
-          <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 0, marginBottom: 14 }}>
-            Download a complete snapshot of everything — transactions, categories, budgets, debts, and holdings — as a single JSON file. Keep it in your Google Drive; it's your safety net before any big change.
+          <span className="hdr-label">Backup</span>
+          <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, margin: '8px 0 14px' }}>
+            A full snapshot (transactions, budgets, debts, holdings) as one JSON file — your safety net before big changes.
           </p>
           <BackupButton />
         </div>
       </section>
 
-      {/* Info */}
+      {/* Account */}
       <section className="block" style={{ marginBottom: 8 }}>
         <div className="card glass">
-          <SectionTitle icon={Lock} style={{ marginBottom: 14 }}>Access</SectionTitle>
-          <p style={{ marginTop: 0 }}>
-            This site is protected by a <strong>shared password</strong>. It's remembered on each device, so you
-            and your wife only enter it once per device.
+          <span className="hdr-label">Account</span>
+          <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, margin: '8px 0 14px' }}>
+            Protected by a shared password, remembered once per device.
           </p>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>
-            To refresh from your Google Sheet: download it as CSV and re-run the import script. New transactions
-            added in the app save instantly to the database.
-          </p>
-          <button
-            className="btn btn-secondary"
-            onClick={async () => { await fetch('/api/auth', { method: 'DELETE' }); window.location.href = '/login' }}
-          >
-<LogOut size={15} style={{ verticalAlign: -3, marginRight: 6 }} />Sign out of this device
+          <button className="btn btn-secondary"
+            onClick={async () => { await fetch('/api/auth', { method: 'DELETE' }); window.location.href = '/login' }}>
+            <LogOut size={15} /> Sign out
           </button>
           <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 16, marginBottom: 0 }}>
             Version <code>{(process.env.NEXT_PUBLIC_COMMIT_SHA || 'local').slice(0, 7)}</code>
