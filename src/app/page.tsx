@@ -73,10 +73,7 @@ export default function Home() {
                 <button onClick={() => window.dispatchEvent(new CustomEvent('open-add-import'))}
                   style={{ width: '100%', textAlign: 'left', background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit', color: 'inherit' }}>
                   <div style={{ height: 1, background: 'var(--border)', margin: '14px 0' }} />
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 }}>
-                    <span className="hdr-label">Credit cards</span>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent)' }}>Import →</span>
-                  </div>
+                  <span className="hdr-label">Credit cards</span>
                   <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
                     {cards.map((c) => (
                       <div key={c.card} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, fontSize: 14 }}>
