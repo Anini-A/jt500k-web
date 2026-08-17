@@ -75,7 +75,7 @@ export default function SettingsPanel() {
               <input style={inp} type="number" step="1000" value={goal} onChange={(e) => setGoal(e.target.value)} placeholder="500000" />
             </label>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <button className="btn btn-primary" type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
+              <button className="btn btn-primary" type="submit" disabled={saving} style={{ flex: 1, maxWidth: 206, justifyContent: 'center' }}>{saving ? 'Saving…' : 'Save'}</button>
               {saved && <span style={{ color: 'var(--income)', fontWeight: 600 }}>✓ Saved</span>}
             </div>
           </form>
@@ -100,9 +100,9 @@ export default function SettingsPanel() {
           <div style={{ fontSize: 14, color: 'var(--text-secondary)', marginTop: 10 }}>
             {s ? <><b style={{ fontWeight: 600 }}>{s.transactionCount.toLocaleString()}</b> transactions · <b style={{ fontWeight: 600 }}>{s.categoryCount}</b> categories{s.firstDate ? <> · {s.firstDate} → {s.lastDate}</> : ''}</> : '—'}
           </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 14 }}>
-            <button className="btn btn-secondary" onClick={() => window.location.reload()}><RefreshCw size={15} /> Refresh</button>
-            <a className="btn btn-secondary" href="https://my.wealthsimple.com/app/login" target="_blank" rel="noopener noreferrer"><Landmark size={15} /> Wealthsimple</a>
+          <div style={{ display: 'flex', gap: 8, maxWidth: 420, marginTop: 14 }}>
+            <button className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => window.location.reload()}><RefreshCw size={15} /> Refresh</button>
+            <a className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }} href="https://my.wealthsimple.com/app/login" target="_blank" rel="noopener noreferrer"><Landmark size={15} /> Wealthsimple</a>
           </div>
         </div>
       </section>
@@ -125,7 +125,7 @@ export default function SettingsPanel() {
           <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, margin: '8px 0 14px' }}>
             Protected by a shared password, remembered once per device.
           </p>
-          <button className="btn btn-secondary"
+          <button className="btn btn-secondary" style={{ flex: 1, maxWidth: 206, justifyContent: 'center' }}
             onClick={async () => { await fetch('/api/auth', { method: 'DELETE' }); window.location.href = '/login' }}>
             <LogOut size={15} /> Sign out
           </button>
@@ -174,11 +174,11 @@ function BackupButton() {
 
   return (
     <div style={{ display: 'grid', gap: 10 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-        <button className="btn btn-primary" onClick={download} disabled={busy}>{busy ? 'Preparing…' : <><Download size={15} /> Download backup</>}</button>
-        <button className="btn btn-secondary" onClick={toDrive} disabled={drive === 'busy'}>{drive === 'busy' ? 'Backing up…' : <><Cloud size={15} /> Back up to Drive now</>}</button>
-        {done && <span style={{ color: 'var(--income)', fontWeight: 600 }}>✓ Downloaded</span>}
+      <div style={{ display: 'flex', gap: 8, maxWidth: 420 }}>
+        <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} onClick={download} disabled={busy}>{busy ? 'Preparing…' : <><Download size={15} /> Download</>}</button>
+        <button className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }} onClick={toDrive} disabled={drive === 'busy'}>{drive === 'busy' ? 'Backing up…' : <><Cloud size={15} /> To Drive</>}</button>
       </div>
+      {done && <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, color: 'var(--income)' }}>✓ Downloaded</span>}
       {driveMsg && <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, color: driveMsg.startsWith('✓') ? 'var(--income)' : 'var(--expense)' }}>{driveMsg}</span>}
     </div>
   )
