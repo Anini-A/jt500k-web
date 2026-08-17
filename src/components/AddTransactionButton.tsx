@@ -64,7 +64,8 @@ function parsePaste(raw: string, cats: Category[]): Row[] {
 }
 
 // Header "Add Transaction" pill that opens a modal. Works on any page.
-export default function AddTransactionButton() {
+// trigger=false → headless (no button), opens only via the 'open-add-import' event.
+export default function AddTransactionButton({ trigger = true }: { trigger?: boolean }) {
   const [open, setOpen] = useState(false)
   const [mode, setMode] = useState<'single' | 'batch' | 'recurring'>('single')
   const [saving, setSaving] = useState(false)
@@ -111,6 +112,12 @@ export default function AddTransactionButton() {
   const loadCards = useCallback(() => getJSON('/api/cards').then((d) => Array.isArray(d) && setCards(d)).catch(() => {}), [])
   const loadDrafts = useCallback(() => getJSON('/api/drafts').then((d) => Array.isArray(d) && setDrafts(d)).catch(() => {}), [])
   useEffect(() => { if (open && mode === 'batch') { loadCards(); loadDrafts() } }, [open, mode, loadCards, loadDrafts])
+  // let other parts of the app open the Import tab (e.g. the Home "To log" card)
+  useEffect(() => {
+    const openImport = () => { setMode('batch'); setOpen(true) }
+    window.addEventListener('open-add-import', openImport)
+    return () => window.removeEventListener('open-add-import', openImport)
+  }, [])
   // default the card picker to the first card once loaded
   useEffect(() => { if (!selectedCard && cards.length) setSelectedCard(cards[0].name) }, [cards, selectedCard])
 
@@ -259,7 +266,7 @@ export default function AddTransactionButton() {
         ? await fetch('/api/drafts', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: draftId, ...payload }) })
         : await fetch('/api/drafts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
       if (!res.ok) { alert('Could not save draft.'); return }
-      const d = await res.json(); setDraftId(d.id); await loadDrafts()
+      const d = await res.json(); setDraftId(d.id); await loadDrafts(); window.dispatchEvent(new CustomEvent("drafts-changed"))
       setImportErr(''); alert('Draft saved.')
     } finally { setSavingDraft(false) }
   }
@@ -271,7 +278,7 @@ export default function AddTransactionButton() {
       const merged = [...(dr.rows || []).map((r) => ({ ...r, amount: String(r.amount) })), ...rows]
       const res = await fetch('/api/drafts', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: dr.id, rows: merged }) })
       if (!res.ok) { alert('Could not save to that draft.'); return }
-      await loadDrafts()
+      await loadDrafts(); window.dispatchEvent(new CustomEvent("drafts-changed"))
       setRows([]); setDraftId(null); setPasteOpen(true); setImportErr('')
       alert('Added to draft.')
     } finally { setSavingDraft(false) }
@@ -288,7 +295,7 @@ export default function AddTransactionButton() {
   const deleteDraft = async (id: string) => {
     if (!confirm('Delete this saved draft?')) return
     await fetch(`/api/drafts?id=${id}`, { method: 'DELETE' }).catch(() => {})
-    await loadDrafts()
+    await loadDrafts(); window.dispatchEvent(new CustomEvent("drafts-changed"))
     if (draftId === id) { setDraftId(null) }
   }
 
@@ -322,7 +329,7 @@ export default function AddTransactionButton() {
 
   return (
     <>
-      <IconPill icon={<Plus />} label="Add transaction" onClick={() => setOpen(true)} />
+      {trigger && <IconPill icon={<Plus />} label="Add transaction" onClick={() => setOpen(true)} />}
 
       {open && createPortal(
         <div className="modal-backdrop" onClick={close}>

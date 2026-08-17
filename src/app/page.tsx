@@ -8,6 +8,8 @@ import Link from 'next/link'
 import JourneyCard from '@/components/JourneyCard'
 import ActionItemsCard from '@/components/ActionItemsCard'
 import MoneyFlowCard from '@/components/MoneyFlowCard'
+import CardsToLogCard from '@/components/CardsToLogCard'
+import AddTransactionButton from '@/components/AddTransactionButton'
 import { getJSON } from '@/lib/fresh'
 
 interface Stats { currentBalance: number; savingsRate: number; transactionCount: number; asOf: string; totalSavings: number }
@@ -60,10 +62,16 @@ export default function Home() {
           </div>
         </section>
 
+        {/* Un-logged card balances (from saved Import drafts) — only shows when there are any */}
+        <CardsToLogCard />
+
         {/* Money Flow — income vs expenses vs savings, defaults to YTD */}
         <section className="block">
           <MoneyFlowCard />
         </section>
+
+        {/* headless — lets the "To log" card open the Import modal */}
+        <AddTransactionButton trigger={false} />
 
         {/* Footer */}
         <footer style={{ textAlign: 'center', marginTop: 32, paddingBottom: 16 }}>
