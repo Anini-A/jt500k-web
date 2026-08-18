@@ -922,7 +922,12 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
               {actionIdx === i && (
                 <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
                   <button className="chip" onClick={(e) => { e.stopPropagation(); copyMsg(m.content, i) }} style={{ padding: '5px 12px', fontSize: 12 }}>Copy</button>
-                  <button className="chip" onClick={(e) => { e.stopPropagation(); unlockAudio(); stopSpeaking(); say(m.content); setActionIdx(null) }} style={{ padding: '5px 12px', fontSize: 12 }}>Read aloud</button>
+                  {m.role === 'user' ? (
+                    <button className="chip" onClick={(e) => { e.stopPropagation(); setActionIdx(null); setInput(m.content); taRef.current?.focus() }} style={{ padding: '5px 12px', fontSize: 12 }}>Edit</button>
+                  ) : (
+                    (() => { const prev = msgs.slice(0, i).reverse().find((x) => x.role === 'user')
+                      return prev ? <button className="chip" onClick={(e) => { e.stopPropagation(); setActionIdx(null); sendRef.current(prev.content) }} style={{ padding: '5px 12px', fontSize: 12 }}>Retry</button> : null })()
+                  )}
                 </div>
               )}
               {copiedIdx === i && <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--income)', marginTop: 3 }}>Copied ✓</div>}
