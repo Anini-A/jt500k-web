@@ -111,9 +111,9 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
   const [micOK, setMicOK] = useState(false)
   const [speak, setSpeak] = useState(true)            // read answers aloud
   const [voiceError, setVoiceError] = useState('')     // visible mic/permission error (was silently swallowed)
-  const [copiedIdx, setCopiedIdx] = useState<number | null>(null) // long-press-to-copy feedback
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null) // "Copied ✓" flash
+  const [actionIdx, setActionIdx] = useState<number | null>(null) // which message's long-press menu is open
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const copyLong = useRef(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const taRef = useRef<HTMLTextAreaElement>(null)
   const voiceModeRef = useRef(false)
@@ -604,16 +604,22 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
     onClose()
   }
 
-  // long-press (or right-click) a chat bubble to copy its text
+  // copy a chat bubble's text — called from the Copy button (a real tap → clipboard allowed)
   const copyMsg = (text: string, i: number) => {
-    const done = () => { setCopiedIdx(i); setTimeout(() => setCopiedIdx((c) => (c === i ? null : c)), 1400) }
+    const flash = () => { setActionIdx(null); setCopiedIdx(i); setTimeout(() => setCopiedIdx((c) => (c === i ? null : c)), 1400) }
     try {
-      if (navigator.clipboard?.writeText) { navigator.clipboard.writeText(text).then(done).catch(done) }
-      else {
-        const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0'
-        document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); done()
-      }
-    } catch { done() }
+      if (navigator.clipboard?.writeText) { navigator.clipboard.writeText(text).then(flash).catch(() => fallbackCopy(text, flash)) }
+      else fallbackCopy(text, flash)
+    } catch { fallbackCopy(text, flash) }
+  }
+  const fallbackCopy = (text: string, flash: () => void) => {
+    try {
+      const ta = document.createElement('textarea'); ta.value = text; ta.readOnly = false
+      ta.style.position = 'fixed'; ta.style.top = '0'; ta.style.opacity = '0'
+      document.body.appendChild(ta); ta.focus(); ta.setSelectionRange(0, text.length)
+      document.execCommand('copy'); ta.remove()
+    } catch { /* ignore */ }
+    flash()
   }
 
   const active = threads.find((t) => t.id === activeId) || threads[0]
@@ -899,11 +905,11 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
             <div key={i} style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
               {m.at && <div style={{ alignSelf: 'center', fontSize: 11, color: 'var(--text-muted)', margin: '2px 0 6px' }}>{timeOf(m.at)}</div>}
               <div
-                onTouchStart={() => { copyLong.current = false; copyTimer.current = setTimeout(() => { copyLong.current = true; copyMsg(m.content, i) }, 450) }}
+                onTouchStart={() => { copyTimer.current = setTimeout(() => setActionIdx(i), 450) }}
                 onTouchEnd={() => { if (copyTimer.current) clearTimeout(copyTimer.current) }}
                 onTouchMove={() => { if (copyTimer.current) clearTimeout(copyTimer.current) }}
-                onContextMenu={(e) => { e.preventDefault(); copyMsg(m.content, i) }}
-                title="Hold to copy"
+                onContextMenu={(e) => { e.preventDefault(); setActionIdx(i) }}
+                title="Hold for options"
                 style={{
                   maxWidth: '86%', padding: '11px 14px', borderRadius: 18, fontSize: 14, lineHeight: 1.5, cursor: 'pointer',
                   whiteSpace: m.role === 'user' ? 'pre-wrap' : 'normal',
@@ -913,6 +919,12 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
                   borderBottomRightRadius: m.role === 'user' ? 6 : 18,
                   borderBottomLeftRadius: m.role === 'user' ? 18 : 6,
                 }}>{m.role === 'user' ? m.content : <Markdown text={m.content} />}</div>
+              {actionIdx === i && (
+                <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+                  <button className="chip" onClick={(e) => { e.stopPropagation(); copyMsg(m.content, i) }} style={{ padding: '5px 12px', fontSize: 12 }}>Copy</button>
+                  <button className="chip" onClick={(e) => { e.stopPropagation(); unlockAudio(); stopSpeaking(); say(m.content); setActionIdx(null) }} style={{ padding: '5px 12px', fontSize: 12 }}>Read aloud</button>
+                </div>
+              )}
               {copiedIdx === i && <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--income)', marginTop: 3 }}>Copied ✓</div>}
             </div>
           ))}
