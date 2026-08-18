@@ -111,6 +111,9 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
   const [micOK, setMicOK] = useState(false)
   const [speak, setSpeak] = useState(true)            // read answers aloud
   const [voiceError, setVoiceError] = useState('')     // visible mic/permission error (was silently swallowed)
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null) // long-press-to-copy feedback
+  const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const copyLong = useRef(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const taRef = useRef<HTMLTextAreaElement>(null)
   const voiceModeRef = useRef(false)
@@ -601,6 +604,18 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
     onClose()
   }
 
+  // long-press (or right-click) a chat bubble to copy its text
+  const copyMsg = (text: string, i: number) => {
+    const done = () => { setCopiedIdx(i); setTimeout(() => setCopiedIdx((c) => (c === i ? null : c)), 1400) }
+    try {
+      if (navigator.clipboard?.writeText) { navigator.clipboard.writeText(text).then(done).catch(done) }
+      else {
+        const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0'
+        document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); done()
+      }
+    } catch { done() }
+  }
+
   const active = threads.find((t) => t.id === activeId) || threads[0]
   const msgs = active?.msgs ?? [GREETING]
 
@@ -883,15 +898,22 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
           {msgs.map((m, i) => (
             <div key={i} style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
               {m.at && <div style={{ alignSelf: 'center', fontSize: 11, color: 'var(--text-muted)', margin: '2px 0 6px' }}>{timeOf(m.at)}</div>}
-              <div style={{
-                maxWidth: '86%', padding: '11px 14px', borderRadius: 18, fontSize: 14, lineHeight: 1.5,
-                whiteSpace: m.role === 'user' ? 'pre-wrap' : 'normal',
-                background: m.role === 'user' ? 'var(--accent)' : 'var(--kpi-bg)',
-                color: m.role === 'user' ? '#fff' : 'var(--text-primary)',
-                border: m.role === 'user' ? 'none' : '1px solid var(--border)',
-                borderBottomRightRadius: m.role === 'user' ? 6 : 18,
-                borderBottomLeftRadius: m.role === 'user' ? 18 : 6,
-              }}>{m.role === 'user' ? m.content : <Markdown text={m.content} />}</div>
+              <div
+                onTouchStart={() => { copyLong.current = false; copyTimer.current = setTimeout(() => { copyLong.current = true; copyMsg(m.content, i) }, 450) }}
+                onTouchEnd={() => { if (copyTimer.current) clearTimeout(copyTimer.current) }}
+                onTouchMove={() => { if (copyTimer.current) clearTimeout(copyTimer.current) }}
+                onContextMenu={(e) => { e.preventDefault(); copyMsg(m.content, i) }}
+                title="Hold to copy"
+                style={{
+                  maxWidth: '86%', padding: '11px 14px', borderRadius: 18, fontSize: 14, lineHeight: 1.5, cursor: 'pointer',
+                  whiteSpace: m.role === 'user' ? 'pre-wrap' : 'normal',
+                  background: m.role === 'user' ? 'var(--accent)' : 'var(--kpi-bg)',
+                  color: m.role === 'user' ? '#fff' : 'var(--text-primary)',
+                  border: m.role === 'user' ? 'none' : '1px solid var(--border)',
+                  borderBottomRightRadius: m.role === 'user' ? 6 : 18,
+                  borderBottomLeftRadius: m.role === 'user' ? 18 : 6,
+                }}>{m.role === 'user' ? m.content : <Markdown text={m.content} />}</div>
+              {copiedIdx === i && <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--income)', marginTop: 3 }}>Copied ✓</div>}
             </div>
           ))}
           {busy && <div style={{ alignSelf: 'flex-start', color: 'var(--text-muted)', fontSize: 13, padding: '0 4px' }}>Gemini is thinking…</div>}
