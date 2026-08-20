@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useMemo, useCallback } from 'react'
+import { ChevronDown } from 'lucide-react'
 import { MonthlyArea, COLORS } from './DashCharts'
 import { getJSON } from '@/lib/fresh'
 
@@ -16,6 +17,7 @@ const money = (n: number) => '$' + Math.round(n).toLocaleString()
 export default function MoneyFlowCard() {
   const [monthly, setMonthly] = useState<Row[]>([])
   const [range, setRange] = useState<Range>('ytd')
+  const [open, setOpen] = useState(false) // filters + chart hidden by default
 
   const load = useCallback(() => {
     getJSON('/api/charts').then((d) => { if (Array.isArray(d.monthly)) setMonthly(d.monthly) }).catch(() => {})
@@ -46,18 +48,19 @@ export default function MoneyFlowCard() {
 
   return (
     <div className="card glass">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+      {/* header — label + collapse toggle (filters + chart live inside) */}
+      <button onClick={() => setOpen((v) => !v)} aria-expanded={open}
+        style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit', color: 'inherit' }}>
         <span className="hdr-label">Money flow</span>
-        <div style={{ display: 'flex', gap: 6 }}>
-          {RANGES.map((r) => (
-            <button key={r.key} onClick={() => setRange(r.key)}
-              className={`chip ${range === r.key ? 'chip-active' : ''}`}>{r.label}</button>
-          ))}
-        </div>
-      </div>
-      {/* this-month glance — income / savings / expenses at a glance */}
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: 'var(--text-muted)' }}>
+          {cur && <span style={{ fontSize: 13 }}>{curLabel}</span>}
+          <ChevronDown size={16} style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .2s ease' }} />
+        </span>
+      </button>
+
+      {/* this-month glance — always visible */}
       {cur && (
-        <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
           {glance.map((g) => (
             <div key={g.label} style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -69,15 +72,26 @@ export default function MoneyFlowCard() {
           ))}
         </div>
       )}
-      {cur && <div className="stat-label" style={{ marginBottom: 10, marginTop: -4 }}>{curLabel} so far</div>}
-      {data.length ? (
-        <MonthlyArea data={data} series={[
-          { key: 'income', name: 'Income', color: COLORS.income },
-          { key: 'expense', name: 'Expenses', color: COLORS.expense },
-          { key: 'savings', name: 'Savings', color: COLORS.savings },
-        ]} />
-      ) : (
-        <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)' }}>Loading…</div>
+
+      {/* collapsible — range filters + trend chart */}
+      {open && (
+        <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, marginBottom: 10 }}>
+            {RANGES.map((r) => (
+              <button key={r.key} onClick={() => setRange(r.key)}
+                className={`chip ${range === r.key ? 'chip-active' : ''}`}>{r.label}</button>
+            ))}
+          </div>
+          {data.length ? (
+            <MonthlyArea data={data} series={[
+              { key: 'income', name: 'Income', color: COLORS.income },
+              { key: 'expense', name: 'Expenses', color: COLORS.expense },
+              { key: 'savings', name: 'Savings', color: COLORS.savings },
+            ]} />
+          ) : (
+            <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)' }}>Loading…</div>
+          )}
+        </div>
       )}
     </div>
   )
