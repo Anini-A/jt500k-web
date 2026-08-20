@@ -48,15 +48,7 @@ export default function MoneyFlowCard() {
 
   return (
     <div className="card glass">
-      {/* header — label + collapse toggle (filters + chart live inside) */}
-      <button onClick={() => setOpen((v) => !v)} aria-expanded={open}
-        style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit', color: 'inherit' }}>
-        <span className="hdr-label">Money flow</span>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: 'var(--text-muted)' }}>
-          {cur && <span style={{ fontSize: 13 }}>{curLabel}</span>}
-          <ChevronDown size={16} style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .2s ease' }} />
-        </span>
-      </button>
+      <span className="hdr-label">Money flow</span>
 
       {/* this-month glance — always visible */}
       {cur && (
@@ -72,6 +64,17 @@ export default function MoneyFlowCard() {
           ))}
         </div>
       )}
+
+      {/* one thin line + the collapse toggle (same design as the net-worth card) */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 16 }}>
+        <span style={{ fontSize: 13, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {cur ? `${curLabel} so far · tap for trend` : ''}
+        </span>
+        <button onClick={() => setOpen((v) => !v)} aria-expanded={open} aria-label={open ? 'Hide trend' : 'Show trend'} title={open ? 'Hide trend' : 'Show income / expense trend'}
+          style={{ flexShrink: 0, width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-muted)', cursor: 'pointer' }}>
+          <ChevronDown size={16} style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .2s ease' }} />
+        </button>
+      </div>
 
       {/* collapsible — range filters + trend chart */}
       {open && (
