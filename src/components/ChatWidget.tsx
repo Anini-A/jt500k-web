@@ -1017,6 +1017,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
             <textarea
               ref={taRef} value={input} rows={1} onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(input) } }}
+              onPaste={(e) => { const f = Array.from(e.clipboardData.items).find((it) => it.type.startsWith('image/'))?.getAsFile(); if (f) { e.preventDefault(); pickImage(f) } }}
               placeholder="Ask anything" autoFocus
               /* fontSize 16 keeps iOS Safari from auto-zooming the page on focus */
               style={{ flex: 1, minWidth: 0, padding: '11px 16px', borderRadius: 22, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 16, fontFamily: 'inherit', lineHeight: 1.4, resize: 'none', maxHeight: 160, overflowY: 'auto' }}
