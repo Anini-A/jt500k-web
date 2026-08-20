@@ -1,8 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, Pencil, Trash2, ChevronDown, Banknote, CheckCircle2 } from 'lucide-react'
-import SectionTitle from './SectionTitle'
+import { Plus, Pencil, Trash2, ChevronDown, CheckCircle2 } from 'lucide-react'
 import { getJSON } from '@/lib/fresh'
 
 interface Debt {
@@ -69,7 +68,7 @@ export default function DebtManager() {
           style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', padding: 0 }}
           aria-label={collapsed ? 'Expand debts' : 'Collapse debts'} title={collapsed ? 'Expand' : 'Collapse'}>
           <ChevronDown size={20} style={{ transition: 'transform .2s ease', transform: collapsed ? 'rotate(-90deg)' : 'none', opacity: 0.7 }} />
-          <SectionTitle icon={Banknote}>Debt Management</SectionTitle>
+          <span className="hdr-label">Debt Management</span>
         </button>
         {!collapsed && (
           <button className="btn btn-secondary" onClick={() => { setAdding((v) => !v); setEditing(null) }}>

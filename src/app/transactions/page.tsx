@@ -35,10 +35,11 @@ const TYPES = [
   { key: 'expense', label: 'Expenses' },
   { key: 'savings', label: 'Savings' },
 ]
-type Preset = 'all' | 'ytd' | '12m' | '6m' | '3m' | 'month' | 'custom'
+type Preset = 'all' | 'ytd' | '12m' | '6m' | 'month' | 'custom'
+// Canonical range set used across the app (Custom only here, where dates are editable).
 const PRESETS: { key: Preset; label: string }[] = [
-  { key: 'month', label: 'This month' }, { key: 'all', label: 'All' }, { key: 'ytd', label: 'YTD' },
-  { key: '12m', label: '12M' }, { key: '6m', label: '6M' }, { key: '3m', label: '3M' }, { key: 'custom', label: 'Custom' },
+  { key: 'month', label: 'This month' }, { key: 'ytd', label: 'YTD' },
+  { key: '6m', label: '6M' }, { key: '12m', label: '12M' }, { key: 'all', label: 'All' }, { key: 'custom', label: 'Custom' },
 ]
 const subMonths = (iso: string, n: number) => { const d = new Date(iso + 'T12:00:00'); d.setMonth(d.getMonth() - n); return ymd(d) }
 
@@ -81,7 +82,7 @@ export default function Transactions() {
     if (preset === 'ytd') return { from: t.slice(0, 4) + '-01-01', to: t }
     // full calendar month (incl. future-dated entries in this month) — matches the budget's month
     if (preset === 'month') return { from: t.slice(0, 7) + '-01', to: ymd(new Date(Number(t.slice(0, 4)), Number(t.slice(5, 7)), 0)) }
-    const n = preset === '12m' ? 12 : preset === '6m' ? 6 : 3
+    const n = preset === '12m' ? 12 : 6
     return { from: subMonths(t, n), to: t }
   }, [preset, from, to, minDate, maxDate])
 

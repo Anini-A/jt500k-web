@@ -12,7 +12,6 @@ import BudgetManager from '@/components/BudgetManager'
 import InvestmentsPanel from '@/components/InvestmentsPanel'
 import ProfilePanel from '@/components/ProfilePanel'
 import EditTransactionModal from '@/components/EditTransactionModal'
-import SectionTitle from '@/components/SectionTitle'
 import { getJSON } from '@/lib/fresh'
 import { ymd, today } from '@/lib/date'
 import { MonthlyArea, HBar, COLORS } from '@/components/DashCharts'
@@ -41,14 +40,14 @@ interface Txn {
 const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 })
 const money2 = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' })
 
-type Preset = 'all' | 'ytd' | '12m' | '6m' | '3m' | 'month' | 'custom'
+type Preset = 'all' | 'ytd' | '12m' | '6m' | 'month' | 'custom'
+// Canonical range set, shared across the app.
 const PRESETS: { key: Preset; label: string }[] = [
   { key: 'month', label: 'This month' },
-  { key: 'all', label: 'All' },
   { key: 'ytd', label: 'YTD' },
-  { key: '12m', label: '12M' },
   { key: '6m', label: '6M' },
-  { key: '3m', label: '3M' },
+  { key: '12m', label: '12M' },
+  { key: 'all', label: 'All' },
   { key: 'custom', label: 'Custom' },
 ]
 
@@ -106,7 +105,7 @@ export default function Dashboard() {
     if (p === 'ytd') return { from: t.slice(0, 4) + '-01-01', to: t }
     // full calendar month (incl. future-dated entries this month) — matches the budget
     if (p === 'month') return { from: t.slice(0, 7) + '-01', to: ymd(new Date(Number(t.slice(0, 4)), Number(t.slice(5, 7)), 0)) }
-    const n = p === '12m' ? 12 : p === '6m' ? 6 : 3
+    const n = p === '12m' ? 12 : 6
     return { from: subMonths(t, n), to: t }
   }, [minDate, maxDate])
 
@@ -415,7 +414,7 @@ function RecentList({ title, txns, emptyLabel, maxHeight }: { title: string; txn
   return (
     <section className="block" style={{ marginBottom: 64 }}>
       <div className="card glass">
-        <SectionTitle icon={Receipt} style={{ marginBottom: 14, fontSize: 18 }}>{title}</SectionTitle>
+        <div className="hdr-label" style={{ marginBottom: 14 }}>{title}</div>
         {txns.length === 0 ? (
           <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)' }}>{emptyLabel}</div>
         ) : (

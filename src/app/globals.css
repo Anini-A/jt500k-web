@@ -299,6 +299,11 @@ body {
   overscroll-behavior-y: none;        /* kill the rubber-band / pull-to-refresh bounce */
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  /* App-like: no long-press text selection / copy callout anywhere except real
+     inputs — stops the iOS "Copy · Look Up · Translate" popup on the nav. */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 /* ── Native-app feel on touch devices ── */
@@ -307,13 +312,6 @@ body {
 button, a, label, select, input, textarea,
 .tab, .chip, .mode-seg, .icon-pill, .fab, .page-seg, .list-row {
   touch-action: manipulation;
-}
-/* App-like: no long-press text selection / copy callout anywhere except real inputs.
-   Stops the iOS "Copy · Look Up · Translate" popup when long-pressing the nav. */
-body {
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  user-select: none;
 }
 input, textarea, select, [contenteditable="true"] {
   -webkit-user-select: text;
@@ -468,8 +466,9 @@ header.top {
 
 @media (max-width: 640px) {
   header.top .brand span { display: none; }
-  .page-segs { display: none; }
-  .page-compact { display: inline-flex; }
+  /* Mobile navigates via the bottom nav bar — the top pill is desktop-only,
+     so hide the whole switcher and give the header its space back. */
+  .page-pill { display: none; }
 }
 
 /* Page transition — the new page slides in from the swipe/tap direction */
@@ -1360,10 +1359,6 @@ header.top h1 {
 }
 
 /* Never let a stray wide element push the whole page sideways on a phone */
-body {
-  overflow-x: hidden;
-}
-
 /* Responsive */
 @media (max-width: 640px) {
   .wrap {
@@ -1391,17 +1386,6 @@ body {
   header.top .brand {
     font-size: 15px;
   }
-
-  /* show the section name as a plain centered title (blended, no pill) */
-  .page-compact {
-    display: inline-flex;
-    min-height: 0;
-    padding: 0;
-    background: transparent;
-    border: none;
-  }
-  .page-compact .page-edge { display: none; }
-  .page-current { font-size: 17px; }
 
   header.top .long {
     display: none; /* keep header compact on phones */

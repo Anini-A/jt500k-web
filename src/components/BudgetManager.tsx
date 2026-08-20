@@ -1,9 +1,8 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, Pencil, Trash2, ChevronDown, Wallet, CreditCard, PiggyBank, Banknote, Target, ClipboardList, type LucideIcon } from 'lucide-react'
+import { Plus, Pencil, Trash2, ChevronDown, Wallet, CreditCard, PiggyBank, Banknote, type LucideIcon } from 'lucide-react'
 import CategorySelect from './CategorySelect'
-import SectionTitle from './SectionTitle'
 import { today } from '@/lib/date'
 import { getJSON } from '@/lib/fresh'
 
@@ -111,7 +110,7 @@ export default function BudgetManager() {
       {/* ── Card 1: summary (always visible) ── */}
       <div className="card glass" style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 18 }}>
-          <SectionTitle icon={Target}>Monthly Budget</SectionTitle>
+          <span className="hdr-label">Monthly Budget</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{pace}% through</span>
             <select className="date-input" value={month} onChange={(e) => setMonth(e.target.value)} aria-label="Budget month" style={{ fontWeight: 600 }}>
@@ -140,7 +139,7 @@ export default function BudgetManager() {
             style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', padding: 0 }}
             aria-label={collapsed ? 'Expand budget items' : 'Collapse budget items'}>
             <ChevronDown size={20} style={{ transition: 'transform .2s ease', transform: collapsed ? 'rotate(-90deg)' : 'none', opacity: 0.7 }} />
-            <SectionTitle icon={ClipboardList}>Budget Items</SectionTitle>
+            <span className="hdr-label">Budget Items</span>
           </button>
           {!collapsed && (
             <button className="btn btn-secondary" onClick={() => { setAdding((v) => !v); setEditing(null) }}>
