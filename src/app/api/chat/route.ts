@@ -481,7 +481,7 @@ export async function POST(req: NextRequest) {
   const messages = [...prior, { role: 'user', content: message }]
 
   if (hasImage) {
-    fullSystem += `\n\n🖼️ IMAGE ATTACHED: the user's latest message includes a photo (often a receipt, bank/credit-card statement, or a list of transactions). Read it carefully and extract each transaction. For anything they clearly want logged, call add_transaction per line (exact amount + best-matching category + a short description + the date shown, YYYY-MM-DD, or today if none). If the image isn't about transactions, just describe what you see and answer their question. Use exact amounts INCLUDING cents.`
+    fullSystem += `\n\n🖼️ IMAGE ATTACHED: the user's latest message includes a photo. It could be about ANYTHING in their finances — a receipt or statement to log, a bill, an investment holding or brokerage screen, a chart, a bank balance, a product they're deciding whether to buy, a document, or just a question about what they're looking at. FIRST read what it actually is and answer the user's request about it. Do NOT assume it's transactions to log. Only call add_transaction (per line, exact amount incl. cents + best category + the date shown or today) when the user clearly wants those logged, or when the image is plainly a list/receipt of purchases AND they gave no other instruction. When unsure what they want, briefly say what you see and ask (e.g. "want me to log these?"). Use exact amounts INCLUDING cents.`
   }
 
     // ---- Free: Google Gemini (auto-retry + model fallback on overload) ----

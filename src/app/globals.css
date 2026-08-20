@@ -32,10 +32,10 @@
     --surface-1: #1a1a19;
     --page-plane: #0d0d0d;
     --text-primary: #ffffff;
-    --text-secondary: #c3c2b7;
-    --text-muted: #898781;
-    --gridline: #2c2c2a;
-    --border: rgba(255, 255, 255, 0.1);
+    --text-secondary: #cbcabf;
+    --text-muted: #9b998f;
+    --gridline: #333331;
+    --border: rgba(255, 255, 255, 0.14);
     --accent: #3987e5;
     --accent-rgb: 57, 135, 229;
     --accent-soft: #184f95;
@@ -46,14 +46,14 @@
     --savings: #818cf8;
     --savings-soft: #312e81;
 
-    --glass-bg: rgba(26, 26, 25, 0.55);
-    --glass-border: rgba(255, 255, 255, 0.12);
-    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
-    --glass-sheen: inset 0 1px 0 rgba(255, 255, 255, 0.08);
-    --kpi-bg: rgba(255, 255, 255, 0.05);
+    --glass-bg: rgba(30, 30, 29, 0.5);
+    --glass-border: rgba(255, 255, 255, 0.16);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    --glass-sheen: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    --kpi-bg: rgba(255, 255, 255, 0.07);
     --header-bg: rgba(13, 13, 13, 0.95);
-    --glass-specular: linear-gradient(177deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.06) 20%, rgba(255, 255, 255, 0) 50%);
-    --glass-rim: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    --glass-specular: linear-gradient(177deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.08) 20%, rgba(255, 255, 255, 0) 50%);
+    --glass-rim: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
   }
 }
 
@@ -367,6 +367,21 @@ a:hover {
   background-color: #f9f9f7;
 }
 
+/* Dark mode: the aurora must also go dark, or the translucent dark cards sit
+   on a light plane and everything subtle washes out. Deeper, glowier tints on
+   a near-black plane read as a proper dark liquid-glass backdrop. */
+@media (prefers-color-scheme: dark) {
+  .bg-aurora::before {
+    background:
+      linear-gradient(to bottom, #0d0d0d 0, #0d0d0d calc(env(safe-area-inset-top, 0px) + 6px), rgba(13, 13, 13, 0) calc(env(safe-area-inset-top, 0px) + 120px)),
+      radial-gradient(680px circle at 12% 20%, rgba(57, 135, 229, 0.30), transparent 60%),
+      radial-gradient(600px circle at 88% 14%, rgba(217, 89, 38, 0.22), transparent 58%),
+      radial-gradient(640px circle at 16% 90%, rgba(25, 158, 112, 0.22), transparent 60%),
+      radial-gradient(620px circle at 92% 84%, rgba(129, 140, 248, 0.20), transparent 60%);
+    background-color: #0d0d0d;
+  }
+}
+
 .wrap {
   max-width: 1200px;
   margin: 0 auto;
@@ -511,8 +526,8 @@ header.top h1 {
 /* Glass material */
 .glass {
   background: var(--glass-bg);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(30px) saturate(190%);
+  -webkit-backdrop-filter: blur(30px) saturate(190%);
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow), var(--glass-sheen), var(--glass-rim);
 }

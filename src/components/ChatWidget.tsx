@@ -701,7 +701,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
     if ((!text.trim() && !img) || busy) return
     stopSpeaking() // cut off any answer being read
     // if an image is attached with no text, give the model a sensible default instruction
-    const msgText = text.trim() || (img ? 'Here is a picture of transactions — log them for me.' : '')
+    const msgText = text.trim() || (img ? "Here's a picture — take a look and tell me what's relevant to my finances." : '')
     const next = [...msgs, { role: 'user' as const, content: text.trim(), at: Date.now(), ...(img ? { image: img.url } : {}) }]
     setMsgs(next)
     setInput('')
