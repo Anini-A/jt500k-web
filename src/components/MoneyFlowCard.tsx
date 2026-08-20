@@ -5,12 +5,13 @@ import { MonthlyArea, COLORS } from './DashCharts'
 import { getJSON } from '@/lib/fresh'
 
 interface Row { month: string; income: number; expense: number; savings: number; net: number }
-type Range = 'ytd' | '12m' | 'all'
+type Range = 'ytd' | '6m' | 'all'
 const RANGES: { key: Range; label: string }[] = [
   { key: 'ytd', label: 'YTD' },
-  { key: '12m', label: '12M' },
+  { key: '6m', label: '6M' },
   { key: 'all', label: 'All' },
 ]
+const money = (n: number) => '$' + Math.round(n).toLocaleString()
 
 export default function MoneyFlowCard() {
   const [monthly, setMonthly] = useState<Row[]>([])
@@ -28,11 +29,20 @@ export default function MoneyFlowCard() {
   const data = useMemo(() => {
     if (!monthly.length) return []
     if (range === 'all') return monthly
-    if (range === '12m') return monthly.slice(-12)
+    if (range === '6m') return monthly.slice(-6)
     // YTD — months of the latest year present
     const year = monthly[monthly.length - 1].month.slice(0, 4)
     return monthly.filter((m) => m.month.slice(0, 4) === year)
   }, [monthly, range])
+
+  // latest month, for the at-a-glance row
+  const cur = monthly.length ? monthly[monthly.length - 1] : null
+  const curLabel = cur ? new Date(cur.month + '-01T00:00:00').toLocaleDateString('en-CA', { month: 'long' }) : ''
+  const glance = cur ? [
+    { label: 'Income', value: cur.income, color: COLORS.income },
+    { label: 'Savings', value: cur.savings, color: COLORS.savings },
+    { label: 'Expenses', value: cur.expense, color: COLORS.expense },
+  ] : []
 
   return (
     <div className="card glass">
@@ -45,6 +55,21 @@ export default function MoneyFlowCard() {
           ))}
         </div>
       </div>
+      {/* this-month glance — income / savings / expenses at a glance */}
+      {cur && (
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+          {glance.map((g) => (
+            <div key={g.label} style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <span style={{ width: 7, height: 7, borderRadius: '50%', background: g.color, flexShrink: 0 }} />
+                <span className="stat-label" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.label}</span>
+              </div>
+              <div style={{ fontWeight: 700, fontSize: 'clamp(15px, 4.6vw, 19px)', letterSpacing: '-0.02em', marginTop: 3 }}>{money(g.value)}</div>
+            </div>
+          ))}
+        </div>
+      )}
+      {cur && <div className="stat-label" style={{ marginBottom: 10, marginTop: -4 }}>{curLabel} so far</div>}
       {data.length ? (
         <MonthlyArea data={data} series={[
           { key: 'income', name: 'Income', color: COLORS.income },
