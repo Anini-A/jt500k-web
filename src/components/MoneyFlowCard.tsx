@@ -54,8 +54,8 @@ export default function MoneyFlowCard() {
       {cur && (
         <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
           {glance.map((g) => (
-            <div key={g.label} style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <div key={g.label} style={{ flex: 1, minWidth: 0, textAlign: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
                 <span style={{ width: 7, height: 7, borderRadius: '50%', background: g.color, flexShrink: 0 }} />
                 <span className="stat-label" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.label}</span>
               </div>
