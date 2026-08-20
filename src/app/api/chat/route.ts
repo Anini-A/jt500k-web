@@ -392,8 +392,9 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-  const { message, history, clientDate, voice } = await req.json()
-  if (!message) return NextResponse.json({ error: 'message required' }, { status: 400 })
+  const { message, history, clientDate, voice, image } = await req.json()
+  const hasImage = image && typeof image.data === 'string' && image.data.length > 0
+  if (!message && !hasImage) return NextResponse.json({ error: 'message required' }, { status: 400 })
 
   const context = await buildContext(clientDate)
   const system =
@@ -479,12 +480,18 @@ export async function POST(req: NextRequest) {
   const prior = Array.isArray(history) ? history : []
   const messages = [...prior, { role: 'user', content: message }]
 
+  if (hasImage) {
+    fullSystem += `\n\n🖼️ IMAGE ATTACHED: the user's latest message includes a photo (often a receipt, bank/credit-card statement, or a list of transactions). Read it carefully and extract each transaction. For anything they clearly want logged, call add_transaction per line (exact amount + best-matching category + a short description + the date shown, YYYY-MM-DD, or today if none). If the image isn't about transactions, just describe what you see and answer their question. Use exact amounts INCLUDING cents.`
+  }
+
     // ---- Free: Google Gemini (auto-retry + model fallback on overload) ----
     if (GEMINI_KEY) {
-      const contents = messages.map((m: any) => ({
-        role: m.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: String(m.content ?? '') }],
-      }))
+      const contents = messages.map((m: any, i: number) => {
+        const parts: any[] = [{ text: String(m.content ?? '') }]
+        // attach the photo to the final user turn only
+        if (hasImage && i === messages.length - 1) parts.push({ inline_data: { mime_type: image.mimeType || 'image/jpeg', data: image.data } })
+        return { role: m.role === 'assistant' ? 'model' : 'user', parts }
+      })
       const busyMsg = (err: string) => /UNAVAILABLE|overloaded|high demand|RESOURCE_EXHAUSTED|503|429/i.test(err)
         ? 'The free AI is busy right now — please try again in a few seconds.'
         : 'AI error: ' + err.slice(0, 200)
@@ -532,7 +539,13 @@ export async function POST(req: NextRequest) {
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 1024,
         system: fullSystem,
-        messages,
+        messages: messages.map((m: any, i: number) => (hasImage && i === messages.length - 1) ? {
+          role: m.role,
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: image.mimeType || 'image/jpeg', data: image.data } },
+            { type: 'text', text: String(m.content ?? '') },
+          ],
+        } : m),
       }),
     })
 

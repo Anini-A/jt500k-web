@@ -2,10 +2,10 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { SquarePen, History, ArrowUp, Trash2, Check, X, AudioLines, MessageSquare } from 'lucide-react'
+import { SquarePen, History, ArrowUp, Trash2, Check, X, AudioLines, MessageSquare, ImagePlus } from 'lucide-react'
 import { today } from '@/lib/date'
 
-interface Msg { role: 'user' | 'assistant'; content: string; at?: number }
+interface Msg { role: 'user' | 'assistant'; content: string; at?: number; image?: string } // image = data-URL thumbnail to show in the bubble
 interface Thread { id: string; msgs: Msg[]; updatedAt: number }
 const timeOf = (at?: number) => at ? new Date(at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }).toLowerCase() : ''
 // strip markdown so speech reads naturally
@@ -113,6 +113,8 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
   const [voiceError, setVoiceError] = useState('')     // visible mic/permission error (was silently swallowed)
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null) // "Copied ✓" flash
   const [actionIdx, setActionIdx] = useState<number | null>(null) // which message's long-press menu is open
+  const [attached, setAttached] = useState<{ url: string; b64: string; mime: string } | null>(null) // staged image for the next send
+  const fileRef = useRef<HTMLInputElement>(null)
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const taRef = useRef<HTMLTextAreaElement>(null)
@@ -604,6 +606,27 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
     onClose()
   }
 
+  // stage an image for the next send — downscaled to keep the request small/fast
+  const pickImage = (file: File) => {
+    if (!file || !file.type.startsWith('image/')) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      const img = new Image()
+      img.onload = () => {
+        const max = 1400
+        const scale = Math.min(1, max / Math.max(img.width, img.height))
+        const w = Math.round(img.width * scale), h = Math.round(img.height * scale)
+        const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h
+        const ctx = canvas.getContext('2d'); if (!ctx) return
+        ctx.drawImage(img, 0, 0, w, h)
+        const url = canvas.toDataURL('image/jpeg', 0.82)
+        setAttached({ url, b64: url.split(',')[1] || '', mime: 'image/jpeg' })
+      }
+      img.src = String(reader.result)
+    }
+    reader.readAsDataURL(file)
+  }
+
   // copy a chat bubble's text — called from the Copy button (a real tap → clipboard allowed)
   const copyMsg = (text: string, i: number) => {
     const flash = () => { setActionIdx(null); setCopiedIdx(i); setTimeout(() => setCopiedIdx((c) => (c === i ? null : c)), 1400) }
@@ -674,21 +697,26 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
   }
 
   const send = async (text: string) => {
-    if (!text.trim() || busy) return
+    const img = attached
+    if ((!text.trim() && !img) || busy) return
     stopSpeaking() // cut off any answer being read
-    const next = [...msgs, { role: 'user' as const, content: text, at: Date.now() }]
+    // if an image is attached with no text, give the model a sensible default instruction
+    const msgText = text.trim() || (img ? 'Here is a picture of transactions — log them for me.' : '')
+    const next = [...msgs, { role: 'user' as const, content: text.trim(), at: Date.now(), ...(img ? { image: img.url } : {}) }]
     setMsgs(next)
     setInput('')
+    setAttached(null)
     setBusy(true)
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message: text,
+          message: msgText,
           history: msgs.filter((m, i) => i > 0).map((m) => ({ role: m.role, content: m.content })),
           clientDate: today(), // the user's LOCAL date, so "today/this month" is correct
           voice: voiceModeRef.current, // short, speakable answers in conversation mode
+          image: img ? { data: img.b64, mimeType: img.mime } : undefined,
         }),
       })
       const data = await res.json()
@@ -918,7 +946,10 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
                   border: m.role === 'user' ? 'none' : '1px solid var(--border)',
                   borderBottomRightRadius: m.role === 'user' ? 6 : 18,
                   borderBottomLeftRadius: m.role === 'user' ? 18 : 6,
-                }}>{m.role === 'user' ? m.content : <Markdown text={m.content} />}</div>
+                }}>
+                {m.image && <img src={m.image} alt="attachment" style={{ display: 'block', maxWidth: 220, width: '100%', borderRadius: 12, marginBottom: m.content ? 8 : 0 }} />}
+                {m.content && (m.role === 'user' ? m.content : <Markdown text={m.content} />)}
+              </div>
               {actionIdx === i && (
                 <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
                   <button className="chip" onClick={(e) => { e.stopPropagation(); copyMsg(m.content, i) }} style={{ padding: '5px 12px', fontSize: 12 }}>Copy</button>
@@ -966,7 +997,23 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
         {/* Composer — expandable, wraps to new lines; fixed at the bottom */}
         <form onSubmit={(e) => { e.preventDefault(); send(input) }}
           style={{ flexShrink: 0, padding: '10px 12px 8px', borderTop: '1px solid var(--border)' }}>
+          {/* staged image preview */}
+          {attached && (
+            <div style={{ position: 'relative', width: 64, height: 64, marginBottom: 8 }}>
+              <img src={attached.url} alt="to send" style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 10, border: '1px solid var(--border)' }} />
+              <button type="button" onClick={() => setAttached(null)} aria-label="Remove image"
+                style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: 999, border: 'none', background: 'var(--expense)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}>
+                <X size={13} />
+              </button>
+            </div>
+          )}
+          <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }}
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) pickImage(f); e.target.value = '' }} />
           <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+            <button type="button" onClick={() => fileRef.current?.click()} aria-label="Attach image" title="Attach a picture"
+              style={{ width: 44, height: 44, flexShrink: 0, borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-secondary)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+              <ImagePlus size={20} />
+            </button>
             <textarea
               ref={taRef} value={input} rows={1} onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(input) } }}
@@ -974,8 +1021,8 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
               /* fontSize 16 keeps iOS Safari from auto-zooming the page on focus */
               style={{ flex: 1, minWidth: 0, padding: '11px 16px', borderRadius: 22, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 16, fontFamily: 'inherit', lineHeight: 1.4, resize: 'none', maxHeight: 160, overflowY: 'auto' }}
             />
-            <button type="submit" disabled={busy || !input.trim()} aria-label="Send"
-              style={{ width: 44, height: 44, flexShrink: 0, borderRadius: 999, border: 'none', cursor: input.trim() ? 'pointer' : 'default', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: input.trim() ? 'var(--accent)' : 'var(--border)', color: '#fff', opacity: busy ? 0.6 : 1 }}>
+            <button type="submit" disabled={busy || (!input.trim() && !attached)} aria-label="Send"
+              style={{ width: 44, height: 44, flexShrink: 0, borderRadius: 999, border: 'none', cursor: (input.trim() || attached) ? 'pointer' : 'default', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: (input.trim() || attached) ? 'var(--accent)' : 'var(--border)', color: '#fff', opacity: busy ? 0.6 : 1 }}>
               <ArrowUp size={20} />
             </button>
           </div>
