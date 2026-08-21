@@ -62,7 +62,7 @@ export default function Home() {
                 {stats ? money(bal) : '—'}
               </div>
               <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>
-                Chequing · as of {today}{stats ? <> · <b style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>{Math.round(stats.savingsRate)}%</b> saved</> : ''}
+                Chequing · as of {today}
               </div>
 
               {/* credit-card balances owed (from un-logged imports) — tap to review/import */}

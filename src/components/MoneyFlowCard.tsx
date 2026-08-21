@@ -45,6 +45,7 @@ export default function MoneyFlowCard() {
     { label: 'Savings', value: cur.savings, color: COLORS.savings },
     { label: 'Expenses', value: cur.expense, color: COLORS.expense },
   ] : []
+  const savedRate = cur && cur.income > 0 ? Math.round((cur.savings / cur.income) * 100) : null
 
   return (
     <div className="card glass">
@@ -68,7 +69,7 @@ export default function MoneyFlowCard() {
       {/* one thin line + the collapse toggle (same design as the net-worth card) */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 16 }}>
         <span style={{ fontSize: 13, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {cur ? `${curLabel} so far · tap for trend` : ''}
+          {cur ? <>{curLabel}{savedRate !== null ? <> · <b style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>{savedRate}%</b> saved</> : ''}</> : ''}
         </span>
         <button onClick={() => setOpen((v) => !v)} aria-expanded={open} aria-label={open ? 'Hide trend' : 'Show trend'} title={open ? 'Hide trend' : 'Show income / expense trend'}
           style={{ flexShrink: 0, width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-muted)', cursor: 'pointer' }}>
