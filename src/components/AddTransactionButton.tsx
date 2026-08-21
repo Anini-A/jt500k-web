@@ -518,7 +518,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
 
                 {/* Paste input */}
                 {pasteOpen ? (
-                  <div style={{ display: 'grid', gap: 10, padding: 14, border: '1px solid var(--border)', borderRadius: 14, background: 'var(--kpi-bg)' }}>
+                  <div style={{ display: 'grid', gap: 10 }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                       <span style={{ fontWeight: 700, fontSize: 14 }}>Paste or screenshot your statement</span>
                       {rows.length > 0 && <button type="button" onClick={() => { setPasteOpen(false); setRaw(''); setImages([]); setImportErr('') }} aria-label="Done adding" title="Done" style={{ display: 'inline-flex', padding: 4, borderRadius: 8, border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 18, lineHeight: 1 }}>✕</button>}
