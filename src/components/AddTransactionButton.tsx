@@ -91,6 +91,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   const [flash, setFlash] = useState('')          // inline success message (replaces alert)
   const [confirmDel, setConfirmDel] = useState<null | { kind: 'card' | 'draft' | 'rec'; id: string; name?: string }>(null)
   const [recErr, setRecErr] = useState('')
+  const [manageRec, setManageRec] = useState(false) // Recurring: default is tick-and-log; management is behind this
   const [parsing, setParsing] = useState(false)
   const [savingDraft, setSavingDraft] = useState(false)
   const [importErr, setImportErr] = useState('')
@@ -136,6 +137,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   const close = () => {
     setOpen(false); setMode('single'); setRaw(''); setRows([]); setImages([])
     setDraftId(null); setPasteOpen(true); setImportErr(''); setSaved(null); setSingleErr('')
+    setManageRec(false); setRecEdit(null); setRecErr('')
     setForm({ date: today(), type: 'expense', category: '', amount: '', description: '' })
   }
 
@@ -729,9 +731,18 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                 ) : (
                   <>
                     <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between' }}>
-                      <button className="btn btn-secondary" onClick={startNewRec}><Plus size={15} /> New</button>
-                      <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}><span className="stat-label">Date</span>
-                        <input type="date" value={recDate} onChange={(e) => setRecDate(e.target.value)} style={{ ...inp, width: 'auto' }} /></label>
+                      {manageRec ? (
+                        <>
+                          <button className="btn btn-secondary" onClick={startNewRec}><Plus size={15} /> New</button>
+                          <button className="btn btn-secondary" onClick={() => setManageRec(false)}>Done</button>
+                        </>
+                      ) : (
+                        <>
+                          <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}><span className="stat-label">Log for</span>
+                            <input type="date" value={recDate} onChange={(e) => setRecDate(e.target.value)} style={{ ...inp, width: 'auto' }} /></label>
+                          <button onClick={() => setManageRec(true)} style={{ background: 'transparent', border: 'none', color: 'var(--accent)', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5 }}><Settings2 size={14} /> Manage</button>
+                        </>
+                      )}
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 14, maxHeight: '46vh', overflowY: 'auto' }}>
                       {recGroupsPresent.map((g) => (
@@ -743,14 +754,16 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                               const toggle = () => setPicked((p) => { const n = new Set(p); n.has(r.id) ? n.delete(r.id) : n.add(r.id); return n })
                               return (
                                 <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 4px', borderBottom: '1px solid var(--border)' }}>
-                                  <input type="checkbox" checked={on} onChange={toggle} />
-                                  <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={toggle}>
+                                  {!manageRec && <input type="checkbox" checked={on} onChange={toggle} />}
+                                  <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={manageRec ? () => startEditRec(r) : toggle}>
                                     <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</div>
                                     <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{r.category}</div>
                                   </div>
                                   <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', flexShrink: 0 }}>{money(Number(r.amount))}</span>
-                                  <button aria-label="Edit" title="Edit" onClick={() => startEditRec(r)}
-                                    style={{ flexShrink: 0, display: 'inline-flex', padding: 6, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}><PencilLine size={14} /></button>
+                                  {manageRec && (
+                                    <button aria-label="Edit" title="Edit" onClick={() => startEditRec(r)}
+                                      style={{ flexShrink: 0, display: 'inline-flex', padding: 6, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}><PencilLine size={14} /></button>
+                                  )}
                                 </div>
                               )
                             })}
@@ -759,13 +772,15 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                       ))}
                     </div>
                     {recErr && <div style={{ fontSize: 13, color: 'var(--expense)', fontWeight: 600 }}>{recErr}</div>}
-                    <div style={{ display: 'flex', gap: 10 }}>
-                      <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} disabled={saving || picked.size === 0} onClick={logRecurring}>
-                        {saving ? 'Logging…'
-                          : picked.size === 0 ? 'Select items to log'
-                          : `Log ${picked.size} item${picked.size !== 1 ? 's' : ''} · ${money(pickedTotal)}`}
-                      </button>
-                    </div>
+                    {!manageRec && (
+                      <div style={{ display: 'flex', gap: 10 }}>
+                        <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} disabled={saving || picked.size === 0} onClick={logRecurring}>
+                          {saving ? 'Logging…'
+                            : picked.size === 0 ? 'Select items to log'
+                            : `Log ${picked.size} item${picked.size !== 1 ? 's' : ''} · ${money(pickedTotal)}`}
+                        </button>
+                      </div>
+                    )}
                   </>
                 )}
               </div>
