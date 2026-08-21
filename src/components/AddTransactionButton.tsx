@@ -76,6 +76,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   })
   const [singleErr, setSingleErr] = useState('')
   const [savedFlash, setSavedFlash] = useState(false)
+  const [saved, setSaved] = useState<null | { amount: number; category: string; type: string }>(null) // Quick: success screen
   const [dateOpen, setDateOpen] = useState(false) // Quick: reveal the date field (defaults to today)
   const [raw, setRaw] = useState('')
   const [rows, setRows] = useState<Row[]>([])
@@ -86,6 +87,10 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   const [draftId, setDraftId] = useState<string | null>(null) // the draft currently being edited
   const [pasteOpen, setPasteOpen] = useState(true)            // is the paste input showing
   const [manageCardsOpen, setManageCardsOpen] = useState(false)
+  const [newCard, setNewCard] = useState('')      // inline add-card input
+  const [flash, setFlash] = useState('')          // inline success message (replaces alert)
+  const [confirmDel, setConfirmDel] = useState<null | { kind: 'card' | 'draft' | 'rec'; id: string; name?: string }>(null)
+  const [recErr, setRecErr] = useState('')
   const [parsing, setParsing] = useState(false)
   const [savingDraft, setSavingDraft] = useState(false)
   const [importErr, setImportErr] = useState('')
@@ -130,7 +135,8 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
 
   const close = () => {
     setOpen(false); setMode('single'); setRaw(''); setRows([]); setImages([])
-    setDraftId(null); setPasteOpen(true); setImportErr('')
+    setDraftId(null); setPasteOpen(true); setImportErr(''); setSaved(null); setSingleErr('')
+    setForm({ date: today(), type: 'expense', category: '', amount: '', description: '' })
   }
 
   // Reset the whole card WITHOUT closing it — clears every mode's working state, keeps the tab you're on.
@@ -151,7 +157,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
         body: JSON.stringify(chosen.map((r) => ({ date: recDate, type: r.type, category: r.category, amount: Number(r.amount), description: r.description || r.name }))),
       })
       if (res.ok) { close(); window.dispatchEvent(new CustomEvent('transaction-added')) }
-      else alert('Error: ' + ((await res.json()).error || 'could not save'))
+      else setRecErr((await res.json()).error || 'Could not log.')
     } finally { setSaving(false) }
   }
 
@@ -161,22 +167,17 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   const startEditRec = (r: any) => { setRecForm({ name: r.name, type: r.type, category: r.category, amount: String(r.amount), description: r.description || '' }); setRecEdit(r.id) }
   const saveRec = async () => {
     const amount = parseFloat(recForm.amount)
-    if (!recForm.name.trim() || !recForm.category || !(amount > 0)) { alert('Name, category and a positive amount are required.'); return }
+    if (!recForm.name.trim() || !recForm.category || !(amount > 0)) { setRecErr('Name, category and a positive amount are required.'); return }
     const payload = { name: recForm.name.trim(), type: recForm.type, category: recForm.category, amount, description: recForm.description }
     setSaving(true)
     try {
       const res = recEdit === 'new'
         ? await fetch('/api/recurring', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
         : await fetch('/api/recurring', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: recEdit, ...payload }) })
-      if (res.ok) { setRecEdit(null); await reloadRecs() } else alert('Could not save: ' + ((await res.json()).error || 'error'))
+      if (res.ok) { setRecEdit(null); setRecErr(''); await reloadRecs() } else setRecErr((await res.json()).error || 'Could not save.')
     } finally { setSaving(false) }
   }
-  const deleteRec = async () => {
-    if (!recEdit || recEdit === 'new') return
-    if (!confirm('Delete this recurring item?')) return
-    const res = await fetch(`/api/recurring?id=${recEdit}`, { method: 'DELETE' })
-    if (res.ok) { setRecEdit(null); await reloadRecs() } else alert('Could not delete.')
-  }
+  const deleteRec = () => { if (recEdit && recEdit !== 'new') setConfirmDel({ kind: 'rec', id: recEdit, name: 'this recurring item' }) }
 
   const submitSingle = async (again: boolean) => {
     setSingleErr('')
@@ -192,11 +193,19 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
       if (!res.ok) { setSingleErr((await res.json()).error || 'Could not save.'); return }
       window.dispatchEvent(new CustomEvent('transaction-added'))
       if (again) {
-        // keep type + date, clear the rest for rapid entry; flash a confirmation
+        // rapid path: keep type + date, clear the rest, flash a confirmation, stay on the form
         setForm((f) => ({ ...f, category: '', amount: '', description: '' }))
         setDateOpen(false); setSavedFlash(true); setTimeout(() => setSavedFlash(false), 1600)
-      } else close()
+      } else {
+        // land on a success screen so it never just vanishes
+        setSaved({ amount: amt, category: form.category, type: form.type })
+      }
     } finally { setSaving(false) }
+  }
+  // from the success screen → log another one
+  const addAnother = () => {
+    setSaved(null); setSingleErr('')
+    setForm((f) => ({ ...f, category: '', amount: '', description: '' })); setDateOpen(false)
   }
 
   const logBatch = async () => {
@@ -210,7 +219,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
           date: r.date, description: r.description, category: r.category, type: r.type, amount: parseFloat(r.amount),
         }))),
       })
-      if (!res.ok) { alert('Error: ' + ((await res.json()).error || 'could not save')); return }
+      if (!res.ok) { setImportErr((await res.json()).error || 'Could not save.'); return }
       // logged successfully → clear the draft it came from, then close
       if (draftId) await fetch(`/api/drafts?id=${draftId}`, { method: 'DELETE' }).catch(() => {})
       close(); window.dispatchEvent(new CustomEvent('transaction-added'))
@@ -259,18 +268,21 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
     } catch (e: any) { setImportErr('Parse failed: ' + (e?.message || e)) } finally { setParsing(false) }
   }
 
-  const addCard = async () => {
-    const name = prompt('Card name (e.g. WS Visa, PC Card)')?.trim()
-    if (!name) return
+  const showFlash = (m: string) => { setFlash(m); setTimeout(() => setFlash(''), 1800) }
+  const addCardInline = async () => {
+    const name = newCard.trim(); if (!name) return
     const res = await fetch('/api/cards', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) })
-    if (res.ok) { const c = await res.json(); await loadCards(); setSelectedCard(c.name) }
-    else alert('Could not add card.')
+    if (res.ok) { const c = await res.json(); setNewCard(''); await loadCards(); setSelectedCard(c.name) }
+    else setImportErr('Could not add card.')
   }
-  const deleteCard = async (c: Card) => {
-    if (!confirm(`Delete the card "${c.name}"? (Transactions already logged are unaffected.)`)) return
-    await fetch(`/api/cards?id=${c.id}`, { method: 'DELETE' }).catch(() => {})
-    await loadCards()
-    if (selectedCard === c.name) setSelectedCard('')
+  // one inline confirm for every destructive delete (card / draft / recurring)
+  const doConfirmDel = async () => {
+    if (!confirmDel) return
+    const { kind, id, name } = confirmDel
+    if (kind === 'card') { await fetch(`/api/cards?id=${id}`, { method: 'DELETE' }).catch(() => {}); await loadCards(); if (selectedCard === name) setSelectedCard('') }
+    else if (kind === 'draft') { await fetch(`/api/drafts?id=${id}`, { method: 'DELETE' }).catch(() => {}); await loadDrafts(); window.dispatchEvent(new CustomEvent('drafts-changed')); if (draftId === id) setDraftId(null) }
+    else if (kind === 'rec') { await fetch(`/api/recurring?id=${id}`, { method: 'DELETE' }).catch(() => {}); setRecEdit(null); await reloadRecs() }
+    setConfirmDel(null)
   }
 
   const saveDraft = async () => {
@@ -281,9 +293,9 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
       const res = draftId
         ? await fetch('/api/drafts', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: draftId, ...payload }) })
         : await fetch('/api/drafts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-      if (!res.ok) { alert('Could not save draft.'); return }
+      if (!res.ok) { setImportErr('Could not save draft.'); return }
       const d = await res.json(); setDraftId(d.id); await loadDrafts(); window.dispatchEvent(new CustomEvent("drafts-changed"))
-      setImportErr(''); alert('Draft saved.')
+      setImportErr(''); showFlash('Draft saved')
     } finally { setSavingDraft(false) }
   }
   // append the current rows onto an existing draft, then clear the working area
@@ -293,10 +305,10 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
     try {
       const merged = [...(dr.rows || []).map((r) => ({ ...r, amount: String(r.amount) })), ...rows]
       const res = await fetch('/api/drafts', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: dr.id, rows: merged }) })
-      if (!res.ok) { alert('Could not save to that draft.'); return }
+      if (!res.ok) { setImportErr('Could not save to that draft.'); return }
       await loadDrafts(); window.dispatchEvent(new CustomEvent("drafts-changed"))
       setRows([]); setDraftId(null); setPasteOpen(true); setImportErr('')
-      alert('Added to draft.')
+      showFlash('Added to draft')
     } finally { setSavingDraft(false) }
   }
   // start a fresh, independent batch (e.g. save card 1 as a draft, then log card 2 on its own)
@@ -308,12 +320,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
     setRows((dr.rows || []).map((r) => ({ ...r, amount: String(r.amount) })))
     setDraftId(dr.id); setPasteOpen(false); setImportErr('')
   }
-  const deleteDraft = async (id: string) => {
-    if (!confirm('Delete this saved draft?')) return
-    await fetch(`/api/drafts?id=${id}`, { method: 'DELETE' }).catch(() => {})
-    await loadDrafts(); window.dispatchEvent(new CustomEvent("drafts-changed"))
-    if (draftId === id) { setDraftId(null) }
-  }
+  const deleteDraft = (id: string) => setConfirmDel({ kind: 'draft', id, name: 'this draft' })
 
   const catsForType = cats.filter((c) => c.type === form.type)
   const grouped = { income: cats.filter((c) => c.type === 'income'), expense: cats.filter((c) => c.type === 'expense'), savings: cats.filter((c) => c.type === 'savings') }
@@ -381,6 +388,23 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
               const typeColor = form.type === 'income' ? 'var(--income)' : form.type === 'savings' ? 'var(--savings)' : 'var(--expense)'
               const TYPES = [{ k: 'expense', label: 'Expense' }, { k: 'income', label: 'Income' }, { k: 'savings', label: 'Savings' }] as const
               const dateLabel = form.date === today() ? 'Today' : new Date(form.date + 'T12:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })
+              if (saved) {
+                const sc = saved.type === 'income' ? 'var(--income)' : saved.type === 'savings' ? 'var(--savings)' : 'var(--expense)'
+                return (
+                  <div style={{ display: 'grid', gap: 18, justifyItems: 'center', textAlign: 'center', padding: '18px 0 6px' }}>
+                    <div style={{ width: 56, height: 56, borderRadius: 999, background: 'var(--income-soft)', color: 'var(--income)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, fontWeight: 700 }}>✓</div>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-secondary)' }}>Saved</div>
+                      <div style={{ fontWeight: 800, fontSize: 30, letterSpacing: '-0.03em', marginTop: 4, color: sc }}>{money(saved.amount)}</div>
+                      <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>{saved.category}</div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 10, width: '100%' }}>
+                      <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} onClick={addAnother}><Plus size={15} /> Add another</button>
+                      <button className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }} onClick={close}>Done</button>
+                    </div>
+                  </div>
+                )
+              }
               return (
                 <form onSubmit={(e) => { e.preventDefault(); submitSingle(false) }} style={{ display: 'grid', gap: 16 }}>
                   {/* amount hero */}
@@ -523,13 +547,17 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                         {cards.map((c) => (
                           <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '7px 4px', borderBottom: '1px solid var(--border)' }}>
                             <span style={{ fontWeight: 600 }}>{c.name}</span>
-                            <button type="button" onClick={() => deleteCard(c)} aria-label={`Delete ${c.name}`} title="Delete card"
+                            <button type="button" onClick={() => setConfirmDel({ kind: 'card', id: c.id, name: c.name })} aria-label={`Delete ${c.name}`} title="Delete card"
                               style={{ display: 'inline-flex', padding: 6, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--expense)', cursor: 'pointer' }}><Trash2 size={15} /></button>
                           </div>
                         ))}
-                        <button type="button" onClick={addCard} style={{ justifySelf: 'start', display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 4, padding: '7px 14px', borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: 600, border: '1px dashed var(--border)', background: 'transparent', color: 'var(--accent)', fontFamily: 'inherit' }}>
-                          <Plus size={14} /> Add card
-                        </button>
+                        <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+                          <input value={newCard} onChange={(e) => setNewCard(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCardInline() } }}
+                            placeholder="New card name (e.g. WS Visa)" style={{ ...cell, flex: 1, height: 38 }} />
+                          <button type="button" onClick={addCardInline} disabled={!newCard.trim()} style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 5, padding: '0 14px', height: 38, borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: 600, border: '1px solid var(--accent)', background: 'var(--accent)', color: '#fff', fontFamily: 'inherit' }}>
+                            <Plus size={14} /> Add
+                          </button>
+                        </div>
                       </div>
                     )}
                     <textarea value={raw} onChange={(e) => setRaw(e.target.value)} onPaste={onPasteInput} rows={7}
@@ -684,9 +712,10 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                     )}
                     <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Description (optional)</span>
                       <input style={inp} value={recForm.description} onChange={(e) => setRecForm({ ...recForm, description: e.target.value })} placeholder="e.g. matches a debt name" /></label>
+                    {recErr && <div style={{ fontSize: 13, color: 'var(--expense)', fontWeight: 600 }}>{recErr}</div>}
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} disabled={saving} onClick={saveRec}>{recEdit === 'new' ? 'Add' : 'Save'}</button>
-                      <button className="btn btn-secondary" onClick={() => setRecEdit(null)}>Cancel</button>
+                      <button className="btn btn-secondary" onClick={() => { setRecEdit(null); setRecErr('') }}>Cancel</button>
                       {recEdit !== 'new' && <button className="btn btn-secondary" style={{ flex: '0 0 auto' }} onClick={deleteRec}><Trash2 size={14} /> Delete</button>}
                     </div>
                   </div>
@@ -729,6 +758,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                         </div>
                       ))}
                     </div>
+                    {recErr && <div style={{ fontSize: 13, color: 'var(--expense)', fontWeight: 600 }}>{recErr}</div>}
                     <div style={{ display: 'flex', gap: 10 }}>
                       <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} disabled={saving || picked.size === 0} onClick={logRecurring}>
                         {saving ? 'Logging…'
@@ -739,6 +769,25 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                   </>
                 )}
               </div>
+            )}
+
+            {/* inline confirm (replaces window.confirm) */}
+            {confirmDel && (
+              <div onClick={() => setConfirmDel(null)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', borderRadius: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, zIndex: 10 }}>
+                <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: 16, padding: 18, width: '100%', maxWidth: 320, boxShadow: '0 12px 34px rgba(0,0,0,0.35)' }}>
+                  <div style={{ fontWeight: 700, marginBottom: 6 }}>Delete {confirmDel.name || 'this'}?</div>
+                  <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 14 }}>This can’t be undone.</div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setConfirmDel(null)}>Cancel</button>
+                    <button className="btn" style={{ flex: 1, justifyContent: 'center', background: 'var(--expense)', color: '#fff', border: 'none' }} onClick={doConfirmDel}>Delete</button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* inline success toast (replaces alert) */}
+            {flash && (
+              <div style={{ position: 'absolute', left: '50%', bottom: 18, transform: 'translateX(-50%)', background: 'var(--text-primary)', color: 'var(--surface-1)', padding: '9px 18px', borderRadius: 999, fontSize: 13, fontWeight: 600, boxShadow: '0 6px 18px rgba(0,0,0,0.28)', zIndex: 11, whiteSpace: 'nowrap' }}>✓ {flash}</div>
             )}
           </div>
         </div>,
