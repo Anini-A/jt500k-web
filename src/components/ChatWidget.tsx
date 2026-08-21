@@ -121,6 +121,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const taRef = useRef<HTMLTextAreaElement>(null)
   const voiceModeRef = useRef(false)
+  const iosRef = useRef(false) // iOS can't auto-restart the mic → tap-to-talk instead of a loop
   const speakRef = useRef(true)
   const sendRef = useRef<(t: string) => void>(() => {})
   const beginSegmentRef = useRef<() => void>(() => {})
@@ -176,6 +177,10 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
   }, [])
 
   useEffect(() => { voiceModeRef.current = voiceMode }, [voiceMode])
+  useEffect(() => {
+    const ua = navigator.userAgent
+    iosRef.current = /iP(hone|ad|od)/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  }, [])
   useEffect(() => { speakRef.current = speak }, [speak])
   useEffect(() => {
     setMicOK(typeof MediaRecorder !== 'undefined' && !!navigator.mediaDevices?.getUserMedia)
@@ -491,6 +496,8 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
     if (!rafRef.current) rafRef.current = requestAnimationFrame(monitorLoop)
   }
   beginSegmentRef.current = beginSegment
+  // auto-continue only where the platform allows it; iOS rests at "Tap to talk"
+  const relisten = () => { if (voiceModeRef.current && !iosRef.current) beginSegmentRef.current() }
 
   const finishSegment = () => {
     clearVoiceTimers()
@@ -508,7 +515,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
       silentAccumRef.current += NO_SPEECH_TIMEOUT_MS
       // ~30s of silence → stop listening and idle to "tap to speak" (stay in voice mode, don't close)
       if (silentAccumRef.current >= MAX_TOTAL_SILENCE_MS) { finishSegment(); setListening(false); return }
-      if (voiceModeRef.current) beginSegmentRef.current()
+      relisten()
       return
     }
     silentAccumRef.current = 0 // real speech happened — reset the inactivity clock
@@ -532,13 +539,13 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
       const r = await fetch('/api/transcribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ audio: b64, mime: blob.type }) })
       const d = await r.json()
       setBusy(false)
-      if (!r.ok) { setVoiceError(d.error || 'Transcription failed.'); if (voiceModeRef.current) beginSegmentRef.current(); return }
+      if (!r.ok) { setVoiceError(d.error || 'Transcription failed.'); relisten(); return }
       const text = (d.text || '').trim()
       if (text) { lastHeardRef.current = text; setLiveText(text); setInput(''); sendRef.current(text) } // send() speaks the reply, then resumes listening
-      else { setVoiceError("Didn't catch that — try again."); if (voiceModeRef.current) beginSegmentRef.current() }
+      else { setVoiceError("Didn't catch that — try again."); relisten() }
     } catch (e: any) {
       setBusy(false); setVoiceError('Transcription failed: ' + (e?.message || e))
-      if (voiceModeRef.current) beginSegmentRef.current()
+      relisten()
     }
   }
 
@@ -723,7 +730,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
       })
       const data = await res.json()
       // hands-free: auto-listen again after the answer speaks (reuses the open mic stream)
-      const resume = () => { if (voiceModeRef.current) beginSegmentRef.current() }
+      const resume = () => { relisten() }
       if (data.actions?.length) {
         setPending(data.actions)
         // confirm inside the current mode — speak the prompt if in voice
@@ -830,13 +837,13 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
     setMsgs((m) => [...m, { role: 'assistant', content: summary, at: Date.now() }])
     setPending(null)
     setBusy(false)
-    if (voiceModeRef.current) say(okCount ? `Done. ${okCount} change${okCount !== 1 ? 's' : ''} saved.` : summary, () => { if (voiceModeRef.current) beginSegmentRef.current() })
+    if (voiceModeRef.current) say(okCount ? `Done. ${okCount} change${okCount !== 1 ? 's' : ''} saved.` : summary, () => { relisten() })
   }
 
   const cancelAction = () => {
     setMsgs((m) => [...m, { role: 'assistant', content: 'Okay, cancelled — nothing was saved.', at: Date.now() }])
     setPending(null)
-    if (voiceModeRef.current) say('Cancelled.', () => { if (voiceModeRef.current) beginSegmentRef.current() })
+    if (voiceModeRef.current) say('Cancelled.', () => { relisten() })
   }
 
   const recents = [...threads].sort((a, b) => b.updatedAt - a.updatedAt)
@@ -894,7 +901,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
             className={`voice-body ${pending ? 'is-idle' : listening ? 'is-listening' : busy ? 'is-thinking' : speaking ? 'is-speaking' : 'is-idle'}`}>
             <div className="voice-dots" aria-hidden />
             <div className="voice-body-inner">
-              <button type="button" className="voice-viz" aria-label="Tap to speak" onClick={onTalk}>
+              <button type="button" className="voice-viz" aria-label="Tap to talk" onClick={onTalk}>
                 <span /><span /><span /><span /><span />
               </button>
               {pending ? (
@@ -913,7 +920,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
               ) : (
                 <>
                   <div className="voice-status" style={{ color: voiceError ? 'var(--expense)' : listening ? 'var(--expense)' : 'var(--accent)' }}>
-                    {voiceError ? 'Mic error' : listening ? 'Listening' : busy ? 'Thinking' : speaking ? 'Speaking' : 'Tap to speak'}
+                    {voiceError ? 'Mic error' : listening ? 'Listening' : busy ? 'Thinking' : speaking ? 'Speaking' : 'Tap to talk'}
                   </div>
                   <div className="voice-caption">
                     {voiceError
@@ -922,7 +929,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
                         ? (liveText || <span style={{ color: 'var(--text-muted)' }}>Say something…</span>)
                         : busy
                           ? (lastHeardRef.current ? <span style={{ color: 'var(--text-secondary)' }}>“{lastHeardRef.current}”</span> : <span style={{ color: 'var(--text-muted)' }}>…</span>)
-                          : ([...msgs].reverse().find((m) => m.role === 'assistant')?.content || <span style={{ color: 'var(--text-muted)' }}>Tap the center to speak.</span>)}
+                          : ([...msgs].reverse().find((m) => m.role === 'assistant')?.content || <span style={{ color: 'var(--text-muted)' }}>Tap the orb to talk.</span>)}
                   </div>
                 </>
               )}
