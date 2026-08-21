@@ -356,6 +356,7 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
   const [rows, setRows] = useState<any[] | null>(null)
   const [asOf, setAsOf] = useState(today()) // the date these holdings are valued as of
   const [saving, setSaving] = useState(false)
+  const [savedMonth, setSavedMonth] = useState<string | null>(null) // "✓ recorded" confirmation
 
   const onFile = (f: File) => {
     const r = new FileReader()
@@ -377,10 +378,15 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ uploader, rows: dated }),
       })
-      if (res.ok) onDone()
-      else alert('Error: ' + ((await res.json()).error || 'import failed'))
+      const d = await res.json().catch(() => ({}))
+      if (res.ok) {
+        setSavedMonth(d.snapshotMonth || asOf.slice(0, 7))
+        setTimeout(onDone, 1600) // let the "✓ recorded" note show before closing
+      } else alert('Error: ' + (d.error || 'import failed'))
     } finally { setSaving(false) }
   }
+
+  const monthLabel = (m: string) => { const [y, mo] = m.split('-'); return new Date(Number(y), Number(mo) - 1).toLocaleDateString('en-CA', { month: 'long', year: 'numeric' }) }
 
   const total = (rows ?? []).reduce((s, r) => s + r.market_value_cad, 0)
 
@@ -416,9 +422,15 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
               </div>
             </div>
           )}
-          <button className="btn btn-primary" disabled={saving || !rows?.length} onClick={submit} style={{ justifyContent: 'center' }}>
-            {saving ? 'Importing…' : rows ? `Import ${rows.length} holdings` : 'Choose a CSV file'}
-          </button>
+          {savedMonth ? (
+            <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, textAlign: 'center', color: 'var(--income)', fontWeight: 600, padding: '10px 0' }}>
+              ✓ Imported · recorded a net-worth point for {monthLabel(savedMonth)}
+            </div>
+          ) : (
+            <button className="btn btn-primary" disabled={saving || !rows?.length} onClick={submit} style={{ justifyContent: 'center' }}>
+              {saving ? 'Importing…' : rows ? `Import ${rows.length} holdings` : 'Choose a CSV file'}
+            </button>
+          )}
         </div>
       </div>
     </div>,
