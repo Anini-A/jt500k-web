@@ -42,8 +42,8 @@ export default function BottomNav() {
     router.push(href)
   }
 
-  // long-press on Dashboard → open the tab menu
-  const startPress = () => { longPressed.current = false; pressTimer.current = setTimeout(() => { longPressed.current = true; setDashMenu(true) }, 420) }
+  // long-press actions: Dashboard → tab menu, Transactions → add-transaction shortcut
+  const startPress = (action: () => void) => { longPressed.current = false; pressTimer.current = setTimeout(() => { longPressed.current = true; action() }, 420) }
   const cancelPress = () => { if (pressTimer.current) clearTimeout(pressTimer.current) }
 
   const pickTab = (key: string) => {
@@ -75,13 +75,15 @@ export default function BottomNav() {
         {ITEMS.map((it) => {
           const Icon = it.Icon
           const active = it.key === current
-          const isDash = it.key === 'dashboard'
+          const longAction = it.key === 'dashboard' ? () => setDashMenu(true)
+            : it.key === 'transactions' ? () => window.dispatchEvent(new CustomEvent('open-add-transaction'))
+              : undefined
           return (
             <button key={it.key}
               onClick={() => { if (longPressed.current) { longPressed.current = false; return } go(it.key, it.href) }}
-              onTouchStart={isDash ? startPress : undefined} onTouchEnd={isDash ? cancelPress : undefined} onTouchMove={isDash ? cancelPress : undefined}
-              onMouseDown={isDash ? startPress : undefined} onMouseUp={isDash ? cancelPress : undefined} onMouseLeave={isDash ? cancelPress : undefined}
-              onContextMenu={isDash ? (e) => { e.preventDefault(); setDashMenu(true) } : undefined}
+              onTouchStart={longAction ? () => startPress(longAction) : undefined} onTouchEnd={longAction ? cancelPress : undefined} onTouchMove={longAction ? cancelPress : undefined}
+              onMouseDown={longAction ? () => startPress(longAction) : undefined} onMouseUp={longAction ? cancelPress : undefined} onMouseLeave={longAction ? cancelPress : undefined}
+              onContextMenu={longAction ? (e) => { e.preventDefault(); longAction() } : undefined}
               className={active ? 'active' : ''} aria-label={it.label} aria-current={active}>
               <Icon size={22} strokeWidth={active ? 2.4 : 2} />
             </button>
