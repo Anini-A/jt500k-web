@@ -70,6 +70,11 @@
   to { transform: rotate(360deg); }
 }
 
+/* pull-to-refresh coin flip (horizontal) */
+@keyframes coinFlip {
+  to { transform: rotateY(360deg); }
+}
+
 /* Voice-input mic while listening */
 .mic-live { animation: micPulse 1.3s ease-in-out infinite; }
 @keyframes micPulse {
