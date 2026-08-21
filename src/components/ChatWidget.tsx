@@ -499,8 +499,14 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
     if (!rafRef.current) rafRef.current = requestAnimationFrame(monitorLoop)
   }
   beginSegmentRef.current = beginSegment
-  // auto-continue only where the platform allows it; iOS rests at "Tap to talk"
-  const relisten = () => { if (voiceModeRef.current && !iosRef.current) beginSegmentRef.current() }
+  // auto-continue the conversation on the already-open mic (no new tap needed).
+  // iOS gets a tiny delay so the TTS audio fully releases before we re-record;
+  // if the mic can't restart, the empty-segment handling idles to "Tap to talk".
+  const relisten = () => {
+    if (!voiceModeRef.current) return
+    if (iosRef.current) setTimeout(() => { if (voiceModeRef.current) beginSegmentRef.current() }, 350)
+    else beginSegmentRef.current()
+  }
 
   const finishSegment = () => {
     clearVoiceTimers()
