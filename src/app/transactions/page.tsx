@@ -2,10 +2,9 @@
 
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import { Trash2, Search, Pencil } from 'lucide-react'
-import Link from 'next/link'
 import HeaderNav from '@/components/HeaderNav'
 import PagePill from '@/components/PagePill'
-import Logo from '@/components/Logo'
+import NotificationBell from '@/components/NotificationCenter'
 import EditTransactionModal from '@/components/EditTransactionModal'
 import { getJSON } from '@/lib/fresh'
 import { today, ymd } from '@/lib/date'
@@ -140,7 +139,7 @@ export default function Transactions() {
     <div className="bg-aurora">
       <div className="wrap">
         <header className="top">
-          <Link href="/" className="brand" aria-label="Home"><Logo /></Link>
+          <NotificationBell />
           <PagePill current="transactions" />
           <HeaderNav current="transactions" />
         </header>

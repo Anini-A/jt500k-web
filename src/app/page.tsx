@@ -3,10 +3,8 @@
 import { useEffect, useState } from 'react'
 import HeaderNav from '@/components/HeaderNav'
 import PagePill from '@/components/PagePill'
-import Logo from '@/components/Logo'
-import Link from 'next/link'
+import NotificationBell from '@/components/NotificationCenter'
 import JourneyCard from '@/components/JourneyCard'
-import ActionItemsCard from '@/components/ActionItemsCard'
 import MoneyFlowCard from '@/components/MoneyFlowCard'
 import AddTransactionButton from '@/components/AddTransactionButton'
 import { getJSON } from '@/lib/fresh'
@@ -46,7 +44,7 @@ export default function Home() {
     <div className="bg-aurora">
       <div className="wrap">
         <header className="top">
-          <Link href="/" className="brand" aria-label="Home"><Logo /></Link>
+          <NotificationBell />
           <PagePill current="home" />
           <HeaderNav current="home" />
         </header>
@@ -56,10 +54,9 @@ export default function Home() {
           <JourneyCard />
         </section>
 
-        {/* Current Balance · Action Items */}
+        {/* Current cash balance */}
         <section className="block">
-          <div className="grid-2">
-            <div className="card glass" style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <div className="card glass">
               <span className="hdr-label">Cash balance</span>
               <div style={{ fontWeight: 700, fontSize: 'clamp(30px, 8vw, 42px)', letterSpacing: '-0.03em', marginTop: 4, color: bal >= 0 ? 'var(--text-primary)' : 'var(--expense)' }}>
                 {stats ? money(bal) : '—'}
@@ -84,8 +81,6 @@ export default function Home() {
                   </div>
                 </button>
               )}
-            </div>
-            <ActionItemsCard />
           </div>
         </section>
 

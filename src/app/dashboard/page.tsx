@@ -1,11 +1,10 @@
 'use client'
 
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
-import Link from 'next/link'
 import { Wallet, CreditCard, PiggyBank, LineChart, Banknote, Target, Users, Receipt, Pencil, Trash2, type LucideIcon } from 'lucide-react'
 import HeaderNav from '@/components/HeaderNav'
 import PagePill from '@/components/PagePill'
-import Logo from '@/components/Logo'
+import NotificationBell from '@/components/NotificationCenter'
 import DebtManager from '@/components/DebtManager'
 import BillRunway from '@/components/BillRunway'
 import BudgetManager from '@/components/BudgetManager'
@@ -354,7 +353,7 @@ export default function Dashboard() {
 function DashHeader() {
   return (
     <header className="top">
-      <Link href="/" className="brand" aria-label="Home"><Logo /></Link>
+      <NotificationBell />
       <PagePill current="dashboard" />
       <HeaderNav current="dashboard" />
     </header>
