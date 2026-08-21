@@ -112,12 +112,16 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   const loadCards = useCallback(() => getJSON('/api/cards').then((d) => Array.isArray(d) && setCards(d)).catch(() => {}), [])
   const loadDrafts = useCallback(() => getJSON('/api/drafts').then((d) => Array.isArray(d) && setDrafts(d)).catch(() => {}), [])
   useEffect(() => { if (open && mode === 'batch') { loadCards(); loadDrafts() } }, [open, mode, loadCards, loadDrafts])
-  // let other parts of the app open the Import tab (e.g. the Home "To log" card)
+  // the headless instance responds to app-wide open events (Home "To log" card,
+  // the long-press Settings shortcut). Visible instances only open on their button.
   useEffect(() => {
+    if (trigger) return
     const openImport = () => { setMode('batch'); setOpen(true) }
+    const openAdd = () => { setMode('single'); setOpen(true) }
     window.addEventListener('open-add-import', openImport)
-    return () => window.removeEventListener('open-add-import', openImport)
-  }, [])
+    window.addEventListener('open-add-transaction', openAdd)
+    return () => { window.removeEventListener('open-add-import', openImport); window.removeEventListener('open-add-transaction', openAdd) }
+  }, [trigger])
   // default the card picker to the first card once loaded
   useEffect(() => { if (!selectedCard && cards.length) setSelectedCard(cards[0].name) }, [cards, selectedCard])
 

@@ -3,6 +3,7 @@ import { Hanken_Grotesk } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import BottomNav from '@/components/BottomNav'
 import PullToRefresh from '@/components/PullToRefresh'
+import AddTransactionButton from '@/components/AddTransactionButton'
 import CapacitorInit from '@/components/CapacitorInit'
 import './globals.css'
 
@@ -42,6 +43,8 @@ export default function RootLayout({
       <body>
         <PullToRefresh />
         {children}
+        {/* headless — receives app-wide open events (Home 'to log' card, long-press Settings) */}
+        <AddTransactionButton trigger={false} />
         <BottomNav />
         <CapacitorInit />
         <Analytics />

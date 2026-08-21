@@ -22,7 +22,8 @@ export default function HeaderNav({ current }: { current: Page }) {
       <span className="ask-ai-desktop"><IconPill icon={<Sparkles />} label="Ask AI" accent onClick={() => setChatOpen(true)} /></span>
       {current === 'transactions' && <AddTransactionButton />}
       {current !== 'settings' && (
-        <IconPill icon={<Settings />} label="Settings" onClick={() => setSettingsOpen(true)} />
+        <IconPill icon={<Settings />} label="Settings" onClick={() => setSettingsOpen(true)}
+          onLongPress={() => window.dispatchEvent(new CustomEvent('open-add-transaction'))} />
       )}
       {chatOpen && <ChatWidget onClose={() => setChatOpen(false)} />}
 

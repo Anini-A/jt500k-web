@@ -80,10 +80,11 @@ export default function MoneyFlowCard() {
       {/* collapsible — range filters + trend chart */}
       {open && (
         <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, marginBottom: 10 }}>
+          {/* same flat toggle as the net-worth card, for a unified look */}
+          <div style={{ display: 'flex', gap: 2, marginBottom: 12 }}>
             {RANGES.map((r) => (
               <button key={r.key} onClick={() => setRange(r.key)}
-                className={`chip ${range === r.key ? 'chip-active' : ''}`}>{r.label}</button>
+                style={{ flex: 1, textAlign: 'center', padding: '8px 0', fontSize: 12.5, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', border: 'none', borderRadius: 999, background: range === r.key ? 'var(--kpi-bg)' : 'transparent', color: range === r.key ? 'var(--text-primary)' : 'var(--text-muted)' }}>{r.label}</button>
             ))}
           </div>
           {data.length ? (

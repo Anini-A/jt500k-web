@@ -974,7 +974,7 @@ header.top h1 {
 .bottom-nav {
   display: none;
   position: fixed; left: 50%; transform: translateX(-50%);
-  bottom: max(10px, calc(env(safe-area-inset-bottom, 0px) - 4px));
+  bottom: max(4px, calc(env(safe-area-inset-bottom, 0px) - 12px));
   z-index: 90; gap: 6px; align-items: center;
   padding: 6px 10px;
   border-radius: 26px;   /* rounded-rectangle corners echo the iPhone screen radius (not a full capsule) */

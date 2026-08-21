@@ -6,7 +6,6 @@ import PagePill from '@/components/PagePill'
 import NotificationBell from '@/components/NotificationCenter'
 import JourneyCard from '@/components/JourneyCard'
 import MoneyFlowCard from '@/components/MoneyFlowCard'
-import AddTransactionButton from '@/components/AddTransactionButton'
 import { getJSON } from '@/lib/fresh'
 
 interface Stats { currentBalance: number; savingsRate: number; transactionCount: number; asOf: string; totalSavings: number }
@@ -73,7 +72,7 @@ export default function Home() {
                   <span className="hdr-label">Credit cards</span>
                   <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
                     {cards.map((c) => (
-                      <div key={c.card} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, fontSize: 14 }}>
+                      <div key={c.card} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, fontSize: 13 }}>
                         <span style={{ color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.card}</span>
                         <span style={{ fontWeight: 600, color: 'var(--expense)', flexShrink: 0 }}>−{money(c.total)}</span>
                       </div>
@@ -88,9 +87,6 @@ export default function Home() {
         <section className="block">
           <MoneyFlowCard />
         </section>
-
-        {/* headless — lets the Credit cards section open the Import tab */}
-        <AddTransactionButton trigger={false} />
 
         {/* Footer */}
         <footer style={{ textAlign: 'center', marginTop: 32, paddingBottom: 16 }}>
