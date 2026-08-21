@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { saveSnapshot } from '@/lib/networth'
 
 export const dynamic = 'force-dynamic'
 export const fetchCache = 'force-no-store'
@@ -96,7 +97,14 @@ export async function POST(req: NextRequest) {
   const { error } = await supabaseAdmin.from('holdings')
     .upsert(upserts, { onConflict: 'household_id,account_number,symbol' })
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ ok: true, imported: upserts.length }, { status: 201 })
+
+  // record a real, dated net-worth snapshot for this upload's "as of" month, so the
+  // trajectory has a true point at that date (past statements backfill real history)
+  const asOfMonth = upserts.reduce((mx, u) => (u.as_of > mx ? u.as_of : mx), '').slice(0, 7)
+    || new Date().toISOString().slice(0, 10).slice(0, 7)
+  try { await saveSnapshot(hh, asOfMonth) } catch { /* snapshot is best-effort */ }
+
+  return NextResponse.json({ ok: true, imported: upserts.length, snapshotMonth: asOfMonth }, { status: 201 })
 }
 
 // DELETE /api/holdings?owner=Jean  (or all)

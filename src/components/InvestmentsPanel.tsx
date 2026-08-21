@@ -354,11 +354,16 @@ function AssetForm({ asset, defaultOwner, onDone, onDelete, onCancel }: {
 function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
   const [uploader, setUploader] = useState('Jean')
   const [rows, setRows] = useState<any[] | null>(null)
+  const [asOf, setAsOf] = useState(today()) // the date these holdings are valued as of
   const [saving, setSaving] = useState(false)
 
   const onFile = (f: File) => {
     const r = new FileReader()
-    r.onload = () => setRows(parseHoldingsCSV(String(r.result || '')))
+    r.onload = () => {
+      const parsed = parseHoldingsCSV(String(r.result || ''))
+      setRows(parsed)
+      if (parsed[0]?.as_of) setAsOf(parsed[0].as_of) // prefill from the CSV's "As of" date
+    }
     r.readAsText(f)
   }
 
@@ -366,9 +371,11 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
     if (!rows?.length) return
     setSaving(true)
     try {
+      // stamp every row with the confirmed date, so the snapshot lands on the right month
+      const dated = rows.map((r) => ({ ...r, as_of: asOf }))
       const res = await fetch('/api/holdings', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uploader, rows }),
+        body: JSON.stringify({ uploader, rows: dated }),
       })
       if (res.ok) onDone()
       else alert('Error: ' + ((await res.json()).error || 'import failed'))
@@ -396,6 +403,11 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
           <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Wealthsimple holdings CSV</span>
             <input type="file" accept=".csv,text/csv" onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
               style={{ fontSize: 14 }} /></label>
+          <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Valued as of</span>
+            <input type="date" value={asOf} max={today()} onChange={(e) => setAsOf(e.target.value)}
+              style={{ height: 44, padding: '0 12px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 14, fontFamily: 'inherit' }} />
+            <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>Records a real net-worth point for this date — upload a past statement to backfill history.</span>
+          </label>
           {rows && (
             <div className="card" style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)' }}>
               <div style={{ fontWeight: 600 }}>{rows.length} holdings · {money(total)}</div>

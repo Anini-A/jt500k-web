@@ -115,6 +115,25 @@ export async function GET() {
     }
   }
 
+  // ---- 4b) Quarterly nudge: holdings look stale (3+ months since last upload) ----
+  {
+    const { data: holds } = await supabaseAdmin.from('holdings').select('as_of')
+    if (holds && holds.length) {
+      const latest = holds.reduce((mx, h) => (h.as_of && h.as_of > mx ? (h.as_of as string) : mx), '')
+      if (latest) {
+        const monthsStale = (Date.now() - new Date(latest + 'T12:00:00').getTime()) / (1000 * 60 * 60 * 24 * 30.4)
+        if (monthsStale >= 3) {
+          const now2 = new Date(); const q = Math.floor(now2.getMonth() / 3) + 1
+          out.push({
+            id: `holdings-refresh-${now2.getFullYear()}Q${q}`, icon: '📈', severity: 'info', kind: 'action', dismissible: true,
+            title: 'Time for a quarterly investments update',
+            detail: `Holdings were last updated ${latest}. Upload Jean's and Henriette's latest Wealthsimple CSVs to keep net worth accurate and record this quarter's point.`,
+          })
+        }
+      }
+    }
+  }
+
   // ---- 5) Bill runway: will each account's balance cover its upcoming bills? ----
   const allBills = (billsRes?.data || []).filter((b: any) => b.active !== false)
   const billAccounts = (billSetRes?.data as any[]) || []
