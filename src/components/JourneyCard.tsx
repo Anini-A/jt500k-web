@@ -6,6 +6,7 @@ import { getJSON } from '@/lib/fresh'
 
 interface NW {
   netWorth: number; holdingsValue: number; cashValue: number; debts: number
+  investGain?: number; investCost?: number; investReturnPct?: number | null
   history: { month: string; net: number; investments: number; debts: number }[]
 }
 type Range = '3M' | '6M' | 'YTD' | '1Y' | 'ALL'
@@ -125,6 +126,18 @@ export default function JourneyCard() {
         )}
         {!hasHistory && <span style={{ color: 'var(--text-muted)' }}>{pct.toFixed(1)}% of {short(goal)} · trajectory builds as months are recorded</span>}
       </div>
+
+      {/* Real investment return — market − book from the uploaded holdings CSVs */}
+      {d.investReturnPct != null && d.investGain != null && (() => {
+        const g = d.investGain, gp = d.investReturnPct, pos = g >= 0
+        const c = pos ? 'var(--income)' : 'var(--expense)'
+        return (
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginTop: 12, padding: '6px 11px', borderRadius: 999, background: 'var(--kpi-bg)', fontSize: 12.5, color: 'var(--text-secondary)' }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: c, flexShrink: 0 }} />
+            Investments <b style={{ color: c, fontWeight: 700 }}>{pos ? '+' : '−'}{money2(Math.abs(g))} ({pos ? '+' : '−'}{Math.abs(gp)}%)</b>&nbsp;return
+          </div>
+        )
+      })()}
 
       {/* Full-bleed trajectory chart — ALL anchors to the goal so "halfway" looks halfway */}
       {hasHistory

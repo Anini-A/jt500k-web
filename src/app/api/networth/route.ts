@@ -14,10 +14,21 @@ export async function GET() {
   if (!hh) return NextResponse.json({ error: 'No household found' }, { status: 400 })
 
   // investments (Wealthsimple holdings) + cash/other (manual assets)
-  const { data: holds } = await supabaseAdmin.from('holdings').select('market_value_cad')
+  const { data: holds } = await supabaseAdmin.from('holdings').select('market_value_cad, book_value_cad')
   const { data: manual } = await supabaseAdmin.from('manual_assets').select('value_cad')
   const holdingsValue = (holds ?? []).reduce((s, h) => s + Number(h.market_value_cad), 0)
   const cashValue = (manual ?? []).reduce((s, a) => s + Number(a.value_cad), 0)
+
+  // real investment return = market − book (cost), from the uploaded holdings CSVs.
+  // Only positions that carry a book value count, so the $ and % stay consistent.
+  let withBookMkt = 0, withBookCost = 0
+  for (const h of holds ?? []) {
+    const cost = Number(h.book_value_cad) || 0
+    if (cost > 0) { withBookMkt += Number(h.market_value_cad) || 0; withBookCost += cost }
+  }
+  const investGain = Math.round((withBookMkt - withBookCost) * 100) / 100
+  const investCost = Math.round(withBookCost * 100) / 100
+  const investReturnPct = withBookCost > 0 ? Math.round((investGain / withBookCost) * 1000) / 10 : null
 
   // debts remaining = amount − payments (category 'Debt Repayment', desc matches debt name)
   const { data: debts } = await supabaseAdmin.from('debts').select('name, amount')
@@ -46,6 +57,9 @@ export async function GET() {
     cashValue: Math.round(cashValue * 100) / 100,
     debts: debtsTotal,
     netWorth,
+    investGain,
+    investCost,
+    investReturnPct,
     history,
   }, { headers: { 'Cache-Control': 'no-store' } })
 }
