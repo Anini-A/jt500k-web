@@ -30,12 +30,16 @@ export default function CategorySelect({ value, onChange, cats, placeholder = 'â
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const h = (e: MouseEvent) => {
+    const h = (e: Event) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
     }
     document.addEventListener('mousedown', h)
-    return () => document.removeEventListener('mousedown', h)
+    document.addEventListener('touchstart', h)
+    return () => { document.removeEventListener('mousedown', h); document.removeEventListener('touchstart', h) }
   }, [])
+
+  // always close once a selection lands (robust on iOS where the click can be swallowed)
+  useEffect(() => { setOpen(false) }, [value])
 
   const sel = cats.find((c) => c.name === value)
 
