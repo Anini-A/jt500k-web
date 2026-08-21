@@ -126,9 +126,9 @@ export default function JourneyCard() {
         {!hasHistory && <span style={{ color: 'var(--text-muted)' }}>{pct.toFixed(1)}% of {short(goal)} · trajectory builds as months are recorded</span>}
       </div>
 
-      {/* Full-bleed trajectory chart */}
+      {/* Full-bleed trajectory chart — ALL anchors to the goal so "halfway" looks halfway */}
       {hasHistory
-        ? <Spark real={realWin} proj={projWin} nowM={nowM} />
+        ? <Spark real={realWin} proj={projWin} nowM={nowM} goal={goal} anchor={range === 'ALL'} />
         : <div style={{ height: 12 }} />}
 
       {/* Range chips */}
@@ -203,7 +203,7 @@ export default function JourneyCard() {
 
 // The blended sparkline — dotted area fill under the real line, faint dashed projection,
 // endpoint dot, and a hover tooltip. Full width, no axes.
-function Spark({ real, proj, nowM }: { real: { month: string; net: number }[]; proj: { month: string; net: number }[]; nowM: string }) {
+function Spark({ real, proj, nowM, goal, anchor }: { real: { month: string; net: number }[]; proj: { month: string; net: number }[]; nowM: string; goal: number; anchor: boolean }) {
   const [hover, setHover] = useState<{ left: number; top: number; month: string; net: number; proj: boolean } | null>(null)
   const W = 400, H = 150, PADY = 10
 
@@ -213,8 +213,11 @@ function Spark({ real, proj, nowM }: { real: { month: string; net: number }[]; p
   if (series.length < 2) return <div style={{ height: 12 }} />
   const N = series.length - 1
   const vals = series.map((p) => p.net)
-  let lo = Math.min(...vals), hi = Math.max(...vals)
-  const pad = (hi - lo) * 0.16 || 8; lo -= pad; hi += pad
+  // ALL → anchor the scale to the goal ($0 … goal) so progress reads as progress.
+  // Shorter ranges → auto-fit the window so recent movement is legible.
+  let lo: number, hi: number
+  if (anchor) { lo = 0; hi = goal * 1.05 }
+  else { lo = Math.min(...vals); hi = Math.max(...vals); const pad = (hi - lo) * 0.16 || 8; lo -= pad; hi += pad }
   const X = (i: number) => (i / N) * W
   const Y = (v: number) => PADY + (1 - (v - lo) / (hi - lo)) * (H - 2 * PADY)
 
@@ -245,6 +248,9 @@ function Spark({ real, proj, nowM }: { real: { month: string; net: number }[]; p
           <clipPath id="nwclip"><path d={area} /></clipPath>
         </defs>
         <rect x="0" y="0" width={W} height={H} fill="url(#nwdots)" clipPath="url(#nwclip)" />
+        {anchor && Y(goal) >= PADY && (
+          <line x1="0" y1={Y(goal)} x2={W} y2={Y(goal)} stroke="var(--income)" strokeWidth={1} strokeDasharray="2 4" opacity={0.7} vectorEffect="non-scaling-stroke" />
+        )}
         {dashed.length > 1 && (
           <path d={line(dashed, realEnd)} fill="none" stroke="var(--accent)" strokeWidth={1.6} strokeDasharray="3 4" opacity={0.4} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
         )}
@@ -252,6 +258,9 @@ function Spark({ real, proj, nowM }: { real: { month: string; net: number }[]; p
         <circle cx={X(realEnd)} cy={Y(real[real.length - 1].net)} r={3.6} fill="var(--accent)" stroke="var(--surface-1)" strokeWidth={2} />
         {hover && <circle cx={X(0) + (hover.left / 100) * W} cy={(hover.top / 100) * H} r={3.4} fill="var(--accent)" stroke="var(--surface-1)" strokeWidth={2} />}
       </svg>
+      {anchor && Y(goal) >= PADY && (
+        <div style={{ position: 'absolute', right: 2, top: `${(Y(goal) / H) * 100}%`, transform: 'translateY(-115%)', pointerEvents: 'none', fontSize: 9, fontWeight: 600, letterSpacing: '0.02em', color: 'var(--income)' }}>{short(goal)} goal</div>
+      )}
       {hover && (
         <div style={{ position: 'absolute', left: `${hover.left}%`, top: `${hover.top}%`, transform: 'translate(-50%, -115%)', pointerEvents: 'none', background: 'var(--text-primary)', color: 'var(--surface-1)', borderRadius: 9, padding: '6px 9px', fontSize: 12, lineHeight: 1.3, whiteSpace: 'nowrap', boxShadow: '0 6px 18px rgba(0,0,0,0.22)' }}>
           <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>{fmtMonth(hover.month)}{hover.proj ? ' · proj.' : ''}</span>&nbsp; <b style={{ fontWeight: 700 }}>{money(hover.net)}</b>
