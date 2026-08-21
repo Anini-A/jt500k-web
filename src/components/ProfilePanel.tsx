@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Pencil, Plus, Trash2, ExternalLink, Users, Home, Shield, ScrollText, Flag, Building2, FileText, type LucideIcon } from 'lucide-react'
 import { getJSON } from '@/lib/fresh'
+import { useToast } from './Feedback'
 
 type Status = 'todo' | 'doing' | 'done'
 interface Field { label: string; value: string }
@@ -218,6 +219,7 @@ export default function ProfilePanel() {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState<Section | null>(null)
   const [saving, setSaving] = useState(false)
+  const { toast, toastNode } = useToast()
 
   const load = useCallback(() => {
     getJSON('/api/profile').then((d) => {
@@ -243,7 +245,7 @@ export default function ProfilePanel() {
       const next: Profile = { ...profile, sections: profile.sections.map((s) => (s.id === draft.id ? draft : s)) }
       const res = await fetch('/api/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(next) })
       if (res.ok) { setProfile(next); setEditing(false); setDraft(null) }
-      else alert('Could not save: ' + ((await res.json()).error || 'error'))
+      else toast((await res.json()).error || 'Could not save.')
     } finally { setSaving(false) }
   }
 
@@ -255,6 +257,7 @@ export default function ProfilePanel() {
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 14 }}>
+      {toastNode}
       {/* Section menu — dashboard tab style */}
       <section style={{ display: 'flex', justifyContent: 'center' }}>
         <div className="tabs">

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useMemo, Fragment } from 'react'
+import { useConfirm } from './Feedback'
 import { Pencil, Plus, Trash2, TriangleAlert, CheckCircle2, CalendarClock } from 'lucide-react'
 import { getJSON } from '@/lib/fresh'
 import { ymd, today } from '@/lib/date'
@@ -386,29 +387,36 @@ function AccountModal({ account, canDelete, onClose, onSaved }: { account: Accou
   const [asOf, setAsOf] = useState(todayISO()) // default to today — you're stating today's balance
   const [buffer, setBuffer] = useState(account ? String(account.buffer || '') : '')
   const [saving, setSaving] = useState(false)
+  const [err, setErr] = useState('')
+  const { confirm, confirmNode } = useConfirm()
   const save = async () => {
-    if (!name.trim()) { alert('Account name is required.'); return }
+    setErr('')
+    if (!name.trim()) { setErr('Account name is required.'); return }
     setSaving(true)
     const body: Record<string, unknown> = { name: name.trim(), current_balance: num(bal), balance_as_of: asOf, buffer: num(buffer) }
     const res = isNew
       ? await fetch('/api/bill-accounts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       : await fetch('/api/bill-accounts', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: account!.id, ...body }) })
     setSaving(false)
-    if (!res.ok) { alert('Could not save.'); return }
+    if (!res.ok) { setErr('Could not save.'); return }
     const j = await res.json().catch(() => ({}))
     onSaved(isNew ? j.id : undefined)
   }
-  const del = async () => {
-    if (!account || !confirm(`Delete the "${account.name}" account and all its bills?`)) return
-    const res = await fetch(`/api/bill-accounts?id=${account.id}`, { method: 'DELETE' })
-    if (res.ok) onSaved(''); else alert('Could not delete.')
+  const del = () => {
+    if (!account) return
+    confirm({ title: `Delete “${account.name}”?`, message: 'This removes the account and all of its bills.', run: async () => {
+      const res = await fetch(`/api/bill-accounts?id=${account.id}`, { method: 'DELETE' })
+      if (res.ok) onSaved(''); else setErr('Could not delete.')
+    } })
   }
   return (
     <Shell title={isNew ? 'Add account' : `${account!.name}`} onClose={onClose}>
+      {confirmNode}
       <Field label="Account name"><input style={inp} value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Transpo" autoFocus={isNew} /></Field>
       <Field label="Current balance"><input style={inp} inputMode="decimal" value={bal} onChange={(e) => setBal(e.target.value)} placeholder="0.00" autoFocus={!isNew} /></Field>
       <Field label="As of date"><input style={inp} type="date" value={asOf} onChange={(e) => setAsOf(e.target.value)} /></Field>
       <Field label="Safety buffer (keep at least this much)"><input style={inp} inputMode="decimal" value={buffer} onChange={(e) => setBuffer(e.target.value)} placeholder="0.00" /></Field>
+      {err && <div style={{ fontSize: 13, color: 'var(--expense)', fontWeight: 600 }}>{err}</div>}
       <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
         {!isNew && canDelete && <button className="btn btn-secondary" style={{ color: 'var(--expense)', borderColor: 'var(--expense)' }} onClick={del} aria-label="Delete account"><Trash2 size={15} /></button>}
         <button className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }} onClick={onClose}>Cancel</button>
@@ -425,21 +433,27 @@ function BillModal({ bill, accountId, onClose, onSaved }: { bill: Bill | null; a
   const [quarterly, setQuarterly] = useState(!!bill?.quarterly)
   const [nextDue, setNextDue] = useState(bill?.next_due || '')
   const [saving, setSaving] = useState(false)
+  const [err, setErr] = useState('')
+  const { confirm, confirmNode } = useConfirm()
   const save = async () => {
-    if (!name.trim() || !day || !amount) { alert('Name, day and amount are required.'); return }
+    setErr('')
+    if (!name.trim() || !day || !amount) { setErr('Name, day and amount are required.'); return }
     setSaving(true)
     const body = { id: bill?.id, account_id: accountId, name: name.trim(), day: parseInt(day), amount: num(amount), quarterly, next_due: quarterly ? (nextDue || null) : null }
     const res = await fetch('/api/bills', { method: bill ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
     setSaving(false)
-    if (res.ok) onSaved(); else alert('Could not save.')
+    if (res.ok) onSaved(); else setErr('Could not save.')
   }
-  const del = async () => {
-    if (!bill || !confirm('Delete this bill?')) return
-    const res = await fetch(`/api/bills?id=${bill.id}`, { method: 'DELETE' })
-    if (res.ok) onSaved(); else alert('Could not delete.')
+  const del = () => {
+    if (!bill) return
+    confirm({ title: `Delete “${bill.name}”?`, run: async () => {
+      const res = await fetch(`/api/bills?id=${bill.id}`, { method: 'DELETE' })
+      if (res.ok) onSaved(); else setErr('Could not delete.')
+    } })
   }
   return (
     <Shell title={bill ? 'Edit bill' : 'Add bill'} onClose={onClose}>
+      {confirmNode}
       <Field label="Bill name"><input style={inp} value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Manitoba Hydro" autoFocus /></Field>
       <div style={{ display: 'flex', gap: 12 }}>
         <div style={{ flex: 1 }}><Field label="Day of month"><input style={inp} inputMode="numeric" value={day} onChange={(e) => setDay(e.target.value)} placeholder="15" /></Field></div>
@@ -449,6 +463,7 @@ function BillModal({ bill, accountId, onClose, onSaved }: { bill: Bill | null; a
         <input type="checkbox" checked={quarterly} onChange={(e) => setQuarterly(e.target.checked)} /> Quarterly (not every month)
       </label>
       {quarterly && <Field label="Next due date"><input style={inp} type="date" value={nextDue} onChange={(e) => setNextDue(e.target.value)} /></Field>}
+      {err && <div style={{ fontSize: 13, color: 'var(--expense)', fontWeight: 600 }}>{err}</div>}
       <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
         {bill && <button className="btn btn-secondary" onClick={del} style={{ color: 'var(--expense)', borderColor: 'var(--expense)' }} aria-label="Delete"><Trash2 size={15} /></button>}
         <button className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }} onClick={onClose}>Cancel</button>

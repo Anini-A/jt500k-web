@@ -6,6 +6,7 @@ import { Upload, RefreshCw, Plus, Pencil, Trash2, LineChart } from 'lucide-react
 import { Donut } from './DashCharts'
 import { getJSON } from '@/lib/fresh'
 import { today } from '@/lib/date'
+import { useConfirm, useToast } from './Feedback'
 
 interface Holding {
   id: string; owner: string; account_type: string; account_number: string
@@ -84,6 +85,7 @@ function parseHoldingsCSV(text: string) {
 export default function InvestmentsPanel() {
   const [data, setData] = useState<{ rows: Holding[]; assets: Asset[]; totalValue: number; totalCost: number; ownerTotals: Record<string, number>; asOf: string | null } | null>(null)
   const [loading, setLoading] = useState(true)
+  const { toast, toastNode } = useToast()
   const [person, setPerson] = useState('Household')
   const [importing, setImporting] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
@@ -155,7 +157,7 @@ export default function InvestmentsPanel() {
   const changeAsset = async (method: string, body?: any, qs = '') => {
     const res = await fetch('/api/assets' + qs, { method, ...(body ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}) })
     if (res.ok) { await load(); window.dispatchEvent(new CustomEvent('transaction-added')) }
-    else alert('Error: ' + ((await res.json()).error || 'failed'))
+    else toast((await res.json()).error || 'Could not save.')
   }
 
   if (loading) return <div className="card glass" style={{ padding: 40, textAlign: 'center' }}>Loading portfolio…</div>
@@ -174,6 +176,7 @@ export default function InvestmentsPanel() {
 
   return (
     <>
+      {toastNode}
       {/* Person filter + actions — chips scroll on one line, actions on their own row */}
       <div className="card glass" style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
         <div className="chip-scroll">
@@ -283,8 +286,10 @@ function OtherAssets({ assets, showOwner, onChange, defaultOwner }: {
 }) {
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<string | null>(null)
+  const { confirm, confirmNode } = useConfirm()
   return (
     <div className="card glass" style={{ marginTop: 16 }}>
+      {confirmNode}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 8 }}>
         <h3 style={{ margin: 0, fontSize: 15 }}>Other Assets <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>· cash, options, etc.</span></h3>
         <button className="btn btn-secondary" onClick={() => { setAdding((v) => !v); setEditing(null) }}><Plus size={15} /> {adding ? 'Cancel' : 'Add'}</button>
@@ -297,7 +302,7 @@ function OtherAssets({ assets, showOwner, onChange, defaultOwner }: {
           {assets.map((a) => editing === a.id ? (
             <AssetForm key={a.id} asset={a} defaultOwner={a.owner}
               onDone={async (p) => { await onChange('PATCH', { id: a.id, ...p }); setEditing(null) }}
-              onDelete={async () => { if (confirm(`Delete "${a.name}"?`)) { await onChange('DELETE', undefined, `?id=${a.id}`); setEditing(null) } }}
+              onDelete={() => confirm({ title: `Delete “${a.name}”?`, run: async () => { await onChange('DELETE', undefined, `?id=${a.id}`); setEditing(null) } })}
               onCancel={() => setEditing(null)} />
           ) : (
             <div key={a.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '10px 4px', borderBottom: '1px solid var(--border)' }}>
@@ -357,6 +362,7 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
   const [asOf, setAsOf] = useState(today()) // the date these holdings are valued as of
   const [saving, setSaving] = useState(false)
   const [savedMonth, setSavedMonth] = useState<string | null>(null) // "✓ recorded" confirmation
+  const [err, setErr] = useState('')
 
   const onFile = (f: File) => {
     const r = new FileReader()
@@ -382,7 +388,7 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
       if (res.ok) {
         setSavedMonth(d.snapshotMonth || asOf.slice(0, 7))
         setTimeout(onDone, 1600) // let the "✓ recorded" note show before closing
-      } else alert('Error: ' + (d.error || 'import failed'))
+      } else setErr(d.error || 'Import failed.')
     } finally { setSaving(false) }
   }
 
@@ -422,12 +428,13 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
               </div>
             </div>
           )}
+          {err && <div style={{ fontSize: 13, color: 'var(--expense)', fontWeight: 600 }}>{err}</div>}
           {savedMonth ? (
             <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, textAlign: 'center', color: 'var(--income)', fontWeight: 600, padding: '10px 0' }}>
               ✓ Imported · recorded a net-worth point for {monthLabel(savedMonth)}
             </div>
           ) : (
-            <button className="btn btn-primary" disabled={saving || !rows?.length} onClick={submit} style={{ justifyContent: 'center' }}>
+            <button className="btn btn-primary" disabled={saving || !rows?.length} onClick={() => { setErr(''); submit() }} style={{ justifyContent: 'center' }}>
               {saving ? 'Importing…' : rows ? `Import ${rows.length} holdings` : 'Choose a CSV file'}
             </button>
           )}

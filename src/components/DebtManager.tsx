@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Plus, Pencil, Trash2, ChevronDown, CheckCircle2 } from 'lucide-react'
 import { getJSON } from '@/lib/fresh'
+import { useConfirm, useToast } from './Feedback'
 
 interface Debt {
   id: string
@@ -28,6 +29,8 @@ export default function DebtManager() {
   const [loading, setLoading] = useState(true)
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<string | null>(null)
+  const { confirm, confirmNode } = useConfirm()
+  const { toast, toastNode } = useToast()
   const [busy, setBusy] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
 
@@ -50,7 +53,7 @@ export default function DebtManager() {
         method,
         ...(body ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}),
       })
-      if (!res.ok) { alert('Error: ' + ((await res.json()).error || 'failed')); return false }
+      if (!res.ok) { toast((await res.json()).error || 'Could not save.'); return false }
       await load()
       return true
     } finally { setBusy(false) }
@@ -63,6 +66,7 @@ export default function DebtManager() {
 
   return (
     <div className="card glass">
+      {confirmNode}{toastNode}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, gap: 8 }}>
         <button onClick={() => setCollapsed((v) => !v)}
           style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', padding: 0 }}
@@ -128,7 +132,7 @@ export default function DebtManager() {
             if (editing === d.id) {
               return <EditDebtForm key={d.id} debt={d} busy={busy}
                 onSave={(p) => call('PATCH', { id: d.id, ...p }).then((ok) => ok && setEditing(null))}
-                onDelete={() => { if (confirm(`Delete "${d.name}"? (transactions are not affected)`)) call('DELETE', undefined, `?id=${d.id}`).then((ok) => ok && setEditing(null)) }}
+                onDelete={() => confirm({ title: `Delete “${d.name}”?`, message: 'Transactions are not affected.', run: () => { call('DELETE', undefined, `?id=${d.id}`).then((ok) => ok && setEditing(null)) } })}
                 onCancel={() => setEditing(null)} />
             }
             return (

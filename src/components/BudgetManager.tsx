@@ -5,6 +5,7 @@ import { Plus, Pencil, Trash2, ChevronDown, Wallet, CreditCard, PiggyBank, Bankn
 import CategorySelect from './CategorySelect'
 import { today } from '@/lib/date'
 import { getJSON } from '@/lib/fresh'
+import { useConfirm, useToast } from './Feedback'
 
 interface Item { id: string; name: string; amount: number }
 interface Envelope { category: string; type: string; budgeted: number; spent: number; items: Item[] }
@@ -45,6 +46,8 @@ export default function BudgetManager() {
   const [data, setData] = useState<{ month: string; label: string; availableMonths?: string[]; envelopes: Envelope[]; totalBudgeted: number; totalSpent: number } | null>(null)
   const [cats, setCats] = useState<{ name: string; type: string }[]>([])
   const [month, setMonth] = useState(today().slice(0, 7)) // current local month
+  const { confirm, confirmNode } = useConfirm()
+  const { toast, toastNode } = useToast()
   const [loading, setLoading] = useState(true)
   const [collapsed, setCollapsed] = useState(false)
   const [adding, setAdding] = useState(false)
@@ -71,7 +74,7 @@ export default function BudgetManager() {
       const res = await fetch('/api/budgets' + qs, {
         method, ...(body ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}),
       })
-      if (!res.ok) { alert('Error: ' + ((await res.json()).error || 'failed')); return false }
+      if (!res.ok) { toast((await res.json()).error || 'Could not save.'); return false }
       await load()
       return true
     } finally { setBusy(false) }
@@ -107,6 +110,7 @@ export default function BudgetManager() {
 
   return (
     <>
+      {confirmNode}{toastNode}
       {/* ── Card 1: summary (always visible) ── */}
       <div className="card glass" style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 18 }}>
@@ -200,7 +204,7 @@ export default function BudgetManager() {
                     {e.items.map((it) => editing === it.id ? (
                       <ItemForm key={it.id} cats={cats} busy={busy} item={{ ...it, category: e.category }}
                         onDone={async (p) => { if (await call('PATCH', { id: it.id, ...p })) setEditing(null) }}
-                        onDelete={async () => { if (confirm(`Delete "${it.name}"?`)) { if (await call('DELETE', undefined, `?id=${it.id}`)) setEditing(null) } }}
+                        onDelete={() => confirm({ title: `Delete “${it.name}”?`, run: async () => { if (await call('DELETE', undefined, `?id=${it.id}`)) setEditing(null) } })}
                         onCancel={() => setEditing(null)} />
                     ) : (
                       <button key={it.id} onClick={() => { setEditing(it.id); setAdding(false) }} title="Edit"
