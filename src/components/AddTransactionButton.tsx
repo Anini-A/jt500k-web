@@ -411,11 +411,11 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                 <form onSubmit={(e) => { e.preventDefault(); submitSingle(false) }} style={{ display: 'grid', gap: 16 }}>
                   {/* amount hero */}
                   <div style={{ textAlign: 'center', padding: '6px 0 2px' }}>
-                    <div style={{ display: 'inline-flex', alignItems: 'baseline', gap: 4, maxWidth: '100%' }}>
-                      <span style={{ fontSize: 26, fontWeight: 700, color: typeColor }}>$</span>
-                      <input autoFocus inputMode="decimal" value={form.amount} placeholder="0"
+                    <div style={{ display: 'inline-flex', alignItems: 'baseline', gap: 6, maxWidth: '100%' }}>
+                      <span style={{ fontSize: 30, fontWeight: 700, color: form.amount ? typeColor : 'var(--text-muted)' }}>$</span>
+                      <input autoFocus inputMode="decimal" value={form.amount} placeholder="0.00"
                         onChange={(e) => setForm({ ...form, amount: e.target.value.replace(/[^0-9.]/g, '') })}
-                        style={{ fontSize: 'clamp(40px, 12vw, 54px)', fontWeight: 800, letterSpacing: '-0.03em', border: 'none', background: 'transparent', textAlign: 'center', outline: 'none', color: typeColor, fontFamily: 'inherit', width: `${Math.max(2, (form.amount.length || 1) + 0.5)}ch`, minWidth: '2ch', maxWidth: '100%' }} />
+                        style={{ fontSize: 'clamp(40px, 12vw, 54px)', fontWeight: 800, letterSpacing: '-0.03em', border: 'none', background: 'transparent', textAlign: 'left', outline: 'none', color: typeColor, fontFamily: 'inherit', width: `${Math.max(4.5, form.amount.length + 1)}ch`, maxWidth: '100%' }} />
                     </div>
                   </div>
 
@@ -463,14 +463,9 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
 
                   {singleErr && <div style={{ fontSize: 13, color: 'var(--expense)', fontWeight: 600 }}>{singleErr}</div>}
 
-                  <div style={{ display: 'flex', gap: 10 }}>
-                    <button className="btn btn-secondary" type="button" disabled={saving} onClick={() => submitSingle(true)} style={{ flex: '0 0 auto', justifyContent: 'center' }}>
-                      + Add another
-                    </button>
-                    <button className="btn btn-primary" type="submit" disabled={saving} style={{ flex: 1, justifyContent: 'center' }}>
-                      {saving ? 'Saving…' : 'Save'}
-                    </button>
-                  </div>
+                  <button className="btn btn-primary" type="submit" disabled={saving} style={{ width: '100%', justifyContent: 'center' }}>
+                    {saving ? 'Saving…' : 'Save'}
+                  </button>
                 </form>
               )
             })()}
