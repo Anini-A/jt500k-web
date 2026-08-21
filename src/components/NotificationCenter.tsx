@@ -65,20 +65,24 @@ export default function NotificationBell() {
                 <div style={{ fontSize: 13 }}>Nothing needs your attention right now.</div>
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 22, maxHeight: '68vh', overflowY: 'auto' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14, maxHeight: '68vh', overflowY: 'auto' }}>
                 {actions.length > 0 && (
-                  <div>
-                    <SectionLabel>Needs action</SectionLabel>
-                    {actions.map((n, i) => <Item key={n.id} n={n} first={i === 0} onDismiss={n.dismissible ? () => dismiss(n.id) : undefined} skip={n.dismissible} />)}
+                  <div className="card glass">
+                    <span className="hdr-label">Needs action</span>
+                    <div style={{ marginTop: 6 }}>
+                      {actions.map((n, i) => <Item key={n.id} n={n} first={i === 0} onDismiss={n.dismissible ? () => dismiss(n.id) : undefined} skip={n.dismissible} />)}
+                    </div>
                   </div>
                 )}
                 {infos.length > 0 && (
-                  <div>
+                  <div className="card glass">
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <SectionLabel>Good to know</SectionLabel>
+                      <span className="hdr-label">Good to know</span>
                       <button onClick={clearInfo} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', padding: 0, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Clear all</button>
                     </div>
-                    {infos.map((n, i) => <Item key={n.id} n={n} first={i === 0} onDismiss={() => dismiss(n.id)} />)}
+                    <div style={{ marginTop: 6 }}>
+                      {infos.map((n, i) => <Item key={n.id} n={n} first={i === 0} onDismiss={() => dismiss(n.id)} />)}
+                    </div>
                   </div>
                 )}
               </div>
@@ -89,10 +93,6 @@ export default function NotificationBell() {
       )}
     </>
   )
-}
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4 }}>{children}</div>
 }
 
 function Item({ n, first, onDismiss, skip }: { n: Notif; first?: boolean; onDismiss?: () => void; skip?: boolean }) {
