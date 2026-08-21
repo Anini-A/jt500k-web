@@ -7,7 +7,7 @@ import { getJSON } from '@/lib/fresh'
 interface NW {
   netWorth: number; holdingsValue: number; cashValue: number; debts: number
   investGain?: number; investCost?: number; investReturnPct?: number | null
-  history: { month: string; net: number; investments: number; debts: number }[]
+  history: { month: string; net: number; investments?: number; debts?: number; est?: boolean }[]
 }
 type Range = '3M' | '6M' | 'YTD' | '1Y' | 'ALL'
 const RANGES: Range[] = ['3M', '6M', 'YTD', '1Y', 'ALL']
@@ -219,13 +219,13 @@ export default function JourneyCard() {
 
 // The blended sparkline — dotted area fill under the real line, faint dashed projection,
 // endpoint dot, and a hover tooltip. Full width, no axes.
-function Spark({ real, proj, nowM, goal, anchor }: { real: { month: string; net: number }[]; proj: { month: string; net: number }[]; nowM: string; goal: number; anchor: boolean }) {
-  const [hover, setHover] = useState<{ left: number; top: number; month: string; net: number; proj: boolean } | null>(null)
+function Spark({ real, proj, nowM, goal, anchor }: { real: { month: string; net: number; est?: boolean }[]; proj: { month: string; net: number }[]; nowM: string; goal: number; anchor: boolean }) {
+  const [hover, setHover] = useState<{ left: number; top: number; month: string; net: number; proj: boolean; est: boolean } | null>(null)
   const W = 400, H = 150, PADY = 10
 
   // one continuous index across real + projection tail (proj[0] === last real point)
   const tail = proj.slice(1)
-  const series = real.map((p) => ({ ...p, isProj: false })).concat(tail.map((p) => ({ ...p, isProj: true })))
+  const series = real.map((p) => ({ ...p, isProj: false, isEst: !!p.est })).concat(tail.map((p) => ({ ...p, isProj: true, isEst: false })))
   if (series.length < 2) return <div style={{ height: 12 }} />
   const N = series.length - 1
   const vals = series.map((p) => p.net)
@@ -255,9 +255,15 @@ function Spark({ real, proj, nowM, goal, anchor }: { real: { month: string; net:
   }
   const solidCoords = solid.map((p, k) => ({ x: X(k), y: Y(p.net) }))
   const dashedCoords = dashed.map((p, k) => ({ x: X(realEnd + k), y: Y(p.net) }))
-  const solidPath = smooth(solidCoords)
   const dashedPath = smooth(dashedCoords)
-  const area = `${solidPath} L ${X(realEnd).toFixed(1)} ${H} L ${X(0).toFixed(1)} ${H} Z`
+  const area = `${smooth(solidCoords)} L ${X(realEnd).toFixed(1)} ${H} L ${X(0).toFixed(1)} ${H} Z`
+
+  // split the realized line into an estimated (pre-real-data) stretch + the real stretch
+  const firstRealIdx = solid.findIndex((p) => !p.isEst)
+  const hasEst = firstRealIdx > 0
+  const realStart = hasEst ? firstRealIdx : 0
+  const estPath = hasEst ? smooth(solid.slice(0, firstRealIdx + 1).map((p, k) => ({ x: X(k), y: Y(p.net) }))) : ''
+  const realPath = smooth(solid.slice(realStart).map((p, k) => ({ x: X(realStart + k), y: Y(p.net) })))
 
   const move = (e: React.PointerEvent<SVGSVGElement>) => {
     const r = e.currentTarget.getBoundingClientRect()
@@ -265,7 +271,7 @@ function Spark({ real, proj, nowM, goal, anchor }: { real: { month: string; net:
     let bi = 0, bd = 1e9
     series.forEach((_, i) => { const dd = Math.abs(X(i) - px); if (dd < bd) { bd = dd; bi = i } })
     const p = series[bi]
-    setHover({ left: (X(bi) / W) * 100, top: (Y(p.net) / H) * 100, month: p.month, net: p.net, proj: p.isProj })
+    setHover({ left: (X(bi) / W) * 100, top: (Y(p.net) / H) * 100, month: p.month, net: p.net, proj: p.isProj, est: p.isEst })
   }
 
   return (
@@ -283,10 +289,14 @@ function Spark({ real, proj, nowM, goal, anchor }: { real: { month: string; net:
           <line x1="0" y1={Y(goal)} x2={W} y2={Y(goal)} stroke="var(--income)" strokeWidth={1} strokeDasharray="2 4" opacity={0.7} vectorEffect="non-scaling-stroke" />
         )}
         {dashed.length > 1 && (
-          <path d={dashedPath} fill="none" stroke="var(--accent)" strokeWidth={1.6} strokeDasharray="3 4" opacity={0.4} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+          <path d={dashedPath} fill="none" stroke="var(--accent)" strokeWidth={1.5} strokeDasharray="3 4" opacity={0.4} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
         )}
-        <path d={solidPath} fill="none" stroke="var(--accent)" strokeWidth={2.2} strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-        <circle cx={X(realEnd)} cy={Y(real[real.length - 1].net)} r={3.6} fill="var(--accent)" stroke="var(--surface-1)" strokeWidth={2} />
+        {hasEst && (
+          <path d={estPath} fill="none" stroke="var(--accent)" strokeWidth={1.6} opacity={0.5} strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+        )}
+        <path d={realPath} fill="none" stroke="var(--accent)" strokeWidth={1.8} strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+        {hasEst && <circle cx={X(firstRealIdx)} cy={Y(solid[firstRealIdx].net)} r={3} fill="var(--surface-1)" stroke="var(--accent)" strokeWidth={1.6} />}
+        <circle cx={X(realEnd)} cy={Y(real[real.length - 1].net)} r={3.4} fill="var(--accent)" stroke="var(--surface-1)" strokeWidth={2} />
         {hover && <circle cx={X(0) + (hover.left / 100) * W} cy={(hover.top / 100) * H} r={3.4} fill="var(--accent)" stroke="var(--surface-1)" strokeWidth={2} />}
       </svg>
       {anchor && Y(goal) >= PADY && (
@@ -294,7 +304,7 @@ function Spark({ real, proj, nowM, goal, anchor }: { real: { month: string; net:
       )}
       {hover && (
         <div style={{ position: 'absolute', left: `${hover.left}%`, top: `${hover.top}%`, transform: 'translate(-50%, -115%)', pointerEvents: 'none', background: 'var(--text-primary)', color: 'var(--surface-1)', borderRadius: 9, padding: '6px 9px', fontSize: 12, lineHeight: 1.3, whiteSpace: 'nowrap', boxShadow: '0 6px 18px rgba(0,0,0,0.22)' }}>
-          <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>{fmtMonth(hover.month)}{hover.proj ? ' · proj.' : ''}</span>&nbsp; <b style={{ fontWeight: 700 }}>{money(hover.net)}</b>
+          <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>{fmtMonth(hover.month)}{hover.proj ? ' · proj.' : hover.est ? ' · est.' : ''}</span>&nbsp; <b style={{ fontWeight: 700 }}>{money(hover.net)}</b>
         </div>
       )}
     </div>

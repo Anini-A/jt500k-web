@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { indexMonthlyReturns, reconstructHistory, type MonthlyFlow } from '@/lib/backfill'
 
 export const dynamic = 'force-dynamic'
 export const fetchCache = 'force-no-store'
@@ -48,8 +49,43 @@ export async function GET() {
     { onConflict: 'household_id,month' },
   )
 
-  const { data: snaps } = await supabaseAdmin.from('net_worth_snapshots').select('month, net_worth, investments, debts').order('month')
-  const history = (snaps ?? []).map((s) => ({ month: s.month, net: Math.round(Number(s.net_worth)), investments: Math.round(Number(s.investments)), debts: Math.round(Number(s.debts)) }))
+  const { data: snaps } = await supabaseAdmin.from('net_worth_snapshots').select('month, net_worth, investments, debts, cash').order('month')
+  const realHistory = (snaps ?? []).map((s) => ({ month: s.month as string, net: Math.round(Number(s.net_worth)), investments: Math.round(Number(s.investments)), debts: Math.round(Number(s.debts)), est: false }))
+
+  // ---- Estimated backfill: months BEFORE the first real snapshot ----
+  // Cash & debts from real transactions; investments via real index returns; anchored
+  // to the earliest real point so the estimate converges to the truth there.
+  let estimated: { month: string; net: number; est: true }[] = []
+  try {
+    const { data: txns } = await supabaseAdmin.from('transactions').select('type, amount, date, category')
+    const rows = txns ?? []
+    if (rows.length) {
+      const flows = new Map<string, MonthlyFlow>()
+      let earliestTx = '9999-99'
+      for (const t of rows) {
+        const m = (t.date as string).slice(0, 7)
+        if (m < earliestTx) earliestTx = m
+        if (!flows.has(m)) flows.set(m, { income: 0, expense: 0, savings: 0, debtRepay: 0 })
+        const f = flows.get(m)!
+        const amt = Number(t.amount) || 0
+        if (t.type === 'income') f.income += amt
+        else if (t.type === 'savings') f.savings += amt
+        else if (t.type === 'expense') { f.expense += amt; if (t.category === 'Debt Repayment') f.debtRepay += amt }
+      }
+      // anchor = earliest real snapshot (its components), or today's live values if none yet
+      const anchor = snaps && snaps.length ? snaps[0] : null
+      const anchorMonth = anchor ? (anchor.month as string) : month
+      const anchorCash = anchor ? Number(anchor.cash) : Math.round(cashValue * 100) / 100
+      const anchorHoldings = anchor ? Number(anchor.investments) - Number(anchor.cash) : Math.round(holdingsValue * 100) / 100
+      const anchorDebts = anchor ? Number(anchor.debts) : debtsTotal
+      if (earliestTx < anchorMonth) {
+        const idxReturns = await indexMonthlyReturns()
+        estimated = reconstructHistory({ startMonth: earliestTx, anchorMonth, anchorHoldings, anchorCash, anchorDebts, flows, idxReturns })
+      }
+    }
+  } catch { /* backfill is best-effort */ }
+
+  const history = [...estimated, ...realHistory]
 
   return NextResponse.json({
     month,
