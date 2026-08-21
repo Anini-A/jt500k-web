@@ -143,15 +143,13 @@ export default function JourneyCard() {
 
       {/* Expanded planner — outcome first, then two clean controls */}
       {detailsOpen && !reached && (
-        <div style={{ marginTop: 18, display: 'grid', gap: 18 }}>
-          {/* the outcome — the finish date, large */}
-          <div>
-            <Label>Estimated finish</Label>
-            <div style={{ fontWeight: 700, fontSize: 24, letterSpacing: '-0.02em', marginTop: 4, color: projectable ? 'var(--accent)' : 'var(--text-muted)' }}>
-              {projectable ? dateStr : 'Set a monthly amount'}
+        <div style={{ marginTop: 14, display: 'grid', gap: 18 }}>
+          {/* away + rate — continues the "Projected to reach …" line above */}
+          {projectable && (
+            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: -2 }}>
+              <b style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>{awayStr}</b> away · at a {Math.round(rate * 100 * 10) / 10}% yearly return
             </div>
-            {projectable && <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>{awayStr} away · at a {Math.round(rate * 100 * 10) / 10}% yearly return</div>}
-          </div>
+          )}
 
           {/* growth rate */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
