@@ -74,6 +74,9 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   const [form, setForm] = useState({
     date: today(), type: 'expense', category: '', amount: '', description: '',
   })
+  const [singleErr, setSingleErr] = useState('')
+  const [savedFlash, setSavedFlash] = useState(false)
+  const [dateOpen, setDateOpen] = useState(false) // Quick: reveal the date field (defaults to today)
   const [raw, setRaw] = useState('')
   const [rows, setRows] = useState<Row[]>([])
   // ── Smart Import (AI paste + per-card totals + saved drafts) ──
@@ -175,15 +178,24 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
     if (res.ok) { setRecEdit(null); await reloadRecs() } else alert('Could not delete.')
   }
 
-  const submitSingle = async (e: React.FormEvent) => {
-    e.preventDefault(); setSaving(true)
+  const submitSingle = async (again: boolean) => {
+    setSingleErr('')
+    const amt = parseFloat(form.amount)
+    if (!(amt > 0)) { setSingleErr('Enter an amount.'); return }
+    if (!form.category) { setSingleErr('Pick a category.'); return }
+    setSaving(true)
     try {
       const res = await fetch('/api/transactions', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, amount: parseFloat(form.amount) }),
+        body: JSON.stringify({ ...form, amount: amt }),
       })
-      if (res.ok) { close(); window.dispatchEvent(new CustomEvent('transaction-added')) }
-      else alert('Error: ' + ((await res.json()).error || 'could not save'))
+      if (!res.ok) { setSingleErr((await res.json()).error || 'Could not save.'); return }
+      window.dispatchEvent(new CustomEvent('transaction-added'))
+      if (again) {
+        // keep type + date, clear the rest for rapid entry; flash a confirmation
+        setForm((f) => ({ ...f, category: '', amount: '', description: '' }))
+        setDateOpen(false); setSavedFlash(true); setTimeout(() => setSavedFlash(false), 1600)
+      } else close()
     } finally { setSaving(false) }
   }
 
@@ -337,21 +349,23 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
 
       {open && createPortal(
         <div className="modal-backdrop" onClick={close}>
-          <div className="modal-card glass" style={{ width: 'min(820px, 100%)', minHeight: 'min(78vh, 540px)', background: 'var(--surface-1)' }} onClick={(e) => e.stopPropagation()}>
+          <div className="modal-card glass" style={{ width: 'min(820px, 100%)', background: 'var(--surface-1)' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ marginBottom: 14 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                 <h2 style={{ margin: 0, fontSize: 18, display: 'flex', alignItems: 'center', gap: 8 }}><Plus size={18} /> Add Transaction</h2>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <button type="button" onClick={resetAll} title="Reset this card" aria-label="Reset"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 34, padding: '0 14px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>
-                    <RotateCcw size={14} /> Reset
-                  </button>
+                  {mode !== 'single' && (
+                    <button type="button" onClick={resetAll} title="Reset this card" aria-label="Reset"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 34, padding: '0 14px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>
+                      <RotateCcw size={14} /> Reset
+                    </button>
+                  )}
                   <button type="button" className="modal-x" onClick={close} title="Close" aria-label="Close"><X size={17} /></button>
                 </div>
               </div>
               <div className="tabs" style={{ padding: 3, marginTop: 12 }}>
                 <button className={`tab ${mode === 'single' ? 'tab-active' : ''}`} style={{ flex: 1, justifyContent: 'center', padding: '7px 8px', fontSize: 13 }} onClick={() => setMode('single')}>
-                  <PencilLine size={14} /> Single
+                  <PencilLine size={14} /> Quick
                 </button>
                 <button className={`tab ${mode === 'batch' ? 'tab-active' : ''}`} style={{ flex: 1, justifyContent: 'center', padding: '7px 8px', fontSize: 13 }} onClick={() => setMode('batch')}>
                   <ClipboardPaste size={14} /> Import
@@ -362,40 +376,78 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
               </div>
             </div>
 
-            {/* ---------------- SINGLE ---------------- */}
-            {mode === 'single' && (
-              <form onSubmit={submitSingle} style={{ display: 'grid', gap: 12 }}>
-                <div className="form-2">
-                  <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Date</span>
-                    <input type="date" required value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} style={{ ...inp, WebkitAppearance: 'none', appearance: 'none', minWidth: 0 }} /></label>
-                  <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Type</span>
-                    <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value, category: '' })} style={inp}>
-                      <option value="income">Income</option><option value="expense">Expense</option><option value="savings">Savings</option>
-                    </select></label>
-                </div>
-                <div className="form-2">
-                  <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Category</span>
+            {/* ---------------- QUICK (amount-first single capture) ---------------- */}
+            {mode === 'single' && (() => {
+              const typeColor = form.type === 'income' ? 'var(--income)' : form.type === 'savings' ? 'var(--savings)' : 'var(--expense)'
+              const TYPES = [{ k: 'expense', label: 'Expense' }, { k: 'income', label: 'Income' }, { k: 'savings', label: 'Savings' }] as const
+              const dateLabel = form.date === today() ? 'Today' : new Date(form.date + 'T12:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })
+              return (
+                <form onSubmit={(e) => { e.preventDefault(); submitSingle(false) }} style={{ display: 'grid', gap: 16 }}>
+                  {/* amount hero */}
+                  <div style={{ textAlign: 'center', padding: '6px 0 2px' }}>
+                    <div style={{ display: 'inline-flex', alignItems: 'baseline', gap: 4, maxWidth: '100%' }}>
+                      <span style={{ fontSize: 26, fontWeight: 700, color: typeColor }}>$</span>
+                      <input autoFocus inputMode="decimal" value={form.amount} placeholder="0"
+                        onChange={(e) => setForm({ ...form, amount: e.target.value.replace(/[^0-9.]/g, '') })}
+                        style={{ fontSize: 'clamp(40px, 12vw, 54px)', fontWeight: 800, letterSpacing: '-0.03em', border: 'none', background: 'transparent', textAlign: 'center', outline: 'none', color: typeColor, fontFamily: 'inherit', width: `${Math.max(2, (form.amount.length || 1) + 0.5)}ch`, minWidth: '2ch', maxWidth: '100%' }} />
+                    </div>
+                  </div>
+
+                  {/* type toggle */}
+                  <div style={{ display: 'flex', gap: 3, background: 'var(--kpi-bg)', borderRadius: 999, padding: 3 }}>
+                    {TYPES.map((t) => {
+                      const on = form.type === t.k
+                      const c = t.k === 'income' ? 'var(--income)' : t.k === 'savings' ? 'var(--savings)' : 'var(--expense)'
+                      return (
+                        <button key={t.k} type="button" onClick={() => setForm({ ...form, type: t.k, category: '' })}
+                          style={{ flex: 1, padding: '9px 0', borderRadius: 999, border: 'none', cursor: 'pointer', fontSize: 13.5, fontWeight: 700, fontFamily: 'inherit', background: on ? 'var(--surface-1)' : 'transparent', color: on ? c : 'var(--text-muted)', boxShadow: on ? '0 1px 3px rgba(0,0,0,0.12)' : 'none' }}>{t.label}</button>
+                      )
+                    })}
+                  </div>
+
+                  {/* category */}
+                  <label style={{ display: 'grid', gap: 5 }}><span className="stat-label">Category</span>
                     <CategorySelect value={form.category} onChange={(v) => setForm({ ...form, category: v })} cats={catsForType} /></label>
-                  <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Amount</span>
-                    <input type="number" step="0.01" required placeholder="0.00" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} style={inp} /></label>
-                </div>
-                {form.category === 'Debt Repayment' && debts.length > 0 && (
-                  <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Which debt?</span>
-                    <select value={debts.some((d) => d.name === form.description) ? form.description : ''}
-                      onChange={(e) => setForm({ ...form, description: e.target.value })} style={inp}>
-                      <option value="">— pick a debt (fills description) —</option>
-                      {debts.map((d) => <option key={d.name} value={d.name}>{d.name}</option>)}
-                    </select></label>
-                )}
-                <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Description</span>
-                  <input type="text" placeholder="e.g. Groceries" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} style={inp} /></label>
-                <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-                  <button className="btn btn-primary" type="submit" disabled={saving} style={{ flex: 1, justifyContent: 'center' }}>
-                    {saving ? 'Saving…' : 'Save Transaction'}
-                  </button>
-                </div>
-              </form>
-            )}
+
+                  {form.category === 'Debt Repayment' && debts.length > 0 && (
+                    <label style={{ display: 'grid', gap: 5 }}><span className="stat-label">Which debt?</span>
+                      <select value={debts.some((d) => d.name === form.description) ? form.description : ''}
+                        onChange={(e) => setForm({ ...form, description: e.target.value })} style={inp}>
+                        <option value="">— pick a debt (fills description) —</option>
+                        {debts.map((d) => <option key={d.name} value={d.name}>{d.name}</option>)}
+                      </select></label>
+                  )}
+
+                  {/* description */}
+                  <label style={{ display: 'grid', gap: 5 }}><span className="stat-label">Note <span style={{ textTransform: 'none', letterSpacing: 0, color: 'var(--text-muted)', fontWeight: 400 }}>(optional)</span></span>
+                    <input type="text" placeholder="e.g. Groceries at Costco" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} style={inp} /></label>
+
+                  {/* date — a chip that expands to a picker; defaults to Today */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    <span className="stat-label">Date</span>
+                    {dateOpen ? (
+                      <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} autoFocus
+                        style={{ ...inp, width: 'auto', height: 38, WebkitAppearance: 'none', appearance: 'none' }} />
+                    ) : (
+                      <button type="button" onClick={() => setDateOpen(true)}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 34, padding: '0 14px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>{dateLabel} ▾</button>
+                    )}
+                    {savedFlash && <span style={{ marginLeft: 'auto', color: 'var(--income)', fontWeight: 600, fontSize: 13 }}>✓ Saved</span>}
+                  </div>
+
+                  {singleErr && <div style={{ fontSize: 13, color: 'var(--expense)', fontWeight: 600 }}>{singleErr}</div>}
+
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button className="btn btn-secondary" type="button" disabled={saving} onClick={() => submitSingle(true)} style={{ flex: '0 0 auto', justifyContent: 'center' }}>
+                      + Add another
+                    </button>
+                    <button className="btn btn-primary" type="submit" disabled={saving} style={{ flex: 1, justifyContent: 'center' }}>
+                      {saving ? 'Saving…' : 'Save'}
+                    </button>
+                  </div>
+                </form>
+              )
+            })()}
 
             {/* ---------------- IMPORT (AI paste + per-card totals + drafts) ---------------- */}
             {mode === 'batch' && (
