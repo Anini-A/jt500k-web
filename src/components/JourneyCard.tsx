@@ -25,7 +25,6 @@ export default function JourneyCard() {
   const [goal, setGoal] = useState(500000)
   const [avgSave, setAvgSave] = useState<number | null>(null)
   const [rateKey, setRateKey] = useState<'c' | 'm' | 'o'>('m')
-  const [customRate, setCustomRate] = useState('9') // the editable "optimistic" rate
   const [override, setOverride] = useState('')        // custom monthly contribution
   const [detailsOpen, setDetailsOpen] = useState(false) // planner (rate + contribution) hidden by default
   const [range, setRange] = useState<Range>('ALL')
@@ -61,8 +60,7 @@ export default function JourneyCard() {
   const pct = Math.min(100, (nw / goal) * 100)
   const reached = nw >= goal
 
-  const cr = parseFloat(customRate)
-  const rate = rateKey === 'c' ? 0.05 : rateKey === 'm' ? 0.07 : (isNaN(cr) ? 0.09 : Math.max(0, cr) / 100)
+  const rate = rateKey === 'c' ? 0.05 : rateKey === 'm' ? 0.07 : 0.10
   const monthly = override.trim() === '' || isNaN(Number(override)) ? 0 : Math.max(0, Number(override))
 
   // compound month by month → ETA + projection points for the chart
@@ -157,13 +155,7 @@ export default function JourneyCard() {
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 2, background: 'var(--kpi-bg)', borderRadius: 999, padding: 3 }}>
               <Seg active={rateKey === 'c'} onClick={() => setRateKey('c')}>5%</Seg>
               <Seg active={rateKey === 'm'} onClick={() => setRateKey('m')}>7%</Seg>
-              <span onClick={() => setRateKey('o')} style={{ display: 'inline-flex', alignItems: 'center', padding: '4px 9px', borderRadius: 999, cursor: 'text', fontSize: 12, fontWeight: 600, background: rateKey === 'o' ? 'var(--surface-1)' : 'transparent', color: rateKey === 'o' ? 'var(--text-primary)' : 'var(--text-muted)', boxShadow: rateKey === 'o' ? '0 1px 3px rgba(0,0,0,0.12)' : 'none' }} title="Editable — try any rate">
-                <input inputMode="decimal" value={customRate} aria-label="Custom return rate"
-                  onFocus={() => setRateKey('o')}
-                  onChange={(e) => { setCustomRate(e.target.value.replace(/[^0-9.]/g, '')); setRateKey('o') }}
-                  style={{ width: 22, fontSize: 12, fontWeight: 600, textAlign: 'right', border: 'none', background: 'transparent', color: 'inherit', fontFamily: 'inherit', outline: 'none', padding: 0 }} />
-                %
-              </span>
+              <Seg active={rateKey === 'o'} onClick={() => setRateKey('o')}>10%</Seg>
             </div>
           </div>
 
