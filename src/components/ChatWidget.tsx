@@ -1067,23 +1067,31 @@ function VoiceWave({ mode, levelRef, onClick }: {
     const cv = cvRef.current; if (!cv) return
     const ctx = cv.getContext('2d'); if (!ctx) return
     const CFG: Record<string, { amp: number; speed: number; freq: number; col: string }> = {
-      idle: { amp: 0.10, speed: 0.6, freq: 1.4, col: '--accent' },
-      listening: { amp: 0.40, speed: 1.7, freq: 2.2, col: '--expense' },
-      thinking: { amp: 0.22, speed: 2.6, freq: 3.2, col: '--accent' },
-      speaking: { amp: 0.34, speed: 2.0, freq: 1.8, col: '--income' },
+      idle: { amp: 0.10, speed: 0.42, freq: 1.3, col: '--accent' },
+      listening: { amp: 0.40, speed: 0.9, freq: 2.0, col: '--expense' },
+      thinking: { amp: 0.22, speed: 1.35, freq: 2.4, col: '--accent' },
+      speaking: { amp: 0.34, speed: 1.05, freq: 1.7, col: '--income' },
     }
     const css = (v: string) => (getComputedStyle(document.documentElement).getPropertyValue(v).trim() || '#2a78d6')
-    const cur = { amp: 0.10, speed: 0.6, freq: 1.4 }
+    const cur = { amp: 0.10, speed: 0.42, freq: 1.3, level: 0 }
     let raf = 0, t = 0, reduce = false
     try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches } catch { /* ignore */ }
     const draw = () => {
       t += 0.016
       const m = modeRef.current
       const c = CFG[m] || CFG.idle
-      const ampTarget = m === 'listening' ? 0.12 + Math.min(1, levelRef.current) * 0.62 : c.amp
-      cur.amp += (ampTarget - cur.amp) * 0.12
-      cur.speed += (c.speed - cur.speed) * 0.08
-      cur.freq += (c.freq - cur.freq) * 0.08
+      let ampTarget = c.amp
+      if (m === 'listening') {
+        cur.level += (Math.min(1, levelRef.current) - cur.level) * 0.25 // smooth the mic level
+        ampTarget = 0.12 + cur.level * 0.6
+      } else if (m === 'speaking') {
+        // a speech-like envelope so the wave "talks" while the answer is read
+        ampTarget = 0.16 + Math.abs(Math.sin(t * 3.1)) * 0.26 + (Math.sin(t * 1.7) + 1) * 0.05
+      }
+      // ease params so state changes glide instead of snapping
+      cur.amp += (ampTarget - cur.amp) * 0.09
+      cur.speed += (c.speed - cur.speed) * 0.05
+      cur.freq += (c.freq - cur.freq) * 0.05
       const W = cv.width, H = cv.height, mid = H / 2, base = cur.amp * H * 0.42
       const color = css(c.col)
       ctx.clearRect(0, 0, W, H)

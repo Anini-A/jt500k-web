@@ -290,9 +290,15 @@
 .voice-status {
   font-size: 12px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase;
 }
+/* transcript / answer in a glass card (like the mockup) */
 .voice-caption {
-  font-size: 18px; line-height: 1.55; font-weight: 500; letter-spacing: -.01em;
-  color: var(--text-primary); max-width: 460px; min-height: 60px;
+  font-size: 16.5px; line-height: 1.5; font-weight: 500; letter-spacing: -.01em;
+  color: var(--text-primary); max-width: 440px; width: 100%;
+  background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px;
+  padding: 14px 16px; box-sizing: border-box;
+  -webkit-backdrop-filter: blur(14px) saturate(150%); backdrop-filter: blur(14px) saturate(150%);
+  box-shadow: var(--glass-sheen), var(--glass-rim);
+  max-height: 42vh; overflow-y: auto;
 }
 
 @media (prefers-reduced-motion: reduce) {
