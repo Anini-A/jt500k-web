@@ -51,7 +51,7 @@ export default function NotificationBell() {
 
       {open && createPortal(
         <div className="modal-backdrop" onClick={() => setOpen(false)}>
-          <div className="modal-card glass modal-tall" style={{ width: 'min(560px, 100%)', background: 'color-mix(in srgb, var(--surface-1) 96%, transparent)' }} onClick={(e) => e.stopPropagation()}>
+          <div className="modal-card glass modal-tall" style={{ width: 'min(560px, 100%)' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
               <h2 style={{ margin: 0, fontSize: 18, display: 'flex', alignItems: 'center', gap: 8 }}><Bell size={18} /> Alerts{total ? <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)' }}>· {total}</span> : null}</h2>
               <button className="modal-x" aria-label="Close" onClick={() => setOpen(false)}>✕</button>
@@ -73,17 +73,17 @@ export default function NotificationBell() {
                   <TabPill active={tab === 'info'} onClick={() => setTab('info')} label="Good to know" count={infos.length} />
                 </div>
 
-                <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+                <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {tab === 'action' ? (
                     actions.length === 0 ? <Empty label="Nothing needs action" />
-                      : actions.map((n, i) => <Item key={n.id} n={n} first={i === 0} onDismiss={n.dismissible ? () => dismiss(n.id) : undefined} skip={n.dismissible} />)
+                      : actions.map((n) => <Item key={n.id} n={n} onDismiss={n.dismissible ? () => dismiss(n.id) : undefined} skip={n.dismissible} />)
                   ) : (
                     infos.length === 0 ? <Empty label="Nothing here right now" /> : (
                       <>
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 2 }}>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                           <button onClick={clearInfo} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', padding: 0, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Clear all</button>
                         </div>
-                        {infos.map((n, i) => <Item key={n.id} n={n} first={i === 0} onDismiss={() => dismiss(n.id)} />)}
+                        {infos.map((n) => <Item key={n.id} n={n} onDismiss={() => dismiss(n.id)} />)}
                       </>
                     )
                   )}
@@ -111,11 +111,11 @@ function Empty({ label }: { label: string }) {
   return <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 13, padding: '28px 0' }}>{label}</div>
 }
 
-function Item({ n, first, onDismiss, skip }: { n: Notif; first?: boolean; onDismiss?: () => void; skip?: boolean }) {
+function Item({ n, onDismiss, skip }: { n: Notif; onDismiss?: () => void; skip?: boolean }) {
   const urgent = n.severity === 'warn'
   const dot = urgent ? 'var(--expense)' : n.kind === 'action' ? 'var(--accent)' : 'var(--text-muted)'
   return (
-    <div style={{ display: 'flex', gap: 11, alignItems: 'flex-start', padding: '12px 0', borderTop: first ? 'none' : '1px solid var(--border)' }}>
+    <div style={{ display: 'flex', gap: 11, alignItems: 'flex-start', padding: '13px 14px', borderRadius: 14, background: 'var(--surface-1)', border: '1px solid var(--border)' }}>
       <span style={{ width: 7, height: 7, borderRadius: '50%', background: dot, flexShrink: 0, marginTop: 6 }} />
       <div style={{ minWidth: 0, flex: 1 }}>
         <div style={{ fontWeight: 600, fontSize: 14 }}>{n.title}</div>
