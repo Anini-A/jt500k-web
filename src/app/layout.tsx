@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Hanken_Grotesk } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import BottomNav from '@/components/BottomNav'
+import PullToRefresh from '@/components/PullToRefresh'
 import CapacitorInit from '@/components/CapacitorInit'
 import './globals.css'
 
@@ -39,6 +40,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={hanken.variable}>
       <body>
+        <PullToRefresh />
         {children}
         <BottomNav />
         <CapacitorInit />
