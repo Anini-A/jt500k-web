@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { SquarePen, History, ArrowUp, Trash2, Check, X, AudioLines, MessageSquare, ImagePlus } from 'lucide-react'
 import { today } from '@/lib/date'
+import { useConfirm } from './Feedback'
 
 interface Msg { role: 'user' | 'assistant'; content: string; at?: number; image?: string } // image = data-URL thumbnail to show in the bubble
 interface Thread { id: string; msgs: Msg[]; updatedAt: number }
@@ -100,6 +101,7 @@ function loadStore(): { threads: Thread[]; activeId: string } {
 // while you type; only the message area scrolls. Threads are persisted so you
 // can resume, start a new chat, or jump back to a recent one.
 export default function ChatWidget({ onClose }: { onClose: () => void }) {
+  const { confirm, confirmNode } = useConfirm()
   const [{ threads, activeId }, setStore] = useState(loadStore)
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
@@ -689,8 +691,8 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
     return { threads: remaining, activeId: s.activeId === id ? remaining[0].id : s.activeId }
   })
 
-  const clearAll = () => {
-    if (!confirm('Delete all chats? This cannot be undone.')) return
+  const clearAll = () => confirm({ title: 'Delete all chats?', message: 'This cannot be undone.', run: () => doClearAll() })
+  const doClearAll = () => {
     setPending(null); setRecentOpen(false)
     const t: Thread = { id: uid(), msgs: [GREETING], updatedAt: Date.now() }
     setStore({ threads: [t], activeId: t.id })
@@ -843,6 +845,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
 
   return createPortal(
     <div className="modal-backdrop" onClick={onClose}>
+      {confirmNode}
       <div className="modal-card glass" onClick={(e) => { e.stopPropagation(); setRecentOpen(false) }}
         style={{ width: 'min(720px, 100%)', height: 'min(88vh, 760px)', maxHeight: '88vh', padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'var(--surface-1)', position: 'relative' }}>
 

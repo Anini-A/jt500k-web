@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import { Plus, Trash2, ClipboardPaste, PencilLine, Repeat, Settings2, ImagePlus, RotateCcw, X } from 'lucide-react'
 import CategorySelect from './CategorySelect'
 import IconPill from './IconPill'
+import { useConfirm } from './Feedback'
 import { getJSON } from '@/lib/fresh'
 import { ymd, today } from '@/lib/date'
 
@@ -66,6 +67,7 @@ function parsePaste(raw: string, cats: Category[]): Row[] {
 // Header "Add Transaction" pill that opens a modal. Works on any page.
 // trigger=false → headless (no button), opens only via the 'open-add-import' event.
 export default function AddTransactionButton({ trigger = true }: { trigger?: boolean }) {
+  const { confirm, confirmNode } = useConfirm()
   const [open, setOpen] = useState(false)
   const [mode, setMode] = useState<'single' | 'batch' | 'recurring'>('single')
   const [saving, setSaving] = useState(false)
@@ -314,9 +316,10 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
     } finally { setSavingDraft(false) }
   }
   // start a fresh, independent batch (e.g. save card 1 as a draft, then log card 2 on its own)
+  const doNewBatch = () => { setRows([]); setDraftId(null); setRaw(''); setImages([]); setImportErr(''); setPasteOpen(true) }
   const newBatch = () => {
-    if (rows.length && !draftId && !confirm('Start a fresh batch? Rows not saved as a draft will be lost.')) return
-    setRows([]); setDraftId(null); setRaw(''); setImages([]); setImportErr(''); setPasteOpen(true)
+    if (rows.length && !draftId) { confirm({ title: 'Start a fresh batch?', message: 'Rows not saved as a draft will be lost.', confirmLabel: 'Start fresh', run: doNewBatch }); return }
+    doNewBatch()
   }
   const openDraft = (dr: Draft) => {
     setRows((dr.rows || []).map((r) => ({ ...r, amount: String(r.amount) })))
@@ -785,6 +788,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
               </div>
             )}
 
+            {confirmNode}
             {/* inline confirm (replaces window.confirm) */}
             {confirmDel && (
               <div onClick={() => setConfirmDel(null)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', borderRadius: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, zIndex: 10 }}>

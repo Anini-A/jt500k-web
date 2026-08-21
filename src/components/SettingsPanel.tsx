@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { LogOut, Download, Cloud, RefreshCw, Landmark } from 'lucide-react'
 import CategoryManager from './CategoryManager'
+import { useToast } from './Feedback'
 import { getJSON } from '@/lib/fresh'
 import { today } from '@/lib/date'
 
@@ -28,6 +29,7 @@ export default function SettingsPanel() {
   const [goal, setGoal] = useState('')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const { toast, toastNode } = useToast()
   const [status, setStatus] = useState<'checking' | 'online' | 'offline'>('checking')
 
   useEffect(() => {
@@ -55,12 +57,13 @@ export default function SettingsPanel() {
         body: JSON.stringify({ name, goalAmount: parseFloat(goal) }),
       })
       if (res.ok) { setSaved(true); setTimeout(() => setSaved(false), 2500) }
-      else alert('Could not save: ' + (await res.json()).error)
+      else toast((await res.json()).error || 'Could not save.')
     } finally { setSaving(false) }
   }
 
   return (
     <>
+      {toastNode}
       {/* Goal & household */}
       <section className="block">
         <div className="card glass">

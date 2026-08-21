@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Plus, Pencil, Trash2, ChevronDown } from 'lucide-react'
 import CategorySelect from './CategorySelect'
+import { useConfirm, useToast } from './Feedback'
 import { getJSON } from '@/lib/fresh'
 
 interface Cat { id: string; name: string; type: string; color: string | null; count: number; total: number }
@@ -24,6 +25,7 @@ export default function CategoryManager() {
   const [editing, setEditing] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const [busy, setBusy] = useState(false)
+  const { toast, toastNode } = useToast()
   const [openTypes, setOpenTypes] = useState<Set<string>>(new Set())
   const toggleType = (t: string) => setOpenTypes((prev) => {
     const n = new Set(prev); n.has(t) ? n.delete(t) : n.add(t); return n
@@ -43,7 +45,7 @@ export default function CategoryManager() {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
       })
       const d = await res.json()
-      if (!res.ok) { alert(d.error || 'Failed'); return false }
+      if (!res.ok) { toast(d.error || 'Could not save.'); return false }
       await load()
       window.dispatchEvent(new CustomEvent('transaction-added')) // nudge other views
       return true
@@ -52,6 +54,7 @@ export default function CategoryManager() {
 
   return (
     <div className="card glass">
+      {toastNode}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <span className="hdr-label">Categories</span>
         <button className="btn btn-secondary" onClick={() => { setAdding((v) => !v); setEditing(null) }}>
@@ -140,9 +143,12 @@ function EditRow({ cat, others, busy, onSave, onReassign, onDelete, onCancel }: 
   const [type, setType] = useState(cat.type)
   const [color, setColor] = useState(cat.color || DEFAULT_COLOR[cat.type])
   const [moveTo, setMoveTo] = useState('')
+  const { confirm, confirmNode } = useConfirm()
+  const { toast, toastNode } = useToast()
 
   return (
     <div className="card" style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', display: 'grid', gap: 10, marginBottom: 6 }}>
+      {confirmNode}{toastNode}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: 8, alignItems: 'end' }}>
         <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Name</span>
           <input style={inp} value={name} onChange={(e) => setName(e.target.value)} /></label>
@@ -176,8 +182,8 @@ function EditRow({ cat, others, busy, onSave, onReassign, onDelete, onCancel }: 
           <button className="btn btn-secondary" disabled={busy}
             style={{ color: 'var(--expense)', borderColor: 'var(--expense)' }}
             onClick={() => {
-              if (cat.count > 0 && !moveTo) { alert('This category has transactions — choose a category to move them to first.'); return }
-              if (confirm(`Delete "${cat.name}"?`)) onDelete(moveTo || undefined)
+              if (cat.count > 0 && !moveTo) { toast('This category has transactions — pick a category to move them to first.'); return }
+              confirm({ title: `Delete “${cat.name}”?`, run: () => onDelete(moveTo || undefined) })
             }}>
             <Trash2 size={14} /> Delete
           </button>

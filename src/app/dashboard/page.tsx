@@ -11,6 +11,7 @@ import BudgetManager from '@/components/BudgetManager'
 import InvestmentsPanel from '@/components/InvestmentsPanel'
 import ProfilePanel from '@/components/ProfilePanel'
 import EditTransactionModal from '@/components/EditTransactionModal'
+import { useConfirm, useToast } from '@/components/Feedback'
 import { getJSON } from '@/lib/fresh'
 import { ymd, today } from '@/lib/date'
 import { MonthlyArea, HBar, COLORS } from '@/components/DashCharts'
@@ -401,17 +402,20 @@ const iconBtn: React.CSSProperties = {
 function RecentList({ title, txns, emptyLabel, maxHeight }: { title: string; txns: Txn[]; emptyLabel: string; maxHeight?: number }) {
   const [editTx, setEditTx] = useState<Txn | null>(null)
   const [openId, setOpenId] = useState<string | null>(null)
+  const { confirm, confirmNode } = useConfirm()
+  const { toast, toastNode } = useToast()
 
   const refresh = () => window.dispatchEvent(new CustomEvent('transaction-added'))
-  const del = async (id: string) => {
-    if (!confirm('Delete this transaction?')) return
-    const res = await fetch(`/api/transactions?id=${id}`, { method: 'DELETE' })
-    if (res.ok) refresh()
-    else alert('Could not delete.')
+  const del = (id: string) => {
+    confirm({ title: 'Delete this transaction?', run: async () => {
+      const res = await fetch(`/api/transactions?id=${id}`, { method: 'DELETE' })
+      if (res.ok) refresh(); else toast('Could not delete.')
+    } })
   }
 
   return (
     <section className="block" style={{ marginBottom: 64 }}>
+      {confirmNode}{toastNode}
       <div className="card glass">
         <div className="hdr-label" style={{ marginBottom: 14 }}>{title}</div>
         {txns.length === 0 ? (
