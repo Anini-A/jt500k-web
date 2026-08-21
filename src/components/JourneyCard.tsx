@@ -191,9 +191,9 @@ export default function JourneyCard() {
               : 'Add a monthly amount to see your finish date.'}
           </div>
 
-          {/* the breakdown, tucked into the planner */}
+          {/* the breakdown, tucked into the planner — investments equity − debts */}
           <div style={{ fontSize: 13, color: 'var(--text-muted)', paddingTop: 10, borderTop: '1px solid var(--border)' }}>
-            Investments {b(short(d.holdingsValue))} · Cash {b(short(d.cashValue))} · Debts {b('−' + short(d.debts))}
+            Investments {b(short(d.holdingsValue + d.cashValue))} · Debts {b('−' + short(d.debts))}
           </div>
         </div>
       )}
