@@ -36,6 +36,7 @@ export default function EditTransactionModal({ tx, onClose, onSaved }: {
     description: tx.description || '',
   })
   const [saving, setSaving] = useState(false)
+  const [err, setErr] = useState('')
 
   useEffect(() => {
     getJSON('/api/categories').then((d) => Array.isArray(d) && setCats(d)).catch(() => {})
@@ -44,7 +45,7 @@ export default function EditTransactionModal({ tx, onClose, onSaved }: {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setSaving(true)
+    setSaving(true); setErr('')
     try {
       const res = await fetch('/api/transactions', {
         method: 'PATCH',
@@ -58,7 +59,7 @@ export default function EditTransactionModal({ tx, onClose, onSaved }: {
         }),
       })
       if (res.ok) onSaved()
-      else alert('Error: ' + ((await res.json()).error || 'could not save'))
+      else setErr((await res.json()).error || 'Could not save.')
     } finally { setSaving(false) }
   }
 
@@ -88,6 +89,7 @@ export default function EditTransactionModal({ tx, onClose, onSaved }: {
           )}
           <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Description</span>
             <input type="text" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} style={inp} /></label>
+          {err && <div style={{ fontSize: 13, color: 'var(--expense)', fontWeight: 600 }}>{err}</div>}
           <button className="btn btn-primary" type="submit" disabled={saving} style={{ justifyContent: 'center' }}>
             {saving ? 'Saving…' : 'Save Changes'}
           </button>

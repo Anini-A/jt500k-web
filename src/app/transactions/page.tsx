@@ -6,6 +6,7 @@ import HeaderNav from '@/components/HeaderNav'
 import PagePill from '@/components/PagePill'
 import NotificationBell from '@/components/NotificationCenter'
 import EditTransactionModal from '@/components/EditTransactionModal'
+import { useConfirm, useToast } from '@/components/Feedback'
 import { getJSON } from '@/lib/fresh'
 import { today, ymd } from '@/lib/date'
 
@@ -56,6 +57,8 @@ export default function Transactions() {
   useEffect(() => { activePresetRef.current?.scrollIntoView({ block: 'nearest', inline: 'center' }) }, [preset])
   const [editTx, setEditTx] = useState<Txn | null>(null)
   const [openId, setOpenId] = useState<string | null>(null) // mobile: row whose actions are revealed
+  const { confirm, confirmNode } = useConfirm()
+  const { toast, toastNode } = useToast()
 
   const load = useCallback(async () => {
     const data = await getJSON('/api/data').catch(() => [])
@@ -111,11 +114,12 @@ export default function Transactions() {
     if (cat !== 'all' && !categories.includes(cat)) setCat('all')
   }, [categories, cat])
 
-  const del = async (id: string) => {
-    if (!confirm('Delete this transaction?')) return
-    const res = await fetch(`/api/transactions?id=${id}`, { method: 'DELETE' })
-    if (res.ok) setTxns((prev) => prev.filter((t) => t.id !== id))
-    else alert('Could not delete.')
+  const del = (id: string) => {
+    confirm({ title: 'Delete this transaction?', run: async () => {
+      const res = await fetch(`/api/transactions?id=${id}`, { method: 'DELETE' })
+      if (res.ok) setTxns((prev) => prev.filter((t) => t.id !== id))
+      else toast('Could not delete.')
+    } })
   }
 
   // running summary for the current filter
@@ -137,6 +141,7 @@ export default function Transactions() {
 
   return (
     <div className="bg-aurora">
+      {confirmNode}{toastNode}
       <div className="wrap">
         <header className="top">
           <NotificationBell />
@@ -224,7 +229,10 @@ export default function Transactions() {
                         style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '10px 4px', borderBottom: '1px solid var(--border)' }}>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.description || t.category}</div>
-                          <span style={{ display: 'inline-block', marginTop: 4, fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 999, padding: '1px 9px' }}>{t.category}</span>
+                          {/* only show the category pill when it isn't already the title */}
+                          {t.description && t.category && (
+                            <span style={{ display: 'inline-block', marginTop: 4, fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 999, padding: '1px 9px' }}>{t.category}</span>
+                          )}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
                           <span className={`stat-value ${t.type}`} style={{ fontSize: 16, fontWeight: 700 }}>
