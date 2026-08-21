@@ -240,9 +240,24 @@ function Spark({ real, proj, nowM, goal, anchor }: { real: { month: string; net:
   const realEnd = real.length - 1
   const solid = series.slice(0, real.length)
   const dashed = series.slice(realEnd) // last real point → through the projection tail
-  const line = (pts: { net: number }[], off: number) => pts.map((p, k) => (k ? 'L' : 'M') + X(off + k).toFixed(1) + ' ' + Y(p.net).toFixed(1)).join(' ')
-  const areaPts = solid.map((p, k) => `${X(k).toFixed(1)} ${Y(p.net).toFixed(1)}`)
-  const area = `M ${X(0).toFixed(1)} ${H} L ${areaPts.join(' L ')} L ${X(realEnd).toFixed(1)} ${H} Z`
+
+  // smooth (Catmull-Rom → cubic bézier) so the line flows instead of zig-zagging
+  const smooth = (pts: { x: number; y: number }[]) => {
+    if (pts.length < 2) return pts.length ? `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}` : ''
+    let dp = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2
+      const c1x = p1.x + (p2.x - p0.x) / 6, c1y = p1.y + (p2.y - p0.y) / 6
+      const c2x = p2.x - (p3.x - p1.x) / 6, c2y = p2.y - (p3.y - p1.y) / 6
+      dp += ` C ${c1x.toFixed(1)} ${c1y.toFixed(1)}, ${c2x.toFixed(1)} ${c2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`
+    }
+    return dp
+  }
+  const solidCoords = solid.map((p, k) => ({ x: X(k), y: Y(p.net) }))
+  const dashedCoords = dashed.map((p, k) => ({ x: X(realEnd + k), y: Y(p.net) }))
+  const solidPath = smooth(solidCoords)
+  const dashedPath = smooth(dashedCoords)
+  const area = `${solidPath} L ${X(realEnd).toFixed(1)} ${H} L ${X(0).toFixed(1)} ${H} Z`
 
   const move = (e: React.PointerEvent<SVGSVGElement>) => {
     const r = e.currentTarget.getBoundingClientRect()
@@ -258,19 +273,19 @@ function Spark({ real, proj, nowM, goal, anchor }: { real: { month: string; net:
       <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ display: 'block', width: '100%', height: 'clamp(120px, 34vw, 168px)' }}
         onPointerMove={move} onPointerLeave={() => setHover(null)} role="img" aria-label="Net worth over time">
         <defs>
-          <pattern id="nwdots" width="6" height="6" patternUnits="userSpaceOnUse">
-            <circle cx="1.2" cy="1.2" r="1" fill="var(--accent)" opacity="0.26" />
-          </pattern>
-          <clipPath id="nwclip"><path d={area} /></clipPath>
+          <linearGradient id="nwfill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.22" />
+            <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
+          </linearGradient>
         </defs>
-        <rect x="0" y="0" width={W} height={H} fill="url(#nwdots)" clipPath="url(#nwclip)" />
+        <path d={area} fill="url(#nwfill)" />
         {anchor && Y(goal) >= PADY && (
           <line x1="0" y1={Y(goal)} x2={W} y2={Y(goal)} stroke="var(--income)" strokeWidth={1} strokeDasharray="2 4" opacity={0.7} vectorEffect="non-scaling-stroke" />
         )}
         {dashed.length > 1 && (
-          <path d={line(dashed, realEnd)} fill="none" stroke="var(--accent)" strokeWidth={1.6} strokeDasharray="3 4" opacity={0.4} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+          <path d={dashedPath} fill="none" stroke="var(--accent)" strokeWidth={1.6} strokeDasharray="3 4" opacity={0.4} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
         )}
-        <path d={line(solid, 0)} fill="none" stroke="var(--accent)" strokeWidth={2.2} strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+        <path d={solidPath} fill="none" stroke="var(--accent)" strokeWidth={2.2} strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
         <circle cx={X(realEnd)} cy={Y(real[real.length - 1].net)} r={3.6} fill="var(--accent)" stroke="var(--surface-1)" strokeWidth={2} />
         {hover && <circle cx={X(0) + (hover.left / 100) * W} cy={(hover.top / 100) * H} r={3.4} fill="var(--accent)" stroke="var(--surface-1)" strokeWidth={2} />}
       </svg>
