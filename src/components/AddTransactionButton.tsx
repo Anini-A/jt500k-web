@@ -431,9 +431,13 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                     })}
                   </div>
 
-                  {/* category */}
+                  {/* category — native select (iOS wheel picker, closes reliably) */}
                   <label style={{ display: 'grid', gap: 5 }}><span className="stat-label">Category</span>
-                    <CategorySelect value={form.category} onChange={(v) => setForm({ ...form, category: v })} cats={catsForType} /></label>
+                    <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}
+                      style={{ ...inp, color: form.category ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                      <option value="">— select —</option>
+                      {catsForType.map((c) => <option key={c.name} value={c.name} style={{ color: 'var(--text-primary)' }}>{c.name}</option>)}
+                    </select></label>
 
                   {form.category === 'Debt Repayment' && debts.length > 0 && (
                     <label style={{ display: 'grid', gap: 5 }}><span className="stat-label">Which debt?</span>
