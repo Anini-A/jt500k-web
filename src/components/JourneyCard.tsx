@@ -103,31 +103,15 @@ export default function JourneyCard() {
   })()
   const projWin = range === 'ALL' ? projPts : []
 
-  // range-aware change figure (first vs last of the visible real line)
-  const first = realWin[0]?.net ?? nw
-  const diff = nw - first
-  const pcChange = first ? Math.round((diff / first) * 100) : 0
-  const rangeLabel = range === 'ALL' ? `since ${fmtMonth(realWin[0]?.month ?? nowM)}`
-    : range === 'YTD' ? 'this year' : range === '3M' ? 'past 3M' : range === '6M' ? 'past 6M' : 'past year'
-  const up = diff >= 0
-
   const b = (v: string) => <b style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>{v}</b>
 
   return (
     <div style={{ padding: '2px 2px 0' }}>
       {/* Net worth — big, blended, no card frame */}
       <Label>Net worth</Label>
-      <div style={{ fontWeight: 700, fontSize: 'clamp(34px, 11vw, 50px)', letterSpacing: '-0.035em', marginTop: 6, whiteSpace: 'nowrap' }}>{money(nw)}</div>
-      <div style={{ fontSize: 14, color: 'var(--text-secondary)', marginTop: 9 }}>
-        {/* the "+$ (+%) since …" change only reads as signal with a few months of history;
-            until then just show progress to the goal */}
-        {history.length >= 4 ? (
-          <><span style={{ color: up ? 'var(--income)' : 'var(--expense)', fontWeight: 600 }}>
-            {up ? '+' : '−'}{money2(Math.abs(diff))} ({up ? '+' : '−'}{Math.abs(pcChange)}%)
-          </span> <span style={{ color: 'var(--text-muted)' }}>{rangeLabel} · {pct.toFixed(0)}% of {short(goal)}</span></>
-        ) : (
-          <span style={{ color: 'var(--text-muted)' }}>{pct.toFixed(0)}% of {short(goal)}{hasHistory ? '' : ' · trajectory builds as months are recorded'}</span>
-        )}
+      <div style={{ fontWeight: 700, fontSize: 'clamp(30px, 8vw, 42px)', letterSpacing: '-0.03em', marginTop: 4, whiteSpace: 'nowrap' }}>{money(nw)}</div>
+      <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>
+        {pct.toFixed(0)}% of {short(goal)}{hasHistory ? '' : ' · trajectory builds as months are recorded'}
       </div>
 
       {/* Real investment return — market − book from the uploaded holdings CSVs */}
@@ -285,9 +269,6 @@ function Spark({ real, proj, nowM, goal, anchor }: { real: { month: string; net:
           </linearGradient>
         </defs>
         <path d={area} fill="url(#nwfill)" />
-        {anchor && Y(goal) >= PADY && (
-          <line x1="0" y1={Y(goal)} x2={W} y2={Y(goal)} stroke="var(--income)" strokeWidth={1} strokeDasharray="2 4" opacity={0.7} vectorEffect="non-scaling-stroke" />
-        )}
         {dashed.length > 1 && (
           <path d={dashedPath} fill="none" stroke="var(--accent)" strokeWidth={1.5} strokeDasharray="3 4" opacity={0.4} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
         )}
@@ -299,9 +280,6 @@ function Spark({ real, proj, nowM, goal, anchor }: { real: { month: string; net:
         <circle cx={X(realEnd)} cy={Y(real[real.length - 1].net)} r={3.4} fill="var(--accent)" stroke="var(--surface-1)" strokeWidth={2} />
         {hover && <circle cx={X(0) + (hover.left / 100) * W} cy={(hover.top / 100) * H} r={3.4} fill="var(--accent)" stroke="var(--surface-1)" strokeWidth={2} />}
       </svg>
-      {anchor && Y(goal) >= PADY && (
-        <div style={{ position: 'absolute', right: 2, top: `${(Y(goal) / H) * 100}%`, transform: 'translateY(-115%)', pointerEvents: 'none', fontSize: 9, fontWeight: 600, letterSpacing: '0.02em', color: 'var(--income)' }}>{short(goal)} goal</div>
-      )}
       {hover && (
         <div style={{ position: 'absolute', left: `${hover.left}%`, top: `${hover.top}%`, transform: 'translate(-50%, -115%)', pointerEvents: 'none', background: 'var(--text-primary)', color: 'var(--surface-1)', borderRadius: 9, padding: '6px 9px', fontSize: 12, lineHeight: 1.3, whiteSpace: 'nowrap', boxShadow: '0 6px 18px rgba(0,0,0,0.22)' }}>
           <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>{fmtMonth(hover.month)}{hover.proj ? ' · proj.' : hover.est ? ' · est.' : ''}</span>&nbsp; <b style={{ fontWeight: 700 }}>{money(hover.net)}</b>
