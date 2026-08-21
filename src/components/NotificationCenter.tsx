@@ -51,7 +51,7 @@ export default function NotificationBell() {
 
       {open && createPortal(
         <div className="modal-backdrop" onClick={() => setOpen(false)}>
-          <div className="modal-card glass modal-tall" style={{ width: 'min(560px, 100%)' }} onClick={(e) => e.stopPropagation()}>
+          <div className="modal-card glass modal-tall" style={{ width: 'min(560px, 100%)', background: 'color-mix(in srgb, var(--surface-1) 96%, transparent)' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
               <h2 style={{ margin: 0, fontSize: 18, display: 'flex', alignItems: 'center', gap: 8 }}><Bell size={18} /> Alerts{total ? <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)' }}>· {total}</span> : null}</h2>
               <button className="modal-x" aria-label="Close" onClick={() => setOpen(false)}>✕</button>
@@ -119,7 +119,7 @@ function Item({ n, first, onDismiss, skip }: { n: Notif; first?: boolean; onDism
       <span style={{ width: 7, height: 7, borderRadius: '50%', background: dot, flexShrink: 0, marginTop: 6 }} />
       <div style={{ minWidth: 0, flex: 1 }}>
         <div style={{ fontWeight: 600, fontSize: 14 }}>{n.title}</div>
-        <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2, overflowWrap: 'anywhere' }}>{n.detail}</div>
+        <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2, overflowWrap: 'anywhere' }}>{n.detail}</div>
       </div>
       {onDismiss ? (
         skip ? (
