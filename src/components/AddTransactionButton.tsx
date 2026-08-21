@@ -593,42 +593,49 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                       </div>
                     )}
 
-                    <div style={{ border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
-                      <div style={{ overflow: 'auto', maxHeight: '42vh' }}>
-                        <div style={{ minWidth: 760 }}>
-                          <div style={{ position: 'sticky', top: 0, zIndex: 1, background: 'var(--surface-1)', display: 'grid', gridTemplateColumns: '140px 1fr 130px 90px 110px 34px', gap: 8, padding: '9px 10px', borderBottom: '1px solid var(--border)' }}>
-                            {['Date', 'Description', 'Category', 'Amount', 'Card', ''].map((h) => <span key={h} className="stat-label">{h}</span>)}
-                          </div>
-                          {rows.map((r, i) => (
-                            <div key={i} style={{ display: 'grid', gridTemplateColumns: '140px 1fr 130px 90px 110px 34px', gap: 8, alignItems: 'center', padding: '6px 10px', background: i % 2 ? 'var(--kpi-bg)' : 'transparent' }}>
-                              <input type="date" value={r.date} onChange={(e) => updateRow(i, { date: e.target.value })}
-                                style={{ ...cell, borderColor: isDate(r.date) ? 'var(--border)' : 'var(--expense)' }} />
-                              <input type="text" value={r.description} onChange={(e) => updateRow(i, { description: e.target.value })} style={cell} placeholder="Description" />
+                    {/* Review — one stacked card per row (no horizontal scroll on mobile) */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: '46vh', overflowY: 'auto', paddingRight: 2 }}>
+                      {rows.map((r, i) => {
+                        const badAmt = isNaN(parseFloat(r.amount)) || parseFloat(r.amount) <= 0
+                        return (
+                          <div key={i} style={{ border: '1px solid var(--border)', borderRadius: 12, padding: 10, background: 'var(--kpi-bg)', display: 'grid', gap: 7 }}>
+                            {/* line 1: category + amount + delete */}
+                            <div style={{ display: 'flex', gap: 7, alignItems: 'center' }}>
                               <select value={r.category}
                                 onChange={(e) => { const c = cats.find((x) => x.name === e.target.value); updateRow(i, { category: e.target.value, type: c?.type ?? r.type }) }}
-                                style={{ ...cell, borderColor: r.category ? 'var(--border)' : 'var(--expense)' }}>
-                                <option value="">— pick —</option>
+                                style={{ ...cell, flex: 1, borderColor: r.category ? 'var(--border)' : 'var(--expense)' }}>
+                                <option value="">— category —</option>
                                 <optgroup label="Income">{grouped.income.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}</optgroup>
                                 <optgroup label="Expense">{grouped.expense.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}</optgroup>
                                 <optgroup label="Savings">{grouped.savings.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}</optgroup>
                               </select>
-                              <input type="number" step="0.01" value={r.amount} onChange={(e) => updateRow(i, { amount: e.target.value })}
-                                style={{ ...cell, borderColor: !isNaN(parseFloat(r.amount)) && parseFloat(r.amount) > 0 ? 'var(--border)' : 'var(--expense)' }} placeholder="0.00" />
-                              <select value={r.card || ''} onChange={(e) => updateRow(i, { card: e.target.value || undefined })} style={cell}>
-                                <option value="">—</option>
-                                {cards.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
-                                {r.card && !cards.some((c) => c.name === r.card) && <option value={r.card}>{r.card}</option>}
-                              </select>
-                              <button onClick={() => setRows((prev) => prev.filter((_, idx) => idx !== i))} aria-label="Remove" title="Remove row"
-                                style={{ display: 'inline-flex', justifyContent: 'center', padding: 6, borderRadius: 8, border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
+                                <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>$</span>
+                                <input inputMode="decimal" value={r.amount} onChange={(e) => updateRow(i, { amount: e.target.value.replace(/[^0-9.]/g, '') })}
+                                  style={{ ...cell, width: 78, textAlign: 'right', fontWeight: 700, borderColor: badAmt ? 'var(--expense)' : 'var(--border)' }} placeholder="0.00" />
+                              </div>
+                              <button onClick={() => setRows((prev) => prev.filter((_, idx) => idx !== i))} aria-label="Remove" title="Remove"
+                                style={{ flexShrink: 0, display: 'inline-flex', justifyContent: 'center', padding: 7, borderRadius: 8, border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}>
                                 <Trash2 size={15} />
                               </button>
                             </div>
-                          ))}
-                        </div>
-                      </div>
+                            {/* line 2: description */}
+                            <input type="text" value={r.description} onChange={(e) => updateRow(i, { description: e.target.value })} style={{ ...cell, height: 36 }} placeholder="Note (optional)" />
+                            {/* line 3: date + card */}
+                            <div style={{ display: 'flex', gap: 7 }}>
+                              <input type="date" value={r.date} onChange={(e) => updateRow(i, { date: e.target.value })}
+                                style={{ ...cell, flex: 1, height: 36, WebkitAppearance: 'none', appearance: 'none', borderColor: isDate(r.date) ? 'var(--border)' : 'var(--expense)' }} />
+                              <select value={r.card || ''} onChange={(e) => updateRow(i, { card: e.target.value || undefined })} style={{ ...cell, flex: 1, height: 36 }}>
+                                <option value="">No card</option>
+                                {cards.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
+                                {r.card && !cards.some((c) => c.name === r.card) && <option value={r.card}>{r.card}</option>}
+                              </select>
+                            </div>
+                          </div>
+                        )
+                      })}
                       <button type="button" onClick={() => setRows((prev) => [...prev, { date: today(), description: '', category: '', type: 'expense', amount: '', card: selectedCard || undefined }])}
-                        style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '9px 12px', borderTop: '1px solid var(--border)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit' }}>
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', padding: '10px 12px', borderRadius: 12, border: '1px dashed var(--border)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit' }}>
                         <Plus size={14} /> Add row
                       </button>
                     </div>
