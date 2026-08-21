@@ -134,6 +134,7 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
   const streamRef = useRef<MediaStream | null>(null)
   const audioCtxRef = useRef<AudioContext | null>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
+  const levelRef = useRef(0) // live mic level (0..1) for the waveform
   const dataArrRef = useRef<Uint8Array | null>(null)
   const rafRef = useRef<number | null>(null)
   const noSpeechTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -434,8 +435,10 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
       let sum = 0
       for (let i = 0; i < arr.length; i++) { const v = (arr[i] - 128) / 128; sum += v * v }
       const rms = Math.sqrt(sum / arr.length)
-      // drive the reactive dotted background — normalize RMS to a 0..1-ish level
-      if (voiceBgRef.current) voiceBgRef.current.style.setProperty('--vlevel', Math.min(1, rms * 9).toFixed(3))
+      // drive the reactive dotted background + the waveform — normalize RMS to 0..1-ish
+      const lvl = Math.min(1, rms * 9)
+      levelRef.current = lvl
+      if (voiceBgRef.current) voiceBgRef.current.style.setProperty('--vlevel', lvl.toFixed(3))
       if (rms > SPEAK_THRESHOLD) {
         if (!speechDetectedRef.current) { speechDetectedRef.current = true; if (noSpeechTimerRef.current) { clearTimeout(noSpeechTimerRef.current); noSpeechTimerRef.current = null } }
         if (silenceHangTimerRef.current) clearTimeout(silenceHangTimerRef.current)
@@ -901,13 +904,10 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
             className={`voice-body ${pending ? 'is-idle' : listening ? 'is-listening' : busy ? 'is-thinking' : speaking ? 'is-speaking' : 'is-idle'}`}>
             <div className="voice-dots" aria-hidden />
             <div className="voice-body-inner">
-              <button type="button" className="voice-viz" aria-label="Tap to talk" onClick={onTalk}>
-                <span /><span /><span /><span /><span />
-              </button>
               {pending ? (
-                <>
+                <div className="voice-top">
                   <div className="voice-status" style={{ color: 'var(--accent)' }}>Confirm {pending.length > 1 ? `${pending.length} changes` : 'this change'}</div>
-                  <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 8, maxWidth: 460, width: '100%' }}>
+                  <ul style={{ listStyle: 'none', margin: '14px 0 18px', padding: 0, display: 'grid', gap: 8, maxWidth: 460, width: '100%' }}>
                     {pending.map((p, i) => (
                       <li key={i} style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)', background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 14px' }}>{p.label}</li>
                     ))}
@@ -916,21 +916,26 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
                     <button className="btn" onClick={cancelAction} disabled={busy} style={{ background: 'var(--kpi-bg)', color: 'var(--text-secondary)', border: '1px solid var(--border)', padding: '11px 20px' }}><X size={16} /> Cancel</button>
                     <button className="btn btn-primary" onClick={confirmAction} disabled={busy} style={{ padding: '11px 24px', gap: 6 }}><Check size={16} /> Confirm</button>
                   </div>
-                </>
+                </div>
               ) : (
                 <>
-                  <div className="voice-status" style={{ color: voiceError ? 'var(--expense)' : listening ? 'var(--expense)' : 'var(--accent)' }}>
-                    {voiceError ? 'Mic error' : listening ? 'Listening' : busy ? 'Thinking' : speaking ? 'Speaking' : 'Tap to talk'}
+                  {/* transcript / status fills the top */}
+                  <div className="voice-top">
+                    <div className="voice-status" style={{ color: voiceError ? 'var(--expense)' : listening ? 'var(--expense)' : busy ? 'var(--accent)' : speaking ? 'var(--income)' : 'var(--accent)' }}>
+                      {voiceError ? 'Mic error' : listening ? 'Listening' : busy ? 'Thinking' : speaking ? 'Speaking' : 'Tap to talk'}
+                    </div>
+                    <div className="voice-caption">
+                      {voiceError
+                        ? voiceError
+                        : listening
+                          ? (liveText || <span style={{ color: 'var(--text-muted)' }}>Say something…</span>)
+                          : busy
+                            ? (lastHeardRef.current ? <span style={{ color: 'var(--text-secondary)' }}>“{lastHeardRef.current}”</span> : <span style={{ color: 'var(--text-muted)' }}>…</span>)
+                            : ([...msgs].reverse().find((m) => m.role === 'assistant')?.content || <span style={{ color: 'var(--text-muted)' }}>Tap the wave to talk.</span>)}
+                    </div>
                   </div>
-                  <div className="voice-caption">
-                    {voiceError
-                      ? voiceError
-                      : listening
-                        ? (liveText || <span style={{ color: 'var(--text-muted)' }}>Say something…</span>)
-                        : busy
-                          ? (lastHeardRef.current ? <span style={{ color: 'var(--text-secondary)' }}>“{lastHeardRef.current}”</span> : <span style={{ color: 'var(--text-muted)' }}>…</span>)
-                          : ([...msgs].reverse().find((m) => m.role === 'assistant')?.content || <span style={{ color: 'var(--text-muted)' }}>Tap the orb to talk.</span>)}
-                  </div>
+                  {/* waveform sits lower */}
+                  <VoiceWave mode={listening ? 'listening' : busy ? 'thinking' : speaking ? 'speaking' : 'idle'} levelRef={levelRef} onClick={onTalk} />
                 </>
               )}
             </div>
@@ -1044,5 +1049,71 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
       </div>
     </div>,
     document.body,
+  )
+}
+
+// Smooth flowing waveform for voice mode — rests calm (Tap to talk), swells to the
+// live mic level while Listening, ripples while Thinking, pulses while Speaking.
+function VoiceWave({ mode, levelRef, onClick }: {
+  mode: 'idle' | 'listening' | 'thinking' | 'speaking'
+  levelRef: React.MutableRefObject<number>
+  onClick: () => void
+}) {
+  const cvRef = useRef<HTMLCanvasElement>(null)
+  const modeRef = useRef(mode)
+  useEffect(() => { modeRef.current = mode }, [mode])
+
+  useEffect(() => {
+    const cv = cvRef.current; if (!cv) return
+    const ctx = cv.getContext('2d'); if (!ctx) return
+    const CFG: Record<string, { amp: number; speed: number; freq: number; col: string }> = {
+      idle: { amp: 0.10, speed: 0.6, freq: 1.4, col: '--accent' },
+      listening: { amp: 0.40, speed: 1.7, freq: 2.2, col: '--expense' },
+      thinking: { amp: 0.22, speed: 2.6, freq: 3.2, col: '--accent' },
+      speaking: { amp: 0.34, speed: 2.0, freq: 1.8, col: '--income' },
+    }
+    const css = (v: string) => (getComputedStyle(document.documentElement).getPropertyValue(v).trim() || '#2a78d6')
+    const cur = { amp: 0.10, speed: 0.6, freq: 1.4 }
+    let raf = 0, t = 0, reduce = false
+    try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches } catch { /* ignore */ }
+    const draw = () => {
+      t += 0.016
+      const m = modeRef.current
+      const c = CFG[m] || CFG.idle
+      const ampTarget = m === 'listening' ? 0.12 + Math.min(1, levelRef.current) * 0.62 : c.amp
+      cur.amp += (ampTarget - cur.amp) * 0.12
+      cur.speed += (c.speed - cur.speed) * 0.08
+      cur.freq += (c.freq - cur.freq) * 0.08
+      const W = cv.width, H = cv.height, mid = H / 2, base = cur.amp * H * 0.42
+      const color = css(c.col)
+      ctx.clearRect(0, 0, W, H)
+      const pts: [number, number][] = []
+      for (let x = 0; x <= W; x += 6) {
+        const p = x / W, taper = Math.sin(p * Math.PI)
+        const y = mid + taper * base * (Math.sin(p * Math.PI * cur.freq * 2 + t * cur.speed * 3) + 0.5 * Math.sin(p * Math.PI * cur.freq * 4 - t * cur.speed * 2))
+        pts.push([x, y])
+      }
+      // soft fill
+      const g = ctx.createLinearGradient(0, 0, 0, H)
+      g.addColorStop(0, color + '55'); g.addColorStop(1, color + '00')
+      ctx.beginPath(); ctx.moveTo(0, mid); pts.forEach(([x, y]) => ctx.lineTo(x, y)); ctx.lineTo(W, mid); ctx.closePath()
+      ctx.globalAlpha = 0.5; ctx.fillStyle = g; ctx.fill(); ctx.globalAlpha = 1
+      // main stroke
+      ctx.beginPath(); pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)))
+      ctx.lineWidth = 5; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.strokeStyle = color
+      ctx.shadowColor = color; ctx.shadowBlur = 14; ctx.stroke(); ctx.shadowBlur = 0
+      // faint mirror
+      ctx.beginPath(); pts.forEach(([x, y], i) => { const yy = mid - (y - mid); i ? ctx.lineTo(x, yy) : ctx.moveTo(x, yy) })
+      ctx.lineWidth = 2; ctx.strokeStyle = color + '44'; ctx.stroke()
+      if (!reduce) raf = requestAnimationFrame(draw)
+    }
+    raf = requestAnimationFrame(draw)
+    return () => cancelAnimationFrame(raf)
+  }, [levelRef])
+
+  return (
+    <button type="button" className="voice-wave" aria-label="Tap to talk" onClick={onClick}>
+      <canvas ref={cvRef} width={600} height={240} />
+    </button>
   )
 }
