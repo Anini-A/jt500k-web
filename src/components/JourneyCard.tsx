@@ -119,12 +119,15 @@ export default function JourneyCard() {
       <Label>Net worth</Label>
       <div style={{ fontWeight: 700, fontSize: 'clamp(34px, 11vw, 50px)', letterSpacing: '-0.035em', marginTop: 6, whiteSpace: 'nowrap' }}>{money(nw)}</div>
       <div style={{ fontSize: 14, color: 'var(--text-secondary)', marginTop: 9 }}>
-        {hasHistory && (
+        {/* the "+$ (+%) since …" change only reads as signal with a few months of history;
+            until then just show progress to the goal */}
+        {history.length >= 4 ? (
           <><span style={{ color: up ? 'var(--income)' : 'var(--expense)', fontWeight: 600 }}>
             {up ? '+' : '−'}{money2(Math.abs(diff))} ({up ? '+' : '−'}{Math.abs(pcChange)}%)
           </span> <span style={{ color: 'var(--text-muted)' }}>{rangeLabel} · {pct.toFixed(0)}% of {short(goal)}</span></>
+        ) : (
+          <span style={{ color: 'var(--text-muted)' }}>{pct.toFixed(0)}% of {short(goal)}{hasHistory ? '' : ' · trajectory builds as months are recorded'}</span>
         )}
-        {!hasHistory && <span style={{ color: 'var(--text-muted)' }}>{pct.toFixed(1)}% of {short(goal)} · trajectory builds as months are recorded</span>}
       </div>
 
       {/* Real investment return — market − book from the uploaded holdings CSVs */}
