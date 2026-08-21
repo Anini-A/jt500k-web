@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { indexMonthlyReturns, reconstructHistory, type MonthlyFlow } from '@/lib/backfill'
 
 export const dynamic = 'force-dynamic'
 export const fetchCache = 'force-no-store'
@@ -48,10 +49,45 @@ export async function GET() {
     { onConflict: 'household_id,month' },
   )
 
-  // Real monthly history — includes the 1-year Wealthsimple net-worth series
-  // (rebased to this app's basis) plus the app's own ongoing snapshots.
-  const { data: snaps } = await supabaseAdmin.from('net_worth_snapshots').select('month, net_worth, investments, debts').order('month')
-  const history = (snaps ?? []).map((s) => ({ month: s.month as string, net: Math.round(Number(s.net_worth)), investments: Math.round(Number(s.investments)), debts: Math.round(Number(s.debts)), est: false }))
+  // Real monthly history — the 1-year Wealthsimple series (rebased to this app's
+  // basis) plus the app's own ongoing snapshots.
+  const { data: snaps } = await supabaseAdmin.from('net_worth_snapshots').select('month, net_worth, investments, cash, debts').order('month')
+  const realHistory = (snaps ?? []).map((s) => ({ month: s.month as string, net: Math.round(Number(s.net_worth)), investments: Math.round(Number(s.investments)), debts: Math.round(Number(s.debts)), est: false }))
+
+  // Estimated pre-history: months BEFORE the earliest real snapshot, back to the
+  // first transaction — so "All" truly reaches inception.
+  let estimated: { month: string; net: number; est: true }[] = []
+  try {
+    if (snaps && snaps.length) {
+      const { data: txns } = await supabaseAdmin.from('transactions').select('type, amount, date, category')
+      const rows = txns ?? []
+      if (rows.length) {
+        const flows = new Map<string, MonthlyFlow>()
+        let earliestTx = '9999-99'
+        for (const t of rows) {
+          const m = (t.date as string).slice(0, 7)
+          if (m < earliestTx) earliestTx = m
+          if (!flows.has(m)) flows.set(m, { income: 0, expense: 0, savings: 0, debtRepay: 0 })
+          const f = flows.get(m)!
+          const amt = Number(t.amount) || 0
+          if (t.type === 'income') f.income += amt
+          else if (t.type === 'savings') f.savings += amt
+          else if (t.type === 'expense') { f.expense += amt; if (t.category === 'Debt Repayment') f.debtRepay += amt }
+        }
+        const anchor = snaps[0] // earliest real snapshot
+        const anchorMonth = anchor.month as string
+        const anchorCash = Number(anchor.cash) || 0
+        const anchorHoldings = (Number(anchor.investments) || Number(anchor.net_worth)) - anchorCash
+        const anchorDebts = Number(anchor.debts) || 0
+        if (earliestTx < anchorMonth) {
+          const idxReturns = await indexMonthlyReturns()
+          estimated = reconstructHistory({ startMonth: earliestTx, anchorMonth, anchorHoldings, anchorCash, anchorDebts, flows, idxReturns })
+        }
+      }
+    }
+  } catch { /* estimate is best-effort */ }
+
+  const history = [...estimated, ...realHistory]
 
   return NextResponse.json({
     month,

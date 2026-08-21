@@ -13,7 +13,6 @@ type Range = '3M' | '6M' | 'YTD' | '1Y' | 'ALL'
 const RANGES: Range[] = ['3M', '6M', 'YTD', '1Y', 'ALL']
 
 const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 })
-const money2 = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 })
 const short = (n: number) => (n >= 1000 ? '$' + Math.round(n / 1000) + 'K' : '$' + Math.round(n))
 const addMonths = (m: string, k: number) => { const [y, mo] = m.split('-').map(Number); const t = y * 12 + (mo - 1) + k; return `${Math.floor(t / 12)}-${String((t % 12) + 1).padStart(2, '0')}` }
 const monthsApart = (a: string, b: string) => { const [ya, ma] = a.split('-').map(Number); const [yb, mb] = b.split('-').map(Number); return (yb * 12 + mb) - (ya * 12 + ma) }
@@ -107,24 +106,12 @@ export default function JourneyCard() {
 
   return (
     <div style={{ padding: '2px 2px 0' }}>
-      {/* Net worth — big, blended, no card frame */}
+      {/* Net worth — the hero: bigger than the supporting cards */}
       <Label>Net worth</Label>
-      <div style={{ fontWeight: 700, fontSize: 'clamp(30px, 8vw, 42px)', letterSpacing: '-0.03em', marginTop: 4, whiteSpace: 'nowrap' }}>{money(nw)}</div>
+      <div style={{ fontWeight: 700, fontSize: 'clamp(36px, 10vw, 52px)', letterSpacing: '-0.035em', marginTop: 4, whiteSpace: 'nowrap' }}>{money(nw)}</div>
       <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>
         {pct.toFixed(0)}% of {short(goal)}{hasHistory ? '' : ' · trajectory builds as months are recorded'}
       </div>
-
-      {/* Real investment return — market − book from the uploaded holdings CSVs */}
-      {d.investReturnPct != null && d.investGain != null && (() => {
-        const g = d.investGain, gp = d.investReturnPct, pos = g >= 0
-        const c = pos ? 'var(--income)' : 'var(--expense)'
-        return (
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginTop: 12, padding: '6px 11px', borderRadius: 999, background: 'var(--kpi-bg)', fontSize: 12.5, color: 'var(--text-secondary)' }}>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: c, flexShrink: 0 }} />
-            Investments <b style={{ color: c, fontWeight: 700 }}>{pos ? '+' : '−'}{money2(Math.abs(g))} ({pos ? '+' : '−'}{Math.abs(gp)}%)</b>&nbsp;return
-          </div>
-        )
-      })()}
 
       {/* Full-bleed trajectory chart — ALL anchors to the goal so "halfway" looks halfway */}
       {hasHistory
@@ -154,11 +141,21 @@ export default function JourneyCard() {
         </button>
       </div>
 
-      {/* Expanded planner — rate + monthly contribution (hidden by default) */}
+      {/* Expanded planner — outcome first, then two clean controls */}
       {detailsOpen && !reached && (
-        <div style={{ marginTop: 16, display: 'grid', gap: 14 }}>
+        <div style={{ marginTop: 18, display: 'grid', gap: 18 }}>
+          {/* the outcome — the finish date, large */}
+          <div>
+            <Label>Estimated finish</Label>
+            <div style={{ fontWeight: 700, fontSize: 24, letterSpacing: '-0.02em', marginTop: 4, color: projectable ? 'var(--accent)' : 'var(--text-muted)' }}>
+              {projectable ? dateStr : 'Set a monthly amount'}
+            </div>
+            {projectable && <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>{awayStr} away · at a {Math.round(rate * 100 * 10) / 10}% yearly return</div>}
+          </div>
+
+          {/* growth rate */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Return rate</span>
+            <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Yearly growth</span>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 2, background: 'var(--kpi-bg)', borderRadius: 999, padding: 3 }}>
               <Seg active={rateKey === 'c'} onClick={() => setRateKey('c')}>5%</Seg>
               <Seg active={rateKey === 'm'} onClick={() => setRateKey('m')}>7%</Seg>
@@ -172,28 +169,20 @@ export default function JourneyCard() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Adding</span>
-            <span style={{ display: 'inline-flex', alignItems: 'baseline' }}>
-              <span style={{ fontWeight: 600, fontSize: 18, color: 'var(--text-secondary)' }}>$</span>
-              <input inputMode="numeric" value={override} placeholder="0"
-                onChange={(e) => setOverride(e.target.value.replace(/[^0-9.]/g, ''))}
-                style={{ width: 76, fontWeight: 700, fontSize: 18, padding: '0 2px 2px', border: 'none', borderBottom: '1px solid var(--border)', background: 'transparent', color: 'var(--text-primary)', fontFamily: 'inherit', outline: 'none' }} />
+          {/* monthly contribution */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Saving / month</span>
+            <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 8 }}>
+              <span style={{ display: 'inline-flex', alignItems: 'baseline' }}>
+                <span style={{ fontWeight: 600, fontSize: 18, color: 'var(--text-secondary)' }}>$</span>
+                <input inputMode="numeric" value={override} placeholder="0"
+                  onChange={(e) => setOverride(e.target.value.replace(/[^0-9.]/g, ''))}
+                  style={{ width: 72, fontWeight: 700, fontSize: 18, padding: '0 2px 2px', border: 'none', borderBottom: '1px solid var(--border)', background: 'transparent', color: 'var(--text-primary)', fontFamily: 'inherit', outline: 'none', textAlign: 'right' }} />
+              </span>
+              {Math.round(Number(override) || 0) !== Math.round(avgSave) && (
+                <button onClick={() => setOverride(String(Math.round(avgSave)))} style={{ background: 'transparent', border: 'none', padding: 0, color: 'var(--accent)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>↺ my pace</button>
+              )}
             </span>
-            <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>/mo</span>
-            {Math.round(Number(override) || 0) !== Math.round(avgSave) && (
-              <button onClick={() => setOverride(String(Math.round(avgSave)))} style={{ background: 'transparent', border: 'none', padding: 0, color: 'var(--accent)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>↺ my pace</button>
-            )}
-          </div>
-
-          <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-            {projectable ? <>Reaches {short(goal)} in <b style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>{awayStr}</b> at {Math.round(rate * 100 * 10) / 10}%/yr.</>
-              : 'Add a monthly amount to see your finish date.'}
-          </div>
-
-          {/* the breakdown, tucked into the planner — investments equity − debts */}
-          <div style={{ fontSize: 13, color: 'var(--text-muted)', paddingTop: 10, borderTop: '1px solid var(--border)' }}>
-            Investments {b(short(d.holdingsValue + d.cashValue))} · Debts {b('−' + short(d.debts))}
           </div>
         </div>
       )}

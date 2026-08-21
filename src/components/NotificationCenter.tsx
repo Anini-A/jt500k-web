@@ -12,6 +12,7 @@ interface Notif { id: string; icon: string; title: string; detail: string; sever
 export default function NotificationBell() {
   const [items, setItems] = useState<Notif[] | null>(null)
   const [open, setOpen] = useState(false)
+  const [tab, setTab] = useState<'action' | 'info'>('action')
 
   const load = useCallback(() => {
     getJSON('/api/notifications').then((d) => { if (!d.error) setItems(d.notifications || []) }).catch(() => setItems([]))
@@ -40,11 +41,11 @@ export default function NotificationBell() {
 
   return (
     <>
-      <button onClick={() => setOpen(true)} aria-label={total ? `${total} alerts` : 'Alerts'} title="Alerts"
-        style={{ position: 'relative', width: 40, height: 40, borderRadius: 999, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--glass-border)', background: 'var(--glass-bg)', color: 'var(--text-secondary)', cursor: 'pointer', WebkitBackdropFilter: 'blur(12px)', backdropFilter: 'blur(12px)' }}>
+      <button onClick={() => { setTab(actions.length ? 'action' : 'info'); setOpen(true) }} aria-label={total ? `${total} alerts` : 'Alerts'} title="Alerts"
+        style={{ position: 'relative', width: 40, height: 40, borderRadius: 999, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--glass-border)', background: 'var(--glass-bg)', color: 'var(--text-secondary)', cursor: 'pointer', overflow: 'visible', WebkitBackdropFilter: 'blur(12px)', backdropFilter: 'blur(12px)' }}>
         <Bell size={18} />
         {total > 0 && (
-          <span style={{ position: 'absolute', top: -3, right: -3, minWidth: 17, height: 17, padding: '0 4px', borderRadius: 999, fontSize: 10.5, fontWeight: 700, lineHeight: '17px', textAlign: 'center', color: '#fff', background: urgent ? 'var(--expense)' : 'var(--accent)', border: '2px solid var(--page-plane)' }}>{total}</span>
+          <span style={{ position: 'absolute', top: -5, right: -5, height: 19, minWidth: 19, boxSizing: 'border-box', padding: '0 5px', borderRadius: 999, fontSize: 11, fontWeight: 700, lineHeight: '15px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', background: urgent ? 'var(--expense)' : 'var(--accent)', border: '2px solid var(--page-plane)' }}>{total > 99 ? '99+' : total}</span>
         )}
       </button>
 
@@ -65,27 +66,29 @@ export default function NotificationBell() {
                 <div style={{ fontSize: 13 }}>Nothing needs your attention right now.</div>
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14, maxHeight: '68vh', overflowY: 'auto' }}>
-                {actions.length > 0 && (
-                  <div className="card glass">
-                    <span className="hdr-label">Needs action</span>
-                    <div style={{ marginTop: 6 }}>
-                      {actions.map((n, i) => <Item key={n.id} n={n} first={i === 0} onDismiss={n.dismissible ? () => dismiss(n.id) : undefined} skip={n.dismissible} />)}
-                    </div>
-                  </div>
-                )}
-                {infos.length > 0 && (
-                  <div className="card glass">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span className="hdr-label">Good to know</span>
-                      <button onClick={clearInfo} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', padding: 0, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Clear all</button>
-                    </div>
-                    <div style={{ marginTop: 6 }}>
-                      {infos.map((n, i) => <Item key={n.id} n={n} first={i === 0} onDismiss={() => dismiss(n.id)} />)}
-                    </div>
-                  </div>
-                )}
-              </div>
+              <>
+                {/* segmented toggle — Needs action / Good to know */}
+                <div style={{ display: 'flex', gap: 3, background: 'var(--kpi-bg)', borderRadius: 999, padding: 3, marginBottom: 14 }}>
+                  <TabPill active={tab === 'action'} onClick={() => setTab('action')} label="Needs action" count={actions.length} hot={actions.some((n) => n.severity === 'warn')} />
+                  <TabPill active={tab === 'info'} onClick={() => setTab('info')} label="Good to know" count={infos.length} />
+                </div>
+
+                <div style={{ maxHeight: '64vh', overflowY: 'auto' }}>
+                  {tab === 'action' ? (
+                    actions.length === 0 ? <Empty label="Nothing needs action" />
+                      : actions.map((n, i) => <Item key={n.id} n={n} first={i === 0} onDismiss={n.dismissible ? () => dismiss(n.id) : undefined} skip={n.dismissible} />)
+                  ) : (
+                    infos.length === 0 ? <Empty label="Nothing here right now" /> : (
+                      <>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 2 }}>
+                          <button onClick={clearInfo} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', padding: 0, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Clear all</button>
+                        </div>
+                        {infos.map((n, i) => <Item key={n.id} n={n} first={i === 0} onDismiss={() => dismiss(n.id)} />)}
+                      </>
+                    )
+                  )}
+                </div>
+              </>
             )}
           </div>
         </div>,
@@ -93,6 +96,19 @@ export default function NotificationBell() {
       )}
     </>
   )
+}
+
+function TabPill({ active, onClick, label, count, hot }: { active: boolean; onClick: () => void; label: string; count: number; hot?: boolean }) {
+  return (
+    <button onClick={onClick} style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '8px 10px', borderRadius: 999, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', background: active ? 'var(--surface-1)' : 'transparent', color: active ? 'var(--text-primary)' : 'var(--text-muted)', boxShadow: active ? '0 1px 3px rgba(0,0,0,0.12)' : 'none' }}>
+      {label}
+      {count > 0 && <span style={{ minWidth: 18, height: 18, padding: '0 5px', borderRadius: 999, fontSize: 11, fontWeight: 700, lineHeight: '18px', textAlign: 'center', color: '#fff', background: hot ? 'var(--expense)' : active ? 'var(--accent)' : 'var(--text-muted)' }}>{count}</span>}
+    </button>
+  )
+}
+
+function Empty({ label }: { label: string }) {
+  return <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 13, padding: '28px 0' }}>{label}</div>
 }
 
 function Item({ n, first, onDismiss, skip }: { n: Notif; first?: boolean; onDismiss?: () => void; skip?: boolean }) {
