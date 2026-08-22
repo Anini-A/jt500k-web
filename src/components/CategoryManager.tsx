@@ -120,15 +120,15 @@ function AddForm({ onDone, busy }: { onDone: (p: any) => void; busy: boolean }) 
   const [color, setColor] = useState(DEFAULT_COLOR.expense)
   return (
     <div className="card" style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', display: 'grid', gap: 10 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: 8, alignItems: 'end' }}>
-        <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Name</span>
-          <input style={inp} value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Bank Fees" /></label>
-        <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Type</span>
+      <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Name</span>
+        <input style={inp} value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Bank Fees" /></label>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
+        <label style={{ display: 'grid', gap: 4, flex: 1, minWidth: 0 }}><span className="stat-label">Type</span>
           <select style={inp} value={type} onChange={(e) => { setType(e.target.value); setColor(DEFAULT_COLOR[e.target.value]) }}>
             <option value="income">Income</option><option value="expense">Expense</option><option value="savings">Savings</option>
           </select></label>
-        <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Color</span>
-          <input type="color" value={color} onChange={(e) => setColor(e.target.value)} style={{ ...inp, padding: 4, width: 48 }} /></label>
+        <label style={{ display: 'grid', gap: 4, flexShrink: 0 }}><span className="stat-label">Color</span>
+          <input type="color" value={color} onChange={(e) => setColor(e.target.value)} style={{ ...inp, padding: 4, width: 52 }} /></label>
       </div>
       <button className="btn btn-primary" disabled={busy || !name.trim()} onClick={() => onDone({ name, type, color })}>Add category</button>
     </div>
@@ -149,15 +149,15 @@ function EditRow({ cat, others, busy, onSave, onReassign, onDelete, onCancel }: 
   return (
     <div className="card" style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', display: 'grid', gap: 10, marginBottom: 6 }}>
       {confirmNode}{toastNode}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: 8, alignItems: 'end' }}>
-        <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Name</span>
-          <input style={inp} value={name} onChange={(e) => setName(e.target.value)} /></label>
-        <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Type</span>
+      <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Name</span>
+        <input style={inp} value={name} onChange={(e) => setName(e.target.value)} /></label>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
+        <label style={{ display: 'grid', gap: 4, flex: 1, minWidth: 0 }}><span className="stat-label">Type</span>
           <select style={inp} value={type} onChange={(e) => setType(e.target.value)}>
             <option value="income">Income</option><option value="expense">Expense</option><option value="savings">Savings</option>
           </select></label>
-        <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Color</span>
-          <input type="color" value={color} onChange={(e) => setColor(e.target.value)} style={{ ...inp, padding: 4, width: 48 }} /></label>
+        <label style={{ display: 'grid', gap: 4, flexShrink: 0 }}><span className="stat-label">Color</span>
+          <input type="color" value={color} onChange={(e) => setColor(e.target.value)} style={{ ...inp, padding: 4, width: 52 }} /></label>
       </div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <button className="btn btn-primary" disabled={busy} onClick={() => onSave({ name, type, color })}>Save</button>
