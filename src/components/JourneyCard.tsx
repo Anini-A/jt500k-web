@@ -239,7 +239,7 @@ function Spark({ real, proj, nowM, goal, anchor }: { real: { month: string; net:
 
   return (
     <div style={{ position: 'relative', marginTop: 14 }}>
-      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ display: 'block', width: '100%', height: 'clamp(120px, 34vw, 168px)' }}
+      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ display: 'block', width: '100%', height: 'clamp(160px, 46vw, 220px)' }}
         onPointerMove={move} onPointerLeave={() => setHover(null)} role="img" aria-label="Net worth over time">
         <defs>
           <linearGradient id="nwfill" x1="0" y1="0" x2="0" y2="1">
