@@ -255,10 +255,10 @@ function Spark({ real, proj, nowM, goal, anchor }: { real: { month: string; net:
           <path d={estPath} fill="none" stroke="var(--accent)" strokeWidth={1.6} opacity={0.5} strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
         )}
         <path d={realPath} fill="none" stroke="var(--accent)" strokeWidth={1.8} strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-        {hasEst && <circle cx={X(firstRealIdx)} cy={Y(solid[firstRealIdx].net)} r={3} fill="var(--surface-1)" stroke="var(--accent)" strokeWidth={1.6} />}
-        <circle cx={X(realEnd)} cy={Y(real[real.length - 1].net)} r={3.4} fill="var(--accent)" stroke="var(--surface-1)" strokeWidth={2} />
-        {hover && <circle cx={X(0) + (hover.left / 100) * W} cy={(hover.top / 100) * H} r={3.4} fill="var(--accent)" stroke="var(--surface-1)" strokeWidth={2} />}
       </svg>
+      {/* dots as HTML overlays so they stay round (the SVG is non-uniformly scaled) */}
+      <Dot left={(X(realEnd) / W) * 100} top={(Y(real[real.length - 1].net) / H) * 100} />
+      {hover && <Dot left={hover.left} top={hover.top} />}
       {hover && (
         <div style={{ position: 'absolute', left: `${hover.left}%`, top: `${hover.top}%`, transform: 'translate(-50%, -115%)', pointerEvents: 'none', background: 'var(--text-primary)', color: 'var(--surface-1)', borderRadius: 9, padding: '6px 9px', fontSize: 12, lineHeight: 1.3, whiteSpace: 'nowrap', boxShadow: '0 6px 18px rgba(0,0,0,0.22)' }}>
           <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>{fmtMonth(hover.month)}{hover.proj ? ' · proj.' : hover.est ? ' · est.' : ''}</span>&nbsp; <b style={{ fontWeight: 700 }}>{money(hover.net)}</b>
@@ -266,6 +266,10 @@ function Spark({ real, proj, nowM, goal, anchor }: { real: { month: string; net:
       )}
     </div>
   )
+}
+
+function Dot({ left, top }: { left: number; top: number }) {
+  return <div style={{ position: 'absolute', left: `${left}%`, top: `${top}%`, transform: 'translate(-50%, -50%)', width: 9, height: 9, borderRadius: '50%', background: 'var(--accent)', border: '2px solid var(--surface-1)', boxShadow: '0 1px 4px rgba(0,0,0,0.22)', pointerEvents: 'none' }} />
 }
 
 function Label({ children }: { children: React.ReactNode }) {
