@@ -39,7 +39,7 @@ type Preset = 'all' | 'ytd' | '12m' | '6m' | 'month' | 'custom'
 // Canonical range set used across the app (Custom only here, where dates are editable).
 const PRESETS: { key: Preset; label: string }[] = [
   { key: 'month', label: 'This month' }, { key: 'ytd', label: 'YTD' },
-  { key: '6m', label: '6M' }, { key: '12m', label: '12M' }, { key: 'all', label: 'All' }, { key: 'custom', label: 'Custom' },
+  { key: '6m', label: '6M' }, { key: '12m', label: '12M' }, { key: 'all', label: 'ALL' }, { key: 'custom', label: 'Custom' },
 ]
 const subMonths = (iso: string, n: number) => { const d = new Date(iso + 'T12:00:00'); d.setMonth(d.getMonth() - n); return ymd(d) }
 

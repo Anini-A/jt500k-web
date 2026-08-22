@@ -47,7 +47,7 @@ const PRESETS: { key: Preset; label: string }[] = [
   { key: 'ytd', label: 'YTD' },
   { key: '6m', label: '6M' },
   { key: '12m', label: '12M' },
-  { key: 'all', label: 'All' },
+  { key: 'all', label: 'ALL' },
   { key: 'custom', label: 'Custom' },
 ]
 

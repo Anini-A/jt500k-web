@@ -10,7 +10,7 @@ type Range = 'ytd' | '6m' | 'all'
 const RANGES: { key: Range; label: string }[] = [
   { key: 'ytd', label: 'YTD' },
   { key: '6m', label: '6M' },
-  { key: 'all', label: 'All' },
+  { key: 'all', label: 'ALL' },
 ]
 const money = (n: number) => '$' + Math.round(n).toLocaleString()
 
