@@ -128,8 +128,8 @@ export default function JourneyCard() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
         <span style={{ fontSize: 13, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {reached ? 'Goal reached 🎉'
-            : projectable ? <>Projected to reach {b(short(goal))} around {b(dateStr)}</>
-              : `Set a monthly pace to project ${short(goal)}`}
+            : projectable ? <>→ {b(short(goal))} by {b(dateStr)}</>
+              : `Set a pace to project ${short(goal)}`}
         </span>
         <button onClick={toggleDetails} aria-expanded={detailsOpen} aria-label={detailsOpen ? 'Hide planner' : 'Show planner'} title={detailsOpen ? 'Hide planner' : 'Adjust rate & contribution'}
           style={{ flexShrink: 0, width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-muted)', cursor: 'pointer' }}>
