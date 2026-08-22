@@ -6,7 +6,6 @@ import PagePill from '@/components/PagePill'
 import NotificationBell from '@/components/NotificationCenter'
 import JourneyCard from '@/components/JourneyCard'
 import MoneyFlowCard from '@/components/MoneyFlowCard'
-import CoinDrawer from '@/components/CoinDrawer'
 import { getJSON } from '@/lib/fresh'
 
 interface Stats { currentBalance: number; savingsRate: number; transactionCount: number; asOf: string; totalSavings: number }
@@ -98,8 +97,6 @@ export default function Home() {
           )}
         </footer>
       </div>
-      {/* hidden coin — hard swipe up at the bottom to reveal */}
-      <CoinDrawer />
     </div>
   )
 }
