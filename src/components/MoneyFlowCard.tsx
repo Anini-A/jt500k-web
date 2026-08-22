@@ -80,11 +80,11 @@ export default function MoneyFlowCard() {
       {/* collapsible — range filters + trend chart */}
       {open && (
         <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
-          {/* same flat toggle as the net-worth card, for a unified look */}
-          <div style={{ display: 'flex', gap: 2, marginBottom: 12 }}>
+          {/* same segmented toggle as the net-worth card, for a unified look */}
+          <div style={{ display: 'flex', gap: 3, marginBottom: 12, background: 'var(--kpi-bg)', borderRadius: 999, padding: 3 }}>
             {RANGES.map((r) => (
               <button key={r.key} onClick={() => setRange(r.key)}
-                style={{ flex: 1, textAlign: 'center', padding: '8px 0', fontSize: 12.5, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', border: 'none', borderRadius: 999, background: range === r.key ? 'var(--kpi-bg)' : 'transparent', color: range === r.key ? 'var(--text-primary)' : 'var(--text-muted)' }}>{r.label}</button>
+                style={{ flex: 1, textAlign: 'center', padding: '7px 0', fontSize: 12.5, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', border: 'none', borderRadius: 999, background: range === r.key ? 'var(--surface-1)' : 'transparent', color: range === r.key ? 'var(--text-primary)' : 'var(--text-secondary)', boxShadow: range === r.key ? '0 1px 3px rgba(0,0,0,0.12)' : 'none', transition: 'background .15s, color .15s' }}>{r.label}</button>
             ))}
           </div>
           {data.length ? (
