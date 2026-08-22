@@ -113,11 +113,14 @@ export default function JourneyCard() {
 
       {/* Range chips */}
       {hasHistory && (
-        <div style={{ display: 'flex', gap: 3, marginTop: 10, background: 'var(--kpi-bg)', borderRadius: 999, padding: 3 }}>
-          {RANGES.map((r) => (
-            <button key={r} onClick={() => setRange(r)}
-              style={{ flex: 1, textAlign: 'center', padding: '7px 0', fontSize: 12.5, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', border: 'none', borderRadius: 999, background: range === r ? 'var(--surface-1)' : 'transparent', color: range === r ? 'var(--text-primary)' : 'var(--text-secondary)', boxShadow: range === r ? '0 1px 3px rgba(0,0,0,0.12)' : 'none', transition: 'background .15s, color .15s' }}>{r}</button>
-          ))}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
+          {RANGES.map((r) => {
+            const on = range === r
+            return (
+              <button key={r} onClick={() => setRange(r)}
+                style={{ padding: on ? '6px 15px' : '6px 8px', borderRadius: 999, border: 'none', cursor: 'pointer', fontSize: 12.5, fontWeight: on ? 700 : 600, fontFamily: 'inherit', background: on ? 'var(--surface-1)' : 'transparent', color: on ? 'var(--text-primary)' : 'var(--text-muted)', boxShadow: on ? '0 2px 8px rgba(0,0,0,0.14)' : 'none', transition: 'background .15s, color .15s, box-shadow .15s' }}>{r}</button>
+            )
+          })}
         </div>
       )}
 
