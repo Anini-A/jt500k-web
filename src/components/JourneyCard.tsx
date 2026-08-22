@@ -96,13 +96,10 @@ export default function JourneyCard() {
   return (
     <div style={{ padding: '2px 2px 0' }}>
       {/* Net worth — the hero: bigger than the supporting cards */}
-      {/* number on the left, progress pill facing it on the right */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-        <div style={{ minWidth: 0 }}>
-          <Label>Net worth</Label>
-          <div style={{ fontWeight: 700, fontSize: 'clamp(36px, 10vw, 52px)', letterSpacing: '-0.035em', marginTop: 4, whiteSpace: 'nowrap' }}>{money(nw)}</div>
-        </div>
-        <div style={{ flexShrink: 0, marginTop: 6, display: 'inline-flex', alignItems: 'baseline', gap: 5, padding: '7px 13px', borderRadius: 999, background: 'var(--kpi-bg)', border: '1px solid var(--border)', whiteSpace: 'nowrap' }}>
+      {/* big amount on the left, progress pill facing it on the right */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <div style={{ fontWeight: 700, fontSize: 'clamp(36px, 10vw, 52px)', letterSpacing: '-0.035em', whiteSpace: 'nowrap', minWidth: 0 }}>{money(nw)}</div>
+        <div style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'baseline', gap: 5, padding: '7px 13px', borderRadius: 999, background: 'var(--kpi-bg)', border: '1px solid var(--border)', whiteSpace: 'nowrap' }}>
           <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--accent)', letterSpacing: '-0.01em' }}>{pct.toFixed(0)}%</span>
           <span style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>of {short(goal)}</span>
         </div>
@@ -277,9 +274,6 @@ function Dot({ left, top }: { left: number; top: number }) {
   return <div style={{ position: 'absolute', left: `${left}%`, top: `${top}%`, transform: 'translate(-50%, -50%)', width: 9, height: 9, borderRadius: '50%', background: 'var(--accent)', border: '2px solid var(--surface-1)', boxShadow: '0 1px 4px rgba(0,0,0,0.22)', pointerEvents: 'none' }} />
 }
 
-function Label({ children }: { children: React.ReactNode }) {
-  return <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{children}</span>
-}
 
 function Seg({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
