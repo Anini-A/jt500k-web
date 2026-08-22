@@ -125,7 +125,7 @@ export default function JourneyCard() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
         <span style={{ fontSize: 13, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {reached ? 'Goal reached 🎉'
-            : projectable ? <>→ {b(short(goal))} by {b(dateStr)}</>
+            : projectable ? <>{b(short(goal))} by {b(dateStr)}</>
               : `Set a pace to project ${short(goal)}`}
         </span>
         <button onClick={toggleDetails} aria-expanded={detailsOpen} aria-label={detailsOpen ? 'Hide planner' : 'Show planner'} title={detailsOpen ? 'Hide planner' : 'Adjust rate & contribution'}
