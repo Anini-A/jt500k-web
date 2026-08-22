@@ -81,14 +81,6 @@ export default function JourneyCard() {
   const hasHistory = history.length >= 2
   const nowM = hasHistory ? history[history.length - 1].month : ''
 
-  // projection points (from today's net worth up to the goal), for the dashed chart tail
-  const projPts: { month: string; net: number }[] = []
-  if (hasHistory && projectable) {
-    projPts.push({ month: nowM, net: nw })
-    let b2 = nw, i = 0
-    while (b2 < goal && i < 130) { b2 = b2 * (1 + mRate) + monthly; i++; projPts.push({ month: addMonths(nowM, i), net: Math.min(b2, goal) }) }
-  }
-
   // realized points inside the selected range
   const realWin = (() => {
     if (!hasHistory) return history
@@ -98,22 +90,28 @@ export default function JourneyCard() {
     const w = history.filter((h) => monthsApart(h.month, nowM) <= n)
     return w.length >= 2 ? w : history.slice(-2)
   })()
-  const projWin = range === 'ALL' ? projPts : []
 
   const b = (v: string) => <b style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>{v}</b>
 
   return (
     <div style={{ padding: '2px 2px 0' }}>
       {/* Net worth — the hero: bigger than the supporting cards */}
-      <Label>Net worth</Label>
-      <div style={{ fontWeight: 700, fontSize: 'clamp(36px, 10vw, 52px)', letterSpacing: '-0.035em', marginTop: 4, whiteSpace: 'nowrap' }}>{money(nw)}</div>
-      <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>
-        {pct.toFixed(0)}% of {short(goal)}{hasHistory ? '' : ' · trajectory builds as months are recorded'}
+      {/* number on the left, progress pill facing it on the right */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+        <div style={{ minWidth: 0 }}>
+          <Label>Net worth</Label>
+          <div style={{ fontWeight: 700, fontSize: 'clamp(36px, 10vw, 52px)', letterSpacing: '-0.035em', marginTop: 4, whiteSpace: 'nowrap' }}>{money(nw)}</div>
+        </div>
+        <div style={{ flexShrink: 0, marginTop: 6, display: 'inline-flex', alignItems: 'baseline', gap: 5, padding: '7px 13px', borderRadius: 999, background: 'var(--kpi-bg)', border: '1px solid var(--border)', whiteSpace: 'nowrap' }}>
+          <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--accent)', letterSpacing: '-0.01em' }}>{pct.toFixed(0)}%</span>
+          <span style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>of {short(goal)}</span>
+        </div>
       </div>
+      {!hasHistory && <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>Trajectory builds as months are recorded</div>}
 
-      {/* Full-bleed trajectory chart — ALL anchors to the goal so "halfway" looks halfway */}
+      {/* Full-bleed trajectory chart */}
       {hasHistory
-        ? <Spark real={realWin} proj={projWin} nowM={nowM} goal={goal} anchor={range === 'ALL'} />
+        ? <Spark real={realWin} proj={[]} nowM={nowM} goal={goal} anchor={range === 'ALL'} />
         : <div style={{ height: 12 }} />}
 
       {/* Range chips */}
