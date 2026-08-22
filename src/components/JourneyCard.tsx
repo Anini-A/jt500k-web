@@ -185,7 +185,7 @@ export default function JourneyCard() {
 // endpoint dot, and a hover tooltip. Full width, no axes.
 function Spark({ real, proj, nowM, goal, anchor }: { real: { month: string; net: number; est?: boolean }[]; proj: { month: string; net: number }[]; nowM: string; goal: number; anchor: boolean }) {
   const [hover, setHover] = useState<{ left: number; top: number; month: string; net: number; proj: boolean; est: boolean } | null>(null)
-  const W = 400, H = 150, PADY = 10
+  const W = 400, H = 150, PADY = 10, PADX = 12 // PADX keeps the endpoint dot from spilling past the edge
 
   // one continuous index across real + projection tail (proj[0] === last real point)
   const tail = proj.slice(1)
@@ -198,7 +198,7 @@ function Spark({ real, proj, nowM, goal, anchor }: { real: { month: string; net:
   let lo: number, hi: number
   if (anchor) { lo = 0; hi = goal * 1.05 }
   else { lo = Math.min(...vals); hi = Math.max(...vals); const pad = (hi - lo) * 0.16 || 8; lo -= pad; hi += pad }
-  const X = (i: number) => (i / N) * W
+  const X = (i: number) => PADX + (i / N) * (W - 2 * PADX)
   const Y = (v: number) => PADY + (1 - (v - lo) / (hi - lo)) * (H - 2 * PADY)
 
   const realEnd = real.length - 1
