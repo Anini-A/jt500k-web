@@ -86,7 +86,7 @@ export default function MoneyFlowCard() {
               const on = range === r.key
               return (
                 <button key={r.key} onClick={() => setRange(r.key)}
-                  style={{ padding: on ? '6px 15px' : '6px 8px', borderRadius: 999, border: 'none', cursor: 'pointer', fontSize: 12.5, fontWeight: on ? 700 : 600, fontFamily: 'inherit', background: on ? 'var(--surface-1)' : 'transparent', color: on ? 'var(--text-primary)' : 'var(--text-muted)', boxShadow: on ? '0 2px 8px rgba(0,0,0,0.14)' : 'none', transition: 'background .15s, color .15s, box-shadow .15s' }}>{r.label}</button>
+                  style={{ padding: on ? '6px 15px' : '6px 8px', borderRadius: 999, border: 'none', cursor: 'pointer', fontSize: 12.5, fontWeight: on ? 700 : 600, fontFamily: 'inherit', background: on ? 'var(--glass-specular), var(--glass-bg)' : 'transparent', color: on ? 'var(--text-primary)' : 'var(--text-muted)', boxShadow: on ? '0 3px 10px rgba(20,20,25,0.14), var(--glass-sheen), var(--glass-rim)' : 'none', WebkitBackdropFilter: on ? 'blur(14px) saturate(160%)' : undefined, backdropFilter: on ? 'blur(14px) saturate(160%)' : undefined, transition: 'background .15s, color .15s, box-shadow .15s' }}>{r.label}</button>
               )
             })}
           </div>
