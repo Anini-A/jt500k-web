@@ -118,7 +118,7 @@ export default function JourneyCard() {
             const on = range === r
             return (
               <button key={r} onClick={() => setRange(r)}
-                style={{ padding: on ? '6px 15px' : '6px 8px', borderRadius: 999, border: 'none', cursor: 'pointer', fontSize: 12.5, fontWeight: on ? 700 : 600, fontFamily: 'inherit', background: on ? 'color-mix(in srgb, var(--accent) 13%, var(--surface-1))' : 'transparent', color: on ? 'var(--text-primary)' : 'var(--text-muted)', boxShadow: on ? '0 2px 8px rgba(20,20,25,0.12), var(--glass-sheen), var(--glass-rim)' : 'none', transition: 'background .15s, color .15s, box-shadow .15s' }}>{r}</button>
+                style={{ padding: on ? '6px 15px' : '6px 8px', borderRadius: 999, border: 'none', cursor: 'pointer', fontSize: 12.5, fontWeight: on ? 700 : 600, fontFamily: 'inherit', background: on ? 'var(--surface-1)' : 'transparent', color: on ? 'var(--text-primary)' : 'var(--text-muted)', boxShadow: on ? '0 2px 8px rgba(20,20,25,0.12), var(--glass-sheen), var(--glass-rim)' : 'none', transition: 'background .15s, color .15s, box-shadow .15s' }}>{r}</button>
             )
           })}
         </div>
