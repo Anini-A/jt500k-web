@@ -1418,6 +1418,12 @@ header.top h1 {
     padding-right: 0;
   }
 
+  /* The header actions are round icon-pills: the box is flush at the card edge,
+     but the glyph is centered inside ~10px of padding, so it reads as inset.
+     Shift the cluster out by that padding so the gear icon hugs the edge,
+     lining it up with the goal pill / card edge below. */
+  header.top > :last-child { margin-right: -9px; }
+
   header.top .brand {
     font-size: 15px;
   }
