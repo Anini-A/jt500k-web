@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { ChevronDown } from 'lucide-react'
 import { getJSON } from '@/lib/fresh'
 
 interface NW {
@@ -91,7 +90,6 @@ export default function JourneyCard() {
     return w.length >= 2 ? w : history.slice(-2)
   })()
 
-  const b = (v: string) => <b style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>{v}</b>
 
   return (
     <div style={{ padding: '2px 2px 0' }}>
@@ -99,10 +97,12 @@ export default function JourneyCard() {
       {/* big amount on the left, progress pill facing it on the right */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
         <div style={{ fontWeight: 700, fontSize: 'clamp(36px, 10vw, 52px)', letterSpacing: '-0.035em', whiteSpace: 'nowrap', minWidth: 0 }}>{money(nw)}</div>
-        <div style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'baseline', gap: 5, padding: '7px 13px', borderRadius: 999, background: 'var(--kpi-bg)', border: '1px solid var(--border)', whiteSpace: 'nowrap' }}>
+        {/* the pill IS the planner toggle — tap to open the goal planner */}
+        <button onClick={toggleDetails} aria-expanded={detailsOpen} aria-label={detailsOpen ? 'Hide goal planner' : 'Open goal planner'}
+          style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'baseline', gap: 5, padding: '7px 13px', borderRadius: 999, background: detailsOpen ? 'color-mix(in srgb, var(--accent) 12%, var(--kpi-bg))' : 'var(--kpi-bg)', border: `1px solid ${detailsOpen ? 'var(--accent)' : 'var(--border)'}`, whiteSpace: 'nowrap', cursor: 'pointer', fontFamily: 'inherit', transition: 'background .15s, border-color .15s' }}>
           <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--accent)', letterSpacing: '-0.01em' }}>{pct.toFixed(0)}%</span>
           <span style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>of {short(goal)}</span>
-        </div>
+        </button>
       </div>
       {!hasHistory && <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>Trajectory builds as months are recorded</div>}
 
@@ -121,54 +121,56 @@ export default function JourneyCard() {
         </div>
       )}
 
-      {/* Projection lead line + planner toggle */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
-        <span style={{ fontSize: 13, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {reached ? 'Goal reached 🎉'
-            : projectable ? <>{b(short(goal))} by {b(dateStr)}</>
-              : `Set a pace to project ${short(goal)}`}
-        </span>
-        <button onClick={toggleDetails} aria-expanded={detailsOpen} aria-label={detailsOpen ? 'Hide planner' : 'Show planner'} title={detailsOpen ? 'Hide planner' : 'Adjust rate & contribution'}
-          style={{ flexShrink: 0, width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-muted)', cursor: 'pointer' }}>
-          <ChevronDown size={16} style={{ transform: detailsOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s ease' }} />
-        </button>
-      </div>
-
-      {/* Expanded planner — outcome first, then two clean controls */}
-      {detailsOpen && !reached && (
-        <div style={{ marginTop: 14, display: 'grid', gap: 18 }}>
-          {/* away + rate — continues the "Projected to reach …" line above */}
-          {projectable && (
-            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: -2 }}>
-              <b style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>{awayStr}</b> away · at a {Math.round(rate * 100 * 10) / 10}% yearly return
+      {/* Goal planner — opens from the pill; leads with the finish date, then controls */}
+      {detailsOpen && (
+        <div style={{ marginTop: 16, background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: 18, padding: 18 }}>
+          {reached ? (
+            <div style={{ textAlign: 'center', padding: '8px 0' }}>
+              <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--income)' }}>🎉 Goal reached</div>
+              <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 6 }}>You’ve passed {short(goal)} — set a new goal in Settings.</div>
             </div>
+          ) : (
+            <>
+              {/* outcome */}
+              <div style={{ textAlign: 'center', paddingBottom: 16, marginBottom: 16, borderBottom: '1px solid var(--border)' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Reaching {short(goal)}</div>
+                <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-0.02em', marginTop: 4, color: projectable ? 'var(--accent)' : 'var(--text-muted)' }}>
+                  {projectable ? dateStr : 'Set a monthly amount'}
+                </div>
+                {projectable && (
+                  <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
+                    <b style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>{awayStr}</b> away · at <b style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>{Math.round(rate * 100 * 10) / 10}%</b>/yr
+                  </div>
+                )}
+              </div>
+
+              {/* growth rate */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                <span style={{ fontSize: 13.5, color: 'var(--text-secondary)' }}>Yearly growth</span>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 2, background: 'var(--kpi-bg)', borderRadius: 999, padding: 3 }}>
+                  <Seg active={rateKey === 'c'} onClick={() => setRateKey('c')}>5%</Seg>
+                  <Seg active={rateKey === 'm'} onClick={() => setRateKey('m')}>7%</Seg>
+                  <Seg active={rateKey === 'o'} onClick={() => setRateKey('o')}>10%</Seg>
+                </div>
+              </div>
+
+              {/* monthly contribution */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 16 }}>
+                <span style={{ fontSize: 13.5, color: 'var(--text-secondary)' }}>Saving / month</span>
+                <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 8 }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'baseline' }}>
+                    <span style={{ fontWeight: 600, fontSize: 18, color: 'var(--text-secondary)' }}>$</span>
+                    <input inputMode="numeric" value={override} placeholder="0"
+                      onChange={(e) => setOverride(e.target.value.replace(/[^0-9.]/g, ''))}
+                      style={{ width: 72, fontWeight: 800, fontSize: 18, padding: '0 2px 2px', border: 'none', borderBottom: '1px solid var(--border)', background: 'transparent', color: 'var(--text-primary)', fontFamily: 'inherit', outline: 'none', textAlign: 'right' }} />
+                  </span>
+                  {Math.round(Number(override) || 0) !== Math.round(avgSave) && (
+                    <button onClick={() => setOverride(String(Math.round(avgSave)))} style={{ background: 'transparent', border: 'none', padding: 0, color: 'var(--accent)', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>↺ my pace</button>
+                  )}
+                </span>
+              </div>
+            </>
           )}
-
-          {/* growth rate */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Yearly growth</span>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 2, background: 'var(--kpi-bg)', borderRadius: 999, padding: 3 }}>
-              <Seg active={rateKey === 'c'} onClick={() => setRateKey('c')}>5%</Seg>
-              <Seg active={rateKey === 'm'} onClick={() => setRateKey('m')}>7%</Seg>
-              <Seg active={rateKey === 'o'} onClick={() => setRateKey('o')}>10%</Seg>
-            </div>
-          </div>
-
-          {/* monthly contribution */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Saving / month</span>
-            <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 8 }}>
-              <span style={{ display: 'inline-flex', alignItems: 'baseline' }}>
-                <span style={{ fontWeight: 600, fontSize: 18, color: 'var(--text-secondary)' }}>$</span>
-                <input inputMode="numeric" value={override} placeholder="0"
-                  onChange={(e) => setOverride(e.target.value.replace(/[^0-9.]/g, ''))}
-                  style={{ width: 72, fontWeight: 700, fontSize: 18, padding: '0 2px 2px', border: 'none', borderBottom: '1px solid var(--border)', background: 'transparent', color: 'var(--text-primary)', fontFamily: 'inherit', outline: 'none', textAlign: 'right' }} />
-              </span>
-              {Math.round(Number(override) || 0) !== Math.round(avgSave) && (
-                <button onClick={() => setOverride(String(Math.round(avgSave)))} style={{ background: 'transparent', border: 'none', padding: 0, color: 'var(--accent)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>↺ my pace</button>
-              )}
-            </span>
-          </div>
         </div>
       )}
     </div>
