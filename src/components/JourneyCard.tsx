@@ -109,9 +109,9 @@ export default function JourneyCard() {
       </div>
       {!hasHistory && <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>Trajectory builds as months are recorded</div>}
 
-      {/* Full-bleed trajectory chart */}
+      {/* Full-bleed trajectory chart — always auto-fits (the pill carries % of goal) */}
       {hasHistory
-        ? <Spark real={realWin} proj={[]} nowM={nowM} goal={goal} anchor={range === 'ALL'} />
+        ? <Spark real={realWin} proj={[]} nowM={nowM} goal={goal} anchor={false} />
         : <div style={{ height: 12 }} />}
 
       {/* Range chips */}
