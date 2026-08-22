@@ -105,14 +105,16 @@ export default function CoinBoost() {
         <button type="button" onPointerDown={onDown} onPointerUp={onUp} aria-label="Flick the coin for a boost"
           style={{ border: 'none', background: 'transparent', padding: 0, cursor: 'pointer', touchAction: 'pan-y' }}>
           <div style={{ position: 'relative', width: 72, height: 72, transformStyle: 'preserve-3d', WebkitTransformStyle: 'preserve-3d', transform: `rotateY(${angle}deg)`, transition: spinning ? 'none' : 'transform .2s ease' }}>
+            {/* rim — a metallic edge so the coin has thickness and never fully vanishes */}
+            <div style={{ position: 'absolute', top: 2, bottom: 2, left: '50%', width: 9, marginLeft: -4.5, borderRadius: 5, transform: 'rotateY(90deg)', backfaceVisibility: 'visible', WebkitBackfaceVisibility: 'visible', background: 'linear-gradient(180deg, #b9822f 0%, #f4dd9a 22%, #8a5e1e 50%, #f4dd9a 78%, #b9822f 100%)' }} />
             {/* front — gold $ */}
-            <div style={{ ...faceBase, background: 'radial-gradient(circle at 32% 26%, #fdeeb4, #e7b24e 46%, #b9822f 78%, #8a5e1e)', color: '#6e4a17', fontWeight: 800, fontSize: 34, fontFamily: 'Georgia, serif', textShadow: '0 1px 0 rgba(255,255,255,0.4), 0 -1px 0 rgba(0,0,0,0.25)' }}>$</div>
-            {/* back — silver smiley */}
-            <div style={{ ...faceBase, transform: 'rotateY(180deg)', background: 'radial-gradient(circle at 32% 26%, #ffffff, #d4dce4 46%, #9aa6b2 78%, #7c8794)' }}>
+            <div style={{ ...faceBase, transform: 'translateZ(4px)', background: 'radial-gradient(circle at 32% 26%, #fdeeb4, #e7b24e 46%, #b9822f 78%, #8a5e1e)', color: '#6e4a17', fontWeight: 800, fontSize: 34, fontFamily: 'Georgia, serif', textShadow: '0 1px 0 rgba(255,255,255,0.4), 0 -1px 0 rgba(0,0,0,0.25)' }}>$</div>
+            {/* back — gold smiley */}
+            <div style={{ ...faceBase, transform: 'rotateY(180deg) translateZ(4px)', background: 'radial-gradient(circle at 32% 26%, #fdeeb4, #e7b24e 46%, #b9822f 78%, #8a5e1e)', color: '#6e4a17' }}>
               <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
-                <circle cx="9" cy="10" r="1.6" fill="#5a636d" />
-                <circle cx="15" cy="10" r="1.6" fill="#5a636d" />
-                <path d="M8 14c1.4 1.9 6.6 1.9 8 0" stroke="#5a636d" strokeWidth="1.8" strokeLinecap="round" />
+                <circle cx="9" cy="10" r="1.6" fill="#6e4a17" />
+                <circle cx="15" cy="10" r="1.6" fill="#6e4a17" />
+                <path d="M8 14c1.4 1.9 6.6 1.9 8 0" stroke="#6e4a17" strokeWidth="1.8" strokeLinecap="round" />
               </svg>
             </div>
           </div>
