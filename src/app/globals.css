@@ -422,6 +422,13 @@ header.top {
   box-shadow: var(--glass-shadow), var(--glass-sheen);
 }
 
+/* Matches header.top's horizontal padding so full-bleed content (e.g. JourneyCard)
+   lines up its edge elements (like the goal pill) with the header actions above it. */
+.journey-edge {
+  padding-left: 18px;
+  padding-right: 18px;
+}
+
 /* Top-center section pill.
    Desktop → full clickable segmented control. Mobile → current label + dots + swipe. */
 .page-pill { justify-self: center; min-width: 0; }
@@ -1402,6 +1409,11 @@ header.top h1 {
     box-shadow: none;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
+  }
+
+  .journey-edge {
+    padding-left: 4px;
+    padding-right: 4px;
   }
 
   header.top .brand {

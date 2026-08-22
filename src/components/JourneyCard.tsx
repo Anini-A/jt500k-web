@@ -92,10 +92,11 @@ export default function JourneyCard() {
 
 
   return (
-    <div style={{ padding: '2px 2px 0' }}>
+    <div style={{ padding: '2px 0 0' }}>
       {/* Net worth — the hero: bigger than the supporting cards */}
-      {/* big amount on the left, progress pill facing it on the right */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+      {/* big amount on the left, progress pill facing it on the right — inset to
+          line up with the header actions (e.g. Settings) above */}
+      <div className="journey-edge" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
         <div style={{ fontWeight: 700, fontSize: 'clamp(36px, 10vw, 52px)', letterSpacing: '-0.035em', whiteSpace: 'nowrap', minWidth: 0 }}>{money(nw)}</div>
         {/* the pill IS the planner toggle — tap to open the goal planner */}
         <button onClick={toggleDetails} aria-expanded={detailsOpen} aria-label={detailsOpen ? 'Hide goal planner' : 'Open goal planner'}
@@ -104,7 +105,7 @@ export default function JourneyCard() {
           <span style={{ fontSize: 13.5, color: 'var(--text-muted)' }}>of {short(goal)}</span>
         </button>
       </div>
-      {!hasHistory && <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>Trajectory builds as months are recorded</div>}
+      {!hasHistory && <div className="journey-edge" style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>Trajectory builds as months are recorded</div>}
 
       {/* Full-bleed trajectory chart — always auto-fits (the pill carries % of goal) */}
       {hasHistory
@@ -113,7 +114,7 @@ export default function JourneyCard() {
 
       {/* Range chips */}
       {hasHistory && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
+        <div className="journey-edge" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
           {RANGES.map((r) => {
             const on = range === r
             return (
