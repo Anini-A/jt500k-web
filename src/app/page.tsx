@@ -6,7 +6,7 @@ import PagePill from '@/components/PagePill'
 import NotificationBell from '@/components/NotificationCenter'
 import JourneyCard from '@/components/JourneyCard'
 import MoneyFlowCard from '@/components/MoneyFlowCard'
-import CoinBoost from '@/components/CoinBoost'
+import CoinDrawer from '@/components/CoinDrawer'
 import { getJSON } from '@/lib/fresh'
 
 interface Stats { currentBalance: number; savingsRate: number; transactionCount: number; asOf: string; totalSavings: number }
@@ -89,11 +89,6 @@ export default function Home() {
           <MoneyFlowCard />
         </section>
 
-        {/* Daily boost — flick the coin for a motivational "aha" from your numbers */}
-        <section className="block">
-          <CoinBoost />
-        </section>
-
         {/* Footer */}
         <footer style={{ textAlign: 'center', marginTop: 32, paddingBottom: 16 }}>
           {stats && (
@@ -103,6 +98,8 @@ export default function Home() {
           )}
         </footer>
       </div>
+      {/* hidden coin — hard swipe up at the bottom to reveal */}
+      <CoinDrawer />
     </div>
   )
 }
