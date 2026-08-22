@@ -121,24 +121,24 @@ export default function JourneyCard() {
         </div>
       )}
 
-      {/* Goal planner — opens from the pill; leads with the finish date, then controls */}
+      {/* Goal planner — opens from the pill; glassy like the other home cards */}
       {detailsOpen && (
-        <div style={{ marginTop: 16, background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: 18, padding: 18 }}>
+        <div className="card glass" style={{ marginTop: 14, padding: 16 }}>
           {reached ? (
-            <div style={{ textAlign: 'center', padding: '8px 0' }}>
-              <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--income)' }}>🎉 Goal reached</div>
+            <div style={{ textAlign: 'center', padding: '4px 0' }}>
+              <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--income)' }}>🎉 Goal reached</div>
               <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 6 }}>You’ve passed {short(goal)} — set a new goal in Settings.</div>
             </div>
           ) : (
             <>
               {/* outcome */}
-              <div style={{ textAlign: 'center', paddingBottom: 16, marginBottom: 16, borderBottom: '1px solid var(--border)' }}>
+              <div style={{ textAlign: 'center', paddingBottom: 13, marginBottom: 14, borderBottom: '1px solid var(--border)' }}>
                 <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Reaching {short(goal)}</div>
-                <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-0.02em', marginTop: 4, color: projectable ? 'var(--accent)' : 'var(--text-muted)' }}>
+                <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em', marginTop: 3, color: projectable ? 'var(--accent)' : 'var(--text-muted)' }}>
                   {projectable ? dateStr : 'Set a monthly amount'}
                 </div>
                 {projectable && (
-                  <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
+                  <div style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 3 }}>
                     <b style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>{awayStr}</b> away · at <b style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>{Math.round(rate * 100 * 10) / 10}%</b>/yr
                   </div>
                 )}
@@ -146,7 +146,7 @@ export default function JourneyCard() {
 
               {/* growth rate */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-                <span style={{ fontSize: 13.5, color: 'var(--text-secondary)' }}>Yearly growth</span>
+                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Yearly growth</span>
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: 2, background: 'var(--kpi-bg)', borderRadius: 999, padding: 3 }}>
                   <Seg active={rateKey === 'c'} onClick={() => setRateKey('c')}>5%</Seg>
                   <Seg active={rateKey === 'm'} onClick={() => setRateKey('m')}>7%</Seg>
@@ -155,8 +155,8 @@ export default function JourneyCard() {
               </div>
 
               {/* monthly contribution */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 16 }}>
-                <span style={{ fontSize: 13.5, color: 'var(--text-secondary)' }}>Saving / month</span>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 12 }}>
+                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Saving / month</span>
                 <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 8 }}>
                   <span style={{ display: 'inline-flex', alignItems: 'baseline' }}>
                     <span style={{ fontWeight: 600, fontSize: 18, color: 'var(--text-secondary)' }}>$</span>
