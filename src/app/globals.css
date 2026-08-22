@@ -422,11 +422,11 @@ header.top {
   box-shadow: var(--glass-shadow), var(--glass-sheen);
 }
 
-/* Matches header.top's horizontal padding so full-bleed content (e.g. JourneyCard)
-   lines up its edge elements (like the goal pill) with the header actions above it. */
+/* Full-bleed content (JourneyCard): keep edge elements (goal pill, range chips)
+   flush with the outer edge of the cards below — no horizontal inset. */
 .journey-edge {
-  padding-left: 18px;
-  padding-right: 18px;
+  padding-left: 0;
+  padding-right: 0;
 }
 
 /* Top-center section pill.
