@@ -246,8 +246,15 @@ function Spark({ real, proj, nowM, goal, anchor }: { real: { month: string; net:
             <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.22" />
             <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
           </linearGradient>
+          {/* horizontal fade so the fill dissolves at the "now" edge instead of a hard wall */}
+          <linearGradient id="nwfade" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stopColor="#fff" stopOpacity="1" />
+            <stop offset={Math.max(0, X(realEnd) / W - 0.07)} stopColor="#fff" stopOpacity="1" />
+            <stop offset={X(realEnd) / W} stopColor="#fff" stopOpacity="0" />
+          </linearGradient>
+          <mask id="nwmask"><rect x="0" y="0" width={W} height={H} fill="url(#nwfade)" /></mask>
         </defs>
-        <path d={area} fill="url(#nwfill)" />
+        <path d={area} fill="url(#nwfill)" mask="url(#nwmask)" />
         {dashed.length > 1 && (
           <path d={dashedPath} fill="none" stroke="var(--accent)" strokeWidth={1.5} strokeDasharray="3 4" opacity={0.4} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
         )}
