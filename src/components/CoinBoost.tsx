@@ -3,78 +3,135 @@
 import { useEffect, useRef, useState } from 'react'
 import { getJSON } from '@/lib/fresh'
 
-// A flick-able coin that spins with natural deceleration, then reveals a
-// motivational "aha" card built from your real journey numbers.
+// A free-standing flick-able gold coin (canvas-rendered) that spins with natural
+// deceleration, then reveals a motivational "aha" line — Gemini-written when
+// available, otherwise built from the household's real numbers.
 const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 })
 const short = (n: number) => (n >= 1000 ? '$' + Math.round(n / 1000) + 'K' : '$' + Math.round(n))
 
-interface Boost { emoji: string; text: string }
+function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  r = Math.min(r, w / 2, h / 2)
+  ctx.beginPath()
+  ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r)
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath()
+}
 
 export default function CoinBoost() {
-  const [angle, setAngle] = useState(0)     // rotateY, degrees
+  const canvasRef = useRef<HTMLCanvasElement>(null)
   const [spinning, setSpinning] = useState(false)
-  const [boost, setBoost] = useState<Boost | null>(null)
+  const [boost, setBoost] = useState<string | null>(null)
   const velRef = useRef(0)
   const angRef = useRef(0)
   const rafRef = useRef<number | null>(null)
   const startRef = useRef<{ x: number; t: number } | null>(null)
+  const spinningRef = useRef(false)
+  const queue = useRef<string[]>([])   // Gemini lines waiting to be shown
   const data = useRef<{ nw?: any; goal: number; monthly?: any[] }>({ goal: 500000 })
 
+  // ---- draw the coin at a given Y-rotation ----
+  const draw = (angleDeg: number) => {
+    const canvas = canvasRef.current; if (!canvas) return
+    const ctx = canvas.getContext('2d'); if (!ctx) return
+    const dpr = Math.min(3, window.devicePixelRatio || 1)
+    const size = 112
+    if (canvas.width !== size * dpr) { canvas.width = size * dpr; canvas.height = size * dpr; canvas.style.width = size + 'px'; canvas.style.height = size + 'px' }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    ctx.clearRect(0, 0, size, size)
+    const cx = size / 2, cy = size / 2 - 2, R = 42, TH = 9
+    const a = angleDeg * Math.PI / 180
+    const c = Math.cos(a), s = Math.sin(a)
+    const ac = Math.abs(c), as = Math.abs(s)
+
+    // ground shadow
+    ctx.save(); ctx.globalAlpha = 0.16; ctx.fillStyle = '#000'
+    ctx.beginPath(); ctx.ellipse(cx, cy + R + 8, R * ac * 0.8 + 7, 5, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore()
+
+    // edge band (thickness)
+    const edgeW = TH * as
+    if (edgeW > 0.4) {
+      const g = ctx.createLinearGradient(0, cy - R, 0, cy + R)
+      g.addColorStop(0, '#7a521a'); g.addColorStop(0.18, '#f6df9c'); g.addColorStop(0.5, '#a9761f'); g.addColorStop(0.82, '#f6df9c'); g.addColorStop(1, '#7a521a')
+      roundRect(ctx, cx - edgeW / 2, cy - R, edgeW, 2 * R, edgeW / 2); ctx.fillStyle = g; ctx.fill()
+    }
+
+    // face (foreshortened by |cos|)
+    if (R * ac > 0.4) {
+      ctx.save(); ctx.translate(cx, cy); ctx.scale(ac, 1)
+      const fg = ctx.createRadialGradient(-R * 0.32, -R * 0.34, R * 0.1, 0, 0, R * 1.15)
+      fg.addColorStop(0, '#fdeeb4'); fg.addColorStop(0.45, '#e9b855'); fg.addColorStop(0.8, '#bb8430'); fg.addColorStop(1, '#8a5e1e')
+      ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.fillStyle = fg; ctx.fill()
+      ctx.lineWidth = 2.2; ctx.strokeStyle = 'rgba(255,255,255,0.32)'; ctx.beginPath(); ctx.arc(0, 0, R - 3, 0, Math.PI * 2); ctx.stroke()
+      ctx.lineWidth = 1.4; ctx.strokeStyle = 'rgba(110,74,23,0.35)'; ctx.beginPath(); ctx.arc(0, 0, R - 6.5, 0, Math.PI * 2); ctx.stroke()
+      // engraving: $ on the front, smiley on the back
+      ctx.fillStyle = '#6e4a17'; ctx.strokeStyle = '#6e4a17'
+      if (c >= 0) { ctx.font = '800 48px Georgia, serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('$', 0, 3) }
+      else {
+        ctx.beginPath(); ctx.arc(-10, -7, 2.6, 0, Math.PI * 2); ctx.arc(10, -7, 2.6, 0, Math.PI * 2); ctx.fill()
+        ctx.lineWidth = 3.4; ctx.lineCap = 'round'; ctx.beginPath(); ctx.arc(0, -3, 16, 0.18 * Math.PI, 0.82 * Math.PI); ctx.stroke()
+      }
+      // specular sweep
+      const spec = ctx.createLinearGradient(-R, -R, R * 0.5, R)
+      spec.addColorStop(0, 'rgba(255,255,255,0.4)'); spec.addColorStop(0.4, 'rgba(255,255,255,0)'); spec.addColorStop(1, 'rgba(255,255,255,0)')
+      ctx.globalCompositeOperation = 'screen'; ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.fillStyle = spec; ctx.fill(); ctx.globalCompositeOperation = 'source-over'
+      ctx.restore()
+    }
+  }
+
+  // ---- data + Gemini prefetch ----
   useEffect(() => {
     getJSON('/api/networth').then((d) => { if (!d.error) data.current.nw = d }).catch(() => {})
     getJSON('/api/settings').then((s) => { if (!s.error && s.goalAmount) data.current.goal = Number(s.goalAmount) }).catch(() => {})
     getJSON('/api/charts').then((d) => { if (Array.isArray(d.monthly)) data.current.monthly = d.monthly }).catch(() => {})
+    fetchBoost(); fetchBoost()
+    draw(0)
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // build the message pool from real data + evergreen motivation
-  const pool = (): Boost[] => {
-    const out: Boost[] = [
-      { emoji: '🌱', text: 'Consistency compounds. Keep stacking.' },
-      { emoji: '👣', text: 'Small steps today, big net worth tomorrow.' },
-      { emoji: '🙌', text: 'Future you is already thanking you.' },
-      { emoji: '🧭', text: 'You’re the CFO of this household. Steady hands.' },
+  const fetchBoost = () => {
+    getJSON('/api/boost').then((d) => { if (d?.text) queue.current.push(String(d.text)) }).catch(() => {})
+  }
+
+  // local, data-driven fallback lines
+  const localLine = (): string => {
+    const out: string[] = [
+      'Consistency compounds. Keep stacking. 🌱',
+      'Small steps today, big net worth tomorrow. 👣',
+      'Future you is already thanking you. 🙌',
     ]
     const nw = data.current.nw, goal = data.current.goal
     if (nw) {
       const pct = Math.round(Math.min(100, (nw.netWorth / goal) * 100))
-      out.push({ emoji: '🎯', text: `You’re ${pct}% of the way to ${short(goal)}.` })
-      out.push({ emoji: '💰', text: `Net worth today: ${money(nw.netWorth)} — and climbing.` })
+      out.push(`You’re ${pct}% of the way to ${short(goal)}. 🎯`)
       const hist = nw.history as any[] | undefined
       if (hist && hist.length >= 2) {
         const diff = nw.netWorth - hist[hist.length - 2].net
-        if (Math.abs(diff) > 50) out.push({ emoji: diff >= 0 ? '🚀' : '💪', text: `Net worth ${diff >= 0 ? 'up' : 'down'} ${money(Math.abs(diff))} this month.` })
+        if (Math.abs(diff) > 50) out.push(`Net worth ${diff >= 0 ? 'up' : 'down'} ${money(Math.abs(diff))} this month. ${diff >= 0 ? '🚀' : '💪'}`)
       }
     }
     const m = data.current.monthly
-    if (m && m.length) {
-      const cur = m[m.length - 1]
-      if (cur.income > 0) {
-        const rate = Math.round((cur.savings / cur.income) * 100)
-        if (rate > 0) out.push({ emoji: '🔥', text: `You saved ${rate}% of your income this month.` })
-      }
-    }
-    return out
+    if (m && m.length) { const cur = m[m.length - 1]; if (cur.income > 0) { const r = Math.round((cur.savings / cur.income) * 100); if (r > 0) out.push(`You saved ${r}% of your income this month. 🔥`) } }
+    return out[Math.floor(Math.random() * out.length)]
   }
 
   const stopAndReveal = () => {
     const snapped = Math.round(angRef.current / 180) * 180
-    angRef.current = snapped; setAngle(snapped)
-    velRef.current = 0; rafRef.current = null; setSpinning(false)
-    const p = pool()
-    setBoost(p[Math.floor(Math.random() * p.length)])
+    angRef.current = snapped; draw(snapped)
+    velRef.current = 0; rafRef.current = null; spinningRef.current = false; setSpinning(false)
+    setBoost(queue.current.shift() || localLine())
+    fetchBoost() // keep one warm for next time
   }
 
   const tick = () => {
-    velRef.current *= 0.972 // friction → gentle deceleration
+    velRef.current *= 0.972
     angRef.current += velRef.current
-    setAngle(angRef.current)
+    draw(angRef.current)
     if (Math.abs(velRef.current) < 0.7) { stopAndReveal(); return }
     rafRef.current = requestAnimationFrame(tick)
   }
 
   const startSpin = (vel: number) => {
-    setBoost(null); setSpinning(true)
+    setBoost(null); spinningRef.current = true; setSpinning(true)
     velRef.current = vel
     if (rafRef.current) cancelAnimationFrame(rafRef.current)
     rafRef.current = requestAnimationFrame(tick)
@@ -82,54 +139,26 @@ export default function CoinBoost() {
 
   const onDown = (e: React.PointerEvent) => { startRef.current = { x: e.clientX, t: performance.now() } }
   const onUp = (e: React.PointerEvent) => {
-    const s = startRef.current; startRef.current = null
-    if (!s || spinning) return
-    const dx = e.clientX - s.x, dt = Math.max(1, performance.now() - s.t)
-    let vel: number
-    if (Math.abs(dx) > 8) vel = Math.max(24, Math.min(46, Math.abs(dx / dt) * 22)) * (dx < 0 ? -1 : 1) // swipe
-    else vel = (Math.random() > 0.5 ? 1 : -1) * (28 + Math.random() * 8)                                 // tap
+    const st = startRef.current; startRef.current = null
+    if (!st || spinningRef.current) return
+    const dx = e.clientX - st.x, dt = Math.max(1, performance.now() - st.t)
+    const vel = Math.abs(dx) > 8
+      ? Math.max(26, Math.min(48, Math.abs(dx / dt) * 22)) * (dx < 0 ? -1 : 1)   // flick
+      : (Math.random() > 0.5 ? 1 : -1) * (30 + Math.random() * 8)                // tap
     startSpin(vel)
   }
 
-  const faceBase: React.CSSProperties = {
-    position: 'absolute', inset: 0, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-    backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden',
-    boxShadow: 'inset 0 0 0 2px rgba(255,255,255,0.3), inset 0 -4px 9px rgba(0,0,0,0.28), 0 6px 18px rgba(0,0,0,0.28)',
-  }
-
   return (
-    <div className="card glass" style={{ textAlign: 'center', padding: '18px 16px 20px' }}>
-      <span className="hdr-label">Daily boost</span>
-
-      <div style={{ perspective: 520, display: 'flex', justifyContent: 'center', marginTop: 12 }}>
-        <button type="button" onPointerDown={onDown} onPointerUp={onUp} aria-label="Flick the coin for a boost"
-          style={{ border: 'none', background: 'transparent', padding: 0, cursor: 'pointer', touchAction: 'pan-y' }}>
-          <div style={{ position: 'relative', width: 72, height: 72, transformStyle: 'preserve-3d', WebkitTransformStyle: 'preserve-3d', transform: `rotateY(${angle}deg)`, transition: spinning ? 'none' : 'transform .2s ease' }}>
-            {/* rim — a metallic edge so the coin has thickness and never fully vanishes */}
-            <div style={{ position: 'absolute', top: 2, bottom: 2, left: '50%', width: 9, marginLeft: -4.5, borderRadius: 5, transform: 'rotateY(90deg)', backfaceVisibility: 'visible', WebkitBackfaceVisibility: 'visible', background: 'linear-gradient(180deg, #b9822f 0%, #f4dd9a 22%, #8a5e1e 50%, #f4dd9a 78%, #b9822f 100%)' }} />
-            {/* front — gold $ */}
-            <div style={{ ...faceBase, transform: 'translateZ(4px)', background: 'radial-gradient(circle at 32% 26%, #fdeeb4, #e7b24e 46%, #b9822f 78%, #8a5e1e)', color: '#6e4a17', fontWeight: 800, fontSize: 34, fontFamily: 'Georgia, serif', textShadow: '0 1px 0 rgba(255,255,255,0.4), 0 -1px 0 rgba(0,0,0,0.25)' }}>$</div>
-            {/* back — gold smiley */}
-            <div style={{ ...faceBase, transform: 'rotateY(180deg) translateZ(4px)', background: 'radial-gradient(circle at 32% 26%, #fdeeb4, #e7b24e 46%, #b9822f 78%, #8a5e1e)', color: '#6e4a17' }}>
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
-                <circle cx="9" cy="10" r="1.6" fill="#6e4a17" />
-                <circle cx="15" cy="10" r="1.6" fill="#6e4a17" />
-                <path d="M8 14c1.4 1.9 6.6 1.9 8 0" stroke="#6e4a17" strokeWidth="1.8" strokeLinecap="round" />
-              </svg>
-            </div>
-          </div>
-        </button>
-      </div>
-
-      {/* hint or the revealed boost card */}
-      <div style={{ minHeight: 52, marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ textAlign: 'center', padding: '4px 0 2px' }}>
+      <button type="button" onPointerDown={onDown} onPointerUp={onUp} aria-label="Flick the coin for a boost"
+        style={{ border: 'none', background: 'transparent', padding: 0, cursor: 'pointer', touchAction: 'pan-y', lineHeight: 0 }}>
+        <canvas ref={canvasRef} />
+      </button>
+      <div style={{ minHeight: 40, marginTop: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 16px' }}>
         {boost ? (
-          <div key={boost.text} style={{ display: 'inline-flex', alignItems: 'center', gap: 10, maxWidth: 340, padding: '11px 15px', borderRadius: 14, background: 'var(--kpi-bg)', border: '1px solid var(--border)', animation: 'boostIn .35s ease' }}>
-            <span style={{ fontSize: 22, flexShrink: 0 }}>{boost.emoji}</span>
-            <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', textAlign: 'left', lineHeight: 1.4 }}>{boost.text}</span>
-          </div>
+          <span key={boost} style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--text-primary)', maxWidth: 320, lineHeight: 1.4, animation: 'boostIn .35s ease' }}>{boost}</span>
         ) : (
-          <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{spinning ? '…' : 'Flick or tap the coin for a boost'}</span>
+          <span style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>{spinning ? '' : 'Flick the coin'}</span>
         )}
       </div>
     </div>
