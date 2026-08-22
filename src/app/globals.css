@@ -74,6 +74,11 @@
 @keyframes coinFlip {
   to { transform: rotateY(360deg); }
 }
+/* daily-boost card reveal */
+@keyframes boostIn {
+  from { opacity: 0; transform: translateY(6px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
 
 /* Voice-input mic while listening */
 .mic-live { animation: micPulse 1.3s ease-in-out infinite; }

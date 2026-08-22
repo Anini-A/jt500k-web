@@ -6,6 +6,7 @@ import PagePill from '@/components/PagePill'
 import NotificationBell from '@/components/NotificationCenter'
 import JourneyCard from '@/components/JourneyCard'
 import MoneyFlowCard from '@/components/MoneyFlowCard'
+import CoinBoost from '@/components/CoinBoost'
 import { getJSON } from '@/lib/fresh'
 
 interface Stats { currentBalance: number; savingsRate: number; transactionCount: number; asOf: string; totalSavings: number }
@@ -86,6 +87,11 @@ export default function Home() {
         {/* Money Flow — income vs expenses vs savings, defaults to YTD */}
         <section className="block">
           <MoneyFlowCard />
+        </section>
+
+        {/* Daily boost — flick the coin for a motivational "aha" from your numbers */}
+        <section className="block">
+          <CoinBoost />
         </section>
 
         {/* Footer */}
