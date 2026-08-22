@@ -1398,9 +1398,11 @@ header.top h1 {
       calc(12px + env(safe-area-inset-left, 0px));
   }
 
-  /* Blend the header into the status bar — no card, transparent, flush with the top */
+  /* Blend the header into the status bar — no card, transparent, flush with the top.
+     No horizontal padding: with the bar invisible, its buttons should sit flush
+     with the page edge, same as the cards below (which have no header of their own). */
   header.top {
-    padding: 4px 4px 8px;
+    padding: 4px 0 8px;
     gap: 8px;
     border-radius: 0;
     margin-bottom: 12px;
@@ -1412,8 +1414,8 @@ header.top h1 {
   }
 
   .journey-edge {
-    padding-left: 4px;
-    padding-right: 4px;
+    padding-left: 0;
+    padding-right: 0;
   }
 
   header.top .brand {
