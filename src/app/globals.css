@@ -413,14 +413,15 @@ header.top {
   align-items: center;
   gap: 12px;
   margin-bottom: 24px;
-  padding: 12px 18px;
-  border-radius: 22px;
-  background: color-mix(in srgb, var(--accent) 15%, var(--glass-bg));
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow), var(--glass-sheen);
+  padding: 12px 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
+/* Round icon-pills sit flush at the edge, but their glyph is centered inside
+   ~10px of padding — shift the clusters out so the bell/gear hug the edges. */
+header.top > :last-child { margin-right: -9px; }
+header.top > :first-child { margin-left: -9px; }
 
 /* Full-bleed content (JourneyCard): keep edge elements (goal pill, range chips)
    flush with the outer edge of the cards below — no horizontal inset. */
@@ -1417,12 +1418,6 @@ header.top h1 {
     padding-left: 0;
     padding-right: 0;
   }
-
-  /* The header actions are round icon-pills: the box is flush at the card edge,
-     but the glyph is centered inside ~10px of padding, so it reads as inset.
-     Shift the cluster out by that padding so the gear icon hugs the edge,
-     lining it up with the goal pill / card edge below. */
-  header.top > :last-child { margin-right: -9px; }
 
   header.top .brand {
     font-size: 15px;
