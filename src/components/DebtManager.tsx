@@ -33,6 +33,7 @@ export default function DebtManager() {
   const { toast, toastNode } = useToast()
   const [busy, setBusy] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
+  const [showPaid, setShowPaid] = useState(false)
 
   const load = useCallback(async () => {
     const d = await getJSON('/api/debts').catch(() => [])
@@ -63,6 +64,51 @@ export default function DebtManager() {
   const totalRemaining = debts.reduce((s, d) => s + d.remaining, 0)
   const totalPaid = debts.reduce((s, d) => s + Math.min(d.paid, d.amount), 0)
   const overallPct = totalDebt > 0 ? (totalPaid / totalDebt) * 100 : 0
+
+  const activeDebts = debts.filter((d) => d.remaining > 0).sort((a, b) => b.remaining - a.remaining)
+  const paidDebts = debts.filter((d) => d.remaining <= 0).sort((a, b) => a.name.localeCompare(b.name))
+
+  // one debt row — shared by the active list and the (hidden) paid-off list
+  const renderDebt = (d: Debt) => {
+    const pct = d.amount > 0 ? Math.min(100, (d.paid / d.amount) * 100) : 0
+    const done = d.remaining <= 0
+    if (editing === d.id) {
+      return <EditDebtForm key={d.id} debt={d} busy={busy}
+        onSave={(p) => call('PATCH', { id: d.id, ...p }).then((ok) => ok && setEditing(null))}
+        onDelete={() => confirm({ title: `Delete “${d.name}”?`, message: 'Transactions are not affected.', run: () => { call('DELETE', undefined, `?id=${d.id}`).then((ok) => ok && setEditing(null)) } })}
+        onCancel={() => setEditing(null)} />
+    }
+    return (
+      <div key={d.id} style={{ padding: '14px 0', borderBottom: '1px solid var(--border)', opacity: done ? 0.72 : 1 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginBottom: done ? 0 : 8 }}>
+          <div style={{ fontWeight: 600, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {d.name} {done && <CheckCircle2 size={14} color="var(--income)" style={{ verticalAlign: -2 }} />}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+            <span style={{ fontWeight: 700, color: done ? 'var(--income)' : 'var(--expense)' }}>
+              {done ? 'Paid off' : `${money2(d.remaining)} left`}
+            </span>
+            <button onClick={() => { setEditing(d.id); setAdding(false) }} aria-label="Edit debt" title="Edit debt"
+              style={{ display: 'inline-flex', padding: 6, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}>
+              <Pencil size={15} />
+            </button>
+          </div>
+        </div>
+        {!done && (
+          <>
+            <div style={{ height: 10, borderRadius: 999, background: 'var(--kpi-bg)', border: '1px solid var(--border)', overflow: 'hidden' }}>
+              <div style={{ width: `${pct}%`, height: '100%', borderRadius: 999, transition: 'width .6s ease', background: 'linear-gradient(90deg, var(--savings), var(--income))' }} />
+            </div>
+            <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 6 }}>
+              {pct.toFixed(0)}% · paid {money2(Math.min(d.paid, d.amount))} of {money2(d.amount)}
+              {d.payments > 0 ? ` · ${d.payments} payment${d.payments > 1 ? 's' : ''}` : ''}
+              {d.lastPayment ? ` · last ${d.lastPayment}` : ''}
+            </div>
+          </>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="card glass">
@@ -107,7 +153,7 @@ export default function DebtManager() {
       {/* bottom-right collapse toggle — same design as the money-flow card */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 4 }}>
         <span style={{ fontSize: 13, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {debts.length > 0 ? `${debts.length} ${debts.length === 1 ? 'debt' : 'debts'}` : ''}
+          {debts.length > 0 ? `${debts.length} ${debts.length === 1 ? 'debt' : 'debts'}${paidDebts.length ? ` · ${paidDebts.length} paid` : ''}` : ''}
         </span>
         <button onClick={() => setCollapsed((v) => !v)} aria-expanded={!collapsed} aria-label={collapsed ? 'Show debts' : 'Hide debts'} title={collapsed ? 'Show debts' : 'Hide debts'}
           style={{ flexShrink: 0, width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-muted)', cursor: 'pointer' }}>
@@ -122,7 +168,7 @@ export default function DebtManager() {
         <AddDebtForm busy={busy} onDone={async (p) => { if (await call('POST', p)) setAdding(false) }} />
       )}
 
-      {/* Debt rows */}
+      {/* Debt rows — active first; paid-off hidden behind a toggle */}
       {loading ? (
         <div style={{ padding: 16, color: 'var(--text-muted)' }}>Loading…</div>
       ) : debts.length === 0 ? (
@@ -130,47 +176,23 @@ export default function DebtManager() {
           No debts tracked yet — add your first one above.
         </div>
       ) : (
-        <div style={{ display: 'grid', gap: 4 }}>
-          {[...debts].sort((a, b) => b.remaining - a.remaining).map((d) => {
-            const pct = d.amount > 0 ? Math.min(100, (d.paid / d.amount) * 100) : 0
-            const done = d.remaining <= 0
-            if (editing === d.id) {
-              return <EditDebtForm key={d.id} debt={d} busy={busy}
-                onSave={(p) => call('PATCH', { id: d.id, ...p }).then((ok) => ok && setEditing(null))}
-                onDelete={() => confirm({ title: `Delete “${d.name}”?`, message: 'Transactions are not affected.', run: () => { call('DELETE', undefined, `?id=${d.id}`).then((ok) => ok && setEditing(null)) } })}
-                onCancel={() => setEditing(null)} />
-            }
-            return (
-              <div key={d.id} style={{ padding: '14px 0', borderBottom: '1px solid var(--border)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                  <div style={{ fontWeight: 600, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {d.name} {done && <CheckCircle2 size={14} color="var(--income)" style={{ verticalAlign: -2 }} />}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-                    <span style={{ fontWeight: 700, color: done ? 'var(--income)' : 'var(--expense)' }}>
-                      {done ? 'Paid off!' : `${money2(d.remaining)} left`}
-                    </span>
-                    <button onClick={() => { setEditing(d.id); setAdding(false) }} aria-label="Edit debt" title="Edit debt"
-                      style={{ display: 'inline-flex', padding: 6, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                      <Pencil size={15} />
-                    </button>
-                  </div>
-                </div>
-                <div style={{ height: 10, borderRadius: 999, background: 'var(--kpi-bg)', border: '1px solid var(--border)', overflow: 'hidden' }}>
-                  <div style={{
-                    width: `${pct}%`, height: '100%', borderRadius: 999, transition: 'width .6s ease',
-                    background: done ? 'var(--income)' : 'linear-gradient(90deg, var(--savings), var(--income))',
-                  }} />
-                </div>
-                <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 6 }}>
-                  {pct.toFixed(0)}% · paid {money2(Math.min(d.paid, d.amount))} of {money2(d.amount)}
-                  {d.payments > 0 ? ` · ${d.payments} payment${d.payments > 1 ? 's' : ''}` : ''}
-                  {d.lastPayment ? ` · last ${d.lastPayment}` : ''}
-                </div>
-              </div>
-            )
-          })}
-        </div>
+        <>
+          {activeDebts.length > 0
+            ? <div style={{ display: 'grid', gap: 4 }}>{activeDebts.map(renderDebt)}</div>
+            : <div style={{ padding: '18px 0 6px', textAlign: 'center', color: 'var(--income)', fontWeight: 700 }}>🎉 Every debt paid off</div>}
+
+          {paidDebts.length > 0 && (
+            <>
+              <button onClick={() => setShowPaid((v) => !v)} aria-expanded={showPaid}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', justifyContent: 'center', marginTop: 12, padding: '10px 0', background: 'transparent', border: 'none', borderTop: activeDebts.length > 0 ? '1px solid var(--border)' : 'none', color: 'var(--text-muted)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 600 }}>
+                <CheckCircle2 size={14} color="var(--income)" />
+                {showPaid ? 'Hide paid off' : `Show ${paidDebts.length} paid off`}
+                <ChevronDown size={14} style={{ transform: showPaid ? 'rotate(180deg)' : 'none', transition: 'transform .2s ease' }} />
+              </button>
+              {showPaid && <div style={{ display: 'grid', gap: 4 }}>{paidDebts.map(renderDebt)}</div>}
+            </>
+          )}
+        </>
       )}
 
       <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 16, marginBottom: 0 }}>
