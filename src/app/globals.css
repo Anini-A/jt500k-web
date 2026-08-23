@@ -418,9 +418,11 @@ header.top {
   border: none;
   box-shadow: none;
 }
-/* Both action pills sit flush at the wrap edge (no horizontal padding, no nudge),
-   so the bell's left edge and the gear's right edge line up symmetrically with the
-   cash-balance / money-flow card edges and the net-worth number / goal pill. */
+/* Both action pills sit flush at the wrap edge. The right gear is a circle meeting
+   the crisp card / goal-pill right edge, so its curve reads as slightly inset — a
+   small outward nudge sits its body on that edge line. (The left bell neighbours the
+   soft net-worth number, so it already reads flush and needs no nudge.) */
+header.top > :last-child { margin-right: -3px; }
 
 /* Full-bleed content (JourneyCard): keep edge elements (goal pill, range chips)
    flush with the outer edge of the cards below — no horizontal inset. */
