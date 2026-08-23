@@ -1426,9 +1426,10 @@ header.top h1 {
   }
 
   /* Tighter, smaller nav buttons so the row fits without wrapping */
+  /* 11px keeps the icon-only pill a perfect 40×40 circle (11 + 18 icon + 11) */
   .icon-pill {
     height: 40px;
-    padding: 0 10px;
+    padding: 0 11px;
   }
 
   .icon-pill svg {
