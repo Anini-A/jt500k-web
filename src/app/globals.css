@@ -418,11 +418,10 @@ header.top {
   border: none;
   box-shadow: none;
 }
-/* The header is transparent, so the round pills' glass is nearly invisible — what
-   reads as the "edge" is the glyph, centered inside ~10px of padding. Shift each
-   cluster out by that padding so the visible bell/gear icons line up with the
-   card edges and the goal pill below, not the invisible pill boxes. */
-header.top > :first-child { margin-left: -9px; }
+/* The right action cluster (gear) overhangs into the empty gutter, so nudging it
+   out lines the visible glyph up with the goal pill / card edge. The left bell is
+   left flush at the card edge (its box, not the glyph) — nudging it out would poke
+   the pill past the net-worth number beside it. */
 header.top > :last-child { margin-right: -9px; }
 
 /* Full-bleed content (JourneyCard): keep edge elements (goal pill, range chips)
