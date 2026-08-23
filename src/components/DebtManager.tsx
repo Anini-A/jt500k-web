@@ -80,7 +80,7 @@ export default function DebtManager() {
     }
     return (
       <div key={d.id} style={{ padding: '14px 0', borderBottom: '1px solid var(--border)', opacity: done ? 0.72 : 1 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginBottom: done ? 0 : 8 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginBottom: 8 }}>
           <div style={{ fontWeight: 600, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {d.name} {done && <CheckCircle2 size={14} color="var(--income)" style={{ verticalAlign: -2 }} />}
           </div>
@@ -95,17 +95,17 @@ export default function DebtManager() {
           </div>
         </div>
         {!done && (
-          <>
-            <div style={{ height: 10, borderRadius: 999, background: 'var(--kpi-bg)', border: '1px solid var(--border)', overflow: 'hidden' }}>
-              <div style={{ width: `${pct}%`, height: '100%', borderRadius: 999, transition: 'width .6s ease', background: 'linear-gradient(90deg, var(--savings), var(--income))' }} />
-            </div>
-            <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 6 }}>
-              {pct.toFixed(0)}% · paid {money2(Math.min(d.paid, d.amount))} of {money2(d.amount)}
-              {d.payments > 0 ? ` · ${d.payments} payment${d.payments > 1 ? 's' : ''}` : ''}
-              {d.lastPayment ? ` · last ${d.lastPayment}` : ''}
-            </div>
-          </>
+          <div style={{ height: 10, borderRadius: 999, background: 'var(--kpi-bg)', border: '1px solid var(--border)', overflow: 'hidden', marginBottom: 6 }}>
+            <div style={{ width: `${pct}%`, height: '100%', borderRadius: 999, transition: 'width .6s ease', background: 'linear-gradient(90deg, var(--savings), var(--income))' }} />
+          </div>
         )}
+        <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>
+          {done
+            ? `${money2(Math.min(d.paid, d.amount))} paid off`
+            : `${pct.toFixed(0)}% · paid ${money2(Math.min(d.paid, d.amount))} of ${money2(d.amount)}`}
+          {d.payments > 0 ? ` · ${d.payments} payment${d.payments > 1 ? 's' : ''}` : ''}
+          {d.lastPayment ? ` · last ${d.lastPayment}` : ''}
+        </div>
       </div>
     )
   }
