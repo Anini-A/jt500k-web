@@ -81,21 +81,14 @@ export default function DebtManager() {
         )}
       </div>
 
-      {/* Summary — hero remaining on top, two secondary stats balanced beneath */}
+      {/* Summary — one hero number with a quiet context line */}
       <div style={{ marginBottom: 12 }}>
         <div className="stat-label">Total Remaining</div>
         <div style={{ fontSize: 'clamp(30px, 9vw, 42px)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', color: totalRemaining > 0 ? 'var(--expense)' : 'var(--income)' }}>
           {money(totalRemaining)}
         </div>
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', marginBottom: 8 }}>
-        <div>
-          <div className="stat-label">Paid Off</div>
-          <div style={{ fontSize: 20, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--income)' }}>{money(totalPaid)}</div>
-        </div>
-        <div style={{ paddingLeft: 16, borderLeft: '1px solid var(--border)' }}>
-          <div className="stat-label">Original Total</div>
-          <div style={{ fontSize: 20, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{money(totalDebt)}</div>
+        <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4, fontVariantNumeric: 'tabular-nums' }}>
+          {money(totalPaid)} paid off · {money(totalDebt)} original
         </div>
       </div>
 
