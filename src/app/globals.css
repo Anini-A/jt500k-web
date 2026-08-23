@@ -418,8 +418,12 @@ header.top {
   border: none;
   box-shadow: none;
 }
-/* No horizontal padding: the bell/gear pill boxes sit flush at the wrap edge,
-   lining their outer edges up with the cash-balance / money-flow card edges. */
+/* The header is transparent, so the round pills' glass is nearly invisible — what
+   reads as the "edge" is the glyph, centered inside ~10px of padding. Shift each
+   cluster out by that padding so the visible bell/gear icons line up with the
+   card edges and the goal pill below, not the invisible pill boxes. */
+header.top > :first-child { margin-left: -9px; }
+header.top > :last-child { margin-right: -9px; }
 
 /* Full-bleed content (JourneyCard): keep edge elements (goal pill, range chips)
    flush with the outer edge of the cards below — no horizontal inset. */
