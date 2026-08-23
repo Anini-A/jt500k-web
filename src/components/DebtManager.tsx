@@ -81,14 +81,19 @@ export default function DebtManager() {
         )}
       </div>
 
-      {/* Summary — one hero number with a quiet context line */}
-      <div style={{ marginBottom: 12 }}>
-        <div className="stat-label">Total Remaining</div>
-        <div style={{ fontSize: 'clamp(30px, 9vw, 42px)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', color: totalRemaining > 0 ? 'var(--expense)' : 'var(--income)' }}>
-          {money(totalRemaining)}
+      {/* Summary — three equal stats spread across the full width */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 14 }}>
+        <div style={{ textAlign: 'left' }}>
+          <div className="stat-label">Remaining</div>
+          <div style={{ fontSize: 'clamp(20px, 5.5vw, 30px)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', color: totalRemaining > 0 ? 'var(--expense)' : 'var(--income)' }}>{money(totalRemaining)}</div>
         </div>
-        <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4, fontVariantNumeric: 'tabular-nums' }}>
-          {money(totalPaid)} paid off · {money(totalDebt)} original
+        <div style={{ textAlign: 'center' }}>
+          <div className="stat-label">Paid Off</div>
+          <div style={{ fontSize: 'clamp(20px, 5.5vw, 30px)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', color: 'var(--income)' }}>{money(totalPaid)}</div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div className="stat-label">Original</div>
+          <div style={{ fontSize: 'clamp(20px, 5.5vw, 30px)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>{money(totalDebt)}</div>
         </div>
       </div>
 
