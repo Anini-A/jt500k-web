@@ -68,12 +68,7 @@ export default function DebtManager() {
     <div className="card glass">
       {confirmNode}{toastNode}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, gap: 8 }}>
-        <button onClick={() => setCollapsed((v) => !v)}
-          style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', padding: 0 }}
-          aria-label={collapsed ? 'Expand debts' : 'Collapse debts'} title={collapsed ? 'Expand' : 'Collapse'}>
-          <ChevronDown size={20} style={{ transition: 'transform .2s ease', transform: collapsed ? 'rotate(-90deg)' : 'none', opacity: 0.7 }} />
-          <span className="hdr-label">Debt Management</span>
-        </button>
+        <span className="hdr-label">Debt Management</span>
         {!collapsed && (
           <button className="btn btn-secondary" onClick={() => { setAdding((v) => !v); setEditing(null) }}>
             <Plus size={16} /> {adding ? 'Cancel' : 'Add Debt'}
@@ -109,7 +104,19 @@ export default function DebtManager() {
         </div>
       )}
 
+      {/* bottom-right collapse toggle — same design as the money-flow card */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 4 }}>
+        <span style={{ fontSize: 13, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {debts.length > 0 ? `${debts.length} ${debts.length === 1 ? 'debt' : 'debts'}` : ''}
+        </span>
+        <button onClick={() => setCollapsed((v) => !v)} aria-expanded={!collapsed} aria-label={collapsed ? 'Show debts' : 'Hide debts'} title={collapsed ? 'Show debts' : 'Hide debts'}
+          style={{ flexShrink: 0, width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-muted)', cursor: 'pointer' }}>
+          <ChevronDown size={16} style={{ transform: collapsed ? 'none' : 'rotate(180deg)', transition: 'transform .2s ease' }} />
+        </button>
+      </div>
+
       {!collapsed && (<>
+      <div style={{ marginTop: 16 }} />
       {/* Add form */}
       {adding && (
         <AddDebtForm busy={busy} onDone={async (p) => { if (await call('POST', p)) setAdding(false) }} />
