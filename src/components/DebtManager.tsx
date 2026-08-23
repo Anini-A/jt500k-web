@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { Plus, Pencil, Trash2, ChevronDown, CheckCircle2 } from 'lucide-react'
 import { getJSON } from '@/lib/fresh'
 import { useConfirm, useToast } from './Feedback'
@@ -151,9 +152,9 @@ export default function DebtManager() {
           {debts.length > 0 ? `${debts.length} ${debts.length === 1 ? 'debt' : 'debts'}${paidDebts.length ? ` · ${paidDebts.length} paid` : ''}` : ''}
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-          <button onClick={() => { setCollapsed(false); setAdding((v) => !v); setEditing(null) }} aria-label={adding ? 'Cancel add debt' : 'Add debt'} title={adding ? 'Cancel' : 'Add debt'}
+          <button onClick={() => { setAdding(true); setEditing(null) }} aria-label="Add debt" title="Add debt"
             style={{ width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-muted)', cursor: 'pointer' }}>
-            <Plus size={16} style={{ transform: adding ? 'rotate(45deg)' : 'none', transition: 'transform .2s ease' }} />
+            <Plus size={16} />
           </button>
           <button onClick={() => setCollapsed((v) => !v)} aria-expanded={!collapsed} aria-label={collapsed ? 'Show debts' : 'Hide debts'} title={collapsed ? 'Show debts' : 'Hide debts'}
             style={{ width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-muted)', cursor: 'pointer' }}>
@@ -162,13 +163,22 @@ export default function DebtManager() {
         </div>
       </div>
 
-      {!collapsed && (<>
-      <div style={{ marginTop: 16 }} />
-      {/* Add form */}
-      {adding && (
-        <AddDebtForm busy={busy} onDone={async (p) => { if (await call('POST', p)) setAdding(false) }} />
+      {/* Add debt — popup form */}
+      {adding && createPortal(
+        <div className="modal-backdrop" onClick={() => setAdding(false)}>
+          <div className="modal-card glass" style={{ width: 'min(480px, 100%)' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <h2 style={{ margin: 0, fontSize: 18 }}>Add debt</h2>
+              <button className="modal-x" aria-label="Close" onClick={() => setAdding(false)}>✕</button>
+            </div>
+            <AddDebtForm busy={busy} onDone={async (p) => { if (await call('POST', p)) setAdding(false) }} />
+          </div>
+        </div>,
+        document.body
       )}
 
+      {!collapsed && (<>
+      <div style={{ marginTop: 16 }} />
       {/* Debt rows — active first; paid-off hidden behind a toggle */}
       {loading ? (
         <div style={{ padding: 16, color: 'var(--text-muted)' }}>Loading…</div>
@@ -185,7 +195,7 @@ export default function DebtManager() {
           {paidDebts.length > 0 && (
             <>
               <button onClick={() => setShowPaid((v) => !v)} aria-expanded={showPaid}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', justifyContent: 'center', marginTop: 12, padding: '10px 0', background: 'transparent', border: 'none', borderTop: activeDebts.length > 0 ? '1px solid var(--border)' : 'none', color: 'var(--text-muted)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 600 }}>
+                style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', justifyContent: 'center', marginTop: 4, padding: '10px 0', background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 600 }}>
                 <CheckCircle2 size={14} color="var(--income)" />
                 {showPaid ? 'Hide paid off' : `Show ${paidDebts.length} paid off`}
                 <ChevronDown size={14} style={{ transform: showPaid ? 'rotate(180deg)' : 'none', transition: 'transform .2s ease' }} />
@@ -209,7 +219,7 @@ function AddDebtForm({ busy, onDone }: { busy: boolean; onDone: (p: { name: stri
   const [name, setName] = useState('')
   const [amount, setAmount] = useState('')
   return (
-    <div className="card" style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', display: 'grid', gap: 10, marginBottom: 16 }}>
+    <div style={{ display: 'grid', gap: 10 }}>
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 8 }}>
         <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Debt name</span>
           <input style={inp} value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. JH Margin - Water heater" /></label>
