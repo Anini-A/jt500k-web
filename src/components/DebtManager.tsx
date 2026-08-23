@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { createPortal } from 'react-dom'
 import { Plus, Pencil, Trash2, ChevronDown, CheckCircle2 } from 'lucide-react'
 import { getJSON } from '@/lib/fresh'
 import { useConfirm, useToast } from './Feedback'
@@ -152,9 +151,9 @@ export default function DebtManager() {
           {debts.length > 0 ? `${debts.length} ${debts.length === 1 ? 'debt' : 'debts'}${paidDebts.length ? ` · ${paidDebts.length} paid` : ''}` : ''}
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-          <button onClick={() => { setAdding(true); setEditing(null) }} aria-label="Add debt" title="Add debt"
+          <button onClick={() => { setAdding((v) => !v); setEditing(null) }} aria-label={adding ? 'Cancel add debt' : 'Add debt'} title={adding ? 'Cancel' : 'Add debt'}
             style={{ width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-muted)', cursor: 'pointer' }}>
-            <Plus size={16} />
+            <Plus size={16} style={{ transform: adding ? 'rotate(45deg)' : 'none', transition: 'transform .2s ease' }} />
           </button>
           <button onClick={() => setCollapsed((v) => !v)} aria-expanded={!collapsed} aria-label={collapsed ? 'Show debts' : 'Hide debts'} title={collapsed ? 'Show debts' : 'Hide debts'}
             style={{ width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-muted)', cursor: 'pointer' }}>
@@ -163,18 +162,11 @@ export default function DebtManager() {
         </div>
       </div>
 
-      {/* Add debt — popup form */}
-      {adding && createPortal(
-        <div className="modal-backdrop" onClick={() => setAdding(false)}>
-          <div className="modal-card glass" style={{ width: 'min(480px, 100%)' }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-              <h2 style={{ margin: 0, fontSize: 18 }}>Add debt</h2>
-              <button className="modal-x" aria-label="Close" onClick={() => setAdding(false)}>✕</button>
-            </div>
-            <AddDebtForm busy={busy} onDone={async (p) => { if (await call('POST', p)) setAdding(false) }} />
-          </div>
-        </div>,
-        document.body
+      {/* Add debt — expands inline (independent of the list) */}
+      {adding && (
+        <div style={{ marginTop: 14, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+          <AddDebtForm busy={busy} onDone={async (p) => { if (await call('POST', p)) setAdding(false) }} />
+        </div>
       )}
 
       {!collapsed && (<>
