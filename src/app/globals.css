@@ -680,8 +680,8 @@ header.top h1 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 42px;
-  padding: 0 13px;
+  height: 40px;
+  padding: 0 10px; /* 10 + 20px icon + 10 = 40×40 circle, matching the alert bell */
   border-radius: 999px;
   color: var(--text-primary);
   background: var(--glass-bg);
