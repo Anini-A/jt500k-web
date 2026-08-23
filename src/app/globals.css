@@ -422,7 +422,7 @@ header.top {
    the crisp card / goal-pill right edge, so its curve reads as slightly inset — a
    small outward nudge sits its body on that edge line. (The left bell neighbours the
    soft net-worth number, so it already reads flush and needs no nudge.) */
-header.top > :last-child { margin-right: -7px; }
+header.top > :last-child { margin-right: -3px; } /* web; mobile overrides below */
 
 /* Full-bleed content (JourneyCard): keep edge elements (goal pill, range chips)
    flush with the outer edge of the cards below — no horizontal inset. */
@@ -1419,6 +1419,9 @@ header.top h1 {
     padding-left: 0;
     padding-right: 0;
   }
+
+  /* Mobile needs a larger outward nudge to sit the gear on the card edge */
+  header.top > :last-child { margin-right: -7px; }
 
   header.top .brand {
     font-size: 15px;
