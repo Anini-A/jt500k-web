@@ -108,14 +108,16 @@ export default function MoneyFlowCard() {
           </div>
           {data.length ? (
             <>
-              {/* accessible equivalent for screen readers */}
-              <table className="sr-only">
-                <caption>Monthly income, expenses, and savings over {data.length} months.</caption>
-                <thead><tr><th>Month</th><th>Income</th><th>Expenses</th><th>Savings</th></tr></thead>
-                <tbody>{data.map((m) => (
-                  <tr key={m.month}><td>{m.month}</td><td>{money(m.income)}</td><td>{money(m.expense)}</td><td>{money(m.savings)}</td></tr>
-                ))}</tbody>
-              </table>
+              {/* accessible equivalent for screen readers (div wrapper so width:1px actually clips) */}
+              <div className="sr-only">
+                <table>
+                  <caption>Monthly income, expenses, and savings over {data.length} months.</caption>
+                  <thead><tr><th>Month</th><th>Income</th><th>Expenses</th><th>Savings</th></tr></thead>
+                  <tbody>{data.map((m) => (
+                    <tr key={m.month}><td>{m.month}</td><td>{money(m.income)}</td><td>{money(m.expense)}</td><td>{money(m.savings)}</td></tr>
+                  ))}</tbody>
+                </table>
+              </div>
               <MonthlyArea data={data} series={[
                 { key: 'income', name: 'Income', color: COLORS.income },
                 { key: 'expense', name: 'Expenses', color: COLORS.expense },

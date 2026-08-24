@@ -277,12 +277,14 @@ function Spark({ real, proj, nowM, goal, anchor }: { real: { month: string; net:
 
   return (
     <div style={{ position: 'relative', marginTop: 14 }}>
-      {/* accessible equivalent for screen readers */}
-      <table className="sr-only">
-        <caption>{srSummary}</caption>
-        <thead><tr><th>Month</th><th>Net worth</th></tr></thead>
-        <tbody>{real.map((p) => <tr key={p.month}><td>{fmtMonth(p.month)}</td><td>{money(p.net)}</td></tr>)}</tbody>
-      </table>
+      {/* accessible equivalent for screen readers (div wrapper so width:1px actually clips) */}
+      <div className="sr-only">
+        <table>
+          <caption>{srSummary}</caption>
+          <thead><tr><th>Month</th><th>Net worth</th></tr></thead>
+          <tbody>{real.map((p) => <tr key={p.month}><td>{fmtMonth(p.month)}</td><td>{money(p.net)}</td></tr>)}</tbody>
+        </table>
+      </div>
       <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ display: 'block', width: '100%', height: 'clamp(200px, 58vw, 280px)' }}
         onPointerMove={move} onPointerLeave={() => setHover(null)} role="img" aria-label={srSummary}>
         <defs>
