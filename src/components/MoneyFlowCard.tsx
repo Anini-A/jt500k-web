@@ -81,7 +81,7 @@ export default function MoneyFlowCard() {
       {open && (
         <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
           {/* same slim filter as the net-worth card — plain labels, active in a pill */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: 12 }}>
             {RANGES.map((r) => {
               const on = range === r.key
               return (
