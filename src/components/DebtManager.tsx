@@ -90,12 +90,11 @@ export default function DebtManager() {
     const hasHistory = d.history && d.history.length > 0
     return (
       <div key={d.id} style={{ padding: '14px 0', borderBottom: '1px solid var(--border)', opacity: done ? 0.72 : 1 }}>
-        {/* header row — tap to expand payment history (chevron on the left) */}
+        {/* header row — tap the name to expand payment history */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginBottom: done && !open ? 0 : 8 }}>
           <button onClick={() => hasHistory && setExpanded(open ? null : d.id)} aria-expanded={open}
             aria-label={open ? `Hide ${d.name} payments` : `Show ${d.name} payments`}
             style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1, background: 'transparent', border: 'none', padding: 0, font: 'inherit', color: 'inherit', cursor: hasHistory ? 'pointer' : 'default', textAlign: 'left' }}>
-            <ChevronDown size={17} style={{ flexShrink: 0, color: 'var(--text-muted)', opacity: hasHistory ? 1 : 0, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .2s ease' }} />
             <span style={{ fontWeight: 600, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {d.name} {done && <CheckCircle2 size={14} color="var(--income)" style={{ verticalAlign: -2 }} />}
             </span>
@@ -111,11 +110,11 @@ export default function DebtManager() {
           </div>
         </div>
         {!done && (
-          <div style={{ height: 10, borderRadius: 999, background: 'var(--kpi-bg)', border: '1px solid var(--border)', overflow: 'hidden', marginBottom: 6, marginLeft: 25 }}>
+          <div style={{ height: 10, borderRadius: 999, background: 'var(--kpi-bg)', border: '1px solid var(--border)', overflow: 'hidden', marginBottom: 6 }}>
             <div style={{ width: `${pct}%`, height: '100%', borderRadius: 999, transition: 'width .6s ease', background: 'linear-gradient(90deg, var(--savings), var(--income))' }} />
           </div>
         )}
-        <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginLeft: 25 }}>
+        <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>
           {done
             ? `${money2(Math.min(d.paid, d.amount))} paid off`
             : `${pct.toFixed(0)}% · paid ${money2(Math.min(d.paid, d.amount))} of ${money2(d.amount)}`}
@@ -124,7 +123,7 @@ export default function DebtManager() {
 
         {/* expandable payment history */}
         {open && hasHistory && (
-          <div style={{ marginLeft: 25, marginTop: 10, background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 14, padding: '4px 12px' }}>
+          <div style={{ marginTop: 10, background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 14, padding: '4px 12px' }}>
             {d.history.map((p) => (
               <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '9px 0', borderBottom: '1px solid var(--border)' }}>
                 <span style={{ fontSize: 13.5, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>{fmtDate(p.date)}</span>
