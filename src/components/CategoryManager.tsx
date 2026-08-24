@@ -11,7 +11,7 @@ interface Cat { id: string; name: string; type: string; color: string | null; co
 const TYPES = ['income', 'expense', 'savings'] as const
 const TYPE_NAME: Record<string, string> = { income: 'Income', expense: 'Expense', savings: 'Savings' }
 const DEFAULT_COLOR: Record<string, string> = { income: '#1baf7a', expense: '#eb6834', savings: '#6366f1' }
-const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' })
+const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })
 
 const inp: React.CSSProperties = {
   height: 44, padding: '0 11px', borderRadius: 10, border: '1px solid var(--border)',

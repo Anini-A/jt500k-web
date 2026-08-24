@@ -13,7 +13,7 @@ export const COLORS = {
 // categorical palette for accounts / breakdowns
 export const PALETTE = ['#2a78d6', '#1baf7a', '#eb6834', '#8a5cf6', '#e0a12b', '#d9488a', '#2bb3b3', '#7a869a']
 
-const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' })
+const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })
 export const shortMonth = (m: string) => {
   const [y, mo] = m.split('-')
   return new Date(Number(y), Number(mo) - 1).toLocaleString('en', { month: 'short' }) + " '" + y.slice(2)

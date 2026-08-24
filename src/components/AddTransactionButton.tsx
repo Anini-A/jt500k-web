@@ -349,7 +349,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   ]
   const recGroupsPresent = REC_GROUPS.filter((g) => recs.some((r) => recGroup(r) === g.key))
   const pickedTotal = recs.filter((r) => picked.has(r.id)).reduce((s, r) => s + Number(r.amount), 0)
-  const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' })
+  const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })
 
   const updateRow = (i: number, patch: Partial<Row>) =>
     setRows((prev) => prev.map((r, idx) => idx === i ? { ...r, ...patch } : r))

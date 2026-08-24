@@ -11,7 +11,7 @@ import { getJSON } from '@/lib/fresh'
 interface Stats { currentBalance: number; savingsRate: number; transactionCount: number; asOf: string; totalSavings: number }
 
 const money = (n: number) =>
-  n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' }) // to cents
+  n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 }) // to cents
 
 export default function Home() {
   const [stats, setStats] = useState<Stats | null>(null)

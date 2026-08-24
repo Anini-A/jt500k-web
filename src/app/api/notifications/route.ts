@@ -7,7 +7,7 @@ export const fetchCache = 'force-no-store'
 export const revalidate = 0
 
 const norm = (s: string | null) => (s || '').trim().toLowerCase()
-const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' })
+const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })
 
 async function household() {
   const { data } = await supabaseAdmin.from('households').select('id').order('created_at').limit(1).maybeSingle()

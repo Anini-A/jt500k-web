@@ -12,7 +12,7 @@ const RANGES: { key: Range; label: string }[] = [
   { key: '6m', label: '6M' },
   { key: 'all', label: 'ALL' },
 ]
-const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' })
+const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })
 
 export default function MoneyFlowCard() {
   const [monthly, setMonthly] = useState<Row[]>([])

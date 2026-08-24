@@ -11,7 +11,7 @@ interface NW {
 type Range = '3M' | '6M' | 'YTD' | '1Y' | 'ALL'
 const RANGES: Range[] = ['3M', '6M', 'YTD', '1Y', 'ALL']
 
-const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' })
+const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })
 const short = (n: number) => (n >= 1000 ? '$' + Math.round(n / 1000) + 'K' : '$' + Math.round(n))
 const addMonths = (m: string, k: number) => { const [y, mo] = m.split('-').map(Number); const t = y * 12 + (mo - 1) + k; return `${Math.floor(t / 12)}-${String((t % 12) + 1).padStart(2, '0')}` }
 const monthsApart = (a: string, b: string) => { const [ya, ma] = a.split('-').map(Number); const [yb, mb] = b.split('-').map(Number); return (yb * 12 + mb) - (ya * 12 + ma) }
@@ -122,7 +122,7 @@ export default function JourneyCard() {
 
       {/* Range chips */}
       {hasHistory && (
-        <div className="journey-edge" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
+        <div className="journey-edge" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginTop: 10 }}>
           {RANGES.map((r) => {
             const on = range === r
             return (

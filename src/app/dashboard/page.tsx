@@ -37,8 +37,8 @@ interface Txn {
   amount: number
 }
 
-const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' })
-const money2 = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' })
+const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })
+const money2 = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })
 
 type Preset = 'all' | 'ytd' | '12m' | '6m' | 'month' | 'custom'
 // Canonical range set, shared across the app.

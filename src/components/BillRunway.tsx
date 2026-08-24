@@ -10,8 +10,8 @@ interface Bill { id: string; account_id: string | null; name: string; day: numbe
 interface Account { id: string; name: string; current_balance: number; balance_as_of: string | null; buffer: number }
 
 const num = (v: string) => parseFloat(String(v).replace(/[^0-9.\-]/g, '')) || 0 // tolerates "$55.66", "1,234"
-const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' })
-const money2 = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' })
+const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })
+const money2 = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })
 const todayISO = today // local date, not UTC
 // stale-balance banner uses red (not amber) so it clearly grabs attention
 const RED = '#e5484d'
