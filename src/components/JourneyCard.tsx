@@ -145,19 +145,6 @@ export default function JourneyCard() {
         </div>
       )}
 
-      {/* Holdings freshness — tells you whether the investments figure is current */}
-      {d.holdingsAsOf && (() => {
-        const asOfDate = new Date(d.holdingsAsOf + 'T12:00:00')
-        const monthsStale = (Date.now() - asOfDate.getTime()) / (1000 * 60 * 60 * 24 * 30.4)
-        const stale = monthsStale >= 2
-        return (
-          <div className="journey-edge" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, marginTop: 10, fontSize: 12, color: 'var(--text-muted)' }}>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: stale ? 'var(--expense)' : 'var(--income)', flexShrink: 0 }} />
-            <span>Investments as of {asOfDate.toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })}{stale ? ' · update due' : ''}</span>
-          </div>
-        )
-      })()}
-
       {/* Goal planner — opens from the pill; glassy like the other home cards */}
       {detailsOpen && (
         <div className="card glass" style={{ marginTop: 14, padding: 16 }}>
@@ -210,6 +197,19 @@ export default function JourneyCard() {
           )}
         </div>
       )}
+
+      {/* Holdings freshness — kept faint; a dot turns to a visible "update due" only when stale */}
+      {d.holdingsAsOf && (() => {
+        const asOfDate = new Date(d.holdingsAsOf + 'T12:00:00')
+        const stale = (Date.now() - asOfDate.getTime()) / (1000 * 60 * 60 * 24 * 30.4) >= 2
+        return (
+          <div className="journey-edge" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 4, marginTop: 8, fontSize: 10.5, color: 'var(--text-muted)', opacity: stale ? 0.9 : 0.4 }}
+            title={`Investments as of ${asOfDate.toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })}`}>
+            <span style={{ width: 5, height: 5, borderRadius: '50%', background: stale ? 'var(--expense)' : 'var(--text-muted)', flexShrink: 0 }} />
+            <span>as of {asOfDate.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}{stale ? ' · update due' : ''}</span>
+          </div>
+        )
+      })()}
     </div>
   )
 }
