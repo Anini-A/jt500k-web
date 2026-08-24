@@ -1,10 +1,12 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { getJSON } from '@/lib/fresh'
+import { getJSON, cachedValue } from '@/lib/fresh'
+import LoadError from './LoadError'
 
 interface NW {
   netWorth: number; holdingsValue: number; cashValue: number; debts: number
+  holdingsAsOf?: string | null
   investGain?: number; investCost?: number; investReturnPct?: number | null
   history: { month: string; net: number; investments?: number; debts?: number; est?: boolean }[]
 }
@@ -20,9 +22,10 @@ const fmtMonth = (m: string) => { const [y, mo] = m.split('-'); return new Date(
 // Net worth (where you are) + real trajectory + projection to the goal — the blended
 // masthead of Home (no card frame; the chart bleeds into the page).
 export default function JourneyCard() {
-  const [d, setD] = useState<NW | null>(null)
+  const [d, setD] = useState<NW | null>(() => cachedValue<NW>('/api/networth')) // paint from cache instantly
+  const [error, setError] = useState(false)
   const [goal, setGoal] = useState(500000)
-  const [avgSave, setAvgSave] = useState<number | null>(null)
+  const [avgSave, setAvgSave] = useState<number | null>(() => (cachedValue('/api/networth') ? 0 : null))
   const [rateKey, setRateKey] = useState<'c' | 'm' | 'o'>('m')
   const [override, setOverride] = useState('')        // custom monthly contribution
   const [detailsOpen, setDetailsOpen] = useState(false) // planner (rate + contribution) hidden by default
@@ -33,14 +36,16 @@ export default function JourneyCard() {
   const toggleDetails = () => setDetailsOpen((v) => { const n = !v; try { localStorage.setItem('jt-nw-details', n ? '1' : '0') } catch { /* ignore */ } return n })
 
   const load = useCallback(() => {
-    getJSON('/api/networth').then((x) => !x.error && setD(x)).catch(() => {})
+    getJSON('/api/networth')
+      .then((x) => { if (x && !x.error) { setD(x); setError(false) } else setError(!cachedValue('/api/networth')) })
+      .catch(() => setError(!cachedValue('/api/networth')))
     getJSON('/api/settings').then((s) => { if (!s.error && s.goalAmount) setGoal(Number(s.goalAmount)) }).catch(() => {})
     getJSON('/api/charts').then((x) => {
       if (Array.isArray(x.monthly) && x.monthly.length) {
         const last = x.monthly.slice(-6)
         setAvgSave(last.reduce((s: number, m: any) => s + (Number(m.savings) || 0), 0) / last.length)
       } else setAvgSave(0)
-    }).catch(() => {})
+    }).catch(() => setAvgSave((v) => (v === null ? 0 : v)))
   }, [])
 
   useEffect(() => {
@@ -52,6 +57,13 @@ export default function JourneyCard() {
   useEffect(() => {
     if (!seeded.current && avgSave !== null) { seeded.current = true; setOverride(String(Math.round(avgSave))) }
   }, [avgSave])
+
+  if (error && !d) return (
+    <div style={{ padding: '2px 0 0' }}>
+      <span className="hdr-label journey-edge" style={{ display: 'block' }}>Net worth</span>
+      <LoadError onRetry={() => { setError(false); load() }} label="Couldn't load net worth" />
+    </div>
+  )
 
   if (!d || avgSave === null) return (
     <div style={{ padding: '2px 0 0' }} aria-busy="true" aria-label="Loading net worth">
@@ -132,6 +144,19 @@ export default function JourneyCard() {
           })}
         </div>
       )}
+
+      {/* Holdings freshness — tells you whether the investments figure is current */}
+      {d.holdingsAsOf && (() => {
+        const asOfDate = new Date(d.holdingsAsOf + 'T12:00:00')
+        const monthsStale = (Date.now() - asOfDate.getTime()) / (1000 * 60 * 60 * 24 * 30.4)
+        const stale = monthsStale >= 2
+        return (
+          <div className="journey-edge" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, marginTop: 10, fontSize: 12, color: 'var(--text-muted)' }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: stale ? 'var(--expense)' : 'var(--income)', flexShrink: 0 }} />
+            <span>Investments as of {asOfDate.toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })}{stale ? ' · update due' : ''}</span>
+          </div>
+        )
+      })()}
 
       {/* Goal planner — opens from the pill; glassy like the other home cards */}
       {detailsOpen && (
@@ -246,10 +271,20 @@ function Spark({ real, proj, nowM, goal, anchor }: { real: { month: string; net:
     setHover({ left: (X(bi) / W) * 100, top: (Y(p.net) / H) * 100, month: p.month, net: p.net, proj: p.isProj, est: p.isEst })
   }
 
+  const srSummary = real.length >= 2
+    ? `Net worth over ${real.length} months, from ${money(real[0].net)} in ${fmtMonth(real[0].month)} to ${money(real[real.length - 1].net)} in ${fmtMonth(real[real.length - 1].month)}.`
+    : 'Net worth over time.'
+
   return (
     <div style={{ position: 'relative', marginTop: 14 }}>
+      {/* accessible equivalent for screen readers */}
+      <table className="sr-only">
+        <caption>{srSummary}</caption>
+        <thead><tr><th>Month</th><th>Net worth</th></tr></thead>
+        <tbody>{real.map((p) => <tr key={p.month}><td>{fmtMonth(p.month)}</td><td>{money(p.net)}</td></tr>)}</tbody>
+      </table>
       <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ display: 'block', width: '100%', height: 'clamp(200px, 58vw, 280px)' }}
-        onPointerMove={move} onPointerLeave={() => setHover(null)} role="img" aria-label="Net worth over time">
+        onPointerMove={move} onPointerLeave={() => setHover(null)} role="img" aria-label={srSummary}>
         <defs>
           <linearGradient id="nwfill" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.22" />

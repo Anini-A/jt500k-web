@@ -6,7 +6,8 @@ import PagePill from '@/components/PagePill'
 import NotificationBell from '@/components/NotificationCenter'
 import JourneyCard from '@/components/JourneyCard'
 import MoneyFlowCard from '@/components/MoneyFlowCard'
-import { getJSON } from '@/lib/fresh'
+import { getJSON, cachedValue } from '@/lib/fresh'
+import LoadError from '@/components/LoadError'
 
 interface Stats { currentBalance: number; savingsRate: number; transactionCount: number; asOf: string; totalSavings: number }
 
@@ -14,12 +15,15 @@ const money = (n: number) =>
   n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 }) // to cents
 
 export default function Home() {
-  const [stats, setStats] = useState<Stats | null>(null)
+  const [stats, setStats] = useState<Stats | null>(() => cachedValue<Stats>('/api/stats')) // paint from cache instantly
+  const [statsError, setStatsError] = useState(false)
   const [cards, setCards] = useState<{ card: string; total: number }[]>([]) // un-logged balance per credit card
 
   useEffect(() => {
     const load = () => {
-      getJSON('/api/stats').then((d) => !d.error && setStats(d)).catch(() => {})
+      getJSON('/api/stats')
+        .then((d) => { if (d && !d.error) { setStats(d); setStatsError(false) } else setStatsError((prev) => prev || !cachedValue('/api/stats')) })
+        .catch(() => setStatsError(!cachedValue('/api/stats')))
       getJSON('/api/drafts').then((d: any[]) => {
         if (!Array.isArray(d)) return
         const m = new Map<string, number>()
@@ -35,6 +39,11 @@ export default function Home() {
     window.addEventListener('drafts-changed', load)
     return () => { window.removeEventListener('transaction-added', load); window.removeEventListener('drafts-changed', load) }
   }, [])
+
+  const retryStats = () => {
+    setStatsError(false)
+    getJSON('/api/stats').then((d) => { if (d && !d.error) setStats(d); else setStatsError(true) }).catch(() => setStatsError(true))
+  }
 
   const bal = stats?.currentBalance ?? 0
   const today = new Date().toLocaleDateString('en-CA', { year: 'numeric', month: 'short', day: 'numeric' })
@@ -57,12 +66,16 @@ export default function Home() {
         <section className="block">
           <div className="card glass">
               <span className="hdr-label">Cash balance</span>
+              {statsError && !stats ? (
+                <LoadError onRetry={retryStats} label="Couldn't load balance" />
+              ) : (<>
               <div style={{ fontWeight: 700, fontSize: 'clamp(30px, 8vw, 42px)', letterSpacing: '-0.03em', marginTop: 4, color: bal >= 0 ? 'var(--text-primary)' : 'var(--expense)' }}>
                 {stats ? money(bal) : <span className="skeleton" style={{ width: 170, height: '0.9em', verticalAlign: -2 }} />}
               </div>
               <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>
                 {stats ? <>Chequing · as of {today}</> : <span className="skeleton" style={{ width: 150, height: 12 }} />}
               </div>
+              </>)}
 
               {/* credit-card balances owed (from un-logged imports) — tap to review/import */}
               {cards.length > 0 && (

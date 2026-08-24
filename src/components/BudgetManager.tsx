@@ -131,7 +131,7 @@ export default function BudgetManager() {
           {groups.map((g) => (
             <GroupBar key={g.key} icon={g.icon} label={g.label} color={g.color}
               budgeted={g.budgeted} actual={g.actual} goodUp={g.goodUp}
-              pace={pace} />
+              pace={g.paced ? pace : null} />
           ))}
         </div>
       </div>
@@ -278,7 +278,19 @@ function GroupBar({ icon: Icon, label, color, budgeted, actual, goodUp, pace }: 
         </span>
       </div>
       <Bar pct={pct} pace={pace} fill={fill} height={8} />
-      <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 5, color: noteColor }}>{note}</div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginTop: 5 }}>
+        <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, color: noteColor }}>{note}</span>
+        {/* explicit pace read for paced groups: how much of the budget is used vs how far into the month */}
+        {pace !== null && budgeted > 0 && (() => {
+          const usedPct = Math.round((actual / budgeted) * 100)
+          const ahead = usedPct - pace                       // >0 means using budget faster than the month elapses
+          const flag = goodUp ? (ahead >= 0 ? 'ahead of pace' : 'behind pace')
+                              : (ahead > 8 ? 'ahead of pace' : ahead < -8 ? 'under pace' : 'on pace')
+          const col = goodUp ? (ahead >= 0 ? 'var(--income)' : 'var(--text-muted)')
+                             : (ahead > 8 ? 'var(--expense)' : 'var(--text-muted)')
+          return <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, color: col, whiteSpace: 'nowrap', flexShrink: 0 }}>{usedPct}% used · {flag}</span>
+        })()}
+      </div>
     </div>
   )
 }

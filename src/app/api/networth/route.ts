@@ -15,9 +15,10 @@ export async function GET() {
   if (!hh) return NextResponse.json({ error: 'No household found' }, { status: 400 })
 
   // investments (Wealthsimple holdings) + cash/other (manual assets)
-  const { data: holds } = await supabaseAdmin.from('holdings').select('market_value_cad, book_value_cad')
+  const { data: holds } = await supabaseAdmin.from('holdings').select('market_value_cad, book_value_cad, as_of')
   const { data: manual } = await supabaseAdmin.from('manual_assets').select('value_cad')
   const holdingsValue = (holds ?? []).reduce((s, h) => s + Number(h.market_value_cad), 0)
+  const holdingsAsOf = (holds ?? []).reduce((mx, h) => (h.as_of && (h.as_of as string) > mx ? (h.as_of as string) : mx), '') || null
   const cashValue = (manual ?? []).reduce((s, a) => s + Number(a.value_cad), 0)
 
   // real investment return = market − book (cost), from the uploaded holdings CSVs.
@@ -92,6 +93,7 @@ export async function GET() {
   return NextResponse.json({
     month,
     holdingsValue: Math.round(holdingsValue * 100) / 100,
+    holdingsAsOf,
     cashValue: Math.round(cashValue * 100) / 100,
     debts: debtsTotal,
     netWorth,

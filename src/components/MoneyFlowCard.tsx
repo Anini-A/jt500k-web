@@ -3,7 +3,8 @@
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { MonthlyArea, COLORS } from './DashCharts'
-import { getJSON } from '@/lib/fresh'
+import { getJSON, cachedValue } from '@/lib/fresh'
+import LoadError from './LoadError'
 
 interface Row { month: string; income: number; expense: number; savings: number; net: number }
 type Range = 'ytd' | '6m' | 'all'
@@ -15,12 +16,16 @@ const RANGES: { key: Range; label: string }[] = [
 const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })
 
 export default function MoneyFlowCard() {
-  const [monthly, setMonthly] = useState<Row[]>([])
+  const [monthly, setMonthly] = useState<Row[]>(() => cachedValue<{ monthly: Row[] }>('/api/charts')?.monthly ?? []) // paint from cache
   const [range, setRange] = useState<Range>('ytd')
   const [open, setOpen] = useState(false) // filters + chart hidden by default
+  const [loaded, setLoaded] = useState(false)
+  const [error, setError] = useState(false)
 
   const load = useCallback(() => {
-    getJSON('/api/charts').then((d) => { if (Array.isArray(d.monthly)) setMonthly(d.monthly) }).catch(() => {})
+    getJSON('/api/charts')
+      .then((d) => { if (Array.isArray(d.monthly)) { setMonthly(d.monthly); setError(false) } else setError(!cachedValue('/api/charts')); setLoaded(true) })
+      .catch(() => { setError(!cachedValue('/api/charts')); setLoaded(true) })
   }, [])
   useEffect(() => {
     load()
@@ -52,7 +57,7 @@ export default function MoneyFlowCard() {
       <span className="hdr-label">Money flow</span>
 
       {/* this-month glance — always visible */}
-      {cur && (
+      {cur ? (
         <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
           {glance.map((g) => (
             <div key={g.label} style={{ flex: 1, minWidth: 0, textAlign: 'center' }}>
@@ -64,7 +69,18 @@ export default function MoneyFlowCard() {
             </div>
           ))}
         </div>
-      )}
+      ) : error ? (
+        <LoadError onRetry={() => { setError(false); load() }} label="Couldn't load money flow" compact />
+      ) : !loaded ? (
+        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+          {[0, 1, 2].map((i) => (
+            <div key={i} style={{ flex: 1, textAlign: 'center' }}>
+              <span className="skeleton" style={{ width: 56, height: 11, display: 'inline-block' }} />
+              <span className="skeleton" style={{ display: 'block', width: 70, height: 19, margin: '5px auto 0' }} />
+            </div>
+          ))}
+        </div>
+      ) : null}
 
       {/* one thin line + the collapse toggle (same design as the net-worth card) */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 16 }}>
@@ -91,11 +107,21 @@ export default function MoneyFlowCard() {
             })}
           </div>
           {data.length ? (
-            <MonthlyArea data={data} series={[
-              { key: 'income', name: 'Income', color: COLORS.income },
-              { key: 'expense', name: 'Expenses', color: COLORS.expense },
-              { key: 'savings', name: 'Savings', color: COLORS.savings },
-            ]} />
+            <>
+              {/* accessible equivalent for screen readers */}
+              <table className="sr-only">
+                <caption>Monthly income, expenses, and savings over {data.length} months.</caption>
+                <thead><tr><th>Month</th><th>Income</th><th>Expenses</th><th>Savings</th></tr></thead>
+                <tbody>{data.map((m) => (
+                  <tr key={m.month}><td>{m.month}</td><td>{money(m.income)}</td><td>{money(m.expense)}</td><td>{money(m.savings)}</td></tr>
+                ))}</tbody>
+              </table>
+              <MonthlyArea data={data} series={[
+                { key: 'income', name: 'Income', color: COLORS.income },
+                { key: 'expense', name: 'Expenses', color: COLORS.expense },
+                { key: 'savings', name: 'Savings', color: COLORS.savings },
+              ]} />
+            </>
           ) : (
             <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)' }}>Loading…</div>
           )}
