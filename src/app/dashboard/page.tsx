@@ -63,10 +63,6 @@ export default function Dashboard() {
   const [preset, setPreset] = useState<Preset>('ytd') // default range for Income/Expenses/Savings
   const [customFrom, setCustomFrom] = useState('')
   const [customTo, setCustomTo] = useState('')
-  // Debts get their OWN time-range filter (default MTD), independent of the tabs above
-  const [debtPreset, setDebtPreset] = useState<Preset>('month')
-  const [debtCustomFrom, setDebtCustomFrom] = useState('')
-  const [debtCustomTo, setDebtCustomTo] = useState('')
   const [tab, setTab] = useState<Tab>('income')
   const activeTabRef = useRef<HTMLButtonElement>(null)
   useEffect(() => { activeTabRef.current?.scrollIntoView({ block: 'nearest', inline: 'center' }) }, [tab])
@@ -110,15 +106,9 @@ export default function Dashboard() {
   }, [minDate, maxDate])
 
   const { from, to } = useMemo(() => resolveRange(preset, customFrom, customTo), [resolveRange, preset, customFrom, customTo])
-  const debtRange = useMemo(() => resolveRange(debtPreset, debtCustomFrom, debtCustomTo), [resolveRange, debtPreset, debtCustomFrom, debtCustomTo])
-
   const filtered = useMemo(
     () => txns.filter((t) => t.date >= from && t.date <= to),
     [txns, from, to],
-  )
-  const debtPayments = useMemo(
-    () => txns.filter((t) => t.category === 'Debt Repayment' && t.date >= debtRange.from && t.date <= debtRange.to),
-    [txns, debtRange],
   )
 
   const agg = useMemo(() => {
@@ -191,7 +181,6 @@ export default function Dashboard() {
     </section>
   )
   const filterBar = renderFilterBar(preset, setPreset, customFrom, setCustomFrom, customTo, setCustomTo, { from, to }, filtered.length)
-  const debtFilterBar = renderFilterBar(debtPreset, setDebtPreset, debtCustomFrom, setDebtCustomFrom, debtCustomTo, setDebtCustomTo, debtRange, debtPayments.length, 'payments')
 
   if (loading) {
     return (
@@ -300,18 +289,9 @@ export default function Dashboard() {
         {/* DEBTS */}
         {/* DEBTS — debt management, then a time-range filter that only scopes the payments list */}
         {tab === 'debts' && (
-          <>
-            <section className="block">
-              <DebtManager />
-            </section>
-            {debtFilterBar}
-            <RecentList
-              title="Recent Debt Payments"
-              txns={debtPayments.slice().reverse()}
-              emptyLabel="No debt payments in this period."
-              maxHeight={360}
-            />
-          </>
+          <section className="block" style={{ marginBottom: 64 }}>
+            <DebtManager />
+          </section>
         )}
 
         {/* INVESTMENTS */}

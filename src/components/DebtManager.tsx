@@ -4,7 +4,9 @@ import { useEffect, useState, useCallback } from 'react'
 import { Plus, Pencil, Trash2, ChevronDown, CheckCircle2 } from 'lucide-react'
 import { getJSON } from '@/lib/fresh'
 import { useConfirm, useToast } from './Feedback'
+import EditTransactionModal from './EditTransactionModal'
 
+interface Payment { id: string; date: string; amount: number; type: string; description: string | null }
 interface Debt {
   id: string
   name: string
@@ -13,7 +15,11 @@ interface Debt {
   remaining: number
   payments: number
   lastPayment: string | null
+  history: Payment[]
 }
+
+// "Aug 1, 2026" — readable date for the payment list
+const fmtDate = (iso: string) => new Date(iso + 'T12:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })
 
 const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })
 const money2 = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })
@@ -34,6 +40,8 @@ export default function DebtManager() {
   const [busy, setBusy] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
   const [showPaid, setShowPaid] = useState(false)
+  const [expanded, setExpanded] = useState<string | null>(null) // which debt's payment history is open
+  const [editTx, setEditTx] = useState<Payment | null>(null)     // a payment being edited
 
   const load = useCallback(async () => {
     const d = await getJSON('/api/debts').catch(() => [])
@@ -78,12 +86,20 @@ export default function DebtManager() {
         onDelete={() => confirm({ title: `Delete “${d.name}”?`, message: 'Transactions are not affected.', run: () => { call('DELETE', undefined, `?id=${d.id}`).then((ok) => ok && setEditing(null)) } })}
         onCancel={() => setEditing(null)} />
     }
+    const open = expanded === d.id
+    const hasHistory = d.history && d.history.length > 0
     return (
       <div key={d.id} style={{ padding: '14px 0', borderBottom: '1px solid var(--border)', opacity: done ? 0.72 : 1 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-          <div style={{ fontWeight: 600, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {d.name} {done && <CheckCircle2 size={14} color="var(--income)" style={{ verticalAlign: -2 }} />}
-          </div>
+        {/* header row — tap to expand payment history (chevron on the left) */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginBottom: done && !open ? 0 : 8 }}>
+          <button onClick={() => hasHistory && setExpanded(open ? null : d.id)} aria-expanded={open}
+            aria-label={open ? `Hide ${d.name} payments` : `Show ${d.name} payments`}
+            style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1, background: 'transparent', border: 'none', padding: 0, font: 'inherit', color: 'inherit', cursor: hasHistory ? 'pointer' : 'default', textAlign: 'left' }}>
+            <ChevronDown size={17} style={{ flexShrink: 0, color: 'var(--text-muted)', opacity: hasHistory ? 1 : 0, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .2s ease' }} />
+            <span style={{ fontWeight: 600, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {d.name} {done && <CheckCircle2 size={14} color="var(--income)" style={{ verticalAlign: -2 }} />}
+            </span>
+          </button>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
             <span style={{ fontWeight: 700, color: done ? 'var(--income)' : 'var(--expense)' }}>
               {done ? 'Paid off' : `${money2(d.remaining)} left`}
@@ -95,17 +111,39 @@ export default function DebtManager() {
           </div>
         </div>
         {!done && (
-          <div style={{ height: 10, borderRadius: 999, background: 'var(--kpi-bg)', border: '1px solid var(--border)', overflow: 'hidden', marginBottom: 6 }}>
+          <div style={{ height: 10, borderRadius: 999, background: 'var(--kpi-bg)', border: '1px solid var(--border)', overflow: 'hidden', marginBottom: 6, marginLeft: 25 }}>
             <div style={{ width: `${pct}%`, height: '100%', borderRadius: 999, transition: 'width .6s ease', background: 'linear-gradient(90deg, var(--savings), var(--income))' }} />
           </div>
         )}
-        <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>
+        <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginLeft: 25 }}>
           {done
             ? `${money2(Math.min(d.paid, d.amount))} paid off`
             : `${pct.toFixed(0)}% · paid ${money2(Math.min(d.paid, d.amount))} of ${money2(d.amount)}`}
           {d.payments > 0 ? ` · ${d.payments} payment${d.payments > 1 ? 's' : ''}` : ''}
-          {d.lastPayment ? ` · last ${d.lastPayment}` : ''}
         </div>
+
+        {/* expandable payment history */}
+        {open && hasHistory && (
+          <div style={{ marginLeft: 25, marginTop: 10, background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 14, padding: '4px 12px' }}>
+            {d.history.map((p) => (
+              <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '9px 0', borderBottom: '1px solid var(--border)' }}>
+                <span style={{ fontSize: 13.5, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>{fmtDate(p.date)}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                  <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--income)', fontVariantNumeric: 'tabular-nums' }}>{money2(p.amount)}</span>
+                  <button onClick={() => setEditTx(p)} aria-label="Edit payment" title="Edit payment"
+                    style={{ display: 'inline-flex', padding: 5, borderRadius: 7, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}><Pencil size={13} /></button>
+                  <button onClick={() => confirm({ title: 'Delete this payment?', message: 'Removes the transaction; the debt total updates.', run: async () => { const res = await fetch(`/api/transactions?id=${p.id}`, { method: 'DELETE' }); if (res.ok) { window.dispatchEvent(new CustomEvent('transaction-added')); load() } else toast('Could not delete.') } })}
+                    aria-label="Delete payment" title="Delete payment"
+                    style={{ display: 'inline-flex', padding: 5, borderRadius: 7, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}><Trash2 size={13} /></button>
+                </div>
+              </div>
+            ))}
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0 5px', fontSize: 12, color: 'var(--text-muted)' }}>
+              <span>{d.payments} payment{d.payments !== 1 ? 's' : ''}</span>
+              <span><b style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>{money2(d.paid)}</b> paid toward this debt</span>
+            </div>
+          </div>
+        )}
       </div>
     )
   }
@@ -203,6 +241,14 @@ export default function DebtManager() {
         matches the debt name — the Add Transaction form fills this in for you when you pick a debt.
       </p>
       </>)}
+
+      {/* edit a single payment (reuses the transactions edit modal) */}
+      {editTx && (
+        <EditTransactionModal
+          tx={{ id: editTx.id, date: editTx.date, type: editTx.type, category: 'Debt Repayment', description: editTx.description, amount: editTx.amount }}
+          onClose={() => setEditTx(null)}
+          onSaved={() => { setEditTx(null); window.dispatchEvent(new CustomEvent('transaction-added')); load() }} />
+      )}
     </div>
   )
 }

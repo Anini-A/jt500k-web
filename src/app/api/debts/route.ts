@@ -23,21 +23,23 @@ export async function GET() {
 
   const { data: payments } = await supabaseAdmin
     .from('transactions')
-    .select('description, amount, date')
+    .select('id, description, amount, date, type')
     .eq('category', 'Debt Repayment')
 
-  const byDesc = new Map<string, { paid: number; count: number; last: string }>()
+  interface PayItem { id: string; date: string; amount: number; type: string; description: string | null }
+  const byDesc = new Map<string, { paid: number; count: number; last: string; items: PayItem[] }>()
   for (const p of payments ?? []) {
     const k = norm(p.description)
-    const cur = byDesc.get(k) || { paid: 0, count: 0, last: '' }
+    const cur = byDesc.get(k) || { paid: 0, count: 0, last: '', items: [] }
     cur.paid += Number(p.amount) || 0
     cur.count += 1
     if ((p.date as string) > cur.last) cur.last = p.date as string
+    cur.items.push({ id: p.id as string, date: p.date as string, amount: Number(p.amount) || 0, type: (p.type as string) || 'expense', description: (p.description as string) ?? null })
     byDesc.set(k, cur)
   }
 
   return NextResponse.json((debts ?? []).map((d) => {
-    const m = byDesc.get(norm(d.name)) || { paid: 0, count: 0, last: '' }
+    const m = byDesc.get(norm(d.name)) || { paid: 0, count: 0, last: '', items: [] }
     return {
       id: d.id,
       name: d.name,
@@ -46,6 +48,8 @@ export async function GET() {
       remaining: Math.max(0, Math.round((Number(d.amount) - m.paid) * 100) / 100),
       payments: m.count,
       lastPayment: m.last || null,
+      // newest-first payment history (dates + amounts) for the expandable row
+      history: m.items.slice().sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0)),
     }
   }), noStore)
 }
