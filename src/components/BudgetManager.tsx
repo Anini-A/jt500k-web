@@ -10,7 +10,7 @@ import { useConfirm, useToast } from './Feedback'
 interface Item { id: string; name: string; amount: number }
 interface Envelope { category: string; type: string; budgeted: number; spent: number; items: Item[] }
 
-const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 })
+const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' })
 const money2 = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' })
 
 const inp: React.CSSProperties = {

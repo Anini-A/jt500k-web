@@ -15,7 +15,7 @@ interface Holding {
 }
 interface Asset { id: string; owner: string; name: string; kind: string | null; value_cad: number }
 
-const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 })
+const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' })
 const money2 = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' })
 const OWNER_ORDER = ['Jean', 'Henriette', 'Joint', 'Noah']
 const OWNERS = ['Jean', 'Henriette', 'Joint', 'Noah']

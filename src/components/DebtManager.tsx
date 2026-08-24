@@ -15,7 +15,7 @@ interface Debt {
   lastPayment: string | null
 }
 
-const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 })
+const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' })
 const money2 = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' })
 
 const inp: React.CSSProperties = {

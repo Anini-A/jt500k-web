@@ -11,7 +11,7 @@ interface NW {
 type Range = '3M' | '6M' | 'YTD' | '1Y' | 'ALL'
 const RANGES: Range[] = ['3M', '6M', 'YTD', '1Y', 'ALL']
 
-const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 })
+const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD' })
 const short = (n: number) => (n >= 1000 ? '$' + Math.round(n / 1000) + 'K' : '$' + Math.round(n))
 const addMonths = (m: string, k: number) => { const [y, mo] = m.split('-').map(Number); const t = y * 12 + (mo - 1) + k; return `${Math.floor(t / 12)}-${String((t % 12) + 1).padStart(2, '0')}` }
 const monthsApart = (a: string, b: string) => { const [ya, ma] = a.split('-').map(Number); const [yb, mb] = b.split('-').map(Number); return (yb * 12 + mb) - (ya * 12 + ma) }
@@ -53,7 +53,15 @@ export default function JourneyCard() {
     if (!seeded.current && avgSave !== null) { seeded.current = true; setOverride(String(Math.round(avgSave))) }
   }, [avgSave])
 
-  if (!d || avgSave === null) return null
+  if (!d || avgSave === null) return (
+    <div style={{ padding: '2px 0 0' }} aria-busy="true" aria-label="Loading net worth">
+      <div className="journey-edge" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <span className="skeleton" style={{ width: 220, height: 'clamp(36px, 10vw, 52px)' }} />
+        <span className="skeleton" style={{ width: 96, height: 34, borderRadius: 999 }} />
+      </div>
+      <span className="skeleton" style={{ display: 'block', width: '100%', height: 'clamp(120px, 34vw, 168px)', marginTop: 14, borderRadius: 14 }} />
+    </div>
+  )
 
   const nw = d.netWorth
   const pct = Math.min(100, (nw / goal) * 100)

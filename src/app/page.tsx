@@ -58,10 +58,10 @@ export default function Home() {
           <div className="card glass">
               <span className="hdr-label">Cash balance</span>
               <div style={{ fontWeight: 700, fontSize: 'clamp(30px, 8vw, 42px)', letterSpacing: '-0.03em', marginTop: 4, color: bal >= 0 ? 'var(--text-primary)' : 'var(--expense)' }}>
-                {stats ? money(bal) : '—'}
+                {stats ? money(bal) : <span className="skeleton" style={{ width: 170, height: '0.9em', verticalAlign: -2 }} />}
               </div>
               <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>
-                Chequing · as of {today}
+                {stats ? <>Chequing · as of {today}</> : <span className="skeleton" style={{ width: 150, height: 12 }} />}
               </div>
 
               {/* credit-card balances owed (from un-logged imports) — tap to review/import */}
