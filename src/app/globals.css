@@ -336,6 +336,11 @@ input, textarea, select, [contenteditable="true"] {
   -webkit-user-select: text;
   user-select: text;
 }
+/* On pointer devices (laptop/desktop) allow normal text selection — the no-select
+   app feel is only needed on touch, where long-press triggers the copy callout. */
+@media (hover: hover) and (pointer: fine) {
+  body { -webkit-user-select: text; user-select: text; }
+}
 /* tactile press feedback */
 @media (hover: none) {
   button:active, .tab:active, .chip:active, .icon-pill:active, .list-row:active, .fab:active {
