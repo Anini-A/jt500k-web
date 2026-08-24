@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { shortfall } from '@/lib/billRunway'
+import { ymd } from '@/lib/date'
 
 export const dynamic = 'force-dynamic'
 export const fetchCache = 'force-no-store'
@@ -115,19 +116,24 @@ export async function GET() {
     }
   }
 
-  // ---- 4b) Quarterly nudge: holdings look stale (3+ months since last upload) ----
+  // ---- 4b) Bi-monthly nudge: remind to upload holdings on each 2-month boundary ----
+  // Periods are Jan-Feb, Mar-Apr, May-Jun, Jul-Aug, Sep-Oct, Nov-Dec (6/year). The
+  // reminder shows when no upload has landed in the CURRENT period, and the id is
+  // stamped with the period so dismissing silences it only until the next boundary.
   {
     const { data: holds } = await supabaseAdmin.from('holdings').select('as_of')
     if (holds && holds.length) {
       const latest = holds.reduce((mx, h) => (h.as_of && h.as_of > mx ? (h.as_of as string) : mx), '')
       if (latest) {
-        const monthsStale = (Date.now() - new Date(latest + 'T12:00:00').getTime()) / (1000 * 60 * 60 * 24 * 30.4)
-        if (monthsStale >= 3) {
-          const now2 = new Date(); const q = Math.floor(now2.getMonth() / 3) + 1
+        const now2 = new Date()
+        const period = Math.floor(now2.getMonth() / 2)              // 0..5
+        const periodStart = new Date(now2.getFullYear(), period * 2, 1)
+        const periodStartISO = ymd(periodStart)
+        if (latest < periodStartISO) {                             // nothing uploaded this period yet
           out.push({
-            id: `holdings-refresh-${now2.getFullYear()}Q${q}`, icon: '📈', severity: 'info', kind: 'action', dismissible: true,
-            title: 'Time for a quarterly investments update',
-            detail: `Holdings were last updated ${latest}. Upload Jean's and Henriette's latest Wealthsimple CSVs to keep net worth accurate and record this quarter's point.`,
+            id: `holdings-refresh-${now2.getFullYear()}P${period}`, icon: '📈', severity: 'info', kind: 'action', dismissible: true,
+            title: 'Time to update your investments',
+            detail: `Holdings were last updated ${latest}. Upload Jean's and Henriette's latest Wealthsimple CSVs to keep net worth accurate and record this period's point.`,
           })
         }
       }
