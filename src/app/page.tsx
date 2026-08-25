@@ -6,6 +6,7 @@ import PagePill from '@/components/PagePill'
 import NotificationBell from '@/components/NotificationCenter'
 import JourneyCard from '@/components/JourneyCard'
 import MoneyFlowCard from '@/components/MoneyFlowCard'
+import UpcomingBills from '@/components/UpcomingBills'
 import { getJSON, cachedValue } from '@/lib/fresh'
 import LoadError from '@/components/LoadError'
 
@@ -99,6 +100,11 @@ export default function Home() {
         {/* Money Flow — income vs expenses vs savings, defaults to YTD */}
         <section className="block">
           <MoneyFlowCard />
+        </section>
+
+        {/* Upcoming bills — what's due next (hidden if no bills are set up) */}
+        <section className="block">
+          <UpcomingBills />
         </section>
 
         {/* Footer */}
