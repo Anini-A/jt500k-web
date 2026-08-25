@@ -138,18 +138,14 @@ export default function JourneyCard() {
       </div>
       {!hasHistory && <div className="journey-edge" style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>Trajectory builds as months are recorded</div>}
 
-      {/* Faint freshness line, directly under the value: holdings date + last price refresh */}
+      {/* Faint freshness line, directly under the value — just the last price refresh */}
       {d.holdingsAsOf && (() => {
         const asOfDate = new Date(d.holdingsAsOf + 'T12:00:00')
         const stale = (Date.now() - asOfDate.getTime()) / (1000 * 60 * 60 * 24 * 30.4) >= 2
         return (
           <div className="journey-edge" style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 6, fontSize: 11, color: 'var(--text-muted)', opacity: stale ? 0.9 : 0.5 }}>
             <span style={{ width: 5, height: 5, borderRadius: '50%', background: stale ? 'var(--expense)' : 'var(--text-muted)', flexShrink: 0 }} />
-            <span>
-              Investments as of {asOfDate.toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })}
-              {stale ? ' · update due' : ''}
-              {refreshedAt ? ` · refreshed ${relTime(refreshedAt)}` : ''}
-            </span>
+            <span>{refreshedAt ? `Investments refreshed ${relTime(refreshedAt)}` : 'Pull down to refresh investments'}{stale ? ' · update due' : ''}</span>
           </div>
         )
       })()}
@@ -233,7 +229,7 @@ export default function JourneyCard() {
 // endpoint dot, and a hover tooltip. Full width, no axes.
 function Spark({ real, proj, nowM, goal, anchor }: { real: { month: string; net: number; est?: boolean }[]; proj: { month: string; net: number }[]; nowM: string; goal: number; anchor: boolean }) {
   const [hover, setHover] = useState<{ left: number; top: number; month: string; net: number; proj: boolean; est: boolean } | null>(null)
-  const W = 400, H = 150, PADY = 10, PADX = 0 // full-bleed: line/area reach the card edges (the endpoint dot is nudged in instead)
+  const W = 400, H = 150, PADY = 10, PADR = 8 // left edge flush; small right inset so the line ends exactly at the endpoint dot
 
   // one continuous index across real + projection tail (proj[0] === last real point)
   const tail = proj.slice(1)
@@ -246,7 +242,7 @@ function Spark({ real, proj, nowM, goal, anchor }: { real: { month: string; net:
   let lo: number, hi: number
   if (anchor) { lo = 0; hi = goal * 1.05 }
   else { lo = Math.min(...vals); hi = Math.max(...vals); const pad = (hi - lo) * 0.16 || 8; lo -= pad; hi += pad }
-  const X = (i: number) => PADX + (i / N) * (W - 2 * PADX)
+  const X = (i: number) => (i / N) * (W - PADR)
   const Y = (v: number) => PADY + (1 - (v - lo) / (hi - lo)) * (H - 2 * PADY)
 
   const realEnd = real.length - 1
@@ -325,7 +321,7 @@ function Spark({ real, proj, nowM, goal, anchor }: { real: { month: string; net:
         <path d={realPath} fill="none" stroke="var(--accent)" strokeWidth={1.8} strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
       </svg>
       {/* dots as HTML overlays so they stay round (the SVG is non-uniformly scaled) */}
-      <Dot left={(X(realEnd) / W) * 100} top={(Y(real[real.length - 1].net) / H) * 100} edge />
+      <Dot left={(X(realEnd) / W) * 100} top={(Y(real[real.length - 1].net) / H) * 100} />
       {hover && <Dot left={hover.left} top={hover.top} />}
       {hover && (
         <div style={{ position: 'absolute', left: `${hover.left}%`, top: `${hover.top}%`, transform: 'translate(-50%, -115%)', pointerEvents: 'none', background: 'var(--text-primary)', color: 'var(--surface-1)', borderRadius: 9, padding: '6px 9px', fontSize: 12, lineHeight: 1.3, whiteSpace: 'nowrap', boxShadow: '0 6px 18px rgba(0,0,0,0.22)' }}>
@@ -336,9 +332,8 @@ function Spark({ real, proj, nowM, goal, anchor }: { real: { month: string; net:
   )
 }
 
-function Dot({ left, top, edge }: { left: number; top: number; edge?: boolean }) {
-  // `edge` pulls the endpoint dot ~7px inward so a full-bleed line's last dot doesn't spill past the edge
-  return <div style={{ position: 'absolute', left: `${left}%`, top: `${top}%`, transform: 'translate(-50%, -50%)', marginLeft: edge ? -7 : 0, width: 9, height: 9, borderRadius: '50%', background: 'var(--accent)', border: '2px solid var(--surface-1)', boxShadow: '0 1px 4px rgba(0,0,0,0.22)', pointerEvents: 'none' }} />
+function Dot({ left, top }: { left: number; top: number }) {
+  return <div style={{ position: 'absolute', left: `${left}%`, top: `${top}%`, transform: 'translate(-50%, -50%)', width: 9, height: 9, borderRadius: '50%', background: 'var(--accent)', border: '2px solid var(--surface-1)', boxShadow: '0 1px 4px rgba(0,0,0,0.22)', pointerEvents: 'none' }} />
 }
 
 
