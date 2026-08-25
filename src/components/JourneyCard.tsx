@@ -145,7 +145,7 @@ export default function JourneyCard() {
         return (
           <div className="journey-edge" style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 6, fontSize: 11, color: 'var(--text-muted)', opacity: stale ? 0.9 : 0.5 }}>
             <span style={{ width: 5, height: 5, borderRadius: '50%', background: stale ? 'var(--expense)' : 'var(--text-muted)', flexShrink: 0 }} />
-            <span>{refreshedAt ? `Refreshed ${relTime(refreshedAt)}` : 'Pull down to refresh investments'}{stale ? ' · update due' : ''}</span>
+            <span>{refreshedAt ? `Updated ${relTime(refreshedAt)}` : 'Pull down to refresh investments'}{stale ? ' · update due' : ''}</span>
           </div>
         )
       })()}
@@ -323,11 +323,17 @@ function Spark({ real, proj, nowM, goal, anchor }: { real: { month: string; net:
       {/* dots as HTML overlays so they stay round (the SVG is non-uniformly scaled) */}
       <Dot left={(X(realEnd) / W) * 100} top={(Y(real[real.length - 1].net) / H) * 100} />
       {hover && <Dot left={hover.left} top={hover.top} />}
-      {hover && (
-        <div style={{ position: 'absolute', left: `${hover.left}%`, top: `${hover.top}%`, transform: 'translate(-50%, -115%)', pointerEvents: 'none', background: 'var(--text-primary)', color: 'var(--surface-1)', borderRadius: 9, padding: '6px 9px', fontSize: 12, lineHeight: 1.3, whiteSpace: 'nowrap', boxShadow: '0 6px 18px rgba(0,0,0,0.22)' }}>
-          <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>{fmtMonth(hover.month)}{hover.proj ? ' · proj.' : hover.est ? ' · est.' : ''}</span>&nbsp; <b style={{ fontWeight: 700 }}>{money(hover.net)}</b>
-        </div>
-      )}
+      {hover && (() => {
+        // keep the tooltip inside the chart: align it left/right near the ends, and flip it
+        // below the point when the point sits high enough that an above-tooltip would clip.
+        const tx = hover.left > 80 ? 'calc(-100% + 10px)' : hover.left < 20 ? '-10px' : '-50%'
+        const ty = hover.top < 26 ? '18%' : '-115%'
+        return (
+          <div style={{ position: 'absolute', left: `${hover.left}%`, top: `${hover.top}%`, transform: `translate(${tx}, ${ty})`, pointerEvents: 'none', background: 'var(--text-primary)', color: 'var(--surface-1)', borderRadius: 9, padding: '6px 9px', fontSize: 12, lineHeight: 1.3, whiteSpace: 'nowrap', boxShadow: '0 6px 18px rgba(0,0,0,0.22)' }}>
+            <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>{fmtMonth(hover.month)}{hover.proj ? ' · proj.' : hover.est ? ' · est.' : ''}</span>&nbsp; <b style={{ fontWeight: 700 }}>{money(hover.net)}</b>
+          </div>
+        )
+      })()}
     </div>
   )
 }
