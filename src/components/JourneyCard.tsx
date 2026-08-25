@@ -165,7 +165,7 @@ export default function JourneyCard() {
           <div className="journey-edge" style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 6, fontSize: 11, color: 'var(--text-muted)' }}>
             <span style={{ width: 5, height: 5, borderRadius: '50%', background: stale ? 'var(--expense)' : 'var(--text-muted)', flexShrink: 0, opacity: stale ? 1 : 0.6 }} />
             <span style={{ opacity: stale ? 0.9 : 0.5 }}>{refreshing ? 'Updating…' : refreshedAt ? `Updated ${relTime(refreshedAt)}` : 'Not updated yet'}{stale && !refreshing ? ' · update due' : ''}</span>
-            <button onClick={refreshInvestments} disabled={refreshing} aria-label="Update investment prices" title="Update investment prices"
+            <button className="nw-refresh" onClick={refreshInvestments} disabled={refreshing} aria-label="Update investment prices" title="Update investment prices"
               style={{ display: 'inline-flex', padding: 2, marginLeft: 1, border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: refreshing ? 'default' : 'pointer', opacity: 0.75 }}>
               <RotateCw size={10} style={{ animation: refreshing ? 'spin 0.8s linear infinite' : 'none' }} />
             </button>

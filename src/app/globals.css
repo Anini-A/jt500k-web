@@ -368,6 +368,11 @@ button:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
 @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
 @media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }
 
+/* On touch devices pull-to-refresh already updates investments — hide the redundant icon. */
+@media (hover: none) and (pointer: coarse) {
+  .nw-refresh { display: none; }
+}
+
 /* tactile press feedback */
 @media (hover: none) {
   button:active, .tab:active, .chip:active, .icon-pill:active, .list-row:active, .fab:active {
