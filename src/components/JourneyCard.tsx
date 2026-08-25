@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { getJSON, cachedValue } from '@/lib/fresh'
+import { today } from '@/lib/date'
+import { RotateCw } from 'lucide-react'
 import LoadError from './LoadError'
 
 interface NW {
@@ -38,10 +40,26 @@ export default function JourneyCard() {
   const [override, setOverride] = useState('')        // custom monthly contribution
   const [detailsOpen, setDetailsOpen] = useState(false) // planner (rate + contribution) hidden by default
   const [range, setRange] = useState<Range>('ALL')
-  const [refreshedAt, setRefreshedAt] = useState<number | null>(null) // last pull-to-refresh time (device-local)
+  const [refreshedAt, setRefreshedAt] = useState<number | null>(null) // last investments refresh (device-local)
+  const [refreshing, setRefreshing] = useState(false)
   const seeded = useRef(false)
 
   useEffect(() => { try { const v = localStorage.getItem('jt-holdings-refreshed'); if (v) setRefreshedAt(Number(v)) } catch { /* ignore */ } }, [])
+
+  // Refresh live prices on demand (works everywhere; the same action pull-to-refresh does on touch)
+  const refreshInvestments = useCallback(async () => {
+    if (refreshing) return
+    setRefreshing(true)
+    try {
+      await fetch('/api/holdings/refresh', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ today: today() }) })
+      const now = Date.now()
+      try { localStorage.setItem('jt-holdings-refreshed', String(now)) } catch { /* ignore */ }
+      setRefreshedAt(now)
+      load()
+      window.dispatchEvent(new CustomEvent('transaction-added'))
+    } catch { /* leave prior values */ }
+    finally { setRefreshing(false) }
+  }, [refreshing]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { try { setDetailsOpen(localStorage.getItem('jt-nw-details') === '1') } catch { /* ignore */ } }, [])
   const toggleDetails = () => setDetailsOpen((v) => { const n = !v; try { localStorage.setItem('jt-nw-details', n ? '1' : '0') } catch { /* ignore */ } return n })
@@ -144,9 +162,13 @@ export default function JourneyCard() {
         const asOfDate = new Date(d.holdingsAsOf + 'T12:00:00')
         const stale = (Date.now() - asOfDate.getTime()) / (1000 * 60 * 60 * 24 * 30.4) >= 2
         return (
-          <div className="journey-edge" style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 6, fontSize: 11, color: 'var(--text-muted)', opacity: stale ? 0.9 : 0.5 }}>
-            <span style={{ width: 5, height: 5, borderRadius: '50%', background: stale ? 'var(--expense)' : 'var(--text-muted)', flexShrink: 0 }} />
-            <span>{refreshedAt ? `Updated ${relTime(refreshedAt)}` : 'Pull down to refresh investments'}{stale ? ' · update due' : ''}</span>
+          <div className="journey-edge" style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 6, fontSize: 11, color: 'var(--text-muted)' }}>
+            <span style={{ width: 5, height: 5, borderRadius: '50%', background: stale ? 'var(--expense)' : 'var(--text-muted)', flexShrink: 0, opacity: stale ? 1 : 0.6 }} />
+            <span style={{ opacity: stale ? 0.9 : 0.5 }}>{refreshing ? 'Updating…' : refreshedAt ? `Updated ${relTime(refreshedAt)}` : 'Not updated yet'}{stale && !refreshing ? ' · update due' : ''}</span>
+            <button onClick={refreshInvestments} disabled={refreshing} aria-label="Update investment prices" title="Update investment prices"
+              style={{ display: 'inline-flex', padding: 2, marginLeft: 1, border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: refreshing ? 'default' : 'pointer', opacity: 0.75 }}>
+              <RotateCw size={12} style={{ animation: refreshing ? 'spin 0.8s linear infinite' : 'none' }} />
+            </button>
           </div>
         )
       })()}
