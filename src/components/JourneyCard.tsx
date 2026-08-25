@@ -20,11 +20,11 @@ const short = (n: number) => (n >= 1000 ? '$' + Math.round(n / 1000) + 'K' : '$'
 const addMonths = (m: string, k: number) => { const [y, mo] = m.split('-').map(Number); const t = y * 12 + (mo - 1) + k; return `${Math.floor(t / 12)}-${String((t % 12) + 1).padStart(2, '0')}` }
 const monthsApart = (a: string, b: string) => { const [ya, ma] = a.split('-').map(Number); const [yb, mb] = b.split('-').map(Number); return (yb * 12 + mb) - (ya * 12 + ma) }
 const fmtMonth = (m: string) => { const [y, mo] = m.split('-'); return new Date(Number(y), Number(mo) - 1).toLocaleDateString('en-CA', { month: 'short', year: 'numeric' }) }
-// "just now" / "3h ago" / "2d ago" for the last device-local price refresh
+// "just now" (first 11 min) / "12m ago" / "3h ago" / "2d ago" for the last price refresh
 const relTime = (ts: number) => {
-  const s = Math.max(0, (Date.now() - ts) / 1000)
-  if (s < 90) return 'just now'
-  const m = s / 60; if (m < 60) return `${Math.round(m)}m ago`
+  const m = Math.max(0, (Date.now() - ts) / 60000)
+  if (m < 11) return 'just now'
+  if (m < 60) return `${Math.round(m)}m ago`
   const h = m / 60; if (h < 24) return `${Math.round(h)}h ago`
   return `${Math.round(h / 24)}d ago`
 }
@@ -167,7 +167,7 @@ export default function JourneyCard() {
             <span style={{ opacity: stale ? 0.9 : 0.5 }}>{refreshing ? 'Updating…' : refreshedAt ? `Updated ${relTime(refreshedAt)}` : 'Not updated yet'}{stale && !refreshing ? ' · update due' : ''}</span>
             <button onClick={refreshInvestments} disabled={refreshing} aria-label="Update investment prices" title="Update investment prices"
               style={{ display: 'inline-flex', padding: 2, marginLeft: 1, border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: refreshing ? 'default' : 'pointer', opacity: 0.75 }}>
-              <RotateCw size={12} style={{ animation: refreshing ? 'spin 0.8s linear infinite' : 'none' }} />
+              <RotateCw size={10} style={{ animation: refreshing ? 'spin 0.8s linear infinite' : 'none' }} />
             </button>
           </div>
         )
