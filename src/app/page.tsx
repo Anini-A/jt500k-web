@@ -9,7 +9,7 @@ import MoneyFlowCard from '@/components/MoneyFlowCard'
 import { getJSON, cachedValue } from '@/lib/fresh'
 import LoadError from '@/components/LoadError'
 
-interface Stats { currentBalance: number; savingsRate: number; transactionCount: number; asOf: string; totalSavings: number }
+interface Stats { currentBalance: number; savingsRate: number; transactionCount: number; asOf: string; totalSavings: number; monthChange: number }
 
 const money = (n: number) =>
   n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 }) // to cents
@@ -72,8 +72,17 @@ export default function Home() {
               <div style={{ fontWeight: 700, fontSize: 'clamp(30px, 8vw, 42px)', letterSpacing: '-0.03em', marginTop: 4, color: bal >= 0 ? 'var(--text-primary)' : 'var(--expense)' }}>
                 {stats ? money(bal) : <span className="skeleton" style={{ width: 170, height: '0.9em', verticalAlign: -2 }} />}
               </div>
-              <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>
-                {stats ? <>Chequing · as of {today}</> : <span className="skeleton" style={{ width: 150, height: 12 }} />}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+                {stats ? (<>
+                  {typeof stats.monthChange === 'number' && Math.abs(stats.monthChange) >= 1 && (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, padding: '2px 8px', borderRadius: 999, fontSize: 12, fontWeight: 700, fontVariantNumeric: 'tabular-nums',
+                      background: stats.monthChange >= 0 ? 'color-mix(in srgb, var(--income) 13%, transparent)' : 'color-mix(in srgb, var(--expense) 13%, transparent)',
+                      color: stats.monthChange >= 0 ? 'var(--income)' : 'var(--expense)' }}>
+                      {stats.monthChange >= 0 ? '▲' : '▼'} {money(Math.abs(stats.monthChange))}
+                    </span>
+                  )}
+                  <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>this month · Chequing</span>
+                </>) : <span className="skeleton" style={{ width: 150, height: 12 }} />}
               </div>
               </>)}
 

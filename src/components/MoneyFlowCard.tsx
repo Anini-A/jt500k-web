@@ -45,10 +45,11 @@ export default function MoneyFlowCard() {
   // latest month, for the at-a-glance row
   const cur = monthly.length ? monthly[monthly.length - 1] : null
   const curLabel = cur ? new Date(cur.month + '-01T00:00:00').toLocaleDateString('en-CA', { month: 'long' }) : ''
+  const prevM = monthly.length >= 2 ? monthly[monthly.length - 2] : null // last complete month, for deltas
   const glance = cur ? [
-    { label: 'Income', value: cur.income, color: COLORS.income },
-    { label: 'Savings', value: cur.savings, color: COLORS.savings },
-    { label: 'Expenses', value: cur.expense, color: COLORS.expense },
+    { label: 'Income', value: cur.income, delta: prevM ? cur.income - prevM.income : null, goodUp: true, color: COLORS.income },
+    { label: 'Savings', value: cur.savings, delta: prevM ? cur.savings - prevM.savings : null, goodUp: true, color: COLORS.savings },
+    { label: 'Expenses', value: cur.expense, delta: prevM ? cur.expense - prevM.expense : null, goodUp: false, color: COLORS.expense },
   ] : []
   const savedRate = cur && cur.income > 0 ? Math.round((cur.savings / cur.income) * 100) : null
 
@@ -66,6 +67,12 @@ export default function MoneyFlowCard() {
                 <span className="stat-label" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.label}</span>
               </div>
               <div style={{ fontWeight: 700, fontSize: 'clamp(15px, 4.6vw, 19px)', letterSpacing: '-0.02em', marginTop: 3 }}>{money(g.value)}</div>
+              {/* arrow = direction vs last month; color = better/worse (green good, red bad) */}
+              {g.delta !== null && Math.abs(g.delta) >= 1 && (
+                <div style={{ marginTop: 3, fontSize: 11, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: (g.goodUp ? g.delta >= 0 : g.delta < 0) ? 'var(--income)' : 'var(--expense)' }}>
+                  {g.delta >= 0 ? '▲' : '▼'} {money(Math.abs(g.delta))}
+                </div>
+              )}
             </div>
           ))}
         </div>

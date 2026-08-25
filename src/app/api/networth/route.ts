@@ -53,7 +53,7 @@ export async function GET() {
   // Real monthly history — the 1-year Wealthsimple series (rebased to this app's
   // basis) plus the app's own ongoing snapshots.
   const { data: snaps } = await supabaseAdmin.from('net_worth_snapshots').select('month, net_worth, investments, cash, debts').order('month')
-  const realHistory = (snaps ?? []).map((s) => ({ month: s.month as string, net: Math.round(Number(s.net_worth)), investments: Math.round(Number(s.investments)), debts: Math.round(Number(s.debts)), est: false }))
+  const realHistory = (snaps ?? []).map((s) => ({ month: s.month as string, net: Math.round(Number(s.net_worth)), investments: Math.round(Number(s.investments)), cash: Math.round(Number(s.cash)), debts: Math.round(Number(s.debts)), est: false }))
 
   // Estimated pre-history: months BEFORE the earliest real snapshot, back to the
   // first transaction — so "All" truly reaches inception.
