@@ -52,10 +52,15 @@ export default function JourneyCard() {
       .catch(() => setError(!cachedValue('/api/networth')))
     getJSON('/api/settings').then((s) => { if (!s.error && s.goalAmount) setGoal(Number(s.goalAmount)) }).catch(() => {})
     getJSON('/api/charts').then((x) => {
+      let avg = 0
       if (Array.isArray(x.monthly) && x.monthly.length) {
         const last = x.monthly.slice(-6)
-        setAvgSave(last.reduce((s: number, m: any) => s + (Number(m.savings) || 0), 0) / last.length)
-      } else setAvgSave(0)
+        avg = last.reduce((s: number, m: any) => s + (Number(m.savings) || 0), 0) / last.length
+      }
+      setAvgSave(avg)
+      // seed the "Saving / month" input from the real pace once (charts is the source of truth,
+      // not the cache-warm 0 that lets the card paint instantly)
+      if (!seeded.current) { seeded.current = true; setOverride(String(Math.max(0, Math.round(avg)))) }
     }).catch(() => setAvgSave((v) => (v === null ? 0 : v)))
   }, [])
 
@@ -64,10 +69,6 @@ export default function JourneyCard() {
     window.addEventListener('transaction-added', load)
     return () => window.removeEventListener('transaction-added', load)
   }, [load])
-
-  useEffect(() => {
-    if (!seeded.current && avgSave !== null) { seeded.current = true; setOverride(String(Math.round(avgSave))) }
-  }, [avgSave])
 
   if (error && !d) return (
     <div style={{ padding: '2px 0 0' }}>
