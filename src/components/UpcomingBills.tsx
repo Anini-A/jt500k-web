@@ -3,10 +3,12 @@
 import { useEffect, useState, useCallback } from 'react'
 import { getJSON, cachedValue } from '@/lib/fresh'
 import { today, ymd } from '@/lib/date'
+import { shortfall } from '@/lib/billRunway'
+import { TriangleAlert, CheckCircle2 } from 'lucide-react'
 import LoadError from './LoadError'
 
 interface Bill { id: string; account_id: string | null; name: string; day: number; amount: number; quarterly?: boolean; next_due?: string | null }
-interface Account { id: string; name: string }
+interface Account { id: string; name: string; current_balance?: number; balance_as_of?: string | null; buffer?: number }
 interface BillsResp { bills: Bill[]; accounts: Account[] }
 
 const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })
@@ -69,9 +71,40 @@ export default function UpcomingBills() {
   const rows = upcoming.slice(0, 4)
   const goBills = () => { try { localStorage.setItem('jt-dash-tab', 'bills') } catch { /* ignore */ } }
 
+  // Coverage: for each account that HAS a tracked balance, will it cover its bills
+  // without dipping below its buffer? (Skip accounts with no balance set — no false alarms.)
+  const tracked = accounts.filter((a) => Number(a.current_balance) > 0 || a.balance_as_of)
+  const shorts = tracked
+    .map((a) => {
+      const ab = bills.filter((b) => b.account_id === a.id)
+      if (!ab.length) return null
+      const res = shortfall(ab, { current_balance: a.current_balance, balance_as_of: a.balance_as_of, buffer: a.buffer })
+      return res && res.short > 0 ? { name: a.name, short: res.short, label: res.trough.label } : null
+    })
+    .filter((x): x is { name: string; short: number; label: string } => x !== null)
+    .sort((a, b) => b.short - a.short)
+  const hasCoverage = tracked.some((a) => bills.some((b) => b.account_id === a.id))
+  const worst = shorts[0]
+
   return (
     <div className="card glass">
       <span className="hdr-label">Upcoming bills</span>
+
+      {/* Coverage: green when balances cover the bills, red when an account will run short */}
+      {hasCoverage && (
+        worst ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 10, padding: '8px 10px', borderRadius: 12, fontSize: 12.5, fontWeight: 600, color: 'var(--expense)', background: 'color-mix(in srgb, var(--expense) 11%, transparent)' }}>
+            <TriangleAlert size={15} style={{ flexShrink: 0 }} />
+            <span>{worst.name} may run short — top up ~{money(worst.short)} by {worst.label}{shorts.length > 1 ? ` (+${shorts.length - 1} more)` : ''}</span>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 10, fontSize: 12.5, fontWeight: 600, color: 'var(--income)' }}>
+            <CheckCircle2 size={15} style={{ flexShrink: 0 }} />
+            <span>Balances cover every upcoming bill</span>
+          </div>
+        )
+      )}
+
       <div style={{ marginTop: 10 }}>
         {rows.map((u, i) => (
           <div key={u.b.id} style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '10px 0', borderBottom: i < rows.length - 1 ? '1px solid var(--border)' : 'none' }}>
