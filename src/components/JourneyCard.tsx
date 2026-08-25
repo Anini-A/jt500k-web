@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { getJSON, cachedValue } from '@/lib/fresh'
 import { today } from '@/lib/date'
-import { RotateCw, ChevronDown } from 'lucide-react'
+import { RotateCw } from 'lucide-react'
 import LoadError from './LoadError'
 
 interface NW {
@@ -42,7 +42,6 @@ export default function JourneyCard() {
   const [range, setRange] = useState<Range>('ALL')
   const [refreshedAt, setRefreshedAt] = useState<number | null>(null) // last investments refresh (device-local)
   const [refreshing, setRefreshing] = useState(false)
-  const [breakdownOpen, setBreakdownOpen] = useState(false) // "why it changed" drawer (hidden by default)
   const seeded = useRef(false)
 
   useEffect(() => { try { const v = localStorage.getItem('jt-holdings-refreshed'); if (v) setRefreshedAt(Number(v)) } catch { /* ignore */ } }, [])
@@ -110,21 +109,6 @@ export default function JourneyCard() {
   const pct = Math.min(100, (nw / goal) * 100)
   const reached = nw >= goal
 
-  // Month-over-month change + component breakdown (Δnet = Δinvest + Δcash − Δdebts, exactly).
-  // "prev" is last month's snapshot (the last history point is the current month).
-  const hist = d.history ?? []
-  const prev = hist.length >= 2 ? hist[hist.length - 2] : null
-  const canBreak = !!prev && prev.investments != null && prev.cash != null && prev.debts != null
-  const netDelta = prev ? Math.round(nw - prev.net) : null
-  const invContrib = canBreak ? Math.round(d.holdingsValue - (prev!.investments as number)) : null
-  const cashContrib = canBreak ? Math.round(d.cashValue - (prev!.cash as number)) : null
-  const debtContrib = canBreak ? Math.round((prev!.debts as number) - d.debts) : null // debt paid down = positive
-  // Only trust the breakdown when the parts actually sum to the net change. Older seeded
-  // snapshots have net rebased but components on the raw scale, so they won't reconcile —
-  // in that case we hide the drawer and show just the (reliable) net-delta chip.
-  const reconciles = canBreak && netDelta !== null &&
-    Math.abs((invContrib as number) + (cashContrib as number) + (debtContrib as number) - netDelta) <= 50
-
   const rate = rateKey === 'c' ? 0.05 : rateKey === 'm' ? 0.07 : 0.10
   const monthly = override.trim() === '' || isNaN(Number(override)) ? 0 : Math.max(0, Number(override))
 
@@ -173,72 +157,21 @@ export default function JourneyCard() {
       </div>
       {!hasHistory && <div className="journey-edge" style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>Trajectory builds as months are recorded</div>}
 
-      {/* One line under the value: month change (tap to see why) on the left, faint freshness on the right */}
-      <div className="journey-edge" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 8, minHeight: 22 }}>
-        {netDelta !== null ? (
-          <button onClick={() => reconciles && setBreakdownOpen((v) => !v)} aria-expanded={breakdownOpen} disabled={!reconciles}
-            aria-label={breakdownOpen ? 'Hide breakdown' : 'Show what changed'}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 5px 3px 9px', borderRadius: 999, border: 'none', fontFamily: 'inherit', cursor: reconciles ? 'pointer' : 'default',
-              background: netDelta >= 0 ? 'color-mix(in srgb, var(--income) 13%, transparent)' : 'color-mix(in srgb, var(--expense) 13%, transparent)',
-              color: netDelta >= 0 ? 'var(--income)' : 'var(--expense)' }}>
-            <span style={{ fontSize: 12.5, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{netDelta >= 0 ? '▲' : '▼'} {money(Math.abs(netDelta))}</span>
-            <span style={{ fontSize: 11.5, fontWeight: 600, opacity: 0.7 }}>this month</span>
-            {reconciles && <ChevronDown size={13} style={{ transform: breakdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s ease' }} />}
-          </button>
-        ) : <span />}
-
-        {d.holdingsAsOf && (() => {
-          const asOfDate = new Date(d.holdingsAsOf + 'T12:00:00')
-          const stale = (Date.now() - asOfDate.getTime()) / (1000 * 60 * 60 * 24 * 30.4) >= 2
-          return (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-muted)', flexShrink: 0 }}>
-              <span style={{ width: 5, height: 5, borderRadius: '50%', background: stale ? 'var(--expense)' : 'var(--text-muted)', flexShrink: 0, opacity: stale ? 1 : 0.6 }} />
-              <span style={{ opacity: stale ? 0.9 : 0.5 }}>{refreshing ? 'Updating…' : refreshedAt ? `Updated ${relTime(refreshedAt)}` : 'Not updated yet'}{stale && !refreshing ? ' · update due' : ''}</span>
-              <button className="nw-refresh" onClick={refreshInvestments} disabled={refreshing} aria-label="Update investment prices" title="Update investment prices"
-                style={{ display: 'inline-flex', padding: 2, marginLeft: 1, border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: refreshing ? 'default' : 'pointer', opacity: 0.75 }}>
-                <RotateCw size={10} style={{ animation: refreshing ? 'spin 0.8s linear infinite' : 'none' }} />
-              </button>
-            </div>
-          )
-        })()}
-      </div>
-
-      {/* "Why it changed" — opt-in breakdown; Δnet = Δinvestments + Δcash − Δdebts, exactly */}
-      {breakdownOpen && reconciles && (
-        <div className="journey-edge">
-          <div className="card" style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', padding: 12, marginTop: 10, display: 'grid', gap: 9 }}>
-            {[
-              { name: 'Investments', dot: 'var(--accent)', bal: d.holdingsValue, chg: invContrib as number },
-              { name: 'Cash', dot: 'var(--income)', bal: d.cashValue, chg: cashContrib as number },
-              { name: 'Debts', dot: 'var(--expense)', bal: -d.debts, chg: debtContrib as number },
-            ].map((r) => (
-              <div key={r.name} style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: r.dot, flexShrink: 0 }} />
-                <span style={{ flex: 1, fontSize: 13.5, color: 'var(--text-secondary)' }}>{r.name}</span>
-                <span style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{money(r.bal)}</span>
-                <span style={{ minWidth: 74, textAlign: 'right', fontSize: 12, fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: r.chg >= 0 ? 'var(--income)' : 'var(--expense)' }}>
-                  {r.chg >= 0 ? '▲' : '▼'} {money(Math.abs(r.chg))}
-                </span>
-              </div>
-            ))}
-            <div style={{ fontSize: 12.5, color: 'var(--text-muted)', lineHeight: 1.5, paddingTop: 9, borderTop: '1px solid var(--border)' }}>
-              {(() => {
-                const nd = netDelta as number
-                const up = nd >= 0
-                // attribute only to drivers that pushed in the same direction as the net move
-                const drivers = [
-                  { up: 'investments grew', down: 'investments fell', v: invContrib as number },
-                  { up: 'cash grew', down: 'cash fell', v: cashContrib as number },
-                  { up: 'debt was paid down', down: 'debt grew', v: debtContrib as number },
-                ].filter((p) => (up ? p.v > 0 : p.v < 0) && Math.abs(p.v) >= 1).sort((a, b) => Math.abs(b.v) - Math.abs(a.v))
-                if (Math.abs(nd) < 1) return 'Net worth held steady this month.'
-                const label = drivers.length ? (up ? drivers[0].up : drivers[0].down) : 'a mix of things'
-                return <>{up ? 'Up' : 'Down'} <b style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>{money(Math.abs(nd))}</b> this month{drivers.length ? <> — mostly because <b style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>{label}</b> ({drivers[0].v >= 0 ? '+' : '−'}{money(Math.abs(drivers[0].v))})</> : ''}.</>
-              })()}
-            </div>
+      {/* Faint freshness line, directly under the value — just the last price refresh */}
+      {d.holdingsAsOf && (() => {
+        const asOfDate = new Date(d.holdingsAsOf + 'T12:00:00')
+        const stale = (Date.now() - asOfDate.getTime()) / (1000 * 60 * 60 * 24 * 30.4) >= 2
+        return (
+          <div className="journey-edge" style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 6, fontSize: 11, color: 'var(--text-muted)' }}>
+            <span style={{ width: 5, height: 5, borderRadius: '50%', background: stale ? 'var(--expense)' : 'var(--text-muted)', flexShrink: 0, opacity: stale ? 1 : 0.6 }} />
+            <span style={{ opacity: stale ? 0.9 : 0.5 }}>{refreshing ? 'Updating…' : refreshedAt ? `Updated ${relTime(refreshedAt)}` : 'Not updated yet'}{stale && !refreshing ? ' · update due' : ''}</span>
+            <button className="nw-refresh" onClick={refreshInvestments} disabled={refreshing} aria-label="Update investment prices" title="Update investment prices"
+              style={{ display: 'inline-flex', padding: 2, marginLeft: 1, border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: refreshing ? 'default' : 'pointer', opacity: 0.75 }}>
+              <RotateCw size={10} style={{ animation: refreshing ? 'spin 0.8s linear infinite' : 'none' }} />
+            </button>
           </div>
-        </div>
-      )}
+        )
+      })()}
 
       {/* Full-bleed trajectory chart — always auto-fits (the pill carries % of goal) */}
       {hasHistory
