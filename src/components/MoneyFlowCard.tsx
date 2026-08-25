@@ -4,7 +4,10 @@ import { useEffect, useState, useMemo, useCallback } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { MonthlyArea, COLORS } from './DashCharts'
 import { getJSON, cachedValue } from '@/lib/fresh'
+import { today } from '@/lib/date'
 import LoadError from './LoadError'
+
+const addMonthKey = (key: string, k: number) => { const [y, m] = key.split('-').map(Number); const d = new Date(y, m - 1 + k, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` }
 
 interface Row { month: string; income: number; expense: number; savings: number; net: number }
 type Range = 'ytd' | '6m' | 'all'
@@ -33,19 +36,22 @@ export default function MoneyFlowCard() {
     return () => window.removeEventListener('transaction-added', load)
   }, [load])
 
-  const data = useMemo(() => {
-    if (!monthly.length) return []
-    if (range === 'all') return monthly
-    if (range === '6m') return monthly.slice(-6)
-    // YTD — months of the latest year present
-    const year = monthly[monthly.length - 1].month.slice(0, 4)
-    return monthly.filter((m) => m.month.slice(0, 4) === year)
-  }, [monthly, range])
+  const curKey = today().slice(0, 7) // the real current calendar month (never a future-dated one)
 
-  // latest month, for the at-a-glance row
-  const cur = monthly.length ? monthly[monthly.length - 1] : null
-  const curLabel = cur ? new Date(cur.month + '-01T00:00:00').toLocaleDateString('en-CA', { month: 'long' }) : ''
-  const prevM = monthly.length >= 2 ? monthly[monthly.length - 2] : null // last complete month, for deltas
+  const data = useMemo(() => {
+    const vis = monthly.filter((m) => m.month <= curKey) // never plot future months
+    if (!vis.length) return []
+    if (range === 'all') return vis
+    if (range === '6m') return vis.slice(-6)
+    // YTD — months of the current year
+    const year = curKey.slice(0, 4)
+    return vis.filter((m) => m.month.slice(0, 4) === year)
+  }, [monthly, range, curKey])
+
+  // Always the CURRENT calendar month for the glance (zeros if nothing logged yet this month)
+  const cur = monthly.length ? (monthly.find((m) => m.month === curKey) ?? { month: curKey, income: 0, expense: 0, savings: 0, net: 0 }) : null
+  const curLabel = cur ? new Date(curKey + '-01T00:00:00').toLocaleDateString('en-CA', { month: 'long' }) : ''
+  const prevM = monthly.find((m) => m.month === addMonthKey(curKey, -1)) ?? null // the prior calendar month, for deltas
   const glance = cur ? [
     { label: 'Income', value: cur.income, delta: prevM ? cur.income - prevM.income : null, goodUp: true, color: COLORS.income },
     { label: 'Savings', value: cur.savings, delta: prevM ? cur.savings - prevM.savings : null, goodUp: true, color: COLORS.savings },
