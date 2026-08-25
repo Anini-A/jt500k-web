@@ -33,7 +33,10 @@ export default function PullToRefresh() {
       startY.current = null
       if (pullRef.current < THRESHOLD) { setP(0); return }
       setRefreshing(true); setP(0)
-      try { await fetch('/api/holdings/refresh', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ today: today() }) }) } catch { /* refresh anyway */ }
+      try {
+        await fetch('/api/holdings/refresh', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ today: today() }) })
+        try { localStorage.setItem('jt-holdings-refreshed', String(Date.now())) } catch { /* ignore */ }
+      } catch { /* refresh anyway */ }
       window.location.reload()
     }
     window.addEventListener('touchstart', onStart, { passive: true })

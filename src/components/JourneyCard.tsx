@@ -18,6 +18,14 @@ const short = (n: number) => (n >= 1000 ? '$' + Math.round(n / 1000) + 'K' : '$'
 const addMonths = (m: string, k: number) => { const [y, mo] = m.split('-').map(Number); const t = y * 12 + (mo - 1) + k; return `${Math.floor(t / 12)}-${String((t % 12) + 1).padStart(2, '0')}` }
 const monthsApart = (a: string, b: string) => { const [ya, ma] = a.split('-').map(Number); const [yb, mb] = b.split('-').map(Number); return (yb * 12 + mb) - (ya * 12 + ma) }
 const fmtMonth = (m: string) => { const [y, mo] = m.split('-'); return new Date(Number(y), Number(mo) - 1).toLocaleDateString('en-CA', { month: 'short', year: 'numeric' }) }
+// "just now" / "3h ago" / "2d ago" for the last device-local price refresh
+const relTime = (ts: number) => {
+  const s = Math.max(0, (Date.now() - ts) / 1000)
+  if (s < 90) return 'just now'
+  const m = s / 60; if (m < 60) return `${Math.round(m)}m ago`
+  const h = m / 60; if (h < 24) return `${Math.round(h)}h ago`
+  return `${Math.round(h / 24)}d ago`
+}
 
 // Net worth (where you are) + real trajectory + projection to the goal — the blended
 // masthead of Home (no card frame; the chart bleeds into the page).
@@ -30,7 +38,10 @@ export default function JourneyCard() {
   const [override, setOverride] = useState('')        // custom monthly contribution
   const [detailsOpen, setDetailsOpen] = useState(false) // planner (rate + contribution) hidden by default
   const [range, setRange] = useState<Range>('ALL')
+  const [refreshedAt, setRefreshedAt] = useState<number | null>(null) // last pull-to-refresh time (device-local)
   const seeded = useRef(false)
+
+  useEffect(() => { try { const v = localStorage.getItem('jt-holdings-refreshed'); if (v) setRefreshedAt(Number(v)) } catch { /* ignore */ } }, [])
 
   useEffect(() => { try { setDetailsOpen(localStorage.getItem('jt-nw-details') === '1') } catch { /* ignore */ } }, [])
   const toggleDetails = () => setDetailsOpen((v) => { const n = !v; try { localStorage.setItem('jt-nw-details', n ? '1' : '0') } catch { /* ignore */ } return n })
@@ -127,6 +138,22 @@ export default function JourneyCard() {
       </div>
       {!hasHistory && <div className="journey-edge" style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>Trajectory builds as months are recorded</div>}
 
+      {/* Faint freshness line, directly under the value: holdings date + last price refresh */}
+      {d.holdingsAsOf && (() => {
+        const asOfDate = new Date(d.holdingsAsOf + 'T12:00:00')
+        const stale = (Date.now() - asOfDate.getTime()) / (1000 * 60 * 60 * 24 * 30.4) >= 2
+        return (
+          <div className="journey-edge" style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 6, fontSize: 11, color: 'var(--text-muted)', opacity: stale ? 0.9 : 0.5 }}>
+            <span style={{ width: 5, height: 5, borderRadius: '50%', background: stale ? 'var(--expense)' : 'var(--text-muted)', flexShrink: 0 }} />
+            <span>
+              Investments as of {asOfDate.toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })}
+              {stale ? ' · update due' : ''}
+              {refreshedAt ? ` · refreshed ${relTime(refreshedAt)}` : ''}
+            </span>
+          </div>
+        )
+      })()}
+
       {/* Full-bleed trajectory chart — always auto-fits (the pill carries % of goal) */}
       {hasHistory
         ? <Spark real={realWin} proj={[]} nowM={nowM} goal={goal} anchor={false} />
@@ -198,18 +225,6 @@ export default function JourneyCard() {
         </div>
       )}
 
-      {/* Holdings freshness — kept faint; a dot turns to a visible "update due" only when stale */}
-      {d.holdingsAsOf && (() => {
-        const asOfDate = new Date(d.holdingsAsOf + 'T12:00:00')
-        const stale = (Date.now() - asOfDate.getTime()) / (1000 * 60 * 60 * 24 * 30.4) >= 2
-        return (
-          <div className="journey-edge" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 4, marginTop: 8, fontSize: 10.5, color: 'var(--text-muted)', opacity: stale ? 0.9 : 0.4 }}
-            title={`Investments as of ${asOfDate.toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })}`}>
-            <span style={{ width: 5, height: 5, borderRadius: '50%', background: stale ? 'var(--expense)' : 'var(--text-muted)', flexShrink: 0 }} />
-            <span>as of {asOfDate.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}{stale ? ' · update due' : ''}</span>
-          </div>
-        )
-      })()}
     </div>
   )
 }
@@ -218,7 +233,7 @@ export default function JourneyCard() {
 // endpoint dot, and a hover tooltip. Full width, no axes.
 function Spark({ real, proj, nowM, goal, anchor }: { real: { month: string; net: number; est?: boolean }[]; proj: { month: string; net: number }[]; nowM: string; goal: number; anchor: boolean }) {
   const [hover, setHover] = useState<{ left: number; top: number; month: string; net: number; proj: boolean; est: boolean } | null>(null)
-  const W = 400, H = 150, PADY = 10, PADX = 12 // PADX keeps the endpoint dot from spilling past the edge
+  const W = 400, H = 150, PADY = 10, PADX = 0 // full-bleed: line/area reach the card edges (the endpoint dot is nudged in instead)
 
   // one continuous index across real + projection tail (proj[0] === last real point)
   const tail = proj.slice(1)
@@ -310,7 +325,7 @@ function Spark({ real, proj, nowM, goal, anchor }: { real: { month: string; net:
         <path d={realPath} fill="none" stroke="var(--accent)" strokeWidth={1.8} strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
       </svg>
       {/* dots as HTML overlays so they stay round (the SVG is non-uniformly scaled) */}
-      <Dot left={(X(realEnd) / W) * 100} top={(Y(real[real.length - 1].net) / H) * 100} />
+      <Dot left={(X(realEnd) / W) * 100} top={(Y(real[real.length - 1].net) / H) * 100} edge />
       {hover && <Dot left={hover.left} top={hover.top} />}
       {hover && (
         <div style={{ position: 'absolute', left: `${hover.left}%`, top: `${hover.top}%`, transform: 'translate(-50%, -115%)', pointerEvents: 'none', background: 'var(--text-primary)', color: 'var(--surface-1)', borderRadius: 9, padding: '6px 9px', fontSize: 12, lineHeight: 1.3, whiteSpace: 'nowrap', boxShadow: '0 6px 18px rgba(0,0,0,0.22)' }}>
@@ -321,8 +336,9 @@ function Spark({ real, proj, nowM, goal, anchor }: { real: { month: string; net:
   )
 }
 
-function Dot({ left, top }: { left: number; top: number }) {
-  return <div style={{ position: 'absolute', left: `${left}%`, top: `${top}%`, transform: 'translate(-50%, -50%)', width: 9, height: 9, borderRadius: '50%', background: 'var(--accent)', border: '2px solid var(--surface-1)', boxShadow: '0 1px 4px rgba(0,0,0,0.22)', pointerEvents: 'none' }} />
+function Dot({ left, top, edge }: { left: number; top: number; edge?: boolean }) {
+  // `edge` pulls the endpoint dot ~7px inward so a full-bleed line's last dot doesn't spill past the edge
+  return <div style={{ position: 'absolute', left: `${left}%`, top: `${top}%`, transform: 'translate(-50%, -50%)', marginLeft: edge ? -7 : 0, width: 9, height: 9, borderRadius: '50%', background: 'var(--accent)', border: '2px solid var(--surface-1)', boxShadow: '0 1px 4px rgba(0,0,0,0.22)', pointerEvents: 'none' }} />
 }
 
 

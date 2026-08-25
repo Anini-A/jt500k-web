@@ -88,13 +88,13 @@ export default function BudgetManager() {
   const isSetAside = (e: Envelope) => e.type === 'savings' || e.category === 'Debt Repayment'
   const sum = (arr: Envelope[], k: 'budgeted' | 'spent') => arr.reduce((s, e) => s + e[k], 0)
   const groups = [
-    { key: 'income', icon: Wallet as LucideIcon, label: 'Income', color: 'var(--income)', soft: 'var(--income-soft)', goodUp: true, paced: true, verb: 'earned',
+    { key: 'income', icon: Wallet as LucideIcon, label: 'Income', color: 'var(--income)', soft: 'var(--income-soft)', goodUp: true, paced: true,
       envs: envelopes.filter((e) => e.type === 'income') },
-    { key: 'spending', icon: CreditCard as LucideIcon, label: 'Spending', color: 'var(--savings)', soft: 'var(--savings-soft)', goodUp: false, paced: true, verb: 'used',
+    { key: 'spending', icon: CreditCard as LucideIcon, label: 'Spending', color: 'var(--savings)', soft: 'var(--savings-soft)', goodUp: false, paced: true,
       envs: envelopes.filter((e) => e.type === 'expense' && e.category !== 'Debt Repayment') },
-    { key: 'saving', icon: PiggyBank as LucideIcon, label: 'Saving', color: 'var(--savings)', soft: 'var(--savings-soft)', goodUp: true, paced: false, verb: 'saved',
+    { key: 'saving', icon: PiggyBank as LucideIcon, label: 'Saving', color: 'var(--savings)', soft: 'var(--savings-soft)', goodUp: true, paced: false,
       envs: envelopes.filter((e) => e.type === 'savings') },
-    { key: 'debt', icon: Banknote as LucideIcon, label: 'Debt Repayment', color: '#c2892f', soft: 'rgba(224,161,43,0.16)', goodUp: true, paced: false, verb: 'repaid',
+    { key: 'debt', icon: Banknote as LucideIcon, label: 'Debt Repayment', color: '#c2892f', soft: 'rgba(224,161,43,0.16)', goodUp: true, paced: false,
       envs: envelopes.filter((e) => e.category === 'Debt Repayment') },
   ].map((g) => ({ ...g, budgeted: sum(g.envs, 'budgeted'), actual: sum(g.envs, 'spent') }))
 
@@ -130,7 +130,7 @@ export default function BudgetManager() {
         <div style={{ display: 'grid', gap: 16 }}>
           {groups.map((g) => (
             <GroupBar key={g.key} icon={g.icon} label={g.label} color={g.color}
-              budgeted={g.budgeted} actual={g.actual} goodUp={g.goodUp} verb={g.verb}
+              budgeted={g.budgeted} actual={g.actual} goodUp={g.goodUp}
               pace={g.paced ? pace : null} />
           ))}
         </div>
@@ -251,8 +251,8 @@ function Bar({ pct, pace, fill, height }: { pct: number; pace: number | null; fi
 
 // One row of the summary: a labelled group (Income / Spending / Saving / Debt) with
 // its actual-vs-budget figures, a bar, and a plain-English note.
-function GroupBar({ icon: Icon, label, color, budgeted, actual, goodUp, pace, verb }: {
-  icon: LucideIcon; label: string; color: string; budgeted: number; actual: number; goodUp: boolean; pace: number | null; verb: string
+function GroupBar({ icon: Icon, label, color, budgeted, actual, goodUp, pace }: {
+  icon: LucideIcon; label: string; color: string; budgeted: number; actual: number; goodUp: boolean; pace: number | null
 }) {
   const pct = budgeted > 0 ? Math.min(100, (actual / budgeted) * 100) : (actual > 0 ? 100 : 0)
   const remaining = budgeted - actual
@@ -278,20 +278,7 @@ function GroupBar({ icon: Icon, label, color, budgeted, actual, goodUp, pace, ve
         </span>
       </div>
       <Bar pct={pct} pace={pace} fill={fill} height={8} />
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginTop: 5 }}>
-        <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, color: noteColor }}>{note}</span>
-        {/* each group gets its own reading: "NN% <verb>", plus a pace flag for paced groups */}
-        {budgeted > 0 && (() => {
-          const usedPct = Math.round((actual / budgeted) * 100)
-          let flag = '', col = 'var(--text-muted)'
-          if (pace !== null) {
-            const ahead = usedPct - pace                     // >0 = running faster than the month elapses
-            if (goodUp) { flag = ahead >= 0 ? 'ahead of pace' : 'behind pace'; col = ahead >= 0 ? 'var(--income)' : 'var(--text-muted)' }
-            else { flag = ahead > 8 ? 'ahead of pace' : ahead < -8 ? 'under pace' : 'on pace'; col = ahead > 8 ? 'var(--expense)' : 'var(--text-muted)' }
-          }
-          return <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, color: col, whiteSpace: 'nowrap', flexShrink: 0 }}>{usedPct}% {verb}{flag ? ` · ${flag}` : ''}</span>
-        })()}
-      </div>
+      <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 5, color: noteColor }}>{note}</div>
     </div>
   )
 }
