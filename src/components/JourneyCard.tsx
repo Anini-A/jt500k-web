@@ -20,10 +20,10 @@ const short = (n: number) => (n >= 1000 ? '$' + Math.round(n / 1000) + 'K' : '$'
 const addMonths = (m: string, k: number) => { const [y, mo] = m.split('-').map(Number); const t = y * 12 + (mo - 1) + k; return `${Math.floor(t / 12)}-${String((t % 12) + 1).padStart(2, '0')}` }
 const monthsApart = (a: string, b: string) => { const [ya, ma] = a.split('-').map(Number); const [yb, mb] = b.split('-').map(Number); return (yb * 12 + mb) - (ya * 12 + ma) }
 const fmtMonth = (m: string) => { const [y, mo] = m.split('-'); return new Date(Number(y), Number(mo) - 1).toLocaleDateString('en-CA', { month: 'short', year: 'numeric' }) }
-// "just now" (first 11 min) / "12m ago" / "3h ago" / "2d ago" for the last price refresh
+// "just now" (under a minute) / "1m ago" / "3h ago" / "2d ago" for the last price refresh
 const relTime = (ts: number) => {
   const m = Math.max(0, (Date.now() - ts) / 60000)
-  if (m < 11) return 'just now'
+  if (m < 1) return 'just now'
   if (m < 60) return `${Math.round(m)}m ago`
   const h = m / 60; if (h < 24) return `${Math.round(h)}h ago`
   return `${Math.round(h / 24)}d ago`
