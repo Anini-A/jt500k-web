@@ -119,6 +119,11 @@ export default function JourneyCard() {
   const invContrib = canBreak ? Math.round(d.holdingsValue - (prev!.investments as number)) : null
   const cashContrib = canBreak ? Math.round(d.cashValue - (prev!.cash as number)) : null
   const debtContrib = canBreak ? Math.round((prev!.debts as number) - d.debts) : null // debt paid down = positive
+  // Only trust the breakdown when the parts actually sum to the net change. Older seeded
+  // snapshots have net rebased but components on the raw scale, so they won't reconcile —
+  // in that case we hide the drawer and show just the (reliable) net-delta chip.
+  const reconciles = canBreak && netDelta !== null &&
+    Math.abs((invContrib as number) + (cashContrib as number) + (debtContrib as number) - netDelta) <= 50
 
   const rate = rateKey === 'c' ? 0.05 : rateKey === 'm' ? 0.07 : 0.10
   const monthly = override.trim() === '' || isNaN(Number(override)) ? 0 : Math.max(0, Number(override))
@@ -171,14 +176,14 @@ export default function JourneyCard() {
       {/* One line under the value: month change (tap to see why) on the left, faint freshness on the right */}
       <div className="journey-edge" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 8, minHeight: 22 }}>
         {netDelta !== null ? (
-          <button onClick={() => canBreak && setBreakdownOpen((v) => !v)} aria-expanded={breakdownOpen} disabled={!canBreak}
+          <button onClick={() => reconciles && setBreakdownOpen((v) => !v)} aria-expanded={breakdownOpen} disabled={!reconciles}
             aria-label={breakdownOpen ? 'Hide breakdown' : 'Show what changed'}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 5px 3px 9px', borderRadius: 999, border: 'none', fontFamily: 'inherit', cursor: canBreak ? 'pointer' : 'default',
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 5px 3px 9px', borderRadius: 999, border: 'none', fontFamily: 'inherit', cursor: reconciles ? 'pointer' : 'default',
               background: netDelta >= 0 ? 'color-mix(in srgb, var(--income) 13%, transparent)' : 'color-mix(in srgb, var(--expense) 13%, transparent)',
               color: netDelta >= 0 ? 'var(--income)' : 'var(--expense)' }}>
             <span style={{ fontSize: 12.5, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{netDelta >= 0 ? '▲' : '▼'} {money(Math.abs(netDelta))}</span>
             <span style={{ fontSize: 11.5, fontWeight: 600, opacity: 0.7 }}>this month</span>
-            {canBreak && <ChevronDown size={13} style={{ transform: breakdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s ease' }} />}
+            {reconciles && <ChevronDown size={13} style={{ transform: breakdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s ease' }} />}
           </button>
         ) : <span />}
 
@@ -199,7 +204,7 @@ export default function JourneyCard() {
       </div>
 
       {/* "Why it changed" — opt-in breakdown; Δnet = Δinvestments + Δcash − Δdebts, exactly */}
-      {breakdownOpen && canBreak && (
+      {breakdownOpen && reconciles && (
         <div className="journey-edge">
           <div className="card" style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', padding: 12, marginTop: 10, display: 'grid', gap: 9 }}>
             {[
@@ -218,15 +223,17 @@ export default function JourneyCard() {
             ))}
             <div style={{ fontSize: 12.5, color: 'var(--text-muted)', lineHeight: 1.5, paddingTop: 9, borderTop: '1px solid var(--border)' }}>
               {(() => {
-                const parts = [
-                  { label: 'investment growth', v: invContrib as number },
-                  { label: 'cash', v: cashContrib as number },
-                  { label: 'debt paydown', v: debtContrib as number },
-                ].filter((p) => Math.abs(p.v) >= 1).sort((a, b) => Math.abs(b.v) - Math.abs(a.v))
-                const dir = (netDelta as number) >= 0 ? 'Up' : 'Down'
-                if (!parts.length) return `Net worth held steady this month.`
-                const top = parts[0]
-                return <>{dir} <b style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>{money(Math.abs(netDelta as number))}</b> this month — mostly from <b style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>{top.label}</b> ({top.v >= 0 ? '+' : '−'}{money(Math.abs(top.v))}).</>
+                const nd = netDelta as number
+                const up = nd >= 0
+                // attribute only to drivers that pushed in the same direction as the net move
+                const drivers = [
+                  { up: 'investments grew', down: 'investments fell', v: invContrib as number },
+                  { up: 'cash grew', down: 'cash fell', v: cashContrib as number },
+                  { up: 'debt was paid down', down: 'debt grew', v: debtContrib as number },
+                ].filter((p) => (up ? p.v > 0 : p.v < 0) && Math.abs(p.v) >= 1).sort((a, b) => Math.abs(b.v) - Math.abs(a.v))
+                if (Math.abs(nd) < 1) return 'Net worth held steady this month.'
+                const label = drivers.length ? (up ? drivers[0].up : drivers[0].down) : 'a mix of things'
+                return <>{up ? 'Up' : 'Down'} <b style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>{money(Math.abs(nd))}</b> this month{drivers.length ? <> — mostly because <b style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>{label}</b> ({drivers[0].v >= 0 ? '+' : '−'}{money(Math.abs(drivers[0].v))})</> : ''}.</>
               })()}
             </div>
           </div>
