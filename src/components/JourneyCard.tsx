@@ -145,7 +145,7 @@ export default function JourneyCard() {
         return (
           <div className="journey-edge" style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 6, fontSize: 11, color: 'var(--text-muted)', opacity: stale ? 0.9 : 0.5 }}>
             <span style={{ width: 5, height: 5, borderRadius: '50%', background: stale ? 'var(--expense)' : 'var(--text-muted)', flexShrink: 0 }} />
-            <span>{refreshedAt ? `Investments refreshed ${relTime(refreshedAt)}` : 'Pull down to refresh investments'}{stale ? ' · update due' : ''}</span>
+            <span>{refreshedAt ? `Refreshed ${relTime(refreshedAt)}` : 'Pull down to refresh investments'}{stale ? ' · update due' : ''}</span>
           </div>
         )
       })()}
