@@ -86,32 +86,35 @@ export default function UpcomingBills() {
   const hasCoverage = tracked.some((a) => bills.some((b) => b.account_id === a.id))
   const worst = shorts[0]
 
-  const WARN = '#e8963a' // warm amber for "runs short" (distinct from the expense red on dates)
+  const header = (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+      <span className="hdr-label">Upcoming bills</span>
+      {within.length > 0 && (
+        <span style={{ fontSize: 12, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
+          <b style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>{money(totalSoon)}</b> next 2 weeks
+        </span>
+      )}
+    </div>
+  )
 
   return (
     <div className="card glass">
-      {/* Header taps through to the Bills tab: label + two-week total + coverage dot */}
-      <a href="/dashboard" onClick={goBills} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, textDecoration: 'none', color: 'inherit' }}>
-        <span className="hdr-label">Upcoming bills</span>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
-          {within.length > 0 && <span><b style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>{money(totalSoon)}</b> · 2 wks</span>}
-          {hasCoverage && (
-            <span title={worst ? `${worst.name} may run short ~${money(worst.short)} by ${worst.label}` : 'Balances cover every upcoming bill'}
-              style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: worst ? WARN : 'var(--income)' }} />
-          )}
-        </span>
-      </a>
+      {/* Header taps to Bills only when there's no coverage card to carry the tap */}
+      {hasCoverage ? header : <a href="/dashboard" onClick={goBills} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>{header}</a>}
 
-      {/* Coverage as a thin tinted card — amber when an account runs short, green when covered */}
+      {/* Coverage — a thin tinted card, clickable through to the Bills tab. Red when an
+          account runs short (standard --expense), green when covered. */}
       {hasCoverage && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 10, padding: '7px 10px', borderRadius: 10, fontSize: 12, fontWeight: 600,
-          color: worst ? WARN : 'var(--income)',
-          background: worst ? 'rgba(232,150,58,0.12)' : 'color-mix(in srgb, var(--income) 10%, transparent)' }}>
+        <a href="/dashboard" onClick={goBills}
+          style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 10, padding: '8px 11px', borderRadius: 10, fontSize: 12, fontWeight: 600, textDecoration: 'none',
+            color: worst ? 'var(--expense)' : 'var(--income)',
+            background: worst ? 'color-mix(in srgb, var(--expense) 12%, transparent)' : 'color-mix(in srgb, var(--income) 10%, transparent)' }}>
           {worst && <TriangleAlert size={13} style={{ flexShrink: 0 }} />}
-          <span>{worst
+          <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{worst
             ? <>{worst.name} runs short ~{money(worst.short)} by {worst.label}{shorts.length > 1 ? ` · +${shorts.length - 1}` : ''}</>
             : 'Balances cover every upcoming bill'}</span>
-        </div>
+          <span style={{ marginLeft: 'auto', flexShrink: 0, opacity: 0.6, fontWeight: 700 }}>›</span>
+        </a>
       )}
 
       {/* Dense one-line rows: date · name · amount (date reddens when ≤3 days out) */}
