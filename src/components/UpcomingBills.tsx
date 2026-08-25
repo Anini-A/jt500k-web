@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { getJSON, cachedValue } from '@/lib/fresh'
 import { today, ymd } from '@/lib/date'
 import { shortfall } from '@/lib/billRunway'
-import { TriangleAlert, CheckCircle2 } from 'lucide-react'
+import { TriangleAlert } from 'lucide-react'
 import LoadError from './LoadError'
 
 interface Bill { id: string; account_id: string | null; name: string; day: number; amount: number; quarterly?: boolean; next_due?: string | null }
@@ -88,59 +88,44 @@ export default function UpcomingBills() {
 
   return (
     <div className="card glass">
-      <span className="hdr-label">Upcoming bills</span>
-
-      {/* Hero: how much is leaving over the next two weeks, with coverage right beneath */}
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 6 }}>
-        {within.length > 0 ? (<>
-          <span style={{ fontSize: 'clamp(26px, 7vw, 32px)', fontWeight: 700, letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums' }}>{money(totalSoon)}</span>
-          <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>due in 2 weeks</span>
-        </>) : (
-          <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-secondary)' }}>Nothing due for 2 weeks</span>
-        )}
+      {/* Header: label + two-week total, plus a small coverage dot */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+        <span className="hdr-label">Upcoming bills</span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
+          {within.length > 0 && <span><b style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>{money(totalSoon)}</b> · 2 wks</span>}
+          {hasCoverage && (
+            <span title={worst ? `${worst.name} may run short ~${money(worst.short)} by ${worst.label}` : 'Balances cover every upcoming bill'}
+              style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, background: worst ? 'var(--expense)' : 'var(--income)' }} />
+          )}
+        </span>
       </div>
-      {hasCoverage && (
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 7, fontSize: 12.5, fontWeight: 600, color: worst ? 'var(--expense)' : 'var(--income)' }}>
-          {worst ? <TriangleAlert size={14} style={{ flexShrink: 0 }} /> : <CheckCircle2 size={14} style={{ flexShrink: 0 }} />}
-          <span>{worst
-            ? <>{worst.name} runs short ~{money(worst.short)} by {worst.label}{shorts.length > 1 ? ` · +${shorts.length - 1} more` : ''}</>
-            : 'On track — balances cover every bill'}</span>
+
+      {/* If an account will run short, one quiet actionable line — otherwise the dot says it all */}
+      {worst && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, fontSize: 12, fontWeight: 600, color: 'var(--expense)' }}>
+          <TriangleAlert size={13} style={{ flexShrink: 0 }} />
+          <span>{worst.name} runs short ~{money(worst.short)} by {worst.label}{shorts.length > 1 ? ` · +${shorts.length - 1}` : ''}</span>
         </div>
       )}
 
-      {/* Agenda: date chip + name/timing + amount, with a light "Later" divider past a week out */}
-      <div style={{ display: 'grid', gap: 2, marginTop: 16 }}>
+      {/* Dense one-line rows: date · name · amount (date reddens when ≤3 days out) */}
+      <div style={{ marginTop: 12 }}>
         {rows.map((u, i) => {
           const urgent = u.days <= 3
-          const timing = u.days === 0 ? 'Today' : u.days === 1 ? 'Tomorrow' : `in ${u.days} days`
-          const acc = acctName(u.b.account_id)
-          const showLater = i > 0 && u.days > 7 && rows[i - 1].days <= 7
           return (
-            <div key={u.b.id}>
-              {showLater && <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--text-muted)', margin: '10px 0 6px' }}>Later</div>}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '7px 0' }}>
-                <div style={{ width: 44, height: 44, flexShrink: 0, borderRadius: 12, display: 'grid', placeItems: 'center', lineHeight: 1,
-                  background: urgent ? 'color-mix(in srgb, var(--expense) 12%, var(--kpi-bg))' : 'var(--kpi-bg)',
-                  border: `1px solid ${urgent ? 'color-mix(in srgb, var(--expense) 28%, transparent)' : 'var(--border)'}` }}>
-                  <div style={{ fontSize: 17.5, fontWeight: 800, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', color: urgent ? 'var(--expense)' : 'var(--text-primary)' }}>{u.date.getDate()}</div>
-                  <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', color: urgent ? 'var(--expense)' : 'var(--text-muted)', marginTop: 2 }}>{u.date.toLocaleDateString('en-CA', { month: 'short' })}</div>
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 600, fontSize: 14.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.b.name}</div>
-                  <div style={{ fontSize: 12, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    <span style={{ color: urgent ? 'var(--expense)' : 'var(--text-muted)', fontWeight: urgent ? 700 : 400 }}>{timing}</span>
-                    {acc && <span style={{ color: 'var(--text-muted)' }}> · {acc}</span>}
-                  </div>
-                </div>
-                <div style={{ fontWeight: 700, fontSize: 15, fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{money(Number(u.b.amount))}</div>
-              </div>
+            <div key={u.b.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 0', borderTop: i > 0 ? '1px solid var(--border)' : 'none' }}>
+              <span style={{ width: 52, flexShrink: 0, fontSize: 12.5, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: urgent ? 'var(--expense)' : 'var(--text-secondary)' }}>
+                {u.date.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}
+              </span>
+              <span style={{ flex: 1, minWidth: 0, fontWeight: 600, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.b.name}</span>
+              <span style={{ fontWeight: 700, fontSize: 14, fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{money(Number(u.b.amount))}</span>
             </div>
           )
         })}
       </div>
 
-      <a href="/dashboard" onClick={goBills} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)', color: 'var(--accent)', fontSize: 12.5, fontWeight: 600, textDecoration: 'none' }}>
-        {upcoming.length > rows.length ? `View all ${upcoming.length} bills` : 'Manage bills'} →
+      <a href="/dashboard" onClick={goBills} style={{ display: 'inline-block', marginTop: 11, color: 'var(--accent)', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>
+        {upcoming.length > rows.length ? `View all ${upcoming.length} →` : 'Manage bills →'}
       </a>
     </div>
   )
