@@ -370,8 +370,6 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
               </button>
             )
           })}
-          <button type="button" onClick={() => setSelectedCard('')} title="Don't tag a card"
-            style={{ display: 'inline-flex', alignItems: 'center', padding: '7px 14px', borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', border: `1px solid ${selectedCard === '' ? 'var(--accent)' : 'var(--border)'}`, background: selectedCard === '' ? 'var(--accent)' : 'var(--kpi-bg)', color: selectedCard === '' ? '#fff' : 'var(--text-secondary)' }}>No card</button>
           <button type="button" onClick={() => setManageCardsOpen((v) => !v)} title="Add or remove cards"
             style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', border: `1px solid ${manageCardsOpen ? 'var(--accent)' : 'var(--border)'}`, background: manageCardsOpen ? 'var(--accent-soft)' : 'transparent', color: 'var(--accent)' }}>
             <Settings2 size={14} /> Manage

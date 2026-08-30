@@ -943,7 +943,7 @@ header.top h1 {
   }
   .modal-card.glass::before { border-radius: 22px 22px 0 0; }
   /* a "tall" sheet fills to the top (like Settings) even when its content is short */
-  .modal-card.modal-tall { height: 96dvh; max-height: 96dvh; display: flex; flex-direction: column; }
+  .modal-card.modal-tall { height: 92dvh; display: flex; flex-direction: column; }
   /* grab handle at the top of the sheet */
   .modal-card::after {
     content: ''; position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
