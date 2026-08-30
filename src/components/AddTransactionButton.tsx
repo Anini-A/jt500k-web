@@ -87,7 +87,9 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   const [selectedCard, setSelectedCard] = useState('')
   const [drafts, setDrafts] = useState<Draft[]>([])
   const [draftId, setDraftId] = useState<string | null>(null) // the draft currently being edited
-  const [step, setStep] = useState<'add' | 'review'>('add')    // Import is a two-step flow: Add → Review
+  const [addOpen, setAddOpen] = useState(true)                 // Import: the paste/screenshot input (collapses once rows exist)
+  const [expandedRow, setExpandedRow] = useState<number | null>(null) // which review row is expanded for editing
+  const [logMenu, setLogMenu] = useState(false)                // the single action button's Record / Save-draft menu
   const [draftsOpen, setDraftsOpen] = useState(false)          // "Continue a draft" collapsible
   const [manageCardsOpen, setManageCardsOpen] = useState(false)
   const [newCard, setNewCard] = useState('')      // inline add-card input
@@ -139,7 +141,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
 
   const close = () => {
     setOpen(false); setMode('single'); setRaw(''); setRows([]); setImages([])
-    setDraftId(null); setStep('add'); setDraftsOpen(false); setImportErr(''); setSaved(null); setSingleErr('')
+    setDraftId(null); setAddOpen(true); setExpandedRow(null); setLogMenu(false); setDraftsOpen(false); setImportErr(''); setSaved(null); setSingleErr('')
     setManageRec(false); setRecEdit(null); setRecErr('')
     setForm({ date: today(), type: 'expense', category: '', amount: '', description: '' })
   }
@@ -147,7 +149,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   // Reset the whole card WITHOUT closing it — clears every mode's working state, keeps the tab you're on.
   const resetAll = () => {
     setForm({ date: today(), type: 'expense', category: '', amount: '', description: '' })
-    setRaw(''); setRows([]); setImages([]); setDraftId(null); setStep('add'); setImportErr(''); setManageCardsOpen(false)
+    setRaw(''); setRows([]); setImages([]); setDraftId(null); setAddOpen(true); setImportErr(''); setManageCardsOpen(false)
     setPicked(new Set()); setRecEdit(null); setRecDate(today())
     setRecForm({ name: '', type: 'expense', category: '', amount: '', description: '' })
   }
@@ -282,7 +284,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
       if (d.rows.length === 0) { setImportErr('No transactions found. Check the screenshot is clear, or edit manually.'); return }
       const tagged: Row[] = d.rows.map((r: any) => ({ ...r, amount: String(r.amount), card: selectedCard || undefined }))
       setRows((prev) => [...prev, ...tagged])  // append so you can paste multiple cards into one batch
-      setRaw(''); setImages([]); setStep('review')
+      setRaw(''); setImages([]); setAddOpen(false)
     } catch (e: any) { setImportErr('Parse failed: ' + (e?.message || e)) } finally { setParsing(false) }
   }
 
@@ -318,7 +320,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   }
   const openDraft = (dr: Draft) => {
     setRows((dr.rows || []).map((r) => ({ ...r, amount: String(r.amount) })))
-    setDraftId(dr.id); setStep('review'); setDraftsOpen(false); setImportErr('')
+    setDraftId(dr.id); setAddOpen(false); setExpandedRow(null); setDraftsOpen(false); setImportErr('')
   }
   const deleteDraft = (id: string) => setConfirmDel({ kind: 'draft', id, name: 'this draft' })
 
@@ -478,31 +480,9 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
 
             {/* ---------------- IMPORT — two-step flow: Add → Review ---------------- */}
             {mode === 'batch' && (
-              <div style={{ display: 'grid', gap: 14 }}>
-                {/* Step header */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  {([['add', '1', 'Add'], ['review', '2', 'Review']] as const).map(([k, n, label], idx) => {
-                    const on = step === k
-                    const done = k === 'add' && step === 'review'
-                    return (
-                      <div key={k} style={{ display: 'contents' }}>
-                        {idx === 1 && <div style={{ flex: 1, height: 2, borderRadius: 2, background: step === 'review' ? 'color-mix(in srgb, var(--income) 45%, transparent)' : 'var(--border)' }} />}
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12.5, fontWeight: 600, color: on ? 'var(--text-primary)' : 'var(--text-muted)' }}>
-                          <span style={{ width: 20, height: 20, borderRadius: 999, display: 'grid', placeItems: 'center', fontSize: 11, fontWeight: 700,
-                            background: done ? 'color-mix(in srgb, var(--income) 18%, transparent)' : on ? 'var(--accent)' : 'var(--kpi-bg)',
-                            color: done ? 'var(--income)' : on ? '#fff' : 'var(--text-muted)',
-                            border: `1px solid ${on || done ? 'transparent' : 'var(--border)'}` }}>{done ? '✓' : n}</span>
-                          {label}
-                        </span>
-                      </div>
-                    )
-                  })}
-                </div>
-
-                {step === 'add' ? (
-                  <>
-                    {/* Continue a draft — collapsed into one tidy entry */}
-                    {drafts.length > 0 && (
+              <div style={{ display: 'grid', gap: 12 }}>
+                {/* Continue a draft — only shows when nothing is in progress */}
+                {drafts.length > 0 && rows.length === 0 && (
                       <div>
                         <button type="button" onClick={() => setDraftsOpen((v) => !v)} aria-expanded={draftsOpen}
                           style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 11, padding: '12px 14px', borderRadius: 14, border: '1px solid var(--border)', background: 'var(--kpi-bg)', cursor: 'pointer', font: 'inherit', color: 'inherit', textAlign: 'left' }}>
@@ -537,6 +517,15 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                       </div>
                     )}
 
+                {/* Add input — the paste/screenshot area; collapses to a slim button once rows exist */}
+                {(addOpen || rows.length === 0) ? (
+                  <div style={{ display: 'grid', gap: 10 }}>
+                    {rows.length > 0 && (
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span className="stat-label">Add more</span>
+                        <button type="button" onClick={() => setAddOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>Done ✕</button>
+                      </div>
+                    )}
                     {/* Card tag */}
                     <div>
                       <span className="stat-label">Tag this batch to a card</span>
@@ -611,15 +600,16 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                     <button className="btn btn-primary" style={{ justifyContent: 'center' }} disabled={(!raw.trim() && images.length === 0) || parsing} onClick={formatWithAI}>
                       {parsing ? 'Reading…' : `✨ Format with AI${images.length ? ` · ${images.length} image${images.length !== 1 ? 's' : ''}` : ''}`}
                     </button>
-                    {rows.length > 0 && (
-                      <button type="button" onClick={() => setStep('review')} style={{ justifySelf: 'center', background: 'none', border: 'none', color: 'var(--accent)', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
-                        ‹ Back to your {rows.length} row{rows.length !== 1 ? 's' : ''}
-                      </button>
-                    )}
-                  </>
+                  </div>
                 ) : (
+                  <button type="button" onClick={() => setAddOpen(true)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', padding: '11px 12px', borderRadius: 12, border: '1px dashed var(--border)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>
+                    <Plus size={15} /> Paste or add a screenshot
+                  </button>
+                )}
+
+                {/* Review — compact rows that expand to edit */}
+                {rows.length > 0 && (
                   <>
-                    {/* Review step */}
                     <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10 }}>
                       <div>
                         <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>{money(validTotal)}</div>
@@ -627,76 +617,96 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                           {rows.length} item{rows.length !== 1 ? 's' : ''}{invalidCount > 0 && <span style={{ color: 'var(--expense)', fontWeight: 700 }}> · {invalidCount} to fix</span>}
                         </div>
                       </div>
-                      <button type="button" onClick={() => { setStep('add'); setImportErr('') }} className="btn btn-secondary" style={{ flex: '0 0 auto', padding: '8px 13px', fontSize: 13 }}>
-                        <ClipboardPaste size={14} /> Paste more
-                      </button>
+                      {cardTotals.length > 0 && (
+                        <div style={{ display: 'flex', gap: 5, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                          {cardTotals.map(([card, tot]) => (
+                            <span key={card} style={{ fontSize: 11.5, fontWeight: 700, padding: '3px 9px', borderRadius: 999, background: 'var(--kpi-bg)', border: '1px solid var(--border)' }}>{card} · {money(tot)}</span>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    {cardTotals.length > 0 && (
-                      <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-                        {cardTotals.map(([card, tot]) => (
-                          <span key={card} style={{ fontSize: 12, fontWeight: 700, padding: '4px 11px', borderRadius: 999, background: 'var(--kpi-bg)', border: '1px solid var(--border)' }}>{card} · {money(tot)}</span>
-                        ))}
-                      </div>
-                    )}
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: '44vh', overflowY: 'auto', paddingRight: 2 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: '42vh', overflowY: 'auto', paddingRight: 2 }}>
                       {rows.map((r, i) => {
                         const badAmt = isNaN(parseFloat(r.amount)) || parseFloat(r.amount) <= 0
                         const bad = badAmt || !r.category || !isDate(r.date)
+                        const rowOpen = expandedRow === i
                         return (
-                          <div key={i} style={{ border: '1px solid var(--border)', borderLeft: `3px solid ${bad ? 'var(--expense)' : typeColor(r.type)}`, borderRadius: 12, padding: 10, background: 'var(--surface-1)', display: 'grid', gap: 7 }}>
-                            <div style={{ display: 'flex', gap: 7, alignItems: 'center' }}>
-                              <select value={r.category}
-                                onChange={(e) => { const c = cats.find((x) => x.name === e.target.value); updateRow(i, { category: e.target.value, type: c?.type ?? r.type }) }}
-                                style={{ ...cell, flex: 1, borderColor: r.category ? 'var(--border)' : 'var(--expense)' }}>
-                                <option value="">— category —</option>
-                                <optgroup label="Income">{grouped.income.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}</optgroup>
-                                <optgroup label="Expense">{grouped.expense.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}</optgroup>
-                                <optgroup label="Savings">{grouped.savings.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}</optgroup>
-                              </select>
-                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
-                                <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>$</span>
-                                <input inputMode="decimal" value={r.amount} onChange={(e) => updateRow(i, { amount: e.target.value.replace(/[^0-9.]/g, '') })}
-                                  style={{ ...cell, width: 78, textAlign: 'right', fontWeight: 700, borderColor: badAmt ? 'var(--expense)' : 'var(--border)' }} placeholder="0.00" />
+                          <div key={i} style={{ border: '1px solid var(--border)', borderLeft: `3px solid ${bad ? 'var(--expense)' : typeColor(r.type)}`, borderRadius: 11, background: 'var(--surface-1)', overflow: 'hidden' }}>
+                            {/* collapsed one-line summary — tap to edit */}
+                            <button type="button" onClick={() => setExpandedRow(rowOpen ? null : i)} aria-expanded={rowOpen}
+                              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 11px', background: 'transparent', border: 'none', cursor: 'pointer', font: 'inherit', color: 'inherit', textAlign: 'left' }}>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontWeight: 600, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: r.category ? 'var(--text-primary)' : 'var(--expense)' }}>{r.category || 'Set category'}</div>
+                                {r.description && <div style={{ fontSize: 12, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 1 }}>{r.description}</div>}
                               </div>
-                              <button onClick={() => setRows((prev) => prev.filter((_, idx) => idx !== i))} aria-label="Remove" title="Remove"
-                                style={{ flexShrink: 0, display: 'inline-flex', justifyContent: 'center', padding: 7, borderRadius: 8, border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                                <Trash2 size={15} />
-                              </button>
-                            </div>
-                            <input type="text" value={r.description} onChange={(e) => updateRow(i, { description: e.target.value })} style={{ ...cell, height: 36 }} placeholder="Note (optional)" />
-                            <div style={{ display: 'flex', gap: 7 }}>
-                              <input type="date" value={r.date} onChange={(e) => updateRow(i, { date: e.target.value })}
-                                style={{ ...cell, flex: 1, height: 36, WebkitAppearance: 'none', appearance: 'none', borderColor: isDate(r.date) ? 'var(--border)' : 'var(--expense)' }} />
-                              <select value={r.card || ''} onChange={(e) => updateRow(i, { card: e.target.value || undefined })} style={{ ...cell, flex: 1, height: 36 }}>
-                                <option value="">No card</option>
-                                {cards.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
-                                {r.card && !cards.some((c) => c.name === r.card) && <option value={r.card}>{r.card}</option>}
-                              </select>
-                            </div>
+                              <span style={{ fontWeight: 700, fontSize: 14, fontVariantNumeric: 'tabular-nums', flexShrink: 0, color: badAmt ? 'var(--expense)' : 'var(--text-primary)' }}>{badAmt ? '$?' : money(parseFloat(r.amount))}</span>
+                              <ChevronDown size={16} style={{ flexShrink: 0, color: 'var(--text-muted)', transform: rowOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s ease' }} />
+                            </button>
+                            {rowOpen && (
+                              <div style={{ padding: '10px 11px 11px', display: 'grid', gap: 8, borderTop: '1px solid var(--border)' }}>
+                                <select value={r.category}
+                                  onChange={(e) => { const c = cats.find((x) => x.name === e.target.value); updateRow(i, { category: e.target.value, type: c?.type ?? r.type }) }}
+                                  style={{ ...cell, height: 40, borderColor: r.category ? 'var(--border)' : 'var(--expense)' }}>
+                                  <option value="">— category —</option>
+                                  <optgroup label="Income">{grouped.income.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}</optgroup>
+                                  <optgroup label="Expense">{grouped.expense.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}</optgroup>
+                                  <optgroup label="Savings">{grouped.savings.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}</optgroup>
+                                </select>
+                                <input type="text" value={r.description} onChange={(e) => updateRow(i, { description: e.target.value })} style={{ ...cell, height: 40 }} placeholder="Note (optional)" />
+                                <div style={{ display: 'flex', gap: 7 }}>
+                                  <div style={{ ...cell, display: 'inline-flex', alignItems: 'center', gap: 3, flexShrink: 0, height: 40, width: 116 }}>
+                                    <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>$</span>
+                                    <input inputMode="decimal" value={r.amount} onChange={(e) => updateRow(i, { amount: e.target.value.replace(/[^0-9.]/g, '') })}
+                                      style={{ border: 'none', background: 'transparent', outline: 'none', width: '100%', textAlign: 'right', fontWeight: 700, fontSize: 13, color: badAmt ? 'var(--expense)' : 'var(--text-primary)', fontFamily: 'inherit' }} placeholder="0.00" />
+                                  </div>
+                                  <input type="date" value={r.date} onChange={(e) => updateRow(i, { date: e.target.value })}
+                                    style={{ ...cell, flex: 1, height: 40, WebkitAppearance: 'none', appearance: 'none', borderColor: isDate(r.date) ? 'var(--border)' : 'var(--expense)' }} />
+                                </div>
+                                <div style={{ display: 'flex', gap: 7, alignItems: 'center' }}>
+                                  <select value={r.card || ''} onChange={(e) => updateRow(i, { card: e.target.value || undefined })} style={{ ...cell, flex: 1, height: 40 }}>
+                                    <option value="">No card</option>
+                                    {cards.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
+                                    {r.card && !cards.some((c) => c.name === r.card) && <option value={r.card}>{r.card}</option>}
+                                  </select>
+                                  <button type="button" onClick={() => { setRows((prev) => prev.filter((_, idx) => idx !== i)); setExpandedRow(null) }} aria-label="Delete row" title="Delete row"
+                                    style={{ flexShrink: 0, width: 40, height: 40, borderRadius: 10, border: '1px solid var(--border)', background: 'transparent', color: 'var(--expense)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><Trash2 size={16} /></button>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )
                       })}
-                      <button type="button" onClick={() => setRows((prev) => [...prev, { date: today(), description: '', category: '', type: 'expense', amount: '', card: selectedCard || undefined }])}
-                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', padding: '10px 12px', borderRadius: 12, border: '1px dashed var(--border)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit' }}>
+                      <button type="button" onClick={() => { setRows((prev) => [...prev, { date: today(), description: '', category: '', type: 'expense', amount: '', card: selectedCard || undefined }]); setExpandedRow(rows.length) }}
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', padding: '10px 12px', borderRadius: 11, border: '1px dashed var(--border)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit' }}>
                         <Plus size={14} /> Add row
                       </button>
                     </div>
 
                     {invalidCount > 0 && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--text-secondary)', background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 10, padding: '9px 11px' }}>
-                        <span style={{ color: 'var(--expense)', flexShrink: 0, display: 'inline-flex' }}><RotateCcw size={14} style={{ transform: 'scaleX(-1)' }} /></span>
-                        <span><b style={{ color: 'var(--expense)' }}>{invalidCount} row{invalidCount !== 1 ? 's' : ''} need fixing</b> — kept in a draft, not lost, when you log the rest.</span>
+                      <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                        <b style={{ color: 'var(--expense)' }}>{invalidCount} row{invalidCount !== 1 ? 's' : ''} need a category or amount</b> — kept in a draft, not lost, when you record the rest.
                       </div>
                     )}
                     {importErr && <div style={{ fontSize: 13, color: 'var(--expense)', fontWeight: 600 }}>{importErr}</div>}
 
-                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                      <button type="button" className="btn btn-secondary" style={{ flex: '0 0 auto' }} disabled={saving || savingDraft} onClick={saveDraft}>
-                        {savingDraft ? 'Saving…' : <>💾 {draftId ? 'Update draft' : 'Save draft'}</>}
-                      </button>
-                      <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center', minWidth: 150 }} disabled={saving || savingDraft || validCount === 0} onClick={logBatch}>
-                        {saving ? 'Logging…' : `Log ${validCount} transaction${validCount !== 1 ? 's' : ''}`}
+                    {/* One action button → pops a small Record / Save-draft choice */}
+                    <div style={{ position: 'relative' }}>
+                      {logMenu && <div onClick={() => setLogMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 1 }} />}
+                      {logMenu && (
+                        <div style={{ position: 'absolute', bottom: 'calc(100% + 8px)', left: 0, right: 0, zIndex: 2, background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: 14, boxShadow: '0 10px 30px rgba(0,0,0,0.18)', overflow: 'hidden' }}>
+                          <button type="button" disabled={validCount === 0} onClick={() => { setLogMenu(false); logBatch() }}
+                            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 9, padding: '13px 15px', background: 'transparent', border: 'none', borderBottom: '1px solid var(--border)', cursor: validCount === 0 ? 'default' : 'pointer', font: 'inherit', fontSize: 14, fontWeight: 600, color: validCount === 0 ? 'var(--text-muted)' : 'var(--text-primary)', textAlign: 'left' }}>
+                            <span style={{ color: 'var(--income)' }}>✓</span> Record {validCount} transaction{validCount !== 1 ? 's' : ''}{invalidCount > 0 ? ` · ${invalidCount} kept` : ''}
+                          </button>
+                          <button type="button" onClick={() => { setLogMenu(false); saveDraft() }}
+                            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 9, padding: '13px 15px', background: 'transparent', border: 'none', cursor: 'pointer', font: 'inherit', fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', textAlign: 'left' }}>
+                            💾 {draftId ? 'Update draft' : 'Save as draft'}
+                          </button>
+                        </div>
+                      )}
+                      <button type="button" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} disabled={saving || savingDraft} onClick={() => setLogMenu((v) => !v)}>
+                        {saving ? 'Recording…' : savingDraft ? 'Saving…' : <>{validCount > 0 ? `Record ${validCount}` : 'Save draft'} <ChevronDown size={16} style={{ transform: logMenu ? 'rotate(180deg)' : 'none', transition: 'transform .2s ease' }} /></>}
                       </button>
                     </div>
                   </>
