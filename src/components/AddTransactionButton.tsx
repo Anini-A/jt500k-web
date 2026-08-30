@@ -620,7 +620,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                     <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
                       <span style={{ minWidth: 0, fontSize: 15, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>
                         {rows.length} item{rows.length !== 1 ? 's' : ''} · <b style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{money(validTotal)}</b>
-                        {cardTotals.map(([card]) => <span key={card} style={{ color: 'var(--text-muted)', fontSize: 13 }}>{`  ·  ${card}`}</span>)}
+                        {cardTotals.map(([card]) => <span key={card} style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{`  ·  ${card}`}</span>)}
                         {invalidCount > 0 && <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{`  ·  ${invalidCount} to fix`}</span>}
                       </span>
                       {!addOpen && (
@@ -651,9 +651,9 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                             <button type="button" onClick={() => setExpandedRow(rowOpen ? null : i)} aria-expanded={rowOpen}
                               style={{ width: '100%', minHeight: 46, display: 'flex', alignItems: 'center', gap: 11, padding: '11px 2px', background: 'transparent', border: 'none', cursor: 'pointer', font: 'inherit', color: 'inherit', textAlign: 'left' }}>
                               <span aria-hidden style={{ flexShrink: 0, width: 6, height: 6, borderRadius: '50%', background: bad ? 'var(--text-muted)' : 'transparent' }} />
-                              <span style={{ flexShrink: 0, width: 44, fontSize: 12, fontVariantNumeric: 'tabular-nums', color: 'var(--text-muted)' }}>{dLabel}</span>
+                              <span style={{ flexShrink: 0, width: 44, fontSize: 12, fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>{dLabel}</span>
                               <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500, fontSize: 14.5, color: r.category ? 'var(--text-primary)' : 'var(--text-muted)' }}>
-                                {r.category || 'Set category'}{r.description ? <span style={{ color: 'var(--text-muted)', fontSize: 12.5 }}>{'  ·  ' + r.description}</span> : ''}
+                                {r.category || 'Set category'}{r.description ? <span style={{ color: 'var(--text-secondary)', fontSize: 12.5 }}>{'  ·  ' + r.description}</span> : ''}
                               </span>
                               <span style={{ fontWeight: 600, fontSize: 14.5, fontVariantNumeric: 'tabular-nums', flexShrink: 0, color: badAmt ? 'var(--text-muted)' : 'var(--text-primary)' }}>{badAmt ? '$?' : money(parseFloat(r.amount))}</span>
                               <ChevronDown size={15} style={{ flexShrink: 0, color: 'var(--text-muted)', transform: rowOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s ease' }} />
@@ -802,7 +802,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                                   {!manageRec && <input type="checkbox" checked={on} onChange={toggle} />}
                                   <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={manageRec ? () => startEditRec(r) : toggle}>
                                     <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</div>
-                                    <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{r.category}</div>
+                                    <div style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>{r.category}</div>
                                   </div>
                                   <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', flexShrink: 0 }}>{money(Number(r.amount))}</span>
                                   {manageRec && (
