@@ -354,14 +354,13 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span className="stat-label">Add more</span>
           <button type="button" onClick={() => setAddOpen(false)}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 12.5, fontWeight: 600, fontFamily: 'inherit' }}>
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: 0, border: 'none', background: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>
             Done <X size={13} />
           </button>
         </div>
       )}
       <div>
-        <span className="stat-label">Tag this batch to a card</span>
-        <div className="chip-scroll" style={{ gap: 7, marginTop: 8 }}>
+        <div className="chip-scroll" style={{ gap: 7 }}>
           {cards.map((c) => {
             const on = selectedCard === c.name
             return (
@@ -399,8 +398,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
         )}
       </div>
       <div>
-        <span className="stat-label">Paste your statement</span>
-        <div style={{ border: '1.5px dashed var(--border-strong, var(--border))', borderRadius: 16, background: 'var(--kpi-bg)', padding: '14px 14px 12px', marginTop: 8 }}>
+        <div style={{ border: '1.5px dashed var(--border-strong, var(--border))', borderRadius: 16, background: 'var(--kpi-bg)', padding: '14px 14px 12px' }}>
           <textarea value={raw} onChange={(e) => setRaw(e.target.value)} onPaste={onPasteInput} rows={5}
             placeholder={'Paste text or an image from your bank or card — the AI cleans it up.'}
             style={{ width: '100%', border: 'none', background: 'transparent', resize: 'vertical', minHeight: 92, fontFamily: 'inherit', fontSize: 14, lineHeight: 1.5, color: 'var(--text-primary)', outline: 'none' }} />
@@ -432,7 +430,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
     </div>
   )
   const pasteMoreBtn = (
-    <button type="button" onClick={() => setAddOpen(true)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', padding: '11px 12px', borderRadius: 12, border: '1px dashed var(--border)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>
+    <button type="button" onClick={() => setAddOpen(true)} style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 5, padding: 0, border: 'none', background: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: 13.5, fontWeight: 600, fontFamily: 'inherit' }}>
       <Plus size={15} /> Add more
     </button>
   )
@@ -622,29 +620,28 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                   <>
                     {(drafts.length > 0 || draftId) && (
                       <button type="button" onClick={backToDrafts} disabled={savingDraft}
-                        style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 12px', marginBottom: 2, borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 12.5, fontWeight: 600, fontFamily: 'inherit' }}>
+                        style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 4, padding: 0, border: 'none', background: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>
                         <ChevronDown size={14} style={{ transform: 'rotate(90deg)' }} /> {savingDraft ? 'Saving…' : 'All drafts'}
                       </button>
                     )}
-                    <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10 }}>
-                      <div>
-                        <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>{money(validTotal)}</div>
-                        <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 2 }}>
-                          {rows.length} item{rows.length !== 1 ? 's' : ''}{invalidCount > 0 && <span style={{ color: 'var(--expense)', fontWeight: 700 }}> · {invalidCount} to fix</span>}
-                        </div>
+                    {/* Quiet summary: one line of count · total, then card subtotals + fix-count as muted text */}
+                    <div style={{ display: 'grid', gap: 4 }}>
+                      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10 }}>
+                        <span style={{ fontSize: 15, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>
+                          {rows.length} item{rows.length !== 1 ? 's' : ''} · <b style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{money(validTotal)}</b>
+                        </span>
+                        {invalidCount > 0 && <span style={{ fontSize: 12.5, color: 'var(--text-muted)', flexShrink: 0 }}>{invalidCount} to fix</span>}
                       </div>
                       {cardTotals.length > 0 && (
-                        <div style={{ display: 'flex', gap: 5, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                          {cardTotals.map(([card, tot]) => (
-                            <span key={card} style={{ fontSize: 11.5, fontWeight: 700, padding: '3px 9px', borderRadius: 999, background: 'var(--kpi-bg)', border: '1px solid var(--border)' }}>{card} · {money(tot)}</span>
-                          ))}
+                        <div style={{ fontSize: 12.5, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
+                          {cardTotals.map(([card, tot], idx) => <span key={card}>{idx > 0 ? '   ·   ' : ''}{card} · {money(tot)}</span>)}
                         </div>
                       )}
                     </div>
 
                     {/* newest transaction date first; bad/undated rows float to the top so they get fixed.
                         We sort a copy of the indices so updateRow/delete/expand still address the true row. */}
-                    <div style={{ maxHeight: 162, overflowY: 'auto', paddingRight: 2, WebkitOverflowScrolling: 'touch' }}>
+                    <div style={{ maxHeight: 168, overflowY: 'auto', WebkitOverflowScrolling: 'touch', borderTop: '1px solid var(--border)' }}>
                       {rows.map((r, i) => i).sort((a, b) => {
                         const da = isDate(rows[a].date), db = isDate(rows[b].date)
                         if (da !== db) return da ? 1 : -1 // undated rows first
@@ -657,20 +654,20 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                         const rowOpen = expandedRow === i
                         const dLabel = isDate(r.date) ? new Date(r.date + 'T00:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric' }) : '—'
                         return (
-                          <div key={i} style={{ border: '1px solid var(--border)', borderLeft: `3px solid ${bad ? 'var(--expense)' : typeColor(r.type)}`, borderRadius: 11, background: 'var(--surface-1)', overflow: 'hidden', marginBottom: 6 }}>
-                            {/* collapsed one-line summary — tap to edit. Flat single flex row so it renders
-                                reliably on iOS PWA (no baseline align, one truncating middle column). */}
+                          <div key={i} style={{ borderBottom: '1px solid var(--border)', background: rowOpen ? 'var(--kpi-bg)' : 'transparent' }}>
+                            {/* Hairline list row — no border/rail/card. A muted dot marks rows to fix. */}
                             <button type="button" onClick={() => setExpandedRow(rowOpen ? null : i)} aria-expanded={rowOpen}
-                              style={{ width: '100%', minHeight: 44, display: 'flex', alignItems: 'center', gap: 9, padding: '9px 11px', background: 'transparent', border: 'none', cursor: 'pointer', font: 'inherit', color: 'inherit', textAlign: 'left' }}>
-                              <span style={{ flexShrink: 0, width: 48, fontSize: 11.5, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: isDate(r.date) ? 'var(--text-muted)' : 'var(--expense)' }}>{dLabel}</span>
-                              <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 600, fontSize: 14, color: r.category ? 'var(--text-primary)' : 'var(--expense)' }}>
-                                {r.category || 'Set category'}{r.description ? <span style={{ fontWeight: 400, color: 'var(--text-muted)', fontSize: 12.5 }}>{'  ·  ' + r.description}</span> : ''}
+                              style={{ width: '100%', minHeight: 46, display: 'flex', alignItems: 'center', gap: 11, padding: '11px 2px', background: 'transparent', border: 'none', cursor: 'pointer', font: 'inherit', color: 'inherit', textAlign: 'left' }}>
+                              <span aria-hidden style={{ flexShrink: 0, width: 6, height: 6, borderRadius: '50%', background: bad ? 'var(--text-muted)' : 'transparent' }} />
+                              <span style={{ flexShrink: 0, width: 44, fontSize: 12, fontVariantNumeric: 'tabular-nums', color: 'var(--text-muted)' }}>{dLabel}</span>
+                              <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500, fontSize: 14.5, color: r.category ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                                {r.category || 'Set category'}{r.description ? <span style={{ color: 'var(--text-muted)', fontSize: 12.5 }}>{'  ·  ' + r.description}</span> : ''}
                               </span>
-                              <span style={{ fontWeight: 700, fontSize: 14, fontVariantNumeric: 'tabular-nums', flexShrink: 0, color: badAmt ? 'var(--expense)' : 'var(--text-primary)' }}>{badAmt ? '$?' : money(parseFloat(r.amount))}</span>
-                              <ChevronDown size={16} style={{ flexShrink: 0, color: 'var(--text-muted)', transform: rowOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s ease' }} />
+                              <span style={{ fontWeight: 600, fontSize: 14.5, fontVariantNumeric: 'tabular-nums', flexShrink: 0, color: badAmt ? 'var(--text-muted)' : 'var(--text-primary)' }}>{badAmt ? '$?' : money(parseFloat(r.amount))}</span>
+                              <ChevronDown size={15} style={{ flexShrink: 0, color: 'var(--text-muted)', transform: rowOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s ease' }} />
                             </button>
                             {rowOpen && (
-                              <div style={{ padding: '10px 11px 11px', display: 'grid', gap: 8, borderTop: '1px solid var(--border)' }}>
+                              <div style={{ padding: '2px 2px 14px', display: 'grid', gap: 8 }}>
                                 <select value={r.category}
                                   onChange={(e) => { const c = cats.find((x) => x.name === e.target.value); updateRow(i, { category: e.target.value, type: c?.type ?? r.type }) }}
                                   style={{ ...cell, height: 40, borderColor: r.category ? 'var(--border)' : 'var(--expense)' }}>
@@ -709,8 +706,8 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                     {addOpen ? pasteInput : pasteMoreBtn}
 
                     {invalidCount > 0 && (
-                      <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                        <b style={{ color: 'var(--expense)' }}>{invalidCount} row{invalidCount !== 1 ? 's' : ''} need a category or amount</b> — kept in a draft, not lost, when you record the rest.
+                      <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                        <b style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>{invalidCount} row{invalidCount !== 1 ? 's' : ''} need a category or amount</b> — kept in a draft, not lost, when you record the rest.
                       </div>
                     )}
                     {importErr && <div style={{ fontSize: 13, color: 'var(--expense)', fontWeight: 600 }}>{importErr}</div>}
@@ -722,7 +719,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                         <div style={{ position: 'absolute', bottom: 'calc(100% + 8px)', left: 0, right: 0, zIndex: 2, background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: 14, boxShadow: '0 10px 30px rgba(0,0,0,0.18)', overflow: 'hidden' }}>
                           <button type="button" disabled={validCount === 0} onClick={() => { setLogMenu(false); logBatch() }}
                             style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 9, padding: '13px 15px', background: 'transparent', border: 'none', borderBottom: '1px solid var(--border)', cursor: validCount === 0 ? 'default' : 'pointer', font: 'inherit', fontSize: 14, fontWeight: 600, color: validCount === 0 ? 'var(--text-muted)' : 'var(--text-primary)', textAlign: 'left' }}>
-                            <span style={{ color: 'var(--income)' }}>✓</span> Log {validCount} transaction{validCount !== 1 ? 's' : ''}{invalidCount > 0 ? ` · ${invalidCount} kept` : ''}
+                            <span style={{ color: 'var(--text-muted)' }}>✓</span> Log {validCount} transaction{validCount !== 1 ? 's' : ''}{invalidCount > 0 ? ` · ${invalidCount} kept` : ''}
                           </button>
                           <button type="button" onClick={() => { setLogMenu(false); saveDraft() }}
                             style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 9, padding: '13px 15px', background: 'transparent', border: 'none', cursor: 'pointer', font: 'inherit', fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', textAlign: 'left' }}>
@@ -731,7 +728,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                         </div>
                       )}
                       <button type="button" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} disabled={saving || savingDraft} onClick={() => setLogMenu((v) => !v)}>
-                        {saving ? 'Recording…' : savingDraft ? 'Saving…' : <>{validCount > 0 ? `Record ${validCount}` : 'Save draft'} <ChevronDown size={16} style={{ transform: logMenu ? 'rotate(180deg)' : 'none', transition: 'transform .2s ease' }} /></>}
+                        {saving ? 'Logging…' : savingDraft ? 'Saving…' : <>{validCount > 0 ? `Log ${validCount}` : 'Save draft'} <ChevronDown size={16} style={{ transform: logMenu ? 'rotate(180deg)' : 'none', transition: 'transform .2s ease' }} /></>}
                       </button>
                     </div>
                   </>
