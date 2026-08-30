@@ -627,19 +627,19 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                       )}
                     </div>
 
-                    <div style={{ display: 'grid', gap: 6, alignContent: 'start', maxHeight: '42vh', overflowY: 'auto', paddingRight: 2 }}>
+                    <div style={{ maxHeight: '46vh', overflowY: 'auto', paddingRight: 2 }}>
                       {rows.map((r, i) => {
                         const badAmt = isNaN(parseFloat(r.amount)) || parseFloat(r.amount) <= 0
                         const bad = badAmt || !r.category || !isDate(r.date)
                         const rowOpen = expandedRow === i
                         return (
-                          <div key={i} style={{ border: '1px solid var(--border)', borderLeft: `3px solid ${bad ? 'var(--expense)' : typeColor(r.type)}`, borderRadius: 11, background: 'var(--surface-1)', overflow: 'hidden' }}>
+                          <div key={i} style={{ border: '1px solid var(--border)', borderLeft: `3px solid ${bad ? 'var(--expense)' : typeColor(r.type)}`, borderRadius: 11, background: 'var(--surface-1)', overflow: 'hidden', marginBottom: 6 }}>
                             {/* collapsed one-line summary — tap to edit */}
                             <button type="button" onClick={() => setExpandedRow(rowOpen ? null : i)} aria-expanded={rowOpen}
                               style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 11px', background: 'transparent', border: 'none', cursor: 'pointer', font: 'inherit', color: 'inherit', textAlign: 'left' }}>
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontWeight: 600, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: r.category ? 'var(--text-primary)' : 'var(--expense)' }}>{r.category || 'Set category'}</div>
-                                {r.description && <div style={{ fontSize: 12, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 1 }}>{r.description}</div>}
+                              <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'baseline', gap: 7, overflow: 'hidden' }}>
+                                <span style={{ fontWeight: 600, fontSize: 14, whiteSpace: 'nowrap', flexShrink: 0, color: r.category ? 'var(--text-primary)' : 'var(--expense)' }}>{r.category || 'Set category'}</span>
+                                {r.description && <span style={{ fontSize: 12.5, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.description}</span>}
                               </div>
                               <span style={{ fontWeight: 700, fontSize: 14, fontVariantNumeric: 'tabular-nums', flexShrink: 0, color: badAmt ? 'var(--expense)' : 'var(--text-primary)' }}>{badAmt ? '$?' : money(parseFloat(r.amount))}</span>
                               <ChevronDown size={16} style={{ flexShrink: 0, color: 'var(--text-muted)', transform: rowOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s ease' }} />
