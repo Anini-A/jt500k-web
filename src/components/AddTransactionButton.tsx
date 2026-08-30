@@ -452,7 +452,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
 
       {open && createPortal(
         <div className="modal-backdrop" onClick={close}>
-          <div className="modal-card modal-tall glass" style={{ width: 'min(820px, 100%)', background: 'var(--surface-1)' }} onClick={(e) => e.stopPropagation()}>
+          <div className="modal-card modal-tall glass" style={{ width: 'min(820px, 100%)' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ marginBottom: 14 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                 <h2 style={{ margin: 0, fontSize: 18, display: 'flex', alignItems: 'center', gap: 8 }}><Plus size={18} /> Add Transaction</h2>
@@ -623,7 +623,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                     <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
                       <span style={{ minWidth: 0, fontSize: 15, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>
                         {rows.length} item{rows.length !== 1 ? 's' : ''} · <b style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{money(validTotal)}</b>
-                        {cardTotals.map(([card, tot]) => <span key={card} style={{ color: 'var(--text-muted)', fontSize: 13 }}>{`  ·  ${card} · `}{money(tot)}</span>)}
+                        {cardTotals.map(([card]) => <span key={card} style={{ color: 'var(--text-muted)', fontSize: 13 }}>{`  ·  ${card}`}</span>)}
                         {invalidCount > 0 && <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{`  ·  ${invalidCount} to fix`}</span>}
                       </span>
                       {!addOpen && (
