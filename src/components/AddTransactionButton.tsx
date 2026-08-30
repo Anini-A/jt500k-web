@@ -633,7 +633,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
 
                     {/* newest transaction date first; bad/undated rows float to the top so they get fixed.
                         We sort a copy of the indices so updateRow/delete/expand still address the true row. */}
-                    <div style={{ maxHeight: 168, overflowY: 'auto', WebkitOverflowScrolling: 'touch', borderTop: '1px solid var(--border)' }}>
+                    <div style={{ maxHeight: 282, overflowY: 'auto', WebkitOverflowScrolling: 'touch', borderTop: '1px solid var(--border)' }}>
                       {rows.map((r, i) => i).sort((a, b) => {
                         const da = isDate(rows[a].date), db = isDate(rows[b].date)
                         if (da !== db) return da ? 1 : -1 // undated rows first
