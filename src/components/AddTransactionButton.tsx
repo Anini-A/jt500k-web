@@ -376,7 +376,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
           </button>
         </div>
         {manageCardsOpen && (
-          <div style={{ display: 'grid', gap: 6, padding: 12, borderRadius: 12, border: '1px solid var(--border)', background: 'var(--kpi-bg)', marginTop: 8 }}>
+          <div style={{ display: 'grid', gap: 6, padding: 12, borderRadius: 12, border: '1px solid var(--border)', background: 'var(--surface-1)', marginTop: 8 }}>
             <span className="stat-label">Manage cards</span>
             {cards.map((c) => (
               <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '7px 4px', borderBottom: '1px solid var(--border)' }}>
@@ -396,7 +396,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
         )}
       </div>
       <div>
-        <div style={{ border: '1.5px dashed var(--border-strong, var(--border))', borderRadius: 16, background: 'var(--kpi-bg)', padding: '14px 14px 12px' }}>
+        <div style={{ border: '1.5px dashed var(--border-strong, var(--border))', borderRadius: 16, background: 'var(--surface-1)', padding: '14px 14px 12px' }}>
           <textarea value={raw} onChange={(e) => setRaw(e.target.value)} onPaste={onPasteInput} rows={5}
             placeholder={'Paste text or an image from your bank or card — the AI cleans it up.'}
             style={{ width: '100%', border: 'none', background: 'transparent', resize: 'vertical', minHeight: 92, fontFamily: 'inherit', fontSize: 14, lineHeight: 1.5, color: 'var(--text-primary)', outline: 'none' }} />
@@ -479,7 +479,6 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
 
             {/* ---------------- QUICK (amount-first single capture) ---------------- */}
             {mode === 'single' && (() => {
-              const typeColor = form.type === 'income' ? 'var(--income)' : form.type === 'savings' ? 'var(--savings)' : 'var(--expense)'
               const TYPES = [{ k: 'expense', label: 'Expense' }, { k: 'income', label: 'Income' }, { k: 'savings', label: 'Savings' }] as const
               const dateLabel = form.date === today() ? 'Today' : new Date(form.date + 'T12:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })
               if (saved) {
@@ -504,10 +503,10 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                   {/* amount hero */}
                   <div style={{ textAlign: 'center', padding: '6px 0 2px' }}>
                     <div style={{ display: 'inline-flex', alignItems: 'baseline', gap: 6, maxWidth: '100%' }}>
-                      <span style={{ fontSize: 30, fontWeight: 700, color: form.amount ? typeColor : 'var(--text-muted)' }}>$</span>
+                      <span style={{ fontSize: 30, fontWeight: 700, color: form.amount ? 'var(--text-primary)' : 'var(--text-muted)' }}>$</span>
                       <input autoFocus inputMode="decimal" value={form.amount} placeholder="0.00"
                         onChange={(e) => setForm({ ...form, amount: e.target.value.replace(/[^0-9.]/g, '') })}
-                        style={{ fontSize: 'clamp(40px, 12vw, 54px)', fontWeight: 800, letterSpacing: '-0.02em', border: 'none', background: 'transparent', textAlign: 'left', outline: 'none', color: typeColor, fontFamily: 'inherit', width: `${Math.max(6, form.amount.length + 2)}ch`, maxWidth: '100%' }} />
+                        style={{ fontSize: 'clamp(40px, 12vw, 54px)', fontWeight: 800, letterSpacing: '-0.02em', border: 'none', background: 'transparent', textAlign: 'left', outline: 'none', color: 'var(--text-primary)', fontFamily: 'inherit', width: `${Math.max(6, form.amount.length + 2)}ch`, maxWidth: '100%' }} />
                     </div>
                   </div>
 
@@ -573,7 +572,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                 {drafts.length > 0 && rows.length === 0 && (
                       <div>
                         <button type="button" onClick={() => setDraftsOpen((v) => !v)} aria-expanded={draftsOpen}
-                          style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 11, padding: '12px 14px', borderRadius: 14, border: '1px solid var(--border)', background: 'var(--kpi-bg)', cursor: 'pointer', font: 'inherit', color: 'inherit', textAlign: 'left' }}>
+                          style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 11, padding: '12px 14px', borderRadius: 14, border: '1px solid var(--border)', background: 'var(--surface-1)', cursor: 'pointer', font: 'inherit', color: 'inherit', textAlign: 'left' }}>
                           <span style={{ width: 34, height: 34, borderRadius: 10, display: 'grid', placeItems: 'center', background: 'var(--accent-soft)', color: 'var(--accent)', flexShrink: 0 }}><ClipboardPaste size={16} /></span>
                           <span style={{ minWidth: 0 }}>
                             <span style={{ display: 'block', fontWeight: 600, fontSize: 14 }}>Continue a draft</span>
