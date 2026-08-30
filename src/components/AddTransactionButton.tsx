@@ -322,6 +322,12 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
     setRows((dr.rows || []).map((r) => ({ ...r, amount: String(r.amount) })))
     setDraftId(dr.id); setAddOpen(false); setExpandedRow(null); setDraftsOpen(false); setImportErr('')
   }
+  // Return to the drafts list without closing the modal — persist current work first so
+  // switching to another card's draft never loses edits.
+  const backToDrafts = async () => {
+    if (rows.length) await saveDraft()
+    setRows([]); setDraftId(null); setExpandedRow(null); setAddOpen(true); setRaw(''); setImages([]); setImportErr(''); setDraftsOpen(true)
+  }
   const deleteDraft = (id: string) => setConfirmDel({ kind: 'draft', id, name: 'this draft' })
 
   const catsForType = cats.filter((c) => c.type === form.type)
@@ -347,7 +353,10 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
       {rows.length > 0 && (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span className="stat-label">Add more</span>
-          <button type="button" onClick={() => setAddOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>Done ✕</button>
+          <button type="button" onClick={() => setAddOpen(false)}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 12.5, fontWeight: 600, fontFamily: 'inherit' }}>
+            Done <X size={13} />
+          </button>
         </div>
       )}
       <div>
@@ -390,18 +399,21 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
         )}
       </div>
       <div>
-        <span className="stat-label">Paste or screenshot your statement</span>
+        <span className="stat-label">Paste your statement</span>
         <div style={{ border: '1.5px dashed var(--border-strong, var(--border))', borderRadius: 16, background: 'var(--kpi-bg)', padding: '14px 14px 12px', marginTop: 8 }}>
           <textarea value={raw} onChange={(e) => setRaw(e.target.value)} onPaste={onPasteInput} rows={5}
-            placeholder={'Paste text from your bank or card here — pending, posted, totals, times… the AI cleans it up.'}
+            placeholder={'Paste text or an image from your bank or card — the AI cleans it up.'}
             style={{ width: '100%', border: 'none', background: 'transparent', resize: 'vertical', minHeight: 92, fontFamily: 'inherit', fontSize: 14, lineHeight: 1.5, color: 'var(--text-primary)', outline: 'none' }} />
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 8, paddingTop: 12, borderTop: '1px dashed var(--border)', color: 'var(--text-muted)', fontSize: 12.5, flexWrap: 'wrap' }}>
-            <span>or</span>
-            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 999, cursor: 'pointer', fontSize: 12.5, fontWeight: 600, border: '1px solid var(--border)', background: 'var(--surface-1)', color: 'var(--text-secondary)' }}>
-              <ImagePlus size={15} /> Add screenshot
+          {/* Actions live inside the intake card, left-aligned: Format with AI + add-image icon */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, paddingTop: 12, borderTop: '1px dashed var(--border)' }}>
+            <button type="button" disabled={(!raw.trim() && images.length === 0) || parsing} onClick={formatWithAI}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 999, cursor: (!raw.trim() && images.length === 0) || parsing ? 'default' : 'pointer', fontSize: 13, fontWeight: 700, fontFamily: 'inherit', border: 'none', background: (!raw.trim() && images.length === 0) ? 'var(--surface-1)' : 'var(--accent)', color: (!raw.trim() && images.length === 0) ? 'var(--text-muted)' : '#fff' }}>
+              {parsing ? 'Reading…' : `✨ Format with AI${images.length ? ` · ${images.length}` : ''}`}
+            </button>
+            <label aria-label="Add screenshot" title="Add a screenshot" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 999, cursor: 'pointer', border: '1px solid var(--border)', background: 'var(--surface-1)', color: 'var(--text-secondary)' }}>
+              <ImagePlus size={16} />
               <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={(e) => { if (e.target.files) addImageFiles(e.target.files); e.target.value = '' }} />
             </label>
-            <span>· you can paste an image too</span>
           </div>
         </div>
         {images.length > 0 && (
@@ -417,14 +429,11 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
         )}
       </div>
       {importErr && <div style={{ fontSize: 13, color: 'var(--expense)', fontWeight: 600 }}>{importErr}</div>}
-      <button className="btn btn-primary" style={{ justifyContent: 'center' }} disabled={(!raw.trim() && images.length === 0) || parsing} onClick={formatWithAI}>
-        {parsing ? 'Reading…' : `✨ Format with AI${images.length ? ` · ${images.length} image${images.length !== 1 ? 's' : ''}` : ''}`}
-      </button>
     </div>
   )
   const pasteMoreBtn = (
     <button type="button" onClick={() => setAddOpen(true)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', padding: '11px 12px', borderRadius: 12, border: '1px dashed var(--border)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>
-      <Plus size={15} /> Paste or add a screenshot
+      <Plus size={15} /> Add more
     </button>
   )
 
@@ -611,6 +620,12 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                 {/* Review — compact rows that expand to edit */}
                 {rows.length > 0 && (
                   <>
+                    {(drafts.length > 0 || draftId) && (
+                      <button type="button" onClick={backToDrafts} disabled={savingDraft}
+                        style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 12px', marginBottom: 2, borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 12.5, fontWeight: 600, fontFamily: 'inherit' }}>
+                        <ChevronDown size={14} style={{ transform: 'rotate(90deg)' }} /> {savingDraft ? 'Saving…' : 'All drafts'}
+                      </button>
+                    )}
                     <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10 }}>
                       <div>
                         <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>{money(validTotal)}</div>
@@ -707,7 +722,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                         <div style={{ position: 'absolute', bottom: 'calc(100% + 8px)', left: 0, right: 0, zIndex: 2, background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: 14, boxShadow: '0 10px 30px rgba(0,0,0,0.18)', overflow: 'hidden' }}>
                           <button type="button" disabled={validCount === 0} onClick={() => { setLogMenu(false); logBatch() }}
                             style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 9, padding: '13px 15px', background: 'transparent', border: 'none', borderBottom: '1px solid var(--border)', cursor: validCount === 0 ? 'default' : 'pointer', font: 'inherit', fontSize: 14, fontWeight: 600, color: validCount === 0 ? 'var(--text-muted)' : 'var(--text-primary)', textAlign: 'left' }}>
-                            <span style={{ color: 'var(--income)' }}>✓</span> Record {validCount} transaction{validCount !== 1 ? 's' : ''}{invalidCount > 0 ? ` · ${invalidCount} kept` : ''}
+                            <span style={{ color: 'var(--income)' }}>✓</span> Log {validCount} transaction{validCount !== 1 ? 's' : ''}{invalidCount > 0 ? ` · ${invalidCount} kept` : ''}
                           </button>
                           <button type="button" onClick={() => { setLogMenu(false); saveDraft() }}
                             style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 9, padding: '13px 15px', background: 'transparent', border: 'none', cursor: 'pointer', font: 'inherit', fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', textAlign: 'left' }}>
