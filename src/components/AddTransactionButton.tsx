@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { Plus, Trash2, ClipboardPaste, PencilLine, Repeat, Settings2, ImagePlus, RotateCcw, X } from 'lucide-react'
+import { Plus, Trash2, ClipboardPaste, PencilLine, Repeat, Settings2, ImagePlus, RotateCcw, X, ChevronDown } from 'lucide-react'
 import CategorySelect from './CategorySelect'
 import IconPill from './IconPill'
 import { useConfirm } from './Feedback'
@@ -87,7 +87,8 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   const [selectedCard, setSelectedCard] = useState('')
   const [drafts, setDrafts] = useState<Draft[]>([])
   const [draftId, setDraftId] = useState<string | null>(null) // the draft currently being edited
-  const [pasteOpen, setPasteOpen] = useState(true)            // is the paste input showing
+  const [step, setStep] = useState<'add' | 'review'>('add')    // Import is a two-step flow: Add → Review
+  const [draftsOpen, setDraftsOpen] = useState(false)          // "Continue a draft" collapsible
   const [manageCardsOpen, setManageCardsOpen] = useState(false)
   const [newCard, setNewCard] = useState('')      // inline add-card input
   const [flash, setFlash] = useState('')          // inline success message (replaces alert)
@@ -138,7 +139,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
 
   const close = () => {
     setOpen(false); setMode('single'); setRaw(''); setRows([]); setImages([])
-    setDraftId(null); setPasteOpen(true); setImportErr(''); setSaved(null); setSingleErr('')
+    setDraftId(null); setStep('add'); setDraftsOpen(false); setImportErr(''); setSaved(null); setSingleErr('')
     setManageRec(false); setRecEdit(null); setRecErr('')
     setForm({ date: today(), type: 'expense', category: '', amount: '', description: '' })
   }
@@ -146,7 +147,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   // Reset the whole card WITHOUT closing it — clears every mode's working state, keeps the tab you're on.
   const resetAll = () => {
     setForm({ date: today(), type: 'expense', category: '', amount: '', description: '' })
-    setRaw(''); setRows([]); setImages([]); setDraftId(null); setPasteOpen(true); setImportErr(''); setManageCardsOpen(false)
+    setRaw(''); setRows([]); setImages([]); setDraftId(null); setStep('add'); setImportErr(''); setManageCardsOpen(false)
     setPicked(new Set()); setRecEdit(null); setRecDate(today())
     setRecForm({ name: '', type: 'expense', category: '', amount: '', description: '' })
   }
@@ -214,6 +215,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
 
   const logBatch = async () => {
     const valid = (rows ?? []).filter(rowValid)
+    const invalid = (rows ?? []).filter((r) => !rowValid(r))
     if (!valid.length) return
     setSaving(true)
     try {
@@ -224,9 +226,21 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
         }))),
       })
       if (!res.ok) { setImportErr((await res.json()).error || 'Could not save.'); return }
-      // logged successfully → clear the draft it came from, then close
-      if (draftId) await fetch(`/api/drafts?id=${draftId}`, { method: 'DELETE' }).catch(() => {})
-      close(); window.dispatchEvent(new CustomEvent('transaction-added'))
+      window.dispatchEvent(new CustomEvent('transaction-added'))
+      if (invalid.length) {
+        // keep the unfinished rows — persist them to the draft (never silently discard on "skip")
+        try {
+          if (draftId) await fetch('/api/drafts', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: draftId, rows: invalid }) })
+          else { const d = await fetch('/api/drafts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rows: invalid }) }).then((r) => r.json()); setDraftId(d.id) }
+          await loadDrafts(); window.dispatchEvent(new CustomEvent('drafts-changed'))
+        } catch { /* worst case the rows stay on screen */ }
+        setRows(invalid); setImportErr('')
+        showFlash(`Logged ${valid.length} · ${invalid.length} kept to fix`)
+      } else {
+        // everything logged → clear the draft it came from, then close
+        if (draftId) await fetch(`/api/drafts?id=${draftId}`, { method: 'DELETE' }).catch(() => {})
+        close()
+      }
     } finally { setSaving(false) }
   }
 
@@ -268,7 +282,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
       if (d.rows.length === 0) { setImportErr('No transactions found. Check the screenshot is clear, or edit manually.'); return }
       const tagged: Row[] = d.rows.map((r: any) => ({ ...r, amount: String(r.amount), card: selectedCard || undefined }))
       setRows((prev) => [...prev, ...tagged])  // append so you can paste multiple cards into one batch
-      setRaw(''); setImages([]); setPasteOpen(false)
+      setRaw(''); setImages([]); setStep('review')
     } catch (e: any) { setImportErr('Parse failed: ' + (e?.message || e)) } finally { setParsing(false) }
   }
 
@@ -302,28 +316,9 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
       setImportErr(''); showFlash('Draft saved')
     } finally { setSavingDraft(false) }
   }
-  // append the current rows onto an existing draft, then clear the working area
-  const appendToDraft = async (dr: Draft) => {
-    if (!rows.length) return
-    setSavingDraft(true)
-    try {
-      const merged = [...(dr.rows || []).map((r) => ({ ...r, amount: String(r.amount) })), ...rows]
-      const res = await fetch('/api/drafts', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: dr.id, rows: merged }) })
-      if (!res.ok) { setImportErr('Could not save to that draft.'); return }
-      await loadDrafts(); window.dispatchEvent(new CustomEvent("drafts-changed"))
-      setRows([]); setDraftId(null); setPasteOpen(true); setImportErr('')
-      showFlash('Added to draft')
-    } finally { setSavingDraft(false) }
-  }
-  // start a fresh, independent batch (e.g. save card 1 as a draft, then log card 2 on its own)
-  const doNewBatch = () => { setRows([]); setDraftId(null); setRaw(''); setImages([]); setImportErr(''); setPasteOpen(true) }
-  const newBatch = () => {
-    if (rows.length && !draftId) { confirm({ title: 'Start a fresh batch?', message: 'Rows not saved as a draft will be lost.', confirmLabel: 'Start fresh', run: doNewBatch }); return }
-    doNewBatch()
-  }
   const openDraft = (dr: Draft) => {
     setRows((dr.rows || []).map((r) => ({ ...r, amount: String(r.amount) })))
-    setDraftId(dr.id); setPasteOpen(false); setImportErr('')
+    setDraftId(dr.id); setStep('review'); setDraftsOpen(false); setImportErr('')
   }
   const deleteDraft = (id: string) => setConfirmDel({ kind: 'draft', id, name: 'this draft' })
 
@@ -337,7 +332,11 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
     for (const r of rows) { const amt = parseFloat(r.amount); if (!isNaN(amt)) m.set(r.card || 'Unassigned', (m.get(r.card || 'Unassigned') || 0) + amt) }
     return [...m.entries()]
   })()
-  const grandTotal = rows.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0)
+  // headline = the VALID total that will actually log (not the raw sum of every row)
+  const validTotal = rows.filter(rowValid).reduce((s, r) => s + (parseFloat(r.amount) || 0), 0)
+  const draftItemCount = drafts.reduce((s, d) => s + (d.rows?.length || 0), 0)
+  // color the review row's left edge by transaction type
+  const typeColor = (t: string) => (t === 'income' ? 'var(--income)' : t === 'savings' ? 'var(--savings)' : 'var(--expense)')
 
   // Recurring: group into the same buckets as the Budget tab
   const recGroup = (r: any) => r.type === 'income' ? 'income' : r.type === 'savings' ? 'saving' : r.category === 'Debt Repayment' ? 'debt' : 'spending'
@@ -477,145 +476,160 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
               )
             })()}
 
-            {/* ---------------- IMPORT (AI paste + per-card totals + drafts) ---------------- */}
+            {/* ---------------- IMPORT — two-step flow: Add → Review ---------------- */}
             {mode === 'batch' && (
-              <div style={{ display: 'grid', gap: 12 }}>
-                {/* Saved drafts — always visible so saves show up immediately */}
-                {drafts.length > 0 && (
-                  <div style={{ display: 'grid', gap: 6 }}>
-                    <span className="stat-label">Saved drafts</span>
-                    {drafts.map((dr) => {
-                      const isCurrent = draftId === dr.id
-                      const dateStr = new Date(dr.updated_at).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })
-                      // per-card breakdown: one row per card (count · amount | card name | date)
-                      const byCard = new Map<string, { count: number; total: number }>()
-                      for (const r of dr.rows || []) {
-                        const a = parseFloat(String(r.amount)); if (isNaN(a)) continue
-                        const key = r.card || 'No card'
-                        const cur = byCard.get(key) || { count: 0, total: 0 }
-                        cur.count += 1; cur.total += a; byCard.set(key, cur)
-                      }
-                      const cardRows = [...byCard.entries()]
-                      return (
-                        <div key={dr.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <button onClick={() => openDraft(dr)} style={{ flex: 1, minWidth: 0, display: 'grid', gap: 6, textAlign: 'left', padding: '11px 14px', borderRadius: 12, border: `1px solid ${isCurrent ? 'var(--accent)' : 'var(--border)'}`, background: isCurrent ? 'var(--accent-soft)' : 'var(--kpi-bg)', cursor: 'pointer', fontFamily: 'inherit', color: 'var(--text-primary)' }}>
-                            {isCurrent && <span className="stat-label" style={{ color: 'var(--accent)' }}>Editing</span>}
-                            {cardRows.map(([card, v]) => (
-                              <div key={card} style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: 10, alignItems: 'baseline' }}>
-                                <span style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{v.count} item{v.count !== 1 ? 's' : ''} · {money(v.total)}</span>
-                                <span style={{ textAlign: 'center', fontWeight: 600, color: card === 'No card' ? 'var(--text-muted)' : 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{card}</span>
-                                <span className="stat-label" style={{ flexShrink: 0 }}>{dateStr}</span>
-                              </div>
-                            ))}
-                          </button>
-                          {rows.length > 0 && !isCurrent && (
-                            <button onClick={() => appendToDraft(dr)} disabled={savingDraft} aria-label="Add current rows to this draft" title="Add current rows here"
-                              style={{ flexShrink: 0, height: 30, padding: '0 10px', borderRadius: 8, border: '1px solid var(--accent)', background: 'transparent', color: 'var(--accent)', cursor: 'pointer', fontSize: 12, fontWeight: 600, fontFamily: 'inherit' }}>+ Add here</button>
-                          )}
-                          <button onClick={() => deleteDraft(dr.id)} aria-label="Delete draft" title="Delete draft" style={{ flexShrink: 0, width: 30, height: 30, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}><Trash2 size={14} /></button>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
+              <div style={{ display: 'grid', gap: 14 }}>
+                {/* Step header */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {([['add', '1', 'Add'], ['review', '2', 'Review']] as const).map(([k, n, label], idx) => {
+                    const on = step === k
+                    const done = k === 'add' && step === 'review'
+                    return (
+                      <div key={k} style={{ display: 'contents' }}>
+                        {idx === 1 && <div style={{ flex: 1, height: 2, borderRadius: 2, background: step === 'review' ? 'color-mix(in srgb, var(--income) 45%, transparent)' : 'var(--border)' }} />}
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12.5, fontWeight: 600, color: on ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                          <span style={{ width: 20, height: 20, borderRadius: 999, display: 'grid', placeItems: 'center', fontSize: 11, fontWeight: 700,
+                            background: done ? 'color-mix(in srgb, var(--income) 18%, transparent)' : on ? 'var(--accent)' : 'var(--kpi-bg)',
+                            color: done ? 'var(--income)' : on ? '#fff' : 'var(--text-muted)',
+                            border: `1px solid ${on || done ? 'transparent' : 'var(--border)'}` }}>{done ? '✓' : n}</span>
+                          {label}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
 
-                {/* Paste input */}
-                {pasteOpen ? (
-                  <div style={{ display: 'grid', gap: 10 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                      <span style={{ fontWeight: 700, fontSize: 14 }}>Paste or screenshot your statement</span>
-                      {rows.length > 0 && <button type="button" onClick={() => { setPasteOpen(false); setRaw(''); setImages([]); setImportErr('') }} aria-label="Done adding" title="Done" style={{ display: 'inline-flex', padding: 4, borderRadius: 8, border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 18, lineHeight: 1 }}>✕</button>}
-                    </div>
-                    <div className="chip-scroll" style={{ gap: 8 }}>
-                      <button type="button" onClick={() => setManageCardsOpen((v) => !v)} title="Add or remove cards"
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: 600, border: `1px solid ${manageCardsOpen ? 'var(--accent)' : 'var(--border)'}`, background: manageCardsOpen ? 'var(--accent-soft)' : 'transparent', color: 'var(--accent)', fontFamily: 'inherit' }}>
-                        <Settings2 size={14} /> Cards
-                      </button>
-                      {cards.length > 0 && <span style={{ width: 1, alignSelf: 'stretch', minHeight: 22, background: 'var(--border)' }} />}
-                      {cards.map((c) => {
-                        const on = selectedCard === c.name
-                        return (
-                          <span key={c.id} onClick={() => setSelectedCard(c.name)} title={`Tag this paste as ${c.name}`}
-                            style={{ display: 'inline-flex', alignItems: 'center', padding: '7px 14px', borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: 600, border: `1px solid ${on ? 'var(--accent)' : 'var(--border)'}`, background: on ? 'var(--accent)' : 'var(--kpi-bg)', color: on ? '#fff' : 'var(--text-secondary)' }}>
-                            {c.name}
+                {step === 'add' ? (
+                  <>
+                    {/* Continue a draft — collapsed into one tidy entry */}
+                    {drafts.length > 0 && (
+                      <div>
+                        <button type="button" onClick={() => setDraftsOpen((v) => !v)} aria-expanded={draftsOpen}
+                          style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 11, padding: '12px 14px', borderRadius: 14, border: '1px solid var(--border)', background: 'var(--kpi-bg)', cursor: 'pointer', font: 'inherit', color: 'inherit', textAlign: 'left' }}>
+                          <span style={{ width: 34, height: 34, borderRadius: 10, display: 'grid', placeItems: 'center', background: 'var(--accent-soft)', color: 'var(--accent)', flexShrink: 0 }}><ClipboardPaste size={16} /></span>
+                          <span style={{ minWidth: 0 }}>
+                            <span style={{ display: 'block', fontWeight: 600, fontSize: 14 }}>Continue a draft</span>
+                            <span style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginTop: 1 }}>{drafts.length} saved · {draftItemCount} item{draftItemCount !== 1 ? 's' : ''}</span>
                           </span>
-                        )
-                      })}
-                      {cards.length === 0 && <span className="stat-label">No cards yet — tap “Cards” to add one.</span>}
+                          <span style={{ marginLeft: 'auto', color: 'var(--text-muted)', transform: draftsOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s ease', display: 'inline-flex' }}><ChevronDown size={16} /></span>
+                        </button>
+                        {draftsOpen && (
+                          <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
+                            {drafts.map((dr) => {
+                              const items = dr.rows?.length || 0
+                              const tot = (dr.rows || []).reduce((s, r) => { const a = parseFloat(String(r.amount)); return s + (isNaN(a) ? 0 : a) }, 0)
+                              const cardsIn = [...new Set((dr.rows || []).map((r) => r.card).filter(Boolean))] as string[]
+                              const cardLabel = cardsIn.length === 0 ? 'No card' : cardsIn.length === 1 ? cardsIn[0] : `${cardsIn.length} cards`
+                              const dateStr = new Date(dr.updated_at).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })
+                              return (
+                                <div key={dr.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                  <button onClick={() => openDraft(dr)} style={{ flex: 1, minWidth: 0, display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: 10, alignItems: 'baseline', textAlign: 'left', padding: '11px 13px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--surface-1)', cursor: 'pointer', fontFamily: 'inherit', color: 'var(--text-primary)', fontSize: 13 }}>
+                                    <span style={{ fontWeight: 700, whiteSpace: 'nowrap' }}>{items} item{items !== 1 ? 's' : ''} · {money(tot)}</span>
+                                    <span style={{ textAlign: 'center', fontWeight: 600, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cardLabel}</span>
+                                    <span className="stat-label" style={{ flexShrink: 0 }}>{dateStr}</span>
+                                  </button>
+                                  <button onClick={() => deleteDraft(dr.id)} aria-label="Delete draft" title="Delete draft" style={{ flexShrink: 0, width: 32, height: 32, borderRadius: 9, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}><Trash2 size={14} /></button>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Card tag */}
+                    <div>
+                      <span className="stat-label">Tag this batch to a card</span>
+                      <div className="chip-scroll" style={{ gap: 7, marginTop: 8 }}>
+                        {cards.map((c) => {
+                          const on = selectedCard === c.name
+                          return (
+                            <button key={c.id} type="button" onClick={() => setSelectedCard(c.name)} title={`Tag this batch as ${c.name}`}
+                              style={{ display: 'inline-flex', alignItems: 'center', padding: '7px 14px', borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', border: `1px solid ${on ? 'var(--accent)' : 'var(--border)'}`, background: on ? 'var(--accent)' : 'var(--kpi-bg)', color: on ? '#fff' : 'var(--text-secondary)' }}>
+                              {c.name}
+                            </button>
+                          )
+                        })}
+                        <button type="button" onClick={() => setSelectedCard('')} title="Don't tag a card"
+                          style={{ display: 'inline-flex', alignItems: 'center', padding: '7px 14px', borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', border: `1px solid ${selectedCard === '' ? 'var(--accent)' : 'var(--border)'}`, background: selectedCard === '' ? 'var(--accent)' : 'var(--kpi-bg)', color: selectedCard === '' ? '#fff' : 'var(--text-secondary)' }}>No card</button>
+                        <button type="button" onClick={() => setManageCardsOpen((v) => !v)} title="Add or remove cards"
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', border: `1px solid ${manageCardsOpen ? 'var(--accent)' : 'var(--border)'}`, background: manageCardsOpen ? 'var(--accent-soft)' : 'transparent', color: 'var(--accent)' }}>
+                          <Settings2 size={14} /> Manage
+                        </button>
+                      </div>
+                      {manageCardsOpen && (
+                        <div style={{ display: 'grid', gap: 6, padding: 12, borderRadius: 12, border: '1px solid var(--border)', background: 'var(--kpi-bg)', marginTop: 8 }}>
+                          <span className="stat-label">Manage cards</span>
+                          {cards.map((c) => (
+                            <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '7px 4px', borderBottom: '1px solid var(--border)' }}>
+                              <span style={{ fontWeight: 600 }}>{c.name}</span>
+                              <button type="button" onClick={() => setConfirmDel({ kind: 'card', id: c.id, name: c.name })} aria-label={`Delete ${c.name}`} title="Delete card"
+                                style={{ display: 'inline-flex', padding: 6, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--expense)', cursor: 'pointer' }}><Trash2 size={15} /></button>
+                            </div>
+                          ))}
+                          <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+                            <input value={newCard} onChange={(e) => setNewCard(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCardInline() } }}
+                              placeholder="New card name (e.g. WS Visa)" style={{ ...cell, flex: 1, height: 38 }} />
+                            <button type="button" onClick={addCardInline} disabled={!newCard.trim()} style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 5, padding: '0 14px', height: 38, borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: 600, border: '1px solid var(--accent)', background: 'var(--accent)', color: '#fff', fontFamily: 'inherit' }}>
+                              <Plus size={14} /> Add
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
-                    {/* Manage cards panel */}
-                    {manageCardsOpen && (
-                      <div style={{ display: 'grid', gap: 6, padding: 12, borderRadius: 12, border: '1px solid var(--border)', background: 'var(--kpi-bg)' }}>
-                        <span className="stat-label">Manage cards</span>
-                        {cards.map((c) => (
-                          <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '7px 4px', borderBottom: '1px solid var(--border)' }}>
-                            <span style={{ fontWeight: 600 }}>{c.name}</span>
-                            <button type="button" onClick={() => setConfirmDel({ kind: 'card', id: c.id, name: c.name })} aria-label={`Delete ${c.name}`} title="Delete card"
-                              style={{ display: 'inline-flex', padding: 6, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--expense)', cursor: 'pointer' }}><Trash2 size={15} /></button>
-                          </div>
-                        ))}
-                        <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
-                          <input value={newCard} onChange={(e) => setNewCard(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCardInline() } }}
-                            placeholder="New card name (e.g. WS Visa)" style={{ ...cell, flex: 1, height: 38 }} />
-                          <button type="button" onClick={addCardInline} disabled={!newCard.trim()} style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 5, padding: '0 14px', height: 38, borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: 600, border: '1px solid var(--accent)', background: 'var(--accent)', color: '#fff', fontFamily: 'inherit' }}>
-                            <Plus size={14} /> Add
-                          </button>
+                    {/* Paste / screenshot dropzone */}
+                    <div>
+                      <span className="stat-label">Paste or screenshot your statement</span>
+                      <div style={{ border: '1.5px dashed var(--border-strong, var(--border))', borderRadius: 16, background: 'var(--kpi-bg)', padding: '14px 14px 12px', marginTop: 8 }}>
+                        <textarea value={raw} onChange={(e) => setRaw(e.target.value)} onPaste={onPasteInput} rows={5}
+                          placeholder={'Paste text from your bank or card here — pending, posted, totals, times… the AI cleans it up.'}
+                          style={{ width: '100%', border: 'none', background: 'transparent', resize: 'vertical', minHeight: 92, fontFamily: 'inherit', fontSize: 14, lineHeight: 1.5, color: 'var(--text-primary)', outline: 'none' }} />
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 8, paddingTop: 12, borderTop: '1px dashed var(--border)', color: 'var(--text-muted)', fontSize: 12.5, flexWrap: 'wrap' }}>
+                          <span>or</span>
+                          <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 999, cursor: 'pointer', fontSize: 12.5, fontWeight: 600, border: '1px solid var(--border)', background: 'var(--surface-1)', color: 'var(--text-secondary)' }}>
+                            <ImagePlus size={15} /> Add screenshot
+                            <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={(e) => { if (e.target.files) addImageFiles(e.target.files); e.target.value = '' }} />
+                          </label>
+                          <span>· you can paste an image too</span>
                         </div>
                       </div>
-                    )}
-                    <textarea value={raw} onChange={(e) => setRaw(e.target.value)} onPaste={onPasteInput} rows={7}
-                      placeholder={'Paste text from your bank/card — or add a screenshot below (you can also paste an image here). Pending, posted, totals, times… the AI cleans it up.'}
-                      style={{ ...inp, height: 'auto', padding: 12, fontSize: 14, lineHeight: 1.5, resize: 'vertical' }} />
-
-                    {/* Screenshot attach + thumbnails */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                      <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: 600, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-secondary)' }}>
-                        <ImagePlus size={15} /> Add image
-                        <input type="file" accept="image/*" multiple style={{ display: 'none' }}
-                          onChange={(e) => { if (e.target.files) addImageFiles(e.target.files); e.target.value = '' }} />
-                      </label>
+                      {images.length > 0 && (
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
+                          {images.map((im) => (
+                            <div key={im.id} style={{ position: 'relative' }}>
+                              <img src={im.preview} alt="screenshot" style={{ height: 68, width: 'auto', maxWidth: 120, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--border)' }} />
+                              <button type="button" onClick={() => setImages((prev) => prev.filter((x) => x.id !== im.id))} aria-label="Remove"
+                                style={{ position: 'absolute', top: -7, right: -7, width: 20, height: 20, borderRadius: 999, border: 'none', background: 'var(--expense)', color: '#fff', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, lineHeight: 1 }}>✕</button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    {images.length > 0 && (
-                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                        {images.map((im) => (
-                          <div key={im.id} style={{ position: 'relative' }}>
-                            <img src={im.preview} alt="screenshot" style={{ height: 68, width: 'auto', maxWidth: 120, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--border)' }} />
-                            <button type="button" onClick={() => setImages((prev) => prev.filter((x) => x.id !== im.id))} aria-label="Remove"
-                              style={{ position: 'absolute', top: -7, right: -7, width: 20, height: 20, borderRadius: 999, border: 'none', background: 'var(--expense)', color: '#fff', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, lineHeight: 1 }}>✕</button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
 
                     {importErr && <div style={{ fontSize: 13, color: 'var(--expense)', fontWeight: 600 }}>{importErr}</div>}
                     <button className="btn btn-primary" style={{ justifyContent: 'center' }} disabled={(!raw.trim() && images.length === 0) || parsing} onClick={formatWithAI}>
-                      {parsing ? 'Reading…' : `Format with AI${images.length ? ` · ${images.length} image${images.length !== 1 ? 's' : ''}` : ''}`}
+                      {parsing ? 'Reading…' : `✨ Format with AI${images.length ? ` · ${images.length} image${images.length !== 1 ? 's' : ''}` : ''}`}
                     </button>
-                  </div>
+                    {rows.length > 0 && (
+                      <button type="button" onClick={() => setStep('review')} style={{ justifySelf: 'center', background: 'none', border: 'none', color: 'var(--accent)', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                        ‹ Back to your {rows.length} row{rows.length !== 1 ? 's' : ''}
+                      </button>
+                    )}
+                  </>
                 ) : (
-                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                    <button type="button" className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center', minWidth: 130 }} onClick={() => { setPasteOpen(true); setImportErr('') }}>
-                      <ClipboardPaste size={15} /> Paste more
-                    </button>
-                    <button type="button" className="btn btn-secondary" style={{ flex: '0 0 auto' }} onClick={newBatch} title="Start a fresh batch (e.g. a different card)">
-                      <Plus size={15} /> New batch
-                    </button>
-                  </div>
-                )}
-
-                {/* Review grid + per-card totals */}
-                {rows.length > 0 && (
                   <>
-                    {/* summary bar */}
-                    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
-                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                        <span style={{ fontWeight: 700, fontSize: 15 }}>Review</span>
-                        <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>
-                          {rows.length} item{rows.length !== 1 ? 's' : ''}{invalidCount > 0 && <span style={{ color: 'var(--expense)', fontWeight: 600 }}> · {invalidCount} to fix</span>}
-                        </span>
+                    {/* Review step */}
+                    <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10 }}>
+                      <div>
+                        <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>{money(validTotal)}</div>
+                        <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 2 }}>
+                          {rows.length} item{rows.length !== 1 ? 's' : ''}{invalidCount > 0 && <span style={{ color: 'var(--expense)', fontWeight: 700 }}> · {invalidCount} to fix</span>}
+                        </div>
                       </div>
-                      <span style={{ fontWeight: 700, fontSize: 17 }}>{money(grandTotal)}</span>
+                      <button type="button" onClick={() => { setStep('add'); setImportErr('') }} className="btn btn-secondary" style={{ flex: '0 0 auto', padding: '8px 13px', fontSize: 13 }}>
+                        <ClipboardPaste size={14} /> Paste more
+                      </button>
                     </div>
                     {cardTotals.length > 0 && (
                       <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -625,13 +639,12 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                       </div>
                     )}
 
-                    {/* Review — one stacked card per row (no horizontal scroll on mobile) */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: '46vh', overflowY: 'auto', paddingRight: 2 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: '44vh', overflowY: 'auto', paddingRight: 2 }}>
                       {rows.map((r, i) => {
                         const badAmt = isNaN(parseFloat(r.amount)) || parseFloat(r.amount) <= 0
+                        const bad = badAmt || !r.category || !isDate(r.date)
                         return (
-                          <div key={i} style={{ border: '1px solid var(--border)', borderRadius: 12, padding: 10, background: 'var(--kpi-bg)', display: 'grid', gap: 7 }}>
-                            {/* line 1: category + amount + delete */}
+                          <div key={i} style={{ border: '1px solid var(--border)', borderLeft: `3px solid ${bad ? 'var(--expense)' : typeColor(r.type)}`, borderRadius: 12, padding: 10, background: 'var(--surface-1)', display: 'grid', gap: 7 }}>
                             <div style={{ display: 'flex', gap: 7, alignItems: 'center' }}>
                               <select value={r.category}
                                 onChange={(e) => { const c = cats.find((x) => x.name === e.target.value); updateRow(i, { category: e.target.value, type: c?.type ?? r.type }) }}
@@ -651,9 +664,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                                 <Trash2 size={15} />
                               </button>
                             </div>
-                            {/* line 2: description */}
                             <input type="text" value={r.description} onChange={(e) => updateRow(i, { description: e.target.value })} style={{ ...cell, height: 36 }} placeholder="Note (optional)" />
-                            {/* line 3: date + card */}
                             <div style={{ display: 'flex', gap: 7 }}>
                               <input type="date" value={r.date} onChange={(e) => updateRow(i, { date: e.target.value })}
                                 style={{ ...cell, flex: 1, height: 36, WebkitAppearance: 'none', appearance: 'none', borderColor: isDate(r.date) ? 'var(--border)' : 'var(--expense)' }} />
@@ -672,12 +683,20 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                       </button>
                     </div>
 
+                    {invalidCount > 0 && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--text-secondary)', background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 10, padding: '9px 11px' }}>
+                        <span style={{ color: 'var(--expense)', flexShrink: 0, display: 'inline-flex' }}><RotateCcw size={14} style={{ transform: 'scaleX(-1)' }} /></span>
+                        <span><b style={{ color: 'var(--expense)' }}>{invalidCount} row{invalidCount !== 1 ? 's' : ''} need fixing</b> — kept in a draft, not lost, when you log the rest.</span>
+                      </div>
+                    )}
+                    {importErr && <div style={{ fontSize: 13, color: 'var(--expense)', fontWeight: 600 }}>{importErr}</div>}
+
                     <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                       <button type="button" className="btn btn-secondary" style={{ flex: '0 0 auto' }} disabled={saving || savingDraft} onClick={saveDraft}>
                         {savingDraft ? 'Saving…' : <>💾 {draftId ? 'Update draft' : 'Save draft'}</>}
                       </button>
-                      <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center', minWidth: 160 }} disabled={saving || savingDraft || validCount === 0} onClick={logBatch}>
-                        {saving ? 'Logging…' : `Log ${validCount} transaction${validCount !== 1 ? 's' : ''}${invalidCount ? ` (skips ${invalidCount})` : ''}`}
+                      <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center', minWidth: 150 }} disabled={saving || savingDraft || validCount === 0} onClick={logBatch}>
+                        {saving ? 'Logging…' : `Log ${validCount} transaction${validCount !== 1 ? 's' : ''}`}
                       </button>
                     </div>
                   </>
