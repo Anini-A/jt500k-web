@@ -16,7 +16,7 @@ interface Draft { id: string; name: string | null; rows: Row[]; updated_at: stri
 
 const inp: React.CSSProperties = {
   height: 44, padding: '0 12px', borderRadius: 10, border: '1px solid var(--border)',
-  background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 14, width: '100%',
+  background: 'var(--surface-1)', color: 'var(--text-primary)', fontSize: 14, width: '100%',
   fontFamily: 'inherit', boxSizing: 'border-box',
 }
 const cell: React.CSSProperties = { ...inp, height: 38, padding: '0 8px', fontSize: 13, minWidth: 0 }
@@ -365,7 +365,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
             const on = selectedCard === c.name
             return (
               <button key={c.id} type="button" onClick={() => setSelectedCard(c.name)} title={`Tag this batch as ${c.name}`}
-                style={{ display: 'inline-flex', alignItems: 'center', padding: '7px 14px', borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', border: `1px solid ${on ? 'var(--accent)' : 'var(--border)'}`, background: on ? 'var(--accent)' : 'var(--kpi-bg)', color: on ? '#fff' : 'var(--text-secondary)' }}>
+                style={{ display: 'inline-flex', alignItems: 'center', padding: '7px 14px', borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', border: `1px solid ${on ? 'var(--accent)' : 'var(--border)'}`, background: on ? 'var(--accent)' : 'var(--surface-1)', color: on ? '#fff' : 'var(--text-primary)' }}>
                 {c.name}
               </button>
             )
@@ -457,7 +457,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   {mode !== 'single' && (
                     <button type="button" onClick={resetAll} title="Reset this card" aria-label="Reset"
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 34, padding: '0 14px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 34, padding: '0 14px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface-1)', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>
                       <RotateCcw size={14} /> Reset
                     </button>
                   )}
@@ -552,7 +552,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                         style={{ ...inp, width: 'auto', height: 38, WebkitAppearance: 'none', appearance: 'none' }} />
                     ) : (
                       <button type="button" onClick={() => setDateOpen(true)}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 34, padding: '0 14px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>{dateLabel} ▾</button>
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 34, padding: '0 14px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface-1)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>{dateLabel} ▾</button>
                     )}
                     {savedFlash && <span style={{ marginLeft: 'auto', color: 'var(--income)', fontWeight: 600, fontSize: 13 }}>✓ Saved</span>}
                   </div>
