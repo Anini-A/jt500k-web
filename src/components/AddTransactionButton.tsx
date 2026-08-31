@@ -703,24 +703,21 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                     )}
                     {importErr && <div style={{ fontSize: 13, color: 'var(--expense)', fontWeight: 600 }}>{importErr}</div>}
 
-                    {/* Primary logs the valid rows; saving as a draft is a quiet secondary link */}
-                    <div style={{ display: 'grid', gap: 10, justifyItems: 'center' }}>
-                      {validCount > 0 ? (
-                        <button type="button" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} disabled={saving || savingDraft} onClick={logBatch}>
-                          {saving ? 'Logging…' : `Log ${validCount} transaction${validCount !== 1 ? 's' : ''}${invalidCount > 0 ? ` · ${invalidCount} kept` : ''}`}
+                    {/* Log + Save-draft, side by side (Log is primary) */}
+                    {validCount > 0 ? (
+                      <div style={{ display: 'flex', gap: 10 }}>
+                        <button type="button" className="btn btn-secondary" style={{ flexShrink: 0, justifyContent: 'center', gap: 6 }} disabled={saving || savingDraft} onClick={saveDraft}>
+                          <Save size={15} /> {savingDraft ? 'Saving…' : draftId ? 'Update draft' : 'Save draft'}
                         </button>
-                      ) : (
-                        <button type="button" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} disabled={saving || savingDraft} onClick={saveDraft}>
-                          {savingDraft ? 'Saving…' : draftId ? 'Update draft' : 'Save as draft'}
+                        <button type="button" className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} disabled={saving || savingDraft} onClick={logBatch}>
+                          {saving ? 'Logging…' : `Log ${validCount}${invalidCount > 0 ? ` · ${invalidCount} kept` : ''}`}
                         </button>
-                      )}
-                      {validCount > 0 && (
-                        <button type="button" onClick={saveDraft} disabled={saving || savingDraft}
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: 0, border: 'none', background: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 13.5, fontWeight: 600, fontFamily: 'inherit' }}>
-                          <Save size={15} /> {savingDraft ? 'Saving…' : draftId ? 'Update draft' : 'Save as draft'}
-                        </button>
-                      )}
-                    </div>
+                      </div>
+                    ) : (
+                      <button type="button" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', gap: 6 }} disabled={saving || savingDraft} onClick={saveDraft}>
+                        <Save size={15} /> {savingDraft ? 'Saving…' : draftId ? 'Update draft' : 'Save as draft'}
+                      </button>
+                    )}
                   </>
                 )}
               </div>
