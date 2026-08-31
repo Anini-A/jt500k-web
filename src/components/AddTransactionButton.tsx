@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { Plus, Trash2, ClipboardPaste, PencilLine, Repeat, Settings2, ImagePlus, RotateCcw, X, ChevronDown } from 'lucide-react'
+import { Plus, Trash2, ClipboardPaste, PencilLine, Repeat, Settings2, ImagePlus, RotateCcw, X, ChevronDown, Save } from 'lucide-react'
 import CategorySelect from './CategorySelect'
 import IconPill from './IconPill'
 import { useConfirm } from './Feedback'
@@ -89,7 +89,6 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   const [draftId, setDraftId] = useState<string | null>(null) // the draft currently being edited
   const [addOpen, setAddOpen] = useState(true)                 // Import: the paste/screenshot input (collapses once rows exist)
   const [expandedRow, setExpandedRow] = useState<number | null>(null) // which review row is expanded for editing
-  const [logMenu, setLogMenu] = useState(false)                // the single action button's Record / Save-draft menu
   const [draftsOpen, setDraftsOpen] = useState(false)          // "Continue a draft" collapsible
   const [manageCardsOpen, setManageCardsOpen] = useState(false)
   const [newCard, setNewCard] = useState('')      // inline add-card input
@@ -141,7 +140,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
 
   const close = () => {
     setOpen(false); setMode('single'); setRaw(''); setRows([]); setImages([])
-    setDraftId(null); setAddOpen(true); setExpandedRow(null); setLogMenu(false); setDraftsOpen(false); setImportErr(''); setSaved(null); setSingleErr('')
+    setDraftId(null); setAddOpen(true); setExpandedRow(null); setDraftsOpen(false); setImportErr(''); setSaved(null); setSingleErr('')
     setManageRec(false); setRecEdit(null); setRecErr('')
     setForm({ date: today(), type: 'expense', category: '', amount: '', description: '' })
   }
@@ -704,24 +703,23 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                     )}
                     {importErr && <div style={{ fontSize: 13, color: 'var(--expense)', fontWeight: 600 }}>{importErr}</div>}
 
-                    {/* One action button → pops a small Record / Save-draft choice */}
-                    <div style={{ position: 'relative' }}>
-                      {logMenu && <div onClick={() => setLogMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 1 }} />}
-                      {logMenu && (
-                        <div style={{ position: 'absolute', bottom: 'calc(100% + 8px)', left: 0, right: 0, zIndex: 2, background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: 14, boxShadow: '0 10px 30px rgba(0,0,0,0.18)', overflow: 'hidden' }}>
-                          <button type="button" disabled={validCount === 0} onClick={() => { setLogMenu(false); logBatch() }}
-                            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 9, padding: '13px 15px', background: 'transparent', border: 'none', borderBottom: '1px solid var(--border)', cursor: validCount === 0 ? 'default' : 'pointer', font: 'inherit', fontSize: 14, fontWeight: 600, color: validCount === 0 ? 'var(--text-muted)' : 'var(--text-primary)', textAlign: 'left' }}>
-                            <span style={{ color: 'var(--text-muted)' }}>✓</span> Log {validCount} transaction{validCount !== 1 ? 's' : ''}{invalidCount > 0 ? ` · ${invalidCount} kept` : ''}
-                          </button>
-                          <button type="button" onClick={() => { setLogMenu(false); saveDraft() }}
-                            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 9, padding: '13px 15px', background: 'transparent', border: 'none', cursor: 'pointer', font: 'inherit', fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', textAlign: 'left' }}>
-                            💾 {draftId ? 'Update draft' : 'Save as draft'}
-                          </button>
-                        </div>
+                    {/* Primary logs the valid rows; saving as a draft is a quiet secondary link */}
+                    <div style={{ display: 'grid', gap: 10, justifyItems: 'center' }}>
+                      {validCount > 0 ? (
+                        <button type="button" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} disabled={saving || savingDraft} onClick={logBatch}>
+                          {saving ? 'Logging…' : `Log ${validCount} transaction${validCount !== 1 ? 's' : ''}${invalidCount > 0 ? ` · ${invalidCount} kept` : ''}`}
+                        </button>
+                      ) : (
+                        <button type="button" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} disabled={saving || savingDraft} onClick={saveDraft}>
+                          {savingDraft ? 'Saving…' : draftId ? 'Update draft' : 'Save as draft'}
+                        </button>
                       )}
-                      <button type="button" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} disabled={saving || savingDraft} onClick={() => setLogMenu((v) => !v)}>
-                        {saving ? 'Logging…' : savingDraft ? 'Saving…' : <>{validCount > 0 ? `Log ${validCount}` : 'Save draft'} <ChevronDown size={16} style={{ transform: logMenu ? 'rotate(180deg)' : 'none', transition: 'transform .2s ease' }} /></>}
-                      </button>
+                      {validCount > 0 && (
+                        <button type="button" onClick={saveDraft} disabled={saving || savingDraft}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: 0, border: 'none', background: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 13.5, fontWeight: 600, fontFamily: 'inherit' }}>
+                          <Save size={15} /> {savingDraft ? 'Saving…' : draftId ? 'Update draft' : 'Save as draft'}
+                        </button>
+                      )}
                     </div>
                   </>
                 )}
