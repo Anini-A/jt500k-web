@@ -902,6 +902,10 @@ header.top h1 {
 .tab > * { position: relative; z-index: 1; }
 
 /* Modal */
+/* recurring in-row editable fields — reveal their edit affordance on hover/focus */
+.rec-inline:hover { background: var(--kpi-bg) !important; }
+.rec-inline:focus { border-color: var(--accent) !important; background: var(--surface-1) !important; }
+
 .modal-backdrop {
   position: fixed;
   inset: 0;

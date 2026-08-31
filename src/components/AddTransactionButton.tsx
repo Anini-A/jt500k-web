@@ -20,6 +20,8 @@ const inp: React.CSSProperties = {
   fontFamily: 'inherit', boxSizing: 'border-box',
 }
 const cell: React.CSSProperties = { ...inp, height: 38, padding: '0 8px', fontSize: 13, minWidth: 0 }
+// bare in-row editable field (recurring): looks like text until focused/hovered
+const recInline: React.CSSProperties = { border: '1px solid transparent', borderRadius: 7, background: 'transparent', color: 'var(--text-primary)', fontFamily: 'inherit', padding: '2px 5px', outline: 'none', minWidth: 0, WebkitAppearance: 'none', appearance: 'none' }
 
 // Old sheet names → current category names (user still copies from the old sheet)
 const ALIASES: Record<string, string> = {
@@ -168,8 +170,14 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
 
   // ---- manage recurring items (add / edit / delete) ----
   const reloadRecs = async () => { const d = await getJSON('/api/recurring').catch(() => []); if (Array.isArray(d)) setRecs(d.filter((r: any) => r.active)) }
+  // Inline edit: update one recurring item's field live (optimistic local + PATCH). Empty/invalid reverts.
+  const setRecLocal = (id: string, patch: Record<string, unknown>) => setRecs((prev) => prev.map((r) => r.id === id ? { ...r, ...patch } : r))
+  const patchRec = (id: string, patch: Record<string, unknown>) => {
+    setRecLocal(id, patch)
+    fetch('/api/recurring', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, ...patch }) })
+      .then((res) => { if (!res.ok) reloadRecs() }).catch(() => reloadRecs())
+  }
   const startNewRec = () => { setRecForm({ name: '', type: 'expense', category: '', amount: '', description: '' }); setRecEdit('new') }
-  const startEditRec = (r: any) => { setRecForm({ name: r.name, type: r.type, category: r.category, amount: String(r.amount), description: r.description || '' }); setRecEdit(r.id) }
   const saveRec = async () => {
     const amount = parseFloat(recForm.amount)
     if (!recForm.name.trim() || !recForm.category || !(amount > 0)) { setRecErr('Name, category and a positive amount are required.'); return }
@@ -781,54 +789,32 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                             {recs.filter((r) => recGroup(r) === g.key).map((r) => {
                               const on = picked.has(r.id)
                               const toggle = () => setPicked((p) => { const n = new Set(p); n.has(r.id) ? n.delete(r.id) : n.add(r.id); return n })
-                              if (recEdit === r.id) {
-                                /* inline editor — edit in place, live */
-                                return (
-                                  <div key={r.id} style={{ display: 'grid', gap: 8, padding: '12px 4px', borderBottom: '1px solid var(--border)', background: 'var(--kpi-bg)' }}>
-                                    <div className="form-2">
-                                      <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Name</span>
-                                        <input style={inp} value={recForm.name} onChange={(e) => setRecForm({ ...recForm, name: e.target.value })} placeholder="e.g. Rent" /></label>
-                                      <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Type</span>
-                                        <select style={inp} value={recForm.type} onChange={(e) => setRecForm({ ...recForm, type: e.target.value, category: '' })}>
-                                          <option value="income">Income</option><option value="expense">Expense</option><option value="savings">Savings</option>
-                                        </select></label>
-                                    </div>
-                                    <div className="form-2">
-                                      <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Category</span>
-                                        <CategorySelect value={recForm.category} onChange={(v) => setRecForm({ ...recForm, category: v })} cats={cats.filter((c) => c.type === recForm.type)} /></label>
-                                      <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Amount</span>
-                                        <input style={inp} type="number" step="0.01" value={recForm.amount} onChange={(e) => setRecForm({ ...recForm, amount: e.target.value })} placeholder="0.00" /></label>
-                                    </div>
-                                    {recForm.category === 'Debt Repayment' && debts.length > 0 && (
-                                      <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Which debt?</span>
-                                        <select style={inp} value={debts.some((d) => d.name === recForm.description) ? recForm.description : ''}
-                                          onChange={(e) => setRecForm({ ...recForm, description: e.target.value })}>
-                                          <option value="">— pick a debt (fills description) —</option>
-                                          {debts.map((d) => <option key={d.name} value={d.name}>{d.name}</option>)}
-                                        </select></label>
-                                    )}
-                                    <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Description (optional)</span>
-                                      <input style={inp} value={recForm.description} onChange={(e) => setRecForm({ ...recForm, description: e.target.value })} placeholder="e.g. matches a debt name" /></label>
-                                    {recErr && <div style={{ fontSize: 13, color: 'var(--expense)', fontWeight: 600 }}>{recErr}</div>}
-                                    <div style={{ display: 'flex', gap: 8 }}>
-                                      <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} disabled={saving} onClick={saveRec}>Save</button>
-                                      <button className="btn btn-secondary" onClick={() => { setRecEdit(null); setRecErr('') }}>Cancel</button>
-                                      <button className="btn btn-secondary" style={{ flex: '0 0 auto' }} onClick={deleteRec} aria-label="Delete"><Trash2 size={14} /></button>
-                                    </div>
-                                  </div>
-                                )
-                              }
+                              // fields edit in place: name (text), category (select → also sets type), amount (number)
                               return (
-                                <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 4px', borderBottom: '1px solid var(--border)' }}>
-                                  <input type="checkbox" checked={on} onChange={toggle} aria-label={`Select ${r.name}`} />
-                                  <button type="button" onClick={() => startEditRec(r)} title="Edit"
-                                    style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 10, background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit', color: 'inherit', textAlign: 'left' }}>
-                                    <span style={{ flex: 1, minWidth: 0 }}>
-                                      <span style={{ display: 'block', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
-                                      <span style={{ display: 'block', fontSize: 12.5, color: 'var(--text-secondary)' }}>{r.category}</span>
-                                    </span>
-                                    <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', flexShrink: 0 }}>{money(Number(r.amount))}</span>
-                                  </button>
+                                <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 4px', borderBottom: '1px solid var(--border)' }}>
+                                  <input type="checkbox" checked={on} onChange={toggle} aria-label={`Select ${r.name}`} style={{ flexShrink: 0 }} />
+                                  <div style={{ flex: 1, minWidth: 0, display: 'grid', gap: 1 }}>
+                                    <input value={r.name} aria-label="Name" className="rec-inline"
+                                      onChange={(e) => setRecLocal(r.id, { name: e.target.value })}
+                                      onBlur={(e) => e.target.value.trim() ? patchRec(r.id, { name: e.target.value.trim() }) : reloadRecs()}
+                                      style={{ ...recInline, fontWeight: 600, fontSize: 15 }} />
+                                    <select value={r.category} aria-label="Category" className="rec-inline"
+                                      onChange={(e) => { const c = cats.find((x) => x.name === e.target.value); patchRec(r.id, { category: e.target.value, type: c?.type ?? r.type }) }}
+                                      style={{ ...recInline, fontSize: 12.5, color: 'var(--text-secondary)', width: 'auto', maxWidth: '100%' }}>
+                                      <optgroup label="Income">{grouped.income.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}</optgroup>
+                                      <optgroup label="Expense">{grouped.expense.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}</optgroup>
+                                      <optgroup label="Savings">{grouped.savings.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}</optgroup>
+                                    </select>
+                                  </div>
+                                  <div style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 1 }}>
+                                    <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-muted)' }}>$</span>
+                                    <input inputMode="decimal" value={String(r.amount)} aria-label="Amount" className="rec-inline"
+                                      onChange={(e) => setRecLocal(r.id, { amount: e.target.value.replace(/[^0-9.]/g, '') })}
+                                      onBlur={(e) => { const v = parseFloat(e.target.value); v > 0 ? patchRec(r.id, { amount: v }) : reloadRecs() }}
+                                      style={{ ...recInline, width: `${Math.max(4, String(r.amount).length + 1)}ch`, textAlign: 'right', fontWeight: 700, fontSize: 15 }} />
+                                  </div>
+                                  <button type="button" aria-label={`Delete ${r.name}`} title="Delete" onClick={() => setConfirmDel({ kind: 'rec', id: r.id, name: r.name })}
+                                    style={{ flexShrink: 0, display: 'inline-flex', padding: 5, borderRadius: 8, border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}><Trash2 size={15} /></button>
                                 </div>
                               )
                             })}
