@@ -725,10 +725,10 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
             {/* ---------------- RECURRING ---------------- */}
             {mode === 'recurring' && (
               <div style={{ display: 'grid', gap: 12 }}>
-                {recEdit !== null ? (
-                  /* Add / edit a recurring item */
+                {recEdit === 'new' ? (
+                  /* Add a recurring item (existing items are edited inline in the list) */
                   <div style={{ display: 'grid', gap: 10 }}>
-                    <div style={{ fontWeight: 700, fontSize: 15, display: 'flex', alignItems: 'center', gap: 7 }}><Repeat size={15} /> {recEdit === 'new' ? 'New recurring item' : 'Edit recurring item'}</div>
+                    <div style={{ fontWeight: 700, fontSize: 15, display: 'flex', alignItems: 'center', gap: 7 }}><Repeat size={15} /> New recurring item</div>
                     <div className="form-2">
                       <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Name</span>
                         <input style={inp} value={recForm.name} onChange={(e) => setRecForm({ ...recForm, name: e.target.value })} placeholder="e.g. Rent" /></label>
@@ -781,16 +781,54 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                             {recs.filter((r) => recGroup(r) === g.key).map((r) => {
                               const on = picked.has(r.id)
                               const toggle = () => setPicked((p) => { const n = new Set(p); n.has(r.id) ? n.delete(r.id) : n.add(r.id); return n })
+                              if (recEdit === r.id) {
+                                /* inline editor — edit in place, live */
+                                return (
+                                  <div key={r.id} style={{ display: 'grid', gap: 8, padding: '12px 4px', borderBottom: '1px solid var(--border)', background: 'var(--kpi-bg)' }}>
+                                    <div className="form-2">
+                                      <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Name</span>
+                                        <input style={inp} value={recForm.name} onChange={(e) => setRecForm({ ...recForm, name: e.target.value })} placeholder="e.g. Rent" /></label>
+                                      <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Type</span>
+                                        <select style={inp} value={recForm.type} onChange={(e) => setRecForm({ ...recForm, type: e.target.value, category: '' })}>
+                                          <option value="income">Income</option><option value="expense">Expense</option><option value="savings">Savings</option>
+                                        </select></label>
+                                    </div>
+                                    <div className="form-2">
+                                      <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Category</span>
+                                        <CategorySelect value={recForm.category} onChange={(v) => setRecForm({ ...recForm, category: v })} cats={cats.filter((c) => c.type === recForm.type)} /></label>
+                                      <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Amount</span>
+                                        <input style={inp} type="number" step="0.01" value={recForm.amount} onChange={(e) => setRecForm({ ...recForm, amount: e.target.value })} placeholder="0.00" /></label>
+                                    </div>
+                                    {recForm.category === 'Debt Repayment' && debts.length > 0 && (
+                                      <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Which debt?</span>
+                                        <select style={inp} value={debts.some((d) => d.name === recForm.description) ? recForm.description : ''}
+                                          onChange={(e) => setRecForm({ ...recForm, description: e.target.value })}>
+                                          <option value="">— pick a debt (fills description) —</option>
+                                          {debts.map((d) => <option key={d.name} value={d.name}>{d.name}</option>)}
+                                        </select></label>
+                                    )}
+                                    <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Description (optional)</span>
+                                      <input style={inp} value={recForm.description} onChange={(e) => setRecForm({ ...recForm, description: e.target.value })} placeholder="e.g. matches a debt name" /></label>
+                                    {recErr && <div style={{ fontSize: 13, color: 'var(--expense)', fontWeight: 600 }}>{recErr}</div>}
+                                    <div style={{ display: 'flex', gap: 8 }}>
+                                      <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} disabled={saving} onClick={saveRec}>Save</button>
+                                      <button className="btn btn-secondary" onClick={() => { setRecEdit(null); setRecErr('') }}>Cancel</button>
+                                      <button className="btn btn-secondary" style={{ flex: '0 0 auto' }} onClick={deleteRec} aria-label="Delete"><Trash2 size={14} /></button>
+                                    </div>
+                                  </div>
+                                )
+                              }
                               return (
                                 <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 4px', borderBottom: '1px solid var(--border)' }}>
-                                  <input type="checkbox" checked={on} onChange={toggle} />
-                                  <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={toggle}>
-                                    <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</div>
-                                    <div style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>{r.category}</div>
-                                  </div>
-                                  <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', flexShrink: 0 }}>{money(Number(r.amount))}</span>
-                                  <button aria-label={`Edit ${r.name}`} title="Edit" onClick={() => startEditRec(r)}
-                                    style={{ flexShrink: 0, display: 'inline-flex', padding: 6, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}><PencilLine size={14} /></button>
+                                  <input type="checkbox" checked={on} onChange={toggle} aria-label={`Select ${r.name}`} />
+                                  <button type="button" onClick={() => startEditRec(r)} title="Edit"
+                                    style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 10, background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit', color: 'inherit', textAlign: 'left' }}>
+                                    <span style={{ flex: 1, minWidth: 0 }}>
+                                      <span style={{ display: 'block', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
+                                      <span style={{ display: 'block', fontSize: 12.5, color: 'var(--text-secondary)' }}>{r.category}</span>
+                                    </span>
+                                    <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', flexShrink: 0 }}>{money(Number(r.amount))}</span>
+                                  </button>
                                 </div>
                               )
                             })}
