@@ -801,11 +801,8 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                     {recErr && <div style={{ fontSize: 13, color: 'var(--expense)', fontWeight: 600 }}>{recErr}</div>}
                     {/* Log for [date] sits beside the action button */}
                     <div style={{ display: 'flex', gap: 10, alignItems: 'stretch' }}>
-                      <label style={{ flexShrink: 0, display: 'inline-flex', flexDirection: 'column', gap: 3 }}>
-                        <span className="stat-label">Log for</span>
-                        <input type="date" value={recDate} onChange={(e) => setRecDate(e.target.value)} style={{ ...inp, width: 'auto', height: 46 }} />
-                      </label>
-                      <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center', alignSelf: 'flex-end', height: 46 }} disabled={saving || picked.size === 0} onClick={logRecurring}>
+                      <input type="date" value={recDate} onChange={(e) => setRecDate(e.target.value)} aria-label="Log for date" style={{ ...inp, flexShrink: 0, width: 'auto', height: 46 }} />
+                      <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center', height: 46 }} disabled={saving || picked.size === 0} onClick={logRecurring}>
                         {saving ? 'Logging…'
                           : picked.size === 0 ? 'Select items to log'
                           : `Log ${picked.size} item${picked.size !== 1 ? 's' : ''} · ${money(pickedTotal)}`}
