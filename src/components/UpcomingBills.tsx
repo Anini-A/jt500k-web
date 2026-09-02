@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { getJSON, cachedValue } from '@/lib/fresh'
 import { today, ymd } from '@/lib/date'
-import { shortfall } from '@/lib/billRunway'
+import { shortfall, coveredThrough } from '@/lib/billRunway'
 import { TriangleAlert } from 'lucide-react'
 import LoadError from './LoadError'
 
@@ -15,6 +15,8 @@ const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', curr
 const daysInMonth = (y: number, m: number) => new Date(y, m + 1, 0).getDate()
 const strip = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate())
 const HORIZON = 14 // "next 2 weeks"
+const ROW_H = 38   // one bill row (9px padding × 2 + line + border) — 5 of them sets the scroll height
+const fmtDay = (d: Date) => d.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })
 
 // Next time this bill lands on/after `from`: monthly on its day-of-month (clamped to
 // short months), or quarterly stepping forward from next_due.
@@ -68,7 +70,10 @@ export default function UpcomingBills() {
 
   const within = upcoming.filter((u) => u.days <= HORIZON)
   const totalSoon = within.reduce((s, u) => s + Number(u.b.amount), 0)
-  const rows = upcoming.slice(0, 5)
+  // the list matches the headline total: every bill inside the window, not an arbitrary
+  // first-5 that could run past it. Falls back to the next few when the window is empty.
+  const rows = within.length ? within : upcoming.slice(0, 3)
+  const horizonEnd = new Date(from.getFullYear(), from.getMonth(), from.getDate() + HORIZON)
   const goBills = () => { try { localStorage.setItem('jt-dash-tab', 'bills') } catch { /* ignore */ } }
 
   // Coverage: for each account that HAS a tracked balance, will it cover its bills
@@ -86,12 +91,27 @@ export default function UpcomingBills() {
   const hasCoverage = tracked.some((a) => bills.some((b) => b.account_id === a.id))
   const worst = shorts[0]
 
+  // Per-account cutoff date — a bill is funded iff it lands on or before its account's.
+  // Accounts with no tracked balance get no entry, so their bills stay neutral rather
+  // than being coloured green on no evidence.
+  const cutoffs = new Map<string, string | null>()
+  for (const a of tracked) {
+    const ab = bills.filter((b) => b.account_id === a.id)
+    if (ab.length) cutoffs.set(a.id, coveredThrough(ab, { current_balance: a.current_balance, balance_as_of: a.balance_as_of, buffer: a.buffer }))
+  }
+  const coverageOf = (u: { b: Bill; date: Date }): 'covered' | 'short' | 'unknown' => {
+    if (!u.b.account_id || !cutoffs.has(u.b.account_id)) return 'unknown'
+    const cut = cutoffs.get(u.b.account_id)
+    return cut && ymd(u.date) <= cut ? 'covered' : 'short'
+  }
+  const firstShortIdx = rows.findIndex((u) => coverageOf(u) === 'short')
+
   const header = (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
       <span className="hdr-label">Upcoming bills</span>
       {within.length > 0 && (
-        <span style={{ fontSize: 12, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
-          <b style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>{money(totalSoon)}</b> next 2 weeks
+        <span style={{ fontSize: 12, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums', textAlign: 'right' }}>
+          <b style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>{money(totalSoon)}</b> · {fmtDay(from)} → {fmtDay(horizonEnd)}
         </span>
       )}
     </div>
@@ -117,17 +137,29 @@ export default function UpcomingBills() {
         </a>
       )}
 
-      {/* Dense one-line rows: date · name · amount (date reddens when ≤3 days out) */}
-      <div style={{ marginTop: 12 }}>
+      {/* Dense one-line rows: date · name · amount. The date carries coverage — green while
+          the account funds it, red once the balance has run out. Scrolls past 5 rows so a
+          busy fortnight doesn't push the rest of Home down the page. */}
+      <div style={{ marginTop: 12, maxHeight: ROW_H * 5 + 8, overflowY: 'auto', overscrollBehavior: 'contain' }}>
         {rows.map((u, i) => {
-          const urgent = u.days <= 3
+          const cov = coverageOf(u)
+          const dateColor = cov === 'covered' ? 'var(--income)' : cov === 'short' ? 'var(--expense)' : 'var(--text-secondary)'
           return (
-            <div key={u.b.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 0', borderTop: i > 0 ? '1px solid var(--border)' : 'none' }}>
-              <span style={{ width: 52, flexShrink: 0, fontSize: 12.5, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: urgent ? 'var(--expense)' : 'var(--text-secondary)' }}>
-                {u.date.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}
-              </span>
-              <span style={{ flex: 1, minWidth: 0, fontWeight: 600, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.b.name}</span>
-              <span style={{ fontWeight: 700, fontSize: 14, fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{money(Number(u.b.amount))}</span>
+            <div key={`${u.b.id}-${ymd(u.date)}`}>
+              {/* where the balance runs out — only worth drawing if something above it is funded */}
+              {i === firstShortIdx && i > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 0 6px', borderTop: '1px solid var(--border)' }}>
+                  <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--expense)', whiteSpace: 'nowrap' }}>Balance runs out</span>
+                  <span style={{ flex: 1, height: 1, background: 'var(--expense)', opacity: 0.3 }} />
+                </div>
+              )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 0', borderTop: i > 0 && i !== firstShortIdx ? '1px solid var(--border)' : 'none' }}>
+                <span style={{ width: 52, flexShrink: 0, fontSize: 12.5, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: dateColor }}>
+                  {u.date.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}
+                </span>
+                <span style={{ flex: 1, minWidth: 0, fontWeight: 600, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.b.name}</span>
+                <span style={{ fontWeight: 700, fontSize: 14, fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{money(Number(u.b.amount))}</span>
+              </div>
             </div>
           )
         })}
