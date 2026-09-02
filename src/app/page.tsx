@@ -33,7 +33,12 @@ export default function Home() {
           if (!r.card) continue
           m.set(r.card, (m.get(r.card) || 0) + signedRowAmount(r))
         }
-        setCards([...m.entries()].map(([card, total]) => ({ card, total })).sort((a, b) => b.total - a.total))
+        // a card whose rows cancel out (a refund against its own purchase) has nothing left
+        // to show — drop it so the section empties out instead of printing "−$0"
+        setCards([...m.entries()]
+          .map(([card, total]) => ({ card, total: Math.round(total * 100) / 100 }))
+          .filter((c) => c.total !== 0)
+          .sort((a, b) => b.total - a.total))
       }).catch(() => {})
     }
     load()
@@ -89,7 +94,10 @@ export default function Home() {
                     {cards.map((c) => (
                       <div key={c.card} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, fontSize: 13 }}>
                         <span style={{ color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.card}</span>
-                        <span style={{ fontWeight: 600, color: 'var(--expense)', flexShrink: 0 }}>−{money(c.total)}</span>
+                        {/* net refunds can put a card in credit — don't print "−-$44.79" in red */}
+                        <span style={{ fontWeight: 600, flexShrink: 0, color: c.total > 0 ? 'var(--expense)' : 'var(--income)' }}>
+                          {c.total > 0 ? '−' : '+'}{money(Math.abs(c.total))}
+                        </span>
                       </div>
                     ))}
                   </div>
