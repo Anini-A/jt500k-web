@@ -113,7 +113,7 @@ export default function UpcomingBills() {
       <select value={activeId} onChange={(e) => setPicked(e.target.value)} aria-label="Bill account"
         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0,
           appearance: 'none', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 16 }}>
-        {tabs.map((t) => <option key={t.id} value={t.id}>{t.name}{t.shortFrom ? ' — short' : ''}</option>)}
+        {tabs.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
       </select>
     </span>
   )
