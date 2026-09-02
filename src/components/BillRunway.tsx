@@ -237,12 +237,6 @@ export default function BillRunway() {
                 <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{money2(proj.remainingTotal)}</span>
               </div>
             )}
-            {/* the forecast drains only — spell that out so the shortfall $ isn't read as "due now" */}
-            {proj.firstShort && (
-              <div style={{ fontSize: 11.5, color: 'var(--text-muted)', padding: '0 2px' }}>
-                Total if no money goes into {active.name} before {fmtDay(proj.horizonISO)}.
-              </div>
-            )}
             {stale && <div style={{ fontSize: 12, color: RED }}>Based on your {fmtDay(asOf)} balance.</div>}
           </div>
         )}
