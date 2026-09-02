@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { getJSON, cachedValue } from '@/lib/fresh'
 import { today, ymd } from '@/lib/date'
-import { projectCycle } from '@/lib/billRunway'
+import { projectCycle, nextOccurrences } from '@/lib/billRunway'
 import { TriangleAlert } from 'lucide-react'
 import LoadError from './LoadError'
 
@@ -12,27 +12,9 @@ interface Account { id: string; name: string; current_balance?: number; balance_
 interface BillsResp { bills: Bill[]; accounts: Account[] }
 
 const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })
-const daysInMonth = (y: number, m: number) => new Date(y, m + 1, 0).getDate()
 const strip = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate())
-const HORIZON = 14 // "next 2 weeks"
-const ROW_H = 38   // one bill row (9px padding × 2 + line + border) — 5 of them sets the scroll height
+const ROW_H = 38   // one bill row (9px padding x 2 + line + border) - 5 of them sets the scroll height
 const fmtDay = (d: Date) => d.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })
-
-// Next time this bill lands on/after `from`: monthly on its day-of-month (clamped to
-// short months), or quarterly stepping forward from next_due.
-function nextOccurrence(b: Bill, from: Date): Date | null {
-  if (b.quarterly) {
-    if (!b.next_due) return null
-    let d = strip(new Date(b.next_due + 'T00:00:00'))
-    let guard = 0
-    while (d < from && guard++ < 40) d = new Date(d.getFullYear(), d.getMonth() + 3, d.getDate())
-    return d
-  }
-  const inThis = new Date(from.getFullYear(), from.getMonth(), Math.min(b.day, daysInMonth(from.getFullYear(), from.getMonth())))
-  if (inThis >= from) return inThis
-  const y = from.getFullYear(), m = from.getMonth() + 1
-  return new Date(y, m, Math.min(b.day, daysInMonth(y, m)))
-}
 
 // Compact "what's due next" list for Home — pulls from the same bills the Bills tab uses.
 export default function UpcomingBills() {
@@ -55,11 +37,10 @@ export default function UpcomingBills() {
   const accounts = data?.accounts ?? []
   const acctName = (id: string | null) => accounts.find((a) => a.id === id)?.name
 
+  // One cycle - the next occurrence of each bill, once each - exactly the window the
+  // Bills tab forecasts, so the two cards describe the same span.
   const from = strip(new Date(today() + 'T00:00:00'))
-  const upcoming = bills
-    .map((b) => { const nd = nextOccurrence(b, from); return nd ? { b, date: nd, days: Math.round((strip(nd).getTime() - from.getTime()) / 86400000) } : null })
-    .filter((x): x is { b: Bill; date: Date; days: number } => x !== null)
-    .sort((a, b) => a.date.getTime() - b.date.getTime())
+  const upcoming = nextOccurrences(bills, from)
 
   // Nothing to show / still cold-loading with no cache → render nothing (keep Home clean)
   if (!data && !loaded) return null
@@ -68,12 +49,10 @@ export default function UpcomingBills() {
   )
   if (!bills.length) return null
 
-  const within = upcoming.filter((u) => u.days <= HORIZON)
-  const totalSoon = within.reduce((s, u) => s + Number(u.b.amount), 0)
-  // the list matches the headline total: every bill inside the window, not an arbitrary
-  // first-5 that could run past it. Falls back to the next few when the window is empty.
-  const rows = within.length ? within : upcoming.slice(0, 3)
-  const horizonEnd = new Date(from.getFullYear(), from.getMonth(), from.getDate() + HORIZON)
+  // list == headline total == the whole cycle; scrolls rather than truncating
+  const rows = upcoming
+  const totalSoon = rows.reduce((s, u) => s + Number(u.b.amount), 0)
+  const horizonEnd = rows.length ? rows[rows.length - 1].date : from
   const goBills = () => { try { localStorage.setItem('jt-dash-tab', 'bills') } catch { /* ignore */ } }
 
   // Coverage: one shared projection per account (same engine the Bills tab renders), so the
@@ -103,12 +82,14 @@ export default function UpcomingBills() {
     const cut = cycles.get(u.b.account_id)!.coveredThroughISO
     return cut && ymd(u.date) <= cut ? 'covered' : 'short'
   }
-  const firstShortIdx = rows.findIndex((u) => coverageOf(u) === 'short')
+  const multiAccount = new Set(rows.map((u) => u.b.account_id).filter(Boolean)).size > 1
+  const shortIdx = rows.findIndex((u) => coverageOf(u) === 'short')
+  const firstShortIdx = shortIdx >= 0 && rows.slice(shortIdx).every((u) => coverageOf(u) === 'short') ? shortIdx : -1
 
   const header = (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
       <span className="hdr-label">Upcoming bills</span>
-      {within.length > 0 && (
+      {rows.length > 0 && (
         <span style={{ fontSize: 12, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums', textAlign: 'right' }}>
           <b style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>{money(totalSoon)}</b> · {fmtDay(from)} → {fmtDay(horizonEnd)}
         </span>
@@ -156,7 +137,14 @@ export default function UpcomingBills() {
                 <span style={{ width: 52, flexShrink: 0, fontSize: 12.5, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: dateColor }}>
                   {u.date.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}
                 </span>
-                <span style={{ flex: 1, minWidth: 0, fontWeight: 600, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.b.name}</span>
+                <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <span style={{ fontWeight: 600, fontSize: 14 }}>{u.b.name}</span>
+                  {/* coverage is per ACCOUNT — without the name, one account's covered bill
+                      sitting below another's short one just looks like a bug */}
+                  {multiAccount && acctName(u.b.account_id) && (
+                    <span style={{ fontSize: 11.5, color: 'var(--text-muted)', marginLeft: 7 }}>{acctName(u.b.account_id)}</span>
+                  )}
+                </span>
                 <span style={{ fontWeight: 700, fontSize: 14, fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{money(Number(u.b.amount))}</span>
               </div>
             </div>

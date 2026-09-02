@@ -27,8 +27,8 @@ function nextDateForDay(from: Date, day: number): Date {
 // due day sits just past the edge or double-counts the ones near it. One-of-each avoids
 // both, at the cost of a window that breathes a few days — which is why the card prints
 // the date range rather than a "next N weeks" label.
-export function nextOccurrences(bills: BillRow[], from: Date): { b: BillRow; date: Date }[] {
-  const out: { b: BillRow; date: Date }[] = []
+export function nextOccurrences<T extends BillRow>(bills: T[], from: Date): { b: T; date: Date }[] {
+  const out: { b: T; date: Date }[] = []
   for (const b of bills) {
     if (b.quarterly) {
       if (!b.next_due) continue
@@ -73,7 +73,7 @@ export function projectCycle<T extends BillRow>(bills: T[], s: BillSettings): Cy
   const today = strip(new Date())
   const startRaw = strip(new Date((s.balance_as_of || ymd(today)) + 'T00:00:00'))
   const from = startRaw < today ? today : startRaw // never project into the past
-  const upcoming = nextOccurrences(active, from) as { b: T; date: Date }[]
+  const upcoming = nextOccurrences(active, from)
 
   const buffer = Number(s.buffer) || 0
   const startBalance = Number(s.current_balance) || 0
