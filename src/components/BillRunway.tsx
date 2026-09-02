@@ -33,8 +33,11 @@ interface Projection {
   coveredCount: number          // bills fully covered while staying above the buffer
   coveredThroughISO: string | null  // date of the last covered bill
   firstShort: TLEvent | null    // first bill the balance can't cover
-  remainingCount: number
-  remainingTotal: number        // sum of the bills that still need funding
+  remainingCount: number        // uncovered bills THIS month only — what the top-up $ actually needs to cover
+  remainingTotal: number        // sum of those this-month bills
+  nextMonthCount: number        // uncovered bills falling in the following month — flagged as a heads-up, no $ total
+                                 // (a paycheck almost certainly lands before most of these are due, so summing
+                                 // their dollars into "top up" would overstate the real gap)
   short: number                 // top-up needed to cover everything upcoming
 }
 
@@ -87,23 +90,37 @@ function project(bills: Bill[], s: { current_balance: number; balance_as_of: str
 
   let bal = Number(s.current_balance) || 0
   const startBalance = bal
-  const timeline: TLEvent[] = []
+  const timeline: { b: Bill; date: Date; ev: TLEvent }[] = []
   let coveredCount = 0
   let coveredThroughISO: string | null = null
-  let firstShort: TLEvent | null = null
-  let remainingTotal = 0
+  let firstShort: { b: Bill; date: Date; ev: TLEvent } | null = null
 
   for (const { b, date } of upcoming) {
     bal = Math.round((bal - Number(b.amount)) * 100) / 100
     const covered = bal >= buffer // balance only decreases, so once below it stays below
     const ev: TLEvent = { iso: ymd(date), name: b.name, amount: Number(b.amount), balanceAfter: bal, covered }
     if (covered) { coveredCount++; coveredThroughISO = ev.iso }
-    else { remainingTotal += ev.amount; if (!firstShort) firstShort = ev }
-    timeline.push(ev)
+    else if (!firstShort) firstShort = { b, date, ev }
+    timeline.push({ b, date, ev })
+  }
+
+  // "Top up" $ only covers this calendar month (or, if this month is fully funded, just the
+  // very next uncovered bill) — everything further out just gets counted as a heads-up below,
+  // since a paycheck almost certainly lands before most of it is actually due.
+  const endOfThisMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0)
+  const cutoff = firstShort && firstShort.date > endOfThisMonth ? firstShort.date : endOfThisMonth
+  let remainingCount = 0, remainingTotal = 0, nextMonthCount = 0
+  for (const { date, ev } of timeline) {
+    if (ev.covered) continue
+    if (date <= cutoff) { remainingCount++; remainingTotal += ev.amount }
+    else nextMonthCount++
   }
 
   const short = Math.max(0, buffer - bal) // top-up to cover every upcoming bill
-  return { timeline, startBalance, buffer, coveredCount, coveredThroughISO, firstShort, remainingCount: timeline.length - coveredCount, remainingTotal, short }
+  return {
+    timeline: timeline.map((t) => t.ev), startBalance, buffer, coveredCount, coveredThroughISO,
+    firstShort: firstShort?.ev ?? null, remainingCount, remainingTotal, nextMonthCount, short,
+  }
 }
 
 // ── UI ──────────────────────────────────────────────────────────────
@@ -219,6 +236,13 @@ export default function BillRunway() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, padding: '9px 12px', borderRadius: 10, background: 'var(--kpi-bg)', border: '1px solid var(--border)' }}>
                 <span style={{ fontSize: 13, color: 'var(--text-muted)', minWidth: 0 }}>Next month: top up <b style={{ color: 'var(--text-secondary)' }}>{proj.firstShort.name}</b>{proj.remainingCount > 1 ? ` +${proj.remainingCount - 1} more` : ''} by {fmtDay(proj.firstShort.iso)}</span>
                 <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{money2(proj.remainingTotal)}</span>
+              </div>
+            )}
+            {/* next month's OWN shortfall, beyond the one bill already priced into the top-up above —
+                a plain count, not a dollar total, since a paycheck likely lands before most of it is due */}
+            {proj.nextMonthCount > 0 && (
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', padding: '2px 2px' }}>
+                +{proj.nextMonthCount} more bill{proj.nextMonthCount === 1 ? '' : 's'} short next month
               </div>
             )}
             {stale && <div style={{ fontSize: 12, color: RED }}>Based on your {fmtDay(asOf)} balance.</div>}
