@@ -5,6 +5,7 @@ import { useConfirm } from './Feedback'
 import { Pencil, Plus, Trash2, TriangleAlert, CheckCircle2, CalendarClock } from 'lucide-react'
 import { getJSON } from '@/lib/fresh'
 import { ymd, today } from '@/lib/date'
+import { nextOccurrences } from '@/lib/billRunway'
 
 interface Bill { id: string; account_id: string | null; name: string; day: number; amount: number; quarterly?: boolean; next_due?: string | null }
 interface Account { id: string; name: string; current_balance: number; balance_as_of: string | null; buffer: number }
@@ -33,59 +34,23 @@ interface Projection {
   coveredCount: number          // bills fully covered while staying above the buffer
   coveredThroughISO: string | null  // date of the last covered bill
   firstShort: TLEvent | null    // first bill the balance can't cover
-  remainingCount: number        // every uncovered bill out to the horizon (this month AND next)
-  remainingTotal: number        // sum of those bills — a worst-case "if nothing goes into this account" figure,
-                                 // NOT a due-now amount, so the card always labels the window it spans
-  horizonISO: string            // last day the forecast looks at — end of next month
+  remainingCount: number        // uncovered bills in the window — one cycle, each bill counted once
+  remainingTotal: number        // sum of those bills — a worst-case "if nothing goes into this account"
+                                 // figure, NOT a due-now amount, so the card always labels its window
+  horizonISO: string            // last day the window covers — the furthest bill's next occurrence
   short: number                 // top-up needed to cover everything upcoming
 }
 
-const daysInMonth = (y: number, m: number) => new Date(y, m + 1, 0).getDate()
 const stripTime = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate())
-
-function nextDateForDay(from: Date, day: number): Date {
-  const inThis = new Date(from.getFullYear(), from.getMonth(), Math.min(day, daysInMonth(from.getFullYear(), from.getMonth())))
-  if (inThis >= stripTime(from)) return inThis
-  const y = from.getFullYear(), m = from.getMonth() + 1
-  return new Date(y, m, Math.min(day, daysInMonth(y, m)))
-}
-
-// every date a bill lands on between `from` and `horizon` (inclusive) — monthly by day,
-// or quarterly stepping from next_due. Lets the forecast see next month's recurrences too.
-function occurrencesUpTo(bill: Bill, from: Date, horizon: Date): Date[] {
-  const out: Date[] = []
-  if (bill.quarterly) {
-    if (!bill.next_due) return out
-    const base = stripTime(new Date(bill.next_due + 'T00:00:00'))
-    for (let k = 0; k < 40; k++) {
-      const d = new Date(base.getFullYear(), base.getMonth() + k * 3, base.getDate())
-      if (d < from) continue
-      if (d > horizon) break
-      out.push(d)
-    }
-    return out
-  }
-  // monthly: first occurrence on/after `from`, then step a month at a time (clamping the day)
-  let d = nextDateForDay(from, bill.day)
-  while (d <= horizon) {
-    out.push(d)
-    const ny = d.getFullYear(), nm = d.getMonth() + 1
-    d = new Date(ny, nm, Math.min(bill.day, daysInMonth(ny, nm)))
-  }
-  return out
-}
 
 function project(bills: Bill[], s: { current_balance: number; balance_as_of: string | null; buffer: number }): Projection {
   const start = stripTime(new Date((s.balance_as_of || todayISO()) + 'T00:00:00'))
   const today = stripTime(new Date(todayISO() + 'T00:00:00'))
   const from = start < today ? today : start // never project into the past
   const buffer = Number(s.buffer) || 0
-  // look ahead through the END of NEXT month so next-month bills are flagged on every account
-  const horizon = new Date(from.getFullYear(), from.getMonth() + 2, 0)
-
-  const upcoming = bills
-    .flatMap((b) => occurrencesUpTo(b, from, horizon).map((date) => ({ b, date })))
-    .sort((a, b) => a.date.getTime() - b.date.getTime())
+  // one cycle: the next occurrence of each bill, once each (see nextOccurrences)
+  const upcoming = nextOccurrences(bills, from) as { b: Bill; date: Date }[]
+  const horizon = upcoming.length ? upcoming[upcoming.length - 1].date : from
 
   let bal = Number(s.current_balance) || 0
   const startBalance = bal

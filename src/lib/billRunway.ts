@@ -18,33 +18,30 @@ function nextDateForDay(from: Date, day: number): Date {
   return new Date(y, m, Math.min(day, daysInMonth(y, m)))
 }
 
-// Every date a bill lands on between `from` and `horizon` (inclusive) — monthly by
-// day-of-month (clamped for short months), or quarterly stepping from next_due.
-export function occurrencesUpTo(bill: BillRow, from: Date, horizon: Date): Date[] {
-  const out: Date[] = []
-  if (bill.quarterly) {
-    if (!bill.next_due) return out
-    const base = strip(new Date(bill.next_due + 'T00:00:00'))
-    for (let k = 0; k < 40; k++) {
-      const d = new Date(base.getFullYear(), base.getMonth() + k * 3, base.getDate())
-      if (d < from) continue
-      if (d > horizon) break
-      out.push(d)
+// The forecast window: the NEXT occurrence of each bill, once each — roughly 3-4.5 weeks
+// depending on how the due days fall.
+//
+// Counting one cycle keeps the total directly comparable to a month's income. A fixed
+// calendar horizon (we used "end of next month") catches most bills twice and silently
+// changes meaning as the month advances; a fixed day count (28/35) either drops bills whose
+// due day sits just past the edge or double-counts the ones near it. One-of-each avoids
+// both, at the cost of a window that breathes a few days — which is why the card prints
+// the date range rather than a "next N weeks" label.
+export function nextOccurrences(bills: BillRow[], from: Date): { b: BillRow; date: Date }[] {
+  const out: { b: BillRow; date: Date }[] = []
+  for (const b of bills) {
+    if (b.quarterly) {
+      if (!b.next_due) continue
+      let d = strip(new Date(b.next_due + 'T00:00:00'))
+      let guard = 0
+      while (d < from && guard++ < 40) d = new Date(d.getFullYear(), d.getMonth() + 3, d.getDate())
+      if (d >= from) out.push({ b, date: d })
+      continue
     }
-    return out
+    out.push({ b, date: nextDateForDay(from, b.day) })
   }
-  let d = nextDateForDay(from, bill.day)
-  while (d <= horizon) {
-    out.push(d)
-    const ny = d.getFullYear(), nm = d.getMonth() + 1
-    d = new Date(ny, nm, Math.min(bill.day, daysInMonth(ny, nm)))
-  }
-  return out
+  return out.sort((x, y) => x.date.getTime() - y.date.getTime())
 }
-
-// How far out the forecast looks: the end of NEXT month, so next-month bills stay visible
-// even from the last days of this one.
-export const forecastHorizon = (from: Date) => new Date(from.getFullYear(), from.getMonth() + 2, 0)
 
 // The date this account's balance stops covering its bills.
 //
@@ -58,10 +55,7 @@ export function coveredThrough(bills: BillRow[], s: BillSettings): string | null
   const today = strip(new Date())
   const startRaw = strip(new Date((s.balance_as_of || ymd(today)) + 'T00:00:00'))
   const from = startRaw < today ? today : startRaw // never project into the past
-  const horizon = forecastHorizon(from)
-  const upcoming = active
-    .flatMap((b) => occurrencesUpTo(b, from, horizon).map((date) => ({ b, date })))
-    .sort((a, b) => a.date.getTime() - b.date.getTime())
+  const upcoming = nextOccurrences(active, from)
 
   const buffer = Number(s.buffer) || 0
   let bal = Number(s.current_balance) || 0
