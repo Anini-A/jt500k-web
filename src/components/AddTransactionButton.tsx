@@ -232,6 +232,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(valid.map((r) => ({
           date: r.date, description: r.description, category: r.category, type: r.type, amount: parseFloat(r.amount),
+          card: r.card ?? null, // keep which card it was charged to — drafts get deleted on log
         }))),
       })
       if (!res.ok) { setImportErr((await res.json()).error || 'Could not save.'); return }

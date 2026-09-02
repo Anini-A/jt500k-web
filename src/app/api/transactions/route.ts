@@ -41,6 +41,13 @@ export async function POST(req: NextRequest) {
     .from('categories').select('id, name, type').eq('household_id', household.id)
   const catByName = new Map((cats ?? []).map((c) => [c.name, c]))
 
+  // resolve card name → id. Rows carry the card's NAME (that's what drafts store), and we
+  // keep both: the id for joins, the name so the association outlives a deleted card —
+  // exactly how category_id/category are handled above.
+  const { data: cards } = await supabaseAdmin
+    .from('cards').select('id, name').eq('household_id', household.id)
+  const cardByName = new Map((cards ?? []).map((c) => [c.name, c]))
+
   // ---- bulk ----
   if (Array.isArray(body)) {
     const rows = []
@@ -57,6 +64,8 @@ export async function POST(req: NextRequest) {
         category: r.category ?? null,
         type: cat?.type ?? r.type ?? 'expense',
         amount: Number(r.amount),
+        card_id: r.card ? cardByName.get(r.card)?.id ?? null : null,
+        card: r.card ?? null,
       })
     }
     const { error } = await supabaseAdmin.from('transactions').insert(rows)
@@ -65,7 +74,7 @@ export async function POST(req: NextRequest) {
   }
 
   // ---- single ----
-  const { date, description, category, type, amount } = body
+  const { date, description, category, type, amount, card } = body
   if (!date || !type || amount == null) {
     return NextResponse.json({ error: 'date, type and amount are required' }, { status: 400 })
   }
@@ -81,6 +90,8 @@ export async function POST(req: NextRequest) {
       category: category ?? null,
       type,
       amount,
+      card_id: card ? cardByName.get(card)?.id ?? null : null,
+      card: card ?? null,
     })
     .select()
     .single()
@@ -89,10 +100,10 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(data, { status: 201 })
 }
 
-// PATCH /api/transactions  { id, date?, description?, amount?, category? }
+// PATCH /api/transactions  { id, date?, description?, amount?, category?, card? }
 // Edit any field of one transaction. Type follows the chosen category.
 export async function PATCH(req: NextRequest) {
-  const { id, date, description, amount, category } = await req.json().catch(() => ({}))
+  const { id, date, description, amount, category, card } = await req.json().catch(() => ({}))
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
 
   const patch: Record<string, unknown> = {}
@@ -106,6 +117,15 @@ export async function PATCH(req: NextRequest) {
     patch.category = cat.name
     patch.category_id = cat.id
     patch.type = cat.type
+  }
+  // '' clears the card; a name sets it (unknown names still keep the text)
+  if (card !== undefined) {
+    const name = String(card ?? '').trim()
+    const { data: c } = name
+      ? await supabaseAdmin.from('cards').select('id, name').eq('name', name).maybeSingle()
+      : { data: null }
+    patch.card = name || null
+    patch.card_id = c?.id ?? null
   }
   if (Object.keys(patch).length === 0) {
     return NextResponse.json({ error: 'Nothing to update' }, { status: 400 })
