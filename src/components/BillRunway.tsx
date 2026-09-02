@@ -33,11 +33,10 @@ interface Projection {
   coveredCount: number          // bills fully covered while staying above the buffer
   coveredThroughISO: string | null  // date of the last covered bill
   firstShort: TLEvent | null    // first bill the balance can't cover
-  remainingCount: number        // uncovered bills THIS month only — what the top-up $ actually needs to cover
-  remainingTotal: number        // sum of those this-month bills
-  nextMonthCount: number        // uncovered bills falling in the following month — flagged as a heads-up, no $ total
-                                 // (a paycheck almost certainly lands before most of these are due, so summing
-                                 // their dollars into "top up" would overstate the real gap)
+  remainingCount: number        // every uncovered bill out to the horizon (this month AND next)
+  remainingTotal: number        // sum of those bills — a worst-case "if nothing goes into this account" figure,
+                                 // NOT a due-now amount, so the card always labels the window it spans
+  horizonISO: string            // last day the forecast looks at — end of next month
   short: number                 // top-up needed to cover everything upcoming
 }
 
@@ -90,36 +89,25 @@ function project(bills: Bill[], s: { current_balance: number; balance_as_of: str
 
   let bal = Number(s.current_balance) || 0
   const startBalance = bal
-  const timeline: { b: Bill; date: Date; ev: TLEvent }[] = []
+  const timeline: TLEvent[] = []
   let coveredCount = 0
   let coveredThroughISO: string | null = null
-  let firstShort: { b: Bill; date: Date; ev: TLEvent } | null = null
+  let firstShort: TLEvent | null = null
+  let remainingTotal = 0
 
   for (const { b, date } of upcoming) {
     bal = Math.round((bal - Number(b.amount)) * 100) / 100
     const covered = bal >= buffer // balance only decreases, so once below it stays below
     const ev: TLEvent = { iso: ymd(date), name: b.name, amount: Number(b.amount), balanceAfter: bal, covered }
     if (covered) { coveredCount++; coveredThroughISO = ev.iso }
-    else if (!firstShort) firstShort = { b, date, ev }
-    timeline.push({ b, date, ev })
-  }
-
-  // "Top up" $ only covers this calendar month (or, if this month is fully funded, just the
-  // very next uncovered bill) — everything further out just gets counted as a heads-up below,
-  // since a paycheck almost certainly lands before most of it is actually due.
-  const endOfThisMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0)
-  const cutoff = firstShort && firstShort.date > endOfThisMonth ? firstShort.date : endOfThisMonth
-  let remainingCount = 0, remainingTotal = 0, nextMonthCount = 0
-  for (const { date, ev } of timeline) {
-    if (ev.covered) continue
-    if (date <= cutoff) { remainingCount++; remainingTotal += ev.amount }
-    else nextMonthCount++
+    else { remainingTotal += ev.amount; if (!firstShort) firstShort = ev }
+    timeline.push(ev)
   }
 
   const short = Math.max(0, buffer - bal) // top-up to cover every upcoming bill
   return {
-    timeline: timeline.map((t) => t.ev), startBalance, buffer, coveredCount, coveredThroughISO,
-    firstShort: firstShort?.ev ?? null, remainingCount, remainingTotal, nextMonthCount, short,
+    timeline, startBalance, buffer, coveredCount, coveredThroughISO, firstShort,
+    remainingCount: timeline.length - coveredCount, remainingTotal, horizonISO: ymd(horizon), short,
   }
 }
 
@@ -179,6 +167,7 @@ export default function BillRunway() {
   const staleDays = Math.max(0, Math.round((Date.parse(todayISO()) - Date.parse(asOf)) / 86400000))
   const stale = staleDays >= 1
   const through = proj?.coveredThroughISO
+  const projFrom = asOf < todayISO() ? todayISO() : asOf // project() never looks into the past
   const settings = active // alias so the balance card / modal read the active account
 
   return (
@@ -218,31 +207,40 @@ export default function BillRunway() {
           <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Nothing scheduled — add bills below.</div>
         ) : (
           <div style={{ display: 'grid', gap: 8 }}>
-            {/* covers line */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, padding: '9px 12px', borderRadius: 10, background: 'var(--income-soft)' }}>
-              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Covers {proj.coveredCount} bill{proj.coveredCount === 1 ? '' : 's'}{through ? ` to ${fmtDay(through)}` : ''}</span>
+            {/* covers line — the window this balance actually gets you through */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 10, background: 'var(--income-soft)' }}>
+              <span style={{ minWidth: 0 }}>
+                <span style={{ display: 'block', fontSize: 13, color: 'var(--text-secondary)' }}>Covers {proj.coveredCount} bill{proj.coveredCount === 1 ? '' : 's'}</span>
+                {through && <span style={{ display: 'block', fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>{fmtRange(projFrom, through)}</span>}
+              </span>
               <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--income)' }}>{money2(proj.startBalance)}</span>
             </div>
-            {/* top-up line — URGENT (red) only when a bill THIS month is short or the next one is within a week;
-                otherwise a calm heads-up so being covered for the month reads as good news */}
+            {/* shortfall line — URGENT (red) only when a bill THIS month is short or the next one is within a week;
+                otherwise a calm heads-up so being covered for the month reads as good news.
+                Both spell out the window the $ spans, since it runs to the end of NEXT month. */}
             {!proj.firstShort ? (
-              <div style={{ fontSize: 13, color: 'var(--income)', fontWeight: 600, padding: '2px 2px' }}>Every upcoming bill covered.</div>
+              <div style={{ fontSize: 13, color: 'var(--income)', fontWeight: 600, padding: '2px 2px' }}>Every upcoming bill covered through {fmtDay(proj.horizonISO)}.</div>
             ) : (!coveredMonth || topUpSoon) ? (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, padding: '9px 12px', borderRadius: 10, background: RED_SOFT }}>
-                <span style={{ fontSize: 13, color: 'var(--text-secondary)', minWidth: 0 }}>Top up for <b style={{ color: 'var(--text-primary)' }}>{proj.firstShort.name}</b>{proj.remainingCount > 1 ? ` +${proj.remainingCount - 1} more` : ''} · {fmtDay(proj.firstShort.iso)}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 10, background: RED_SOFT }}>
+                <span style={{ minWidth: 0 }}>
+                  <span style={{ display: 'block', fontSize: 13, color: 'var(--text-secondary)' }}>Short for <b style={{ color: 'var(--text-primary)' }}>{proj.firstShort.name}</b>{proj.remainingCount > 1 ? ` +${proj.remainingCount - 1} more` : ''}</span>
+                  <span style={{ display: 'block', fontSize: 11.5, color: RED, marginTop: 2 }}>{fmtRange(proj.firstShort.iso, proj.horizonISO)}</span>
+                </span>
                 <span style={{ fontWeight: 700, fontSize: 15, color: RED, whiteSpace: 'nowrap' }}>{money2(proj.remainingTotal)}</span>
               </div>
             ) : (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, padding: '9px 12px', borderRadius: 10, background: 'var(--kpi-bg)', border: '1px solid var(--border)' }}>
-                <span style={{ fontSize: 13, color: 'var(--text-muted)', minWidth: 0 }}>Next month: top up <b style={{ color: 'var(--text-secondary)' }}>{proj.firstShort.name}</b>{proj.remainingCount > 1 ? ` +${proj.remainingCount - 1} more` : ''} by {fmtDay(proj.firstShort.iso)}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 10, background: 'var(--kpi-bg)', border: '1px solid var(--border)' }}>
+                <span style={{ minWidth: 0 }}>
+                  <span style={{ display: 'block', fontSize: 13, color: 'var(--text-muted)' }}>Next month: short for <b style={{ color: 'var(--text-secondary)' }}>{proj.firstShort.name}</b>{proj.remainingCount > 1 ? ` +${proj.remainingCount - 1} more` : ''}</span>
+                  <span style={{ display: 'block', fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>{fmtRange(proj.firstShort.iso, proj.horizonISO)}</span>
+                </span>
                 <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{money2(proj.remainingTotal)}</span>
               </div>
             )}
-            {/* next month's OWN shortfall, beyond the one bill already priced into the top-up above —
-                a plain count, not a dollar total, since a paycheck likely lands before most of it is due */}
-            {proj.nextMonthCount > 0 && (
-              <div style={{ fontSize: 12, color: 'var(--text-muted)', padding: '2px 2px' }}>
-                +{proj.nextMonthCount} more bill{proj.nextMonthCount === 1 ? '' : 's'} short next month
+            {/* the forecast drains only — spell that out so the shortfall $ isn't read as "due now" */}
+            {proj.firstShort && (
+              <div style={{ fontSize: 11.5, color: 'var(--text-muted)', padding: '0 2px' }}>
+                Total if no money goes into {active.name} before {fmtDay(proj.horizonISO)}.
               </div>
             )}
             {stale && <div style={{ fontSize: 12, color: RED }}>Based on your {fmtDay(asOf)} balance.</div>}
@@ -343,7 +341,7 @@ function CoverageTimeline({ proj, asOf, urgent }: { proj: Projection; asOf: stri
         <h3 style={{ margin: 0, fontSize: 15, display: 'flex', alignItems: 'center', gap: 8 }}><CalendarClock size={16} /> Coverage timeline</h3>
         <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>
           {proj.coveredThroughISO ? <>covers up to <b style={{ color: 'var(--text-primary)' }}>{fmtDay(proj.coveredThroughISO)}</b></> : 'what your balance covers'}
-          {proj.firstShort ? <> · <span style={{ color: urgent ? RED : 'var(--text-muted)', fontWeight: 600 }}>{proj.remainingCount} to top up · {money2(proj.remainingTotal)}</span></> : proj.timeline.length ? <> · <span style={{ color: 'var(--income)', fontWeight: 600 }}>all covered</span></> : null}
+          {proj.firstShort ? <> · <span style={{ color: urgent ? RED : 'var(--text-muted)', fontWeight: 600 }}>{proj.remainingCount} short {fmtRange(proj.firstShort.iso, proj.horizonISO)} · {money2(proj.remainingTotal)}</span></> : proj.timeline.length ? <> · <span style={{ color: 'var(--income)', fontWeight: 600 }}>all covered to {fmtDay(proj.horizonISO)}</span></> : null}
         </span>
       </div>
 
@@ -386,6 +384,8 @@ function CoverageTimeline({ proj, asOf, urgent }: { proj: Projection; asOf: stri
 
 const iconBtn: React.CSSProperties = { display: 'inline-flex', padding: 6, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }
 const fmtDay = (iso: string) => { const d = new Date(iso + 'T00:00:00'); return d.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' }) }
+// "Sep 15 → Oct 31" — always name both ends so a total is never read as a single-day amount
+const fmtRange = (fromISO: string, toISO: string) => (fromISO === toISO ? fmtDay(fromISO) : `${fmtDay(fromISO)} → ${fmtDay(toISO)}`)
 
 // ── Modals ──────────────────────────────────────────────────────────
 function Shell({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
