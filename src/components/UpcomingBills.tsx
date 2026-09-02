@@ -92,8 +92,13 @@ export default function UpcomingBills() {
   const activeTab = tabs.find((t) => t.id === activeId)
   const dotFor = (t: { id: string; shortFrom: string | null }) =>
     !cycles.has(t.id) ? 'var(--text-muted)' : t.shortFrom ? 'var(--expense)' : 'var(--income)'
-  // a dropdown hides the other accounts' dots, so carry a badge when one of them is short
-  const otherShort = tabs.some((t) => t.id !== activeId && t.shortFrom)
+  // A dropdown hides the other accounts, so a shortfall in one of them still has to reach
+  // the surface. It gets a named line below (see otherShorts) rather than a badge on the
+  // pill: an unlabelled dot on THIS account's pill reads as this account's problem.
+  const otherShorts = tabs
+    .filter((t) => t.id !== activeId && t.shortFrom)
+    .map((t) => ({ id: t.id, name: t.name, short: cycles.get(t.id)?.short ?? 0, from: t.shortFrom! }))
+    .sort((x, y) => x.from.localeCompare(y.from))
 
   const accountPill = tabs.length > 1 && activeTab && (
     <span style={{ position: 'relative', display: 'inline-flex', minWidth: 0 }}>
@@ -104,10 +109,6 @@ export default function UpcomingBills() {
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{activeTab.name}</span>
         <ChevronDown size={11} style={{ flexShrink: 0, opacity: 0.65 }} />
       </span>
-      {otherShort && (
-        <span aria-hidden style={{ position: 'absolute', top: -2, right: -2, width: 6, height: 6, borderRadius: '50%',
-          background: 'var(--expense)', boxShadow: '0 0 0 1.5px var(--surface-1)' }} />
-      )}
       {/* the real control sits invisibly on top, so the platform's own picker opens */}
       <select value={activeId} onChange={(e) => setPicked(e.target.value)} aria-label="Bill account"
         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0,
@@ -150,6 +151,20 @@ export default function UpcomingBills() {
           <span style={{ marginLeft: 'auto', flexShrink: 0, opacity: 0.6, fontWeight: 700 }}>›</span>
         </a>
       )}
+
+      {otherShorts.map((o) => (
+        <button key={o.id} onClick={() => setPicked(o.id)}
+          style={{ display: 'flex', alignItems: 'center', gap: 7, width: '100%', marginTop: 6, padding: '7px 11px',
+            borderRadius: 10, fontSize: 12, fontWeight: 600, fontFamily: 'inherit', textAlign: 'left', cursor: 'pointer',
+            border: '1px solid transparent', color: 'var(--expense)',
+            background: 'color-mix(in srgb, var(--expense) 8%, transparent)' }}>
+          <TriangleAlert size={12} style={{ flexShrink: 0 }} />
+          <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {o.name} · {money(o.short)} short from {fmtDay(new Date(o.from + 'T00:00:00'))}
+          </span>
+          <span style={{ marginLeft: 'auto', flexShrink: 0, opacity: 0.6, fontWeight: 700 }}>›</span>
+        </button>
+      ))}
 
       {/* Dense one-line rows: date · name · amount. The date carries coverage — green while
           the account funds it, red once the balance has run out. Scrolls past 5 rows so a
