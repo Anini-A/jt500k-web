@@ -108,14 +108,28 @@ export default function UpcomingBills() {
       {/* Account switcher — each account funds its own bills, so they're viewed one at a
           time. The dot flags an account that runs short without having to open it. */}
       {tabs.length > 1 && (
-        <div className="tabs tabs-scroll" style={{ marginTop: 10 }}>
-          {tabs.map((t) => (
-            <button key={t.id} onClick={() => setPicked(t.id)} className={`tab ${t.id === activeId ? 'tab-active' : ''}`}>
-              <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
-                background: !cycles.has(t.id) ? 'var(--text-muted)' : t.shortFrom ? 'var(--expense)' : 'var(--income)' }} />
-              {t.name}
-            </button>
-          ))}
+        <div style={{ display: 'flex', gap: 4, marginTop: 10, overflowX: 'auto', scrollbarWidth: 'none' }}>
+          {tabs.map((t) => {
+            const on = t.id === activeId
+            return (
+              // Deliberately NOT the dashboard's .tab pills — those are page-level nav and
+              // read as a heavy slab inside a compact card. Selection is carried by a quiet
+              // fill plus text weight, in the same muted register as the rest of the card.
+              <button key={t.id} onClick={() => setPicked(t.id)}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0,
+                  padding: '5px 10px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit',
+                  fontSize: 12.5, fontWeight: on ? 700 : 600, whiteSpace: 'nowrap',
+                  border: '1px solid ' + (on ? 'var(--border)' : 'transparent'),
+                  background: on ? 'var(--kpi-bg)' : 'transparent',
+                  color: on ? 'var(--text-primary)' : 'var(--text-muted)',
+                }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, opacity: on ? 1 : 0.65,
+                  background: !cycles.has(t.id) ? 'var(--text-muted)' : t.shortFrom ? 'var(--expense)' : 'var(--income)' }} />
+                {t.name}
+              </button>
+            )
+          })}
         </div>
       )}
 
@@ -128,9 +142,9 @@ export default function UpcomingBills() {
             background: cycle.short > 0 ? 'color-mix(in srgb, var(--expense) 12%, transparent)' : 'color-mix(in srgb, var(--income) 10%, transparent)' }}>
           {cycle.short > 0 && <TriangleAlert size={13} style={{ flexShrink: 0 }} />}
           <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cycle.short > 0
-            ? <>Covers bills to {cutoff ? fmtDay(new Date(cutoff + 'T00:00:00')) : '\u2014'} · {money(cycle.short)} short</>
+            ? <>Covers bills to {cutoff ? fmtDay(new Date(cutoff + 'T00:00:00')) : '—'} · {money(cycle.short)} short</>
             : 'Balance covers every upcoming bill'}</span>
-          <span style={{ marginLeft: 'auto', flexShrink: 0, opacity: 0.6, fontWeight: 700 }}>\u203a</span>
+          <span style={{ marginLeft: 'auto', flexShrink: 0, opacity: 0.6, fontWeight: 700 }}>›</span>
         </a>
       )}
 
