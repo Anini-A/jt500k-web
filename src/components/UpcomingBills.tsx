@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { getJSON, cachedValue } from '@/lib/fresh'
 import { today, ymd } from '@/lib/date'
 import { projectCycle, nextOccurrences } from '@/lib/billRunway'
-import { TriangleAlert } from 'lucide-react'
+import { TriangleAlert, ChevronDown } from 'lucide-react'
 import LoadError from './LoadError'
 
 interface Bill { id: string; account_id: string | null; name: string; day: number; amount: number; quarterly?: boolean; next_due?: string | null }
@@ -73,7 +73,7 @@ export default function UpcomingBills() {
   // Nothing to show / still cold-loading with no cache → render nothing (keep Home clean)
   if (!data && !loaded) return null
   if (error && !bills.length) return (
-    <div className="card glass"><span className="hdr-label">Upcoming bills</span><LoadError onRetry={() => { setError(false); load() }} label="Couldn't load bills" compact /></div>
+    <div className="card glass"><span className="hdr-label">Bills</span><LoadError onRetry={() => { setError(false); load() }} label="Couldn't load bills" compact /></div>
   )
   if (!bills.length) return null
 
@@ -89,11 +89,42 @@ export default function UpcomingBills() {
     !cycle ? 'unknown' : cutoff && ymd(u.date) <= cutoff ? 'covered' : 'short'
   const firstShortIdx = cycle ? rows.findIndex((u) => coverageOf(u) === 'short') : -1
 
+  const activeTab = tabs.find((t) => t.id === activeId)
+  const dotFor = (t: { id: string; shortFrom: string | null }) =>
+    !cycles.has(t.id) ? 'var(--text-muted)' : t.shortFrom ? 'var(--expense)' : 'var(--income)'
+  // a dropdown hides the other accounts' dots, so carry a badge when one of them is short
+  const otherShort = tabs.some((t) => t.id !== activeId && t.shortFrom)
+
+  const accountPill = tabs.length > 1 && activeTab && (
+    <span style={{ position: 'relative', display: 'inline-flex', minWidth: 0 }}>
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, minWidth: 0, padding: '3px 7px 3px 8px',
+        borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)',
+        fontSize: 11.5, fontWeight: 600, color: 'var(--text-secondary)' }}>
+        <span style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: dotFor(activeTab) }} />
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{activeTab.name}</span>
+        <ChevronDown size={11} style={{ flexShrink: 0, opacity: 0.65 }} />
+      </span>
+      {otherShort && (
+        <span aria-hidden style={{ position: 'absolute', top: -2, right: -2, width: 6, height: 6, borderRadius: '50%',
+          background: 'var(--expense)', boxShadow: '0 0 0 1.5px var(--surface-1)' }} />
+      )}
+      {/* the real control sits invisibly on top, so the platform's own picker opens */}
+      <select value={activeId} onChange={(e) => setPicked(e.target.value)} aria-label="Bill account"
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0,
+          appearance: 'none', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 16 }}>
+        {tabs.map((t) => <option key={t.id} value={t.id}>{t.name}{t.shortFrom ? ' — short' : ''}</option>)}
+      </select>
+    </span>
+  )
+
   const header = (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-      <span className="hdr-label">Upcoming bills</span>
+      <span style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+        <span className="hdr-label" style={{ flexShrink: 0 }}>Bills</span>
+        {accountPill}
+      </span>
       {rows.length > 0 && (
-        <span style={{ fontSize: 12, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums', textAlign: 'right' }}>
+        <span style={{ fontSize: 12, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums', textAlign: 'right', flexShrink: 0 }}>
           <b style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>{money(totalSoon)}</b> · {fmtDay(from)} → {fmtDay(horizonEnd)}
         </span>
       )}
@@ -103,35 +134,7 @@ export default function UpcomingBills() {
   return (
     <div className="card glass">
       {/* Header taps to Bills only when there's no coverage card to carry the tap */}
-      {cycle ? header : <a href="/dashboard" onClick={goBills} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>{header}</a>}
-
-      {/* Account switcher — each account funds its own bills, so they're viewed one at a
-          time. The dot flags an account that runs short without having to open it. */}
-      {tabs.length > 1 && (
-        <div style={{ display: 'flex', gap: 4, marginTop: 10, overflowX: 'auto', scrollbarWidth: 'none' }}>
-          {tabs.map((t) => {
-            const on = t.id === activeId
-            return (
-              // Deliberately NOT the dashboard's .tab pills — those are page-level nav and
-              // read as a heavy slab inside a compact card. Selection is carried by a quiet
-              // fill plus text weight, in the same muted register as the rest of the card.
-              <button key={t.id} onClick={() => setPicked(t.id)}
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0,
-                  padding: '5px 10px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit',
-                  fontSize: 12.5, fontWeight: on ? 700 : 600, whiteSpace: 'nowrap',
-                  border: '1px solid ' + (on ? 'var(--border)' : 'transparent'),
-                  background: on ? 'var(--kpi-bg)' : 'transparent',
-                  color: on ? 'var(--text-primary)' : 'var(--text-muted)',
-                }}>
-                <span style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, opacity: on ? 1 : 0.65,
-                  background: !cycles.has(t.id) ? 'var(--text-muted)' : t.shortFrom ? 'var(--expense)' : 'var(--income)' }} />
-                {t.name}
-              </button>
-            )
-          })}
-        </div>
-      )}
+      {cycle || accountPill ? header : <a href="/dashboard" onClick={goBills} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>{header}</a>}
 
       {/* Coverage — a thin tinted card, clickable through to the Bills tab. Red when an
           account runs short (standard --expense), green when covered. */}
