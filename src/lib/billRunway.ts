@@ -1,6 +1,6 @@
-// Shared bill-runway projection — used by the notification bell and the daily cron.
-// Finds the lowest projected balance in the Home & Utilities account BEFORE the
-// next paycheck deposit, so we can warn before a bill bounces.
+// Shared bill-runway projection — the single source of truth for bill coverage, used by
+// the Bills tab, the Home card, the notification bell/cron and the chat assistant.
+// No deposits are modeled: the balance only drains.
 
 import { ymd } from './date'
 
@@ -43,77 +43,59 @@ export function nextOccurrences(bills: BillRow[], from: Date): { b: BillRow; dat
   return out.sort((x, y) => x.date.getTime() - y.date.getTime())
 }
 
-// The date this account's balance stops covering its bills.
+export interface CycleEvent<T extends BillRow = BillRow> {
+  bill: T; date: Date; iso: string; name: string; amount: number
+  balanceAfter: number
+  covered: boolean          // the balance still cleared the buffer after paying it
+}
+export interface Cycle<T extends BillRow = BillRow> {
+  timeline: CycleEvent<T>[]
+  startBalance: number
+  buffer: number
+  coveredCount: number
+  coveredThroughISO: string | null // last date the balance still covers; null = short from the first bill
+  firstShort: CycleEvent<T> | null
+  remainingCount: number
+  remainingTotal: number    // FACE VALUE of the bills that aren't covered
+  short: number             // CASH needed to clear the cycle — less than remainingTotal, because
+                            // whatever is left in the account still goes toward the first short bill.
+                            // This is the "top up N" number; remainingTotal is "those bills total N".
+  horizonISO: string        // furthest bill in the cycle
+}
+
+// The one bill-coverage model: drain the balance through one cycle of bills, in date order.
 //
-// Coverage is monotonic — the model only ever drains, so once the running balance dips
-// below the buffer it never recovers. That makes coverage a single cutoff DATE rather than
-// a per-bill property: every occurrence on or before it is funded, everything after isn't.
-// Returns null when even the first upcoming bill is already short.
-export function coveredThrough(bills: BillRow[], s: BillSettings): string | null {
+// Coverage is monotonic — nothing is ever added back — so once the running balance dips below
+// the buffer it never recovers. That makes coverage a single cutoff DATE rather than a per-bill
+// property: every bill on or before it is funded, everything after isn't.
+export function projectCycle<T extends BillRow>(bills: T[], s: BillSettings): Cycle<T> {
   const active = (bills || []).filter((b) => b.active !== false)
-  if (!active.length) return null
   const today = strip(new Date())
   const startRaw = strip(new Date((s.balance_as_of || ymd(today)) + 'T00:00:00'))
   const from = startRaw < today ? today : startRaw // never project into the past
-  const upcoming = nextOccurrences(active, from)
+  const upcoming = nextOccurrences(active, from) as { b: T; date: Date }[]
 
   const buffer = Number(s.buffer) || 0
-  let bal = Number(s.current_balance) || 0
-  let last: Date | null = null
+  const startBalance = Number(s.current_balance) || 0
+  let bal = startBalance
+  const timeline: CycleEvent<T>[] = []
+  let coveredCount = 0, coveredThroughISO: string | null = null
+  let firstShort: CycleEvent<T> | null = null
+  let remainingCount = 0, remainingTotal = 0
+
   for (const { b, date } of upcoming) {
     bal = Math.round((bal - Number(b.amount)) * 100) / 100
-    if (bal < buffer) break
-    last = date
+    const covered = bal >= buffer
+    const ev: CycleEvent<T> = { bill: b, date, iso: ymd(date), name: b.name, amount: Number(b.amount), balanceAfter: bal, covered }
+    if (covered) { coveredCount++; coveredThroughISO = ev.iso }
+    else { remainingCount++; remainingTotal = Math.round((remainingTotal + ev.amount) * 100) / 100; if (!firstShort) firstShort = ev }
+    timeline.push(ev)
   }
-  return last ? ymd(last) : null
-}
 
-export function billTrough(bills: BillRow[], s: BillSettings): Trough | null {
-  const active = (bills || []).filter((b) => b.active !== false)
-  if (!active.length) return null
-  const today = strip(new Date())
-  const startRaw = strip(new Date((s.balance_as_of || today.toISOString().slice(0, 10)) + 'T00:00:00'))
-  const from = startRaw < today ? today : startRaw
-  // No deposits in the model — the balance only drains. Walk ~one billing cycle and
-  // report the point where it first drops below the buffer (i.e. runs short).
-  const DAYS = 35
-  const buffer = Number(s.buffer) || 0
-  let bal = Number(s.current_balance) || 0
-  let trough: { balance: number; date: Date } | null = null
-  let firstShort: { balance: number; date: Date } | null = null
-  for (let i = 0; i <= DAYS; i++) {
-    const d = new Date(from.getFullYear(), from.getMonth(), from.getDate() + i)
-    for (const b of active) {
-      let hit = false
-      if (b.quarterly && b.next_due) {
-        const occ = strip(new Date(b.next_due + 'T00:00:00'))
-        for (let k = 0; k < 24; k++) {
-          const q = new Date(occ.getFullYear(), occ.getMonth() + k * 3, occ.getDate())
-          if (q > d) break
-          if (q.getTime() === d.getTime()) { hit = true; break }
-        }
-      } else if (!b.quarterly && d.getDate() === Number(b.day)) hit = true
-      if (hit) {
-        bal -= Number(b.amount)
-        if (!firstShort && bal < buffer) firstShort = { balance: bal, date: d }
-        if (!trough || bal < trough.balance) trough = { balance: bal, date: d }
-      }
-    }
-  }
-  // report the first-shortfall day (most actionable); fall back to the lowest point
-  trough = firstShort || trough
-  if (!trough) return null
   return {
-    balance: Math.round(trough.balance),
-    iso: trough.date.toISOString().slice(0, 10),
-    label: trough.date.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' }),
+    timeline, startBalance, buffer, coveredCount, coveredThroughISO, firstShort,
+    remainingCount, remainingTotal,
+    short: Math.max(0, Math.round((buffer - bal) * 100) / 100),
+    horizonISO: ymd(timeline.length ? timeline[timeline.length - 1].date : from),
   }
-}
-
-// How much you'd need to top up to stay above the safety floor. 0 = covered.
-export function shortfall(bills: BillRow[], s: BillSettings): { short: number; trough: Trough } | null {
-  const t = billTrough(bills, s)
-  if (!t) return null
-  const buffer = Number(s.buffer) || 0
-  return { short: Math.max(0, buffer - t.balance), trough: t }
 }

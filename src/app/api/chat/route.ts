@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { shortfall } from '@/lib/billRunway'
+import { projectCycle } from '@/lib/billRunway'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
@@ -212,12 +212,12 @@ async function buildContext(clientDate?: string) {
   if (billAccounts.length) {
     const blocks = billAccounts.map((acc) => {
       const accBills = allBills.filter((b) => b.account_id === acc.id)
-      const sf = shortfall(accBills, acc)
+      const c = projectCycle(accBills, acc)
       const buf = Number(acc.buffer) || 0
       const verdict = !accBills.length ? 'no bills'
-        : sf && sf.short > 0
-          ? `SHORT — balance runs out ${sf.trough.label}; top up ${money(sf.short)} to cover upcoming bills${buf ? ` (keep a ${money(buf)} buffer)` : ''}`
-          : `COVERED — the balance covers every upcoming bill${buf ? ` while staying above the ${money(buf)} buffer` : ''}`
+        : c.short > 0 && c.firstShort
+          ? `SHORT — covers ${c.coveredCount} of ${c.timeline.length} bills${c.coveredThroughISO ? ` (through ${c.coveredThroughISO})` : ''}; first missed is ${c.firstShort.name} on ${c.firstShort.iso}; top up ${money(c.short)} to cover the whole cycle to ${c.horizonISO}${buf ? ` (keep a ${money(buf)} buffer)` : ''}`
+          : `COVERED — the balance covers all ${c.timeline.length} upcoming bills through ${c.horizonISO}${buf ? ` while staying above the ${money(buf)} buffer` : ''}`
       const lines = [...accBills].sort((a, b) => a.day - b.day)
         .map((b) => `    - id=${b.id} · ${b.name}: ${money(Number(b.amount))} on day ${b.day}${b.quarterly ? ` (quarterly${b.next_due ? `, next ${b.next_due}` : ''})` : ''}`).join('\n')
       return `  • ${acc.name}: balance ${money(Number(acc.current_balance) || 0)} (as of ${acc.balance_as_of || 'today'}), buffer ${money(buf)}\n    Coverage: ${verdict}\n${lines || '    (no bills)'}`

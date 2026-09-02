@@ -5,7 +5,13 @@ import { useConfirm } from './Feedback'
 import { Pencil, Plus, Trash2, TriangleAlert, CheckCircle2, CalendarClock } from 'lucide-react'
 import { getJSON } from '@/lib/fresh'
 import { ymd, today } from '@/lib/date'
-import { nextOccurrences } from '@/lib/billRunway'
+import { projectCycle, type Cycle } from '@/lib/billRunway'
+
+// The projection is shared with the Home card, the notification cron and chat —
+// see lib/billRunway.ts. This file only renders it.
+type Projection = Cycle<Bill>
+const project = (bills: Bill[], s: { current_balance: number; balance_as_of: string | null; buffer: number }) => projectCycle(bills, s)
+const stripTime = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate())
 
 interface Bill { id: string; account_id: string | null; name: string; day: number; amount: number; quarterly?: boolean; next_due?: string | null }
 interface Account { id: string; name: string; current_balance: number; balance_as_of: string | null; buffer: number }
@@ -21,59 +27,6 @@ const inp: React.CSSProperties = {
   padding: '9px 11px', borderRadius: 10, border: '1px solid var(--border)',
   background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 16, width: '100%',
   fontFamily: 'inherit', boxSizing: 'border-box',
-}
-
-// ── Coverage engine ─────────────────────────────────────────────────
-// Drains the current balance by each bill's NEXT occurrence (in date order) and
-// answers "what does this balance cover, up to when, and what still needs a top-up?"
-interface TLEvent { iso: string; name: string; amount: number; balanceAfter: number; covered: boolean }
-interface Projection {
-  timeline: TLEvent[]           // next occurrence of each upcoming bill, date-ordered
-  startBalance: number
-  buffer: number
-  coveredCount: number          // bills fully covered while staying above the buffer
-  coveredThroughISO: string | null  // date of the last covered bill
-  firstShort: TLEvent | null    // first bill the balance can't cover
-  remainingCount: number        // uncovered bills in the window — one cycle, each bill counted once
-  remainingTotal: number        // sum of those bills — a worst-case "if nothing goes into this account"
-                                 // figure, NOT a due-now amount, so the card always labels its window
-  horizonISO: string            // last day the window covers — the furthest bill's next occurrence
-  short: number                 // top-up needed to cover everything upcoming
-}
-
-const stripTime = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate())
-
-function project(bills: Bill[], s: { current_balance: number; balance_as_of: string | null; buffer: number }): Projection {
-  const start = stripTime(new Date((s.balance_as_of || todayISO()) + 'T00:00:00'))
-  const today = stripTime(new Date(todayISO() + 'T00:00:00'))
-  const from = start < today ? today : start // never project into the past
-  const buffer = Number(s.buffer) || 0
-  // one cycle: the next occurrence of each bill, once each (see nextOccurrences)
-  const upcoming = nextOccurrences(bills, from) as { b: Bill; date: Date }[]
-  const horizon = upcoming.length ? upcoming[upcoming.length - 1].date : from
-
-  let bal = Number(s.current_balance) || 0
-  const startBalance = bal
-  const timeline: TLEvent[] = []
-  let coveredCount = 0
-  let coveredThroughISO: string | null = null
-  let firstShort: TLEvent | null = null
-  let remainingTotal = 0
-
-  for (const { b, date } of upcoming) {
-    bal = Math.round((bal - Number(b.amount)) * 100) / 100
-    const covered = bal >= buffer // balance only decreases, so once below it stays below
-    const ev: TLEvent = { iso: ymd(date), name: b.name, amount: Number(b.amount), balanceAfter: bal, covered }
-    if (covered) { coveredCount++; coveredThroughISO = ev.iso }
-    else { remainingTotal += ev.amount; if (!firstShort) firstShort = ev }
-    timeline.push(ev)
-  }
-
-  const short = Math.max(0, buffer - bal) // top-up to cover every upcoming bill
-  return {
-    timeline, startBalance, buffer, coveredCount, coveredThroughISO, firstShort,
-    remainingCount: timeline.length - coveredCount, remainingTotal, horizonISO: ymd(horizon), short,
-  }
 }
 
 // ── UI ──────────────────────────────────────────────────────────────

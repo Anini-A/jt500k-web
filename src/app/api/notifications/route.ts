@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { shortfall } from '@/lib/billRunway'
+import { projectCycle } from '@/lib/billRunway'
 import { ymd } from '@/lib/date'
 
 export const dynamic = 'force-dynamic'
@@ -8,6 +8,7 @@ export const fetchCache = 'force-no-store'
 export const revalidate = 0
 
 const norm = (s: string | null) => (s || '').trim().toLowerCase()
+const fmtDay = (iso: string) => new Date(iso + 'T00:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })
 const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })
 
 async function household() {
@@ -146,9 +147,13 @@ export async function GET() {
   for (const acc of billAccounts) {
     const accBills = allBills.filter((b: any) => b.account_id === acc.id)
     if (!accBills.length) continue
-    const res = shortfall(accBills, acc)
-    if (res && res.short > 0) {
-      out.push({ id: `bill-runway-${acc.id}`, icon: '⚠️', severity: 'warn', kind: 'action', dismissible: false, title: `${acc.name} may run short`, detail: `Balance runs out ${res.trough.label} — top up about ${money(res.short)} to cover upcoming bills.` })
+    const c = projectCycle(accBills, acc)
+    if (c.short > 0 && c.firstShort) {
+      // `short` is the cash needed to clear the cycle. The old figure was the gap at the
+      // FIRST missed bill only, which read as "top up this and you're fine" when it covered
+      // just one more bill.
+      const through = c.coveredThroughISO ? fmtDay(c.coveredThroughISO) : null
+      out.push({ id: `bill-runway-${acc.id}`, icon: '⚠️', severity: 'warn', kind: 'action', dismissible: false, title: `${acc.name} may run short`, detail: `${through ? `Covers bills to ${through}, then` : 'Short from'} ${fmtDay(c.firstShort.iso)} — ${money(c.short)} short of covering all ${c.timeline.length} bills due by ${fmtDay(c.horizonISO)}.` })
     }
   }
 

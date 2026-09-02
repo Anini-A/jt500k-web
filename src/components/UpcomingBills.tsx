@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { getJSON, cachedValue } from '@/lib/fresh'
 import { today, ymd } from '@/lib/date'
-import { shortfall, coveredThrough } from '@/lib/billRunway'
+import { projectCycle } from '@/lib/billRunway'
 import { TriangleAlert } from 'lucide-react'
 import LoadError from './LoadError'
 
@@ -76,32 +76,31 @@ export default function UpcomingBills() {
   const horizonEnd = new Date(from.getFullYear(), from.getMonth(), from.getDate() + HORIZON)
   const goBills = () => { try { localStorage.setItem('jt-dash-tab', 'bills') } catch { /* ignore */ } }
 
-  // Coverage: for each account that HAS a tracked balance, will it cover its bills
-  // without dipping below its buffer? (Skip accounts with no balance set — no false alarms.)
+  // Coverage: one shared projection per account (same engine the Bills tab renders), so the
+  // banner, the row colours and the Bills tab can't disagree. Accounts with no tracked
+  // balance are skipped — no false alarms, and their bills stay neutral rather than being
+  // coloured green on no evidence.
   const tracked = accounts.filter((a) => Number(a.current_balance) > 0 || a.balance_as_of)
-  const shorts = tracked
-    .map((a) => {
-      const ab = bills.filter((b) => b.account_id === a.id)
-      if (!ab.length) return null
-      const res = shortfall(ab, { current_balance: a.current_balance, balance_as_of: a.balance_as_of, buffer: a.buffer })
-      return res && res.short > 0 ? { name: a.name, short: res.short, label: res.trough.label } : null
+  const cycles = new Map<string, ReturnType<typeof projectCycle<Bill>>>()
+  for (const a of tracked) {
+    const ab = bills.filter((b) => b.account_id === a.id)
+    if (ab.length) cycles.set(a.id, projectCycle(ab, { current_balance: a.current_balance, balance_as_of: a.balance_as_of, buffer: a.buffer }))
+  }
+  const shorts = [...cycles.entries()]
+    .map(([id, c]) => {
+      const name = accounts.find((a) => a.id === id)?.name ?? ''
+      // `short` (cash to clear the cycle), not the face value of the unpaid bills — whatever
+      // is left in the account still goes toward the first one.
+      return c.short > 0 && c.firstShort ? { name, short: c.short, from: c.firstShort.iso, through: c.coveredThroughISO } : null
     })
-    .filter((x): x is { name: string; short: number; label: string } => x !== null)
+    .filter((x): x is { name: string; short: number; from: string; through: string | null } => x !== null)
     .sort((a, b) => b.short - a.short)
   const hasCoverage = tracked.some((a) => bills.some((b) => b.account_id === a.id))
   const worst = shorts[0]
 
-  // Per-account cutoff date — a bill is funded iff it lands on or before its account's.
-  // Accounts with no tracked balance get no entry, so their bills stay neutral rather
-  // than being coloured green on no evidence.
-  const cutoffs = new Map<string, string | null>()
-  for (const a of tracked) {
-    const ab = bills.filter((b) => b.account_id === a.id)
-    if (ab.length) cutoffs.set(a.id, coveredThrough(ab, { current_balance: a.current_balance, balance_as_of: a.balance_as_of, buffer: a.buffer }))
-  }
   const coverageOf = (u: { b: Bill; date: Date }): 'covered' | 'short' | 'unknown' => {
-    if (!u.b.account_id || !cutoffs.has(u.b.account_id)) return 'unknown'
-    const cut = cutoffs.get(u.b.account_id)
+    if (!u.b.account_id || !cycles.has(u.b.account_id)) return 'unknown'
+    const cut = cycles.get(u.b.account_id)!.coveredThroughISO
     return cut && ymd(u.date) <= cut ? 'covered' : 'short'
   }
   const firstShortIdx = rows.findIndex((u) => coverageOf(u) === 'short')
@@ -131,7 +130,7 @@ export default function UpcomingBills() {
             background: worst ? 'color-mix(in srgb, var(--expense) 12%, transparent)' : 'color-mix(in srgb, var(--income) 10%, transparent)' }}>
           {worst && <TriangleAlert size={13} style={{ flexShrink: 0 }} />}
           <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{worst
-            ? <>{worst.name} runs short ~{money(worst.short)} by {worst.label}{shorts.length > 1 ? ` · +${shorts.length - 1}` : ''}</>
+            ? <>{worst.name} covers bills to {worst.through ? fmtDay(new Date(worst.through + 'T00:00:00')) : '—'} · {money(worst.short)} short{shorts.length > 1 ? ` · +${shorts.length - 1}` : ''}</>
             : 'Balances cover every upcoming bill'}</span>
           <span style={{ marginLeft: 'auto', flexShrink: 0, opacity: 0.6, fontWeight: 700 }}>›</span>
         </a>
