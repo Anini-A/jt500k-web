@@ -8,6 +8,7 @@ import JourneyCard from '@/components/JourneyCard'
 import MoneyFlowCard from '@/components/MoneyFlowCard'
 import UpcomingBills from '@/components/UpcomingBills'
 import { getJSON, cachedValue } from '@/lib/fresh'
+import { signedRowAmount } from '@/lib/draftTotals'
 import LoadError from '@/components/LoadError'
 
 interface Stats { currentBalance: number; savingsRate: number; transactionCount: number; asOf: string; totalSavings: number; monthChange: number }
@@ -29,8 +30,8 @@ export default function Home() {
         if (!Array.isArray(d)) return
         const m = new Map<string, number>()
         for (const draft of d) for (const r of draft.rows || []) {
-          const amt = parseFloat(String(r.amount)); if (isNaN(amt) || !r.card) continue
-          m.set(r.card, (m.get(r.card) || 0) + amt)
+          if (!r.card) continue
+          m.set(r.card, (m.get(r.card) || 0) + signedRowAmount(r))
         }
         setCards([...m.entries()].map(([card, total]) => ({ card, total })).sort((a, b) => b.total - a.total))
       }).catch(() => {})

@@ -7,6 +7,7 @@ import CategorySelect from './CategorySelect'
 import IconPill from './IconPill'
 import { useConfirm } from './Feedback'
 import { getJSON } from '@/lib/fresh'
+import { signedRowAmount } from '@/lib/draftTotals'
 import { ymd, today } from '@/lib/date'
 
 interface Category { name: string; type: string }
@@ -343,11 +344,11 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   // per-card subtotals for the review grid
   const cardTotals = (() => {
     const m = new Map<string, number>()
-    for (const r of rows) { const amt = parseFloat(r.amount); if (!isNaN(amt)) m.set(r.card || 'Unassigned', (m.get(r.card || 'Unassigned') || 0) + amt) }
+    for (const r of rows) m.set(r.card || 'Unassigned', (m.get(r.card || 'Unassigned') || 0) + signedRowAmount(r))
     return [...m.entries()]
   })()
   // headline = the VALID total that will actually log (not the raw sum of every row)
-  const validTotal = rows.filter(rowValid).reduce((s, r) => s + (parseFloat(r.amount) || 0), 0)
+  const validTotal = rows.filter(rowValid).reduce((s, r) => s + signedRowAmount(r), 0)
   const draftItemCount = drafts.reduce((s, d) => s + (d.rows?.length || 0), 0)
   // color the review row's left edge by transaction type
   const typeColor = (t: string) => (t === 'income' ? 'var(--income)' : t === 'savings' ? 'var(--savings)' : 'var(--expense)')
@@ -590,7 +591,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                           <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
                             {drafts.map((dr) => {
                               const items = dr.rows?.length || 0
-                              const tot = (dr.rows || []).reduce((s, r) => { const a = parseFloat(String(r.amount)); return s + (isNaN(a) ? 0 : a) }, 0)
+                              const tot = (dr.rows || []).reduce((s, r) => s + signedRowAmount(r), 0)
                               const cardsIn = [...new Set((dr.rows || []).map((r) => r.card).filter(Boolean))] as string[]
                               const cardLabel = cardsIn.length === 0 ? 'No card' : cardsIn.length === 1 ? cardsIn[0] : `${cardsIn.length} cards`
                               const dateStr = new Date(dr.updated_at).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })
