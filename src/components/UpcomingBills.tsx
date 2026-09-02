@@ -14,6 +14,7 @@ interface BillsResp { bills: Bill[]; accounts: Account[] }
 const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })
 const strip = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate())
 const ROW_H = 38   // one bill row (9px padding x 2 + line + border) - 5 of them sets the scroll height
+const UNASSIGNED = '__none__' // pseudo-account for bills not attached to one
 const fmtDay = (d: Date) => d.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })
 
 // Compact "what's due next" list for Home — pulls from the same bills the Bills tab uses.
@@ -21,6 +22,7 @@ export default function UpcomingBills() {
   const [data, setData] = useState<BillsResp | null>(() => cachedValue<BillsResp>('/api/bills'))
   const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState(false)
+  const [picked, setPicked] = useState<string>('') // '' = follow the default below
 
   const load = useCallback(() => {
     getJSON('/api/bills')
@@ -35,12 +37,38 @@ export default function UpcomingBills() {
 
   const bills = data?.bills ?? []
   const accounts = data?.accounts ?? []
-  const acctName = (id: string | null) => accounts.find((a) => a.id === id)?.name
 
   // One cycle - the next occurrence of each bill, once each - exactly the window the
   // Bills tab forecasts, so the two cards describe the same span.
   const from = strip(new Date(today() + 'T00:00:00'))
-  const upcoming = nextOccurrences(bills, from)
+
+  // Each account pays its own bills from its own balance, so coverage only means anything
+  // within an account. The card shows one at a time rather than interleaving them.
+  const cycles = new Map<string, ReturnType<typeof projectCycle<Bill>>>()
+  for (const a of accounts) {
+    const ab = bills.filter((b) => b.account_id === a.id)
+    // an account with no balance on record gets no projection — no false alarms, and its
+    // bills stay neutral rather than being coloured green on no evidence
+    if (ab.length && (Number(a.current_balance) > 0 || a.balance_as_of)) {
+      cycles.set(a.id, projectCycle(ab, { current_balance: a.current_balance, balance_as_of: a.balance_as_of, buffer: a.buffer }))
+    }
+  }
+  const orphans = bills.filter((b) => !b.account_id || !accounts.some((a) => a.id === b.account_id))
+  const tabs: { id: string; name: string; shortFrom: string | null }[] = [
+    ...accounts.filter((a) => bills.some((b) => b.account_id === a.id))
+      .map((a) => ({ id: a.id, name: a.name, shortFrom: cycles.get(a.id)?.firstShort?.iso ?? null })),
+    ...(orphans.length ? [{ id: UNASSIGNED, name: 'Other', shortFrom: null }] : []),
+  ]
+
+  // Which tab to show: whatever was tapped, else the account that runs short soonest so the
+  // card opens on the problem rather than waiting to be found. Derived rather than stored,
+  // so the first paint already has the right one and a new shortfall can claim the default.
+  const urgent = tabs.filter((t) => t.shortFrom).sort((x, y) => x.shortFrom!.localeCompare(y.shortFrom!))[0]
+  const activeId = picked && tabs.some((t) => t.id === picked) ? picked : (urgent?.id ?? tabs[0]?.id ?? '')
+
+  const activeBills = activeId === UNASSIGNED ? orphans : bills.filter((b) => b.account_id === activeId)
+  const upcoming = nextOccurrences(activeBills, from)
+  const cycle = cycles.get(activeId) ?? null
 
   // Nothing to show / still cold-loading with no cache → render nothing (keep Home clean)
   if (!data && !loaded) return null
@@ -49,42 +77,17 @@ export default function UpcomingBills() {
   )
   if (!bills.length) return null
 
-  // list == headline total == the whole cycle; scrolls rather than truncating
+  // list == headline total == this account's whole cycle; scrolls rather than truncating
   const rows = upcoming
   const totalSoon = rows.reduce((s, u) => s + Number(u.b.amount), 0)
   const horizonEnd = rows.length ? rows[rows.length - 1].date : from
   const goBills = () => { try { localStorage.setItem('jt-dash-tab', 'bills') } catch { /* ignore */ } }
 
-  // Coverage: one shared projection per account (same engine the Bills tab renders), so the
-  // banner, the row colours and the Bills tab can't disagree. Accounts with no tracked
-  // balance are skipped — no false alarms, and their bills stay neutral rather than being
-  // coloured green on no evidence.
-  const tracked = accounts.filter((a) => Number(a.current_balance) > 0 || a.balance_as_of)
-  const cycles = new Map<string, ReturnType<typeof projectCycle<Bill>>>()
-  for (const a of tracked) {
-    const ab = bills.filter((b) => b.account_id === a.id)
-    if (ab.length) cycles.set(a.id, projectCycle(ab, { current_balance: a.current_balance, balance_as_of: a.balance_as_of, buffer: a.buffer }))
-  }
-  const shorts = [...cycles.entries()]
-    .map(([id, c]) => {
-      const name = accounts.find((a) => a.id === id)?.name ?? ''
-      // `short` (cash to clear the cycle), not the face value of the unpaid bills — whatever
-      // is left in the account still goes toward the first one.
-      return c.short > 0 && c.firstShort ? { name, short: c.short, from: c.firstShort.iso, through: c.coveredThroughISO } : null
-    })
-    .filter((x): x is { name: string; short: number; from: string; through: string | null } => x !== null)
-    .sort((a, b) => b.short - a.short)
-  const hasCoverage = tracked.some((a) => bills.some((b) => b.account_id === a.id))
-  const worst = shorts[0]
-
-  const coverageOf = (u: { b: Bill; date: Date }): 'covered' | 'short' | 'unknown' => {
-    if (!u.b.account_id || !cycles.has(u.b.account_id)) return 'unknown'
-    const cut = cycles.get(u.b.account_id)!.coveredThroughISO
-    return cut && ymd(u.date) <= cut ? 'covered' : 'short'
-  }
-  const multiAccount = new Set(rows.map((u) => u.b.account_id).filter(Boolean)).size > 1
-  const shortIdx = rows.findIndex((u) => coverageOf(u) === 'short')
-  const firstShortIdx = shortIdx >= 0 && rows.slice(shortIdx).every((u) => coverageOf(u) === 'short') ? shortIdx : -1
+  // One account in view, so coverage is a clean cutoff: funded through this date, short after.
+  const cutoff = cycle?.coveredThroughISO ?? null
+  const coverageOf = (u: { date: Date }): 'covered' | 'short' | 'unknown' =>
+    !cycle ? 'unknown' : cutoff && ymd(u.date) <= cutoff ? 'covered' : 'short'
+  const firstShortIdx = cycle ? rows.findIndex((u) => coverageOf(u) === 'short') : -1
 
   const header = (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
@@ -100,20 +103,34 @@ export default function UpcomingBills() {
   return (
     <div className="card glass">
       {/* Header taps to Bills only when there's no coverage card to carry the tap */}
-      {hasCoverage ? header : <a href="/dashboard" onClick={goBills} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>{header}</a>}
+      {cycle ? header : <a href="/dashboard" onClick={goBills} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>{header}</a>}
+
+      {/* Account switcher — each account funds its own bills, so they're viewed one at a
+          time. The dot flags an account that runs short without having to open it. */}
+      {tabs.length > 1 && (
+        <div className="tabs tabs-scroll" style={{ marginTop: 10 }}>
+          {tabs.map((t) => (
+            <button key={t.id} onClick={() => setPicked(t.id)} className={`tab ${t.id === activeId ? 'tab-active' : ''}`}>
+              <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
+                background: !cycles.has(t.id) ? 'var(--text-muted)' : t.shortFrom ? 'var(--expense)' : 'var(--income)' }} />
+              {t.name}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Coverage — a thin tinted card, clickable through to the Bills tab. Red when an
           account runs short (standard --expense), green when covered. */}
-      {hasCoverage && (
+      {cycle && (
         <a href="/dashboard" onClick={goBills}
           style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 10, padding: '8px 11px', borderRadius: 10, fontSize: 12, fontWeight: 600, textDecoration: 'none',
-            color: worst ? 'var(--expense)' : 'var(--income)',
-            background: worst ? 'color-mix(in srgb, var(--expense) 12%, transparent)' : 'color-mix(in srgb, var(--income) 10%, transparent)' }}>
-          {worst && <TriangleAlert size={13} style={{ flexShrink: 0 }} />}
-          <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{worst
-            ? <>{worst.name} covers bills to {worst.through ? fmtDay(new Date(worst.through + 'T00:00:00')) : '—'} · {money(worst.short)} short{shorts.length > 1 ? ` · +${shorts.length - 1}` : ''}</>
-            : 'Balances cover every upcoming bill'}</span>
-          <span style={{ marginLeft: 'auto', flexShrink: 0, opacity: 0.6, fontWeight: 700 }}>›</span>
+            color: cycle.short > 0 ? 'var(--expense)' : 'var(--income)',
+            background: cycle.short > 0 ? 'color-mix(in srgb, var(--expense) 12%, transparent)' : 'color-mix(in srgb, var(--income) 10%, transparent)' }}>
+          {cycle.short > 0 && <TriangleAlert size={13} style={{ flexShrink: 0 }} />}
+          <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cycle.short > 0
+            ? <>Covers bills to {cutoff ? fmtDay(new Date(cutoff + 'T00:00:00')) : '\u2014'} · {money(cycle.short)} short</>
+            : 'Balance covers every upcoming bill'}</span>
+          <span style={{ marginLeft: 'auto', flexShrink: 0, opacity: 0.6, fontWeight: 700 }}>\u203a</span>
         </a>
       )}
 
@@ -137,14 +154,7 @@ export default function UpcomingBills() {
                 <span style={{ width: 52, flexShrink: 0, fontSize: 12.5, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: dateColor }}>
                   {u.date.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}
                 </span>
-                <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  <span style={{ fontWeight: 600, fontSize: 14 }}>{u.b.name}</span>
-                  {/* coverage is per ACCOUNT — without the name, one account's covered bill
-                      sitting below another's short one just looks like a bug */}
-                  {multiAccount && acctName(u.b.account_id) && (
-                    <span style={{ fontSize: 11.5, color: 'var(--text-muted)', marginLeft: 7 }}>{acctName(u.b.account_id)}</span>
-                  )}
-                </span>
+                <span style={{ flex: 1, minWidth: 0, fontWeight: 600, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.b.name}</span>
                 <span style={{ fontWeight: 700, fontSize: 14, fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{money(Number(u.b.amount))}</span>
               </div>
             </div>
