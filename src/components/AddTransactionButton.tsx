@@ -807,12 +807,17 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                                       <optgroup label="Savings">{grouped.savings.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}</optgroup>
                                     </select>
                                   </div>
-                                  <div style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 1 }}>
-                                    <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-muted)' }}>$</span>
+                                  {/* Fixed money column. Sizing this to the value in `ch` clipped short
+                                      amounts: box-sizing is border-box, so the width swallowed
+                                      recInline's 10px padding + 2px border, and one ch of slack never
+                                      covered it ("350" lost its last digit). A fixed width also lines
+                                      the amounts up as a column. */}
+                                  <div style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 1, width: 104 }}>
+                                    <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-muted)', flexShrink: 0 }}>$</span>
                                     <input inputMode="decimal" value={String(r.amount)} aria-label="Amount" className="rec-inline"
                                       onChange={(e) => setRecLocal(r.id, { amount: e.target.value.replace(/[^0-9.]/g, '') })}
                                       onBlur={(e) => { const v = parseFloat(e.target.value); v > 0 ? patchRec(r.id, { amount: v }) : reloadRecs() }}
-                                      style={{ ...recInline, width: `${Math.max(4, String(r.amount).length + 1)}ch`, textAlign: 'right', fontWeight: 700, fontSize: 15 }} />
+                                      style={{ ...recInline, flex: 1, minWidth: 0, textAlign: 'right', fontWeight: 700, fontSize: 15, fontVariantNumeric: 'tabular-nums' }} />
                                   </div>
                                   <button type="button" aria-label={`Delete ${r.name}`} title="Delete" onClick={() => setConfirmDel({ kind: 'rec', id: r.id, name: r.name })}
                                     style={{ flexShrink: 0, display: 'inline-flex', padding: 5, borderRadius: 8, border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}><Trash2 size={15} /></button>
