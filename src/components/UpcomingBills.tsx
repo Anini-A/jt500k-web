@@ -81,7 +81,13 @@ export default function UpcomingBills() {
   const rows = upcoming
   const totalSoon = rows.reduce((s, u) => s + Number(u.b.amount), 0)
   const horizonEnd = rows.length ? rows[rows.length - 1].date : from
-  const goBills = () => { try { localStorage.setItem('jt-dash-tab', 'bills') } catch { /* ignore */ } }
+  // open the Bills tab already showing the account that was tapped
+  const goBills = (accountId?: string) => {
+    try {
+      localStorage.setItem('jt-dash-tab', 'bills')
+      if (accountId && accountId !== UNASSIGNED) localStorage.setItem('jt-bill-account', accountId)
+    } catch { /* ignore */ }
+  }
 
   // One account in view, so coverage is a clean cutoff: funded through this date, short after.
   const cutoff = cycle?.coveredThroughISO ?? null
@@ -135,27 +141,29 @@ export default function UpcomingBills() {
   return (
     <div className="card glass">
       {/* Header taps to Bills only when there's no coverage card to carry the tap */}
-      {cycle || accountPill ? header : <a href="/dashboard" onClick={goBills} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>{header}</a>}
+      {cycle || accountPill ? header : <a href="/dashboard" onClick={() => goBills(activeId)} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>{header}</a>}
 
       {/* Coverage — a thin tinted card, clickable through to the Bills tab. Red when an
           account runs short (standard --expense), green when covered. */}
       {cycle && (
-        <a href="/dashboard" onClick={goBills}
+        <a href="/dashboard" onClick={() => goBills(activeId)}
           style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 10, padding: '8px 11px', borderRadius: 10, fontSize: 12, fontWeight: 600, textDecoration: 'none',
             color: cycle.short > 0 ? 'var(--expense)' : 'var(--income)',
             background: cycle.short > 0 ? 'color-mix(in srgb, var(--expense) 12%, transparent)' : 'color-mix(in srgb, var(--income) 10%, transparent)' }}>
           {cycle.short > 0 && <TriangleAlert size={13} style={{ flexShrink: 0 }} />}
           <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cycle.short > 0
-            ? <>Covers bills to {cutoff ? fmtDay(new Date(cutoff + 'T00:00:00')) : '—'} · {money(cycle.short)} short</>
+            ? cutoff
+              ? <>Covers bills to {fmtDay(new Date(cutoff + 'T00:00:00'))} · {money(cycle.short)} short</>
+              : <>No bills covered · {money(cycle.short)} short{cycle.firstShort ? <> from {fmtDay(new Date(cycle.firstShort.iso + 'T00:00:00'))}</> : null}</>
             : 'Balance covers every upcoming bill'}</span>
           <span style={{ marginLeft: 'auto', flexShrink: 0, opacity: 0.6, fontWeight: 700 }}>›</span>
         </a>
       )}
 
       {otherShorts.map((o) => (
-        <button key={o.id} onClick={() => setPicked(o.id)}
+        <a key={o.id} href="/dashboard" onClick={() => goBills(o.id)}
           style={{ display: 'flex', alignItems: 'center', gap: 7, width: '100%', marginTop: 6, padding: '7px 11px',
-            borderRadius: 10, fontSize: 12, fontWeight: 600, fontFamily: 'inherit', textAlign: 'left', cursor: 'pointer',
+            borderRadius: 10, fontSize: 12, fontWeight: 600, textDecoration: 'none', boxSizing: 'border-box',
             border: '1px solid transparent', color: 'var(--expense)',
             background: 'color-mix(in srgb, var(--expense) 8%, transparent)' }}>
           <TriangleAlert size={12} style={{ flexShrink: 0 }} />
@@ -163,7 +171,7 @@ export default function UpcomingBills() {
             {o.name} · {money(o.short)} short from {fmtDay(new Date(o.from + 'T00:00:00'))}
           </span>
           <span style={{ marginLeft: 'auto', flexShrink: 0, opacity: 0.6, fontWeight: 700 }}>›</span>
-        </button>
+        </a>
       ))}
 
       {/* Dense one-line rows: date · name · amount. The date carries coverage — green while

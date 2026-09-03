@@ -48,7 +48,17 @@ export default function BillRunway() {
         balance_as_of: a.balance_as_of || null, buffer: Number(a.buffer) || 0,
       }))
       setAccounts(accs)
-      setActiveId((cur) => (cur && accs.some((a) => a.id === cur)) ? cur : (accs[0]?.id || ''))
+      // Home hands off the account it was showing, so tapping a shortfall there lands on
+      // that account here rather than whichever happens to be first. Consumed once.
+      let want = ''
+      try {
+        want = localStorage.getItem('jt-bill-account') || ''
+        if (want) localStorage.removeItem('jt-bill-account')
+      } catch { /* ignore */ }
+      setActiveId((cur) => {
+        if (want && accs.some((a) => a.id === want)) return want
+        return (cur && accs.some((a) => a.id === cur)) ? cur : (accs[0]?.id || '')
+      })
     }
     setLoading(false)
   }, [])
