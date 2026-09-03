@@ -147,27 +147,31 @@ export default function UpcomingBills() {
           account runs short (standard --expense), green when covered. */}
       {cycle && (
         <a href="/dashboard" onClick={() => goBills(activeId)}
-          style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 10, padding: '8px 11px', borderRadius: 10, fontSize: 12, fontWeight: 600, textDecoration: 'none',
+          style={{ display: 'flex', alignItems: 'flex-start', gap: 7, marginTop: 10, padding: '8px 11px', borderRadius: 10, fontSize: 12, fontWeight: 600, lineHeight: 1.45, textDecoration: 'none',
             color: cycle.short > 0 ? 'var(--expense)' : 'var(--income)',
             background: cycle.short > 0 ? 'color-mix(in srgb, var(--expense) 12%, transparent)' : 'color-mix(in srgb, var(--income) 10%, transparent)' }}>
-          {cycle.short > 0 && <TriangleAlert size={13} style={{ flexShrink: 0 }} />}
-          <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cycle.short > 0
-            ? cutoff
-              ? <>Covers bills to {fmtDay(new Date(cutoff + 'T00:00:00'))} · {money(cycle.short)} short</>
-              : <>No bills covered · {money(cycle.short)} short{cycle.firstShort ? <> from {fmtDay(new Date(cycle.firstShort.iso + 'T00:00:00'))}</> : null}</>
-            : 'Balance covers every upcoming bill'}</span>
+          {cycle.short > 0 && <TriangleAlert size={13} style={{ flexShrink: 0, marginTop: 2 }} />}
+          {/* Leads with the account name. Without it, a NAMED warning for another account
+              sitting directly below read as the subject of the card. Wraps rather than
+              ellipsising so nothing is lost on a narrow screen. */}
+          <span style={{ minWidth: 0 }}>
+            <b style={{ fontWeight: 700 }}>{activeTab?.name}</b>{' · '}{cycle.short > 0
+              ? cutoff
+                ? <>covers bills to {fmtDay(new Date(cutoff + 'T00:00:00'))} · {money(cycle.short)} short</>
+                : <>no bills covered · {money(cycle.short)} short{cycle.firstShort ? <> from {fmtDay(new Date(cycle.firstShort.iso + 'T00:00:00'))}</> : null}</>
+              : 'covers every upcoming bill'}</span>
           <span style={{ marginLeft: 'auto', flexShrink: 0, opacity: 0.6, fontWeight: 700 }}>›</span>
         </a>
       )}
 
       {otherShorts.map((o) => (
         <a key={o.id} href="/dashboard" onClick={() => goBills(o.id)}
-          style={{ display: 'flex', alignItems: 'center', gap: 7, width: '100%', marginTop: 6, padding: '7px 11px',
-            borderRadius: 10, fontSize: 12, fontWeight: 600, textDecoration: 'none', boxSizing: 'border-box',
+          style={{ display: 'flex', alignItems: 'flex-start', gap: 7, width: '100%', marginTop: 6, padding: '7px 11px',
+            borderRadius: 10, fontSize: 12, fontWeight: 600, lineHeight: 1.45, textDecoration: 'none', boxSizing: 'border-box',
             border: '1px solid transparent', color: 'var(--expense)',
             background: 'color-mix(in srgb, var(--expense) 8%, transparent)' }}>
-          <TriangleAlert size={12} style={{ flexShrink: 0 }} />
-          <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <TriangleAlert size={12} style={{ flexShrink: 0, marginTop: 3 }} />
+          <span style={{ minWidth: 0, opacity: 0.9 }}>
             {o.name} · {money(o.short)} short from {fmtDay(new Date(o.from + 'T00:00:00'))}
           </span>
           <span style={{ marginLeft: 'auto', flexShrink: 0, opacity: 0.6, fontWeight: 700 }}>›</span>
