@@ -72,6 +72,7 @@ export default function BottomNav() {
       )}
 
       <nav className="bottom-nav" aria-label="Sections">
+        <div className="nav-pill">
         {ITEMS.map((it) => {
           const Icon = it.Icon
           const active = it.key === current
@@ -89,7 +90,12 @@ export default function BottomNav() {
             </button>
           )
         })}
-        <button onClick={() => setChatOpen(true)} aria-label="Ask AI" title="Ask AI"><Sparkles size={22} /></button>
+        </div>
+        {/* the AI chat sits outside the pill as its own button — it opens a sheet rather
+            than switching section, so it isn't one of the nav destinations */}
+        <button className="nav-fab" onClick={() => setChatOpen(true)} aria-label="Ask AI" title="Ask AI">
+          <Sparkles size={22} />
+        </button>
       </nav>
       {chatOpen && <ChatWidget onClose={() => setChatOpen(false)} />}
     </>

@@ -1037,31 +1037,46 @@ header.top h1 {
 .hdr-label { font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-muted); }
 
 /* Floating glass bottom bar (mobile only) — icons only, sections + AI chat */
+/* The bar is two detached pieces: a capsule of section links, and the AI chat on its
+   own beside it. The wrapper only positions them — the glass lives on each piece. */
 .bottom-nav {
   display: none;
   position: fixed; left: 50%; transform: translateX(-50%);
   bottom: max(4px, calc(env(safe-area-inset-bottom, 0px) - 12px));
-  z-index: 90; gap: 6px; align-items: center;
-  padding: 4px 10px;
-  border-radius: 24px;   /* rounded-rectangle corners echo the iPhone screen radius (not a full capsule) */
+  z-index: 90; gap: 10px; align-items: center;
+}
+/* shared glass shell for both pieces */
+.nav-pill, .nav-fab {
   background: var(--glass-specular), var(--glass-bg);
   -webkit-backdrop-filter: blur(30px) saturate(200%);
   backdrop-filter: blur(30px) saturate(200%);
   border: 1px solid var(--glass-border);
   box-shadow: 0 10px 34px rgba(20, 20, 25, 0.20), var(--glass-sheen), var(--glass-rim), inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
-.bottom-nav button {
+.nav-pill {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;  /* full capsule */
+}
+.nav-pill button {
   width: 54px; height: 40px; display: inline-flex; align-items: center; justify-content: center;
   border: none; background: transparent; cursor: pointer; color: var(--text-secondary);
   border-radius: 999px; transition: color .15s ease, background .18s ease, box-shadow .2s ease, transform .1s ease;
 }
 /* active = a raised liquid-glass chip (specular + sheen + inner rim), not a solid colour */
-.bottom-nav button.active {
+.nav-pill button.active {
   color: var(--accent);
   background: var(--glass-specular), color-mix(in srgb, var(--surface-1) 80%, transparent);
   box-shadow: 0 4px 14px rgba(20, 20, 25, 0.16), var(--glass-sheen), var(--glass-rim), inset 0 1px 0 rgba(255, 255, 255, 0.55);
 }
-.bottom-nav button:active { transform: scale(0.92); }
+/* 48px = the pill's own height (40px button + 4px padding each side), so they line up */
+.nav-fab {
+  width: 48px; height: 48px; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%; cursor: pointer; color: var(--text-secondary); padding: 0;
+  transition: color .15s ease, transform .1s ease;
+}
+.nav-pill button:active, .nav-fab:active { transform: scale(0.92); }
 
 /* Long-press menu above the bar — jump to a Dashboard tab */
 .dash-menu {
