@@ -98,13 +98,6 @@ export default function UpcomingBills() {
   const activeTab = tabs.find((t) => t.id === activeId)
   const dotFor = (t: { id: string; shortFrom: string | null }) =>
     !cycles.has(t.id) ? 'var(--text-muted)' : t.shortFrom ? 'var(--expense)' : 'var(--income)'
-  // A dropdown hides the other accounts, so a shortfall in one of them still has to reach
-  // the surface. It gets a named line below (see otherShorts) rather than a badge on the
-  // pill: an unlabelled dot on THIS account's pill reads as this account's problem.
-  const otherShorts = tabs
-    .filter((t) => t.id !== activeId && t.shortFrom)
-    .map((t) => ({ id: t.id, name: t.name, short: cycles.get(t.id)?.short ?? 0, from: t.shortFrom! }))
-    .sort((x, y) => x.from.localeCompare(y.from))
 
   const accountPill = tabs.length > 1 && activeTab && (
     <span style={{ position: 'relative', display: 'inline-flex', minWidth: 0 }}>
@@ -151,9 +144,9 @@ export default function UpcomingBills() {
             color: cycle.short > 0 ? 'var(--expense)' : 'var(--income)',
             background: cycle.short > 0 ? 'color-mix(in srgb, var(--expense) 12%, transparent)' : 'color-mix(in srgb, var(--income) 10%, transparent)' }}>
           {cycle.short > 0 && <TriangleAlert size={13} style={{ flexShrink: 0, marginTop: 2 }} />}
-          {/* Leads with the account name. Without it, a NAMED warning for another account
-              sitting directly below read as the subject of the card. Wraps rather than
-              ellipsising so nothing is lost on a narrow screen. */}
+          {/* Leads with the account name so the card states what it's describing rather than
+              leaving it to the pill alone. Wraps rather than ellipsising — truncating would
+              drop the dollar amount at the end. */}
           <span style={{ minWidth: 0 }}>
             <b style={{ fontWeight: 700 }}>{activeTab?.name}</b>{' · '}{cycle.short > 0
               ? cutoff
@@ -163,20 +156,6 @@ export default function UpcomingBills() {
           <span style={{ marginLeft: 'auto', flexShrink: 0, opacity: 0.6, fontWeight: 700 }}>›</span>
         </a>
       )}
-
-      {otherShorts.map((o) => (
-        <a key={o.id} href="/dashboard" onClick={() => goBills(o.id)}
-          style={{ display: 'flex', alignItems: 'flex-start', gap: 7, width: '100%', marginTop: 6, padding: '7px 11px',
-            borderRadius: 10, fontSize: 12, fontWeight: 600, lineHeight: 1.45, textDecoration: 'none', boxSizing: 'border-box',
-            border: '1px solid transparent', color: 'var(--expense)',
-            background: 'color-mix(in srgb, var(--expense) 8%, transparent)' }}>
-          <TriangleAlert size={12} style={{ flexShrink: 0, marginTop: 3 }} />
-          <span style={{ minWidth: 0, opacity: 0.9 }}>
-            {o.name} · {money(o.short)} short from {fmtDay(new Date(o.from + 'T00:00:00'))}
-          </span>
-          <span style={{ marginLeft: 'auto', flexShrink: 0, opacity: 0.6, fontWeight: 700 }}>›</span>
-        </a>
-      ))}
 
       {/* Dense one-line rows: date · name · amount. The date carries coverage — green while
           the account funds it, red once the balance has run out. Scrolls past 5 rows so a
