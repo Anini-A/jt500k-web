@@ -89,10 +89,14 @@ export default function UpcomingBills() {
     } catch { /* ignore */ }
   }
 
-  // One account in view, so coverage is a clean cutoff: funded through this date, short after.
+  // Coverage is per BILL, not per date. Several bills can land on the same day and the
+  // balance can run out partway through them — on Sep 15 the water bill clears while the
+  // mortgage behind it doesn't. Comparing dates against coveredThroughISO marked that whole
+  // day covered, so read the flag the projection already worked out for each bill.
   const cutoff = cycle?.coveredThroughISO ?? null
-  const coverageOf = (u: { date: Date }): 'covered' | 'short' | 'unknown' =>
-    !cycle ? 'unknown' : cutoff && ymd(u.date) <= cutoff ? 'covered' : 'short'
+  const coveredById = new Map((cycle?.timeline ?? []).map((e) => [e.bill.id, e.covered]))
+  const coverageOf = (u: { b: Bill }): 'covered' | 'short' | 'unknown' =>
+    !cycle ? 'unknown' : coveredById.get(u.b.id) ? 'covered' : 'short'
   const firstShortIdx = cycle ? rows.findIndex((u) => coverageOf(u) === 'short') : -1
 
   const activeTab = tabs.find((t) => t.id === activeId)
@@ -150,7 +154,7 @@ export default function UpcomingBills() {
           <span style={{ minWidth: 0 }}>
             <b style={{ fontWeight: 700 }}>{activeTab?.name}</b>{' · '}{cycle.short > 0
               ? cutoff
-                ? <>covers bills to {fmtDay(new Date(cutoff + 'T00:00:00'))} · {money(cycle.short)} short</>
+                ? <>covers {cycle.coveredCount} bill{cycle.coveredCount === 1 ? '' : 's'} to {fmtDay(new Date(cutoff + 'T00:00:00'))} · {money(cycle.short)} short</>
                 : <>no bills covered · {money(cycle.short)} short{cycle.firstShort ? <> from {fmtDay(new Date(cycle.firstShort.iso + 'T00:00:00'))}</> : null}</>
               : 'covers every upcoming bill'}</span>
           <span style={{ marginLeft: 'auto', flexShrink: 0, opacity: 0.6, fontWeight: 700 }}>›</span>
