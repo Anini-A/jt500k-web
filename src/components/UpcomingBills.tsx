@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { getJSON, cachedValue } from '@/lib/fresh'
 import { today, ymd } from '@/lib/date'
 import { projectCycle, nextOccurrences } from '@/lib/billRunway'
-import { TriangleAlert, ChevronDown } from 'lucide-react'
+import { CalendarClock, ChevronDown } from 'lucide-react'
 import LoadError from './LoadError'
 
 interface Bill { id: string; account_id: string | null; name: string; day: number; amount: number; quarterly?: boolean; next_due?: string | null }
@@ -140,22 +140,23 @@ export default function UpcomingBills() {
       {/* Header taps to Bills only when there's no coverage card to carry the tap */}
       {cycle || accountPill ? header : <a href="/dashboard" onClick={() => goBills(activeId)} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>{header}</a>}
 
-      {/* Coverage — a thin tinted card, clickable through to the Bills tab. Red when an
-          account runs short (standard --expense), green when covered. */}
+      {/* Coverage — a neutral summary line, clickable through to the Bills tab.
+          Reads as information, not an alarm: being short is the normal state between
+          paycheques, so a standing red warning is just noise. Status still shows in the
+          account pill's dot and in the green/red dates on the rows below. */}
       {cycle && (
         <a href="/dashboard" onClick={() => goBills(activeId)}
           style={{ display: 'flex', alignItems: 'flex-start', gap: 7, marginTop: 10, padding: '8px 11px', borderRadius: 10, fontSize: 12, fontWeight: 600, lineHeight: 1.45, textDecoration: 'none',
-            color: cycle.short > 0 ? 'var(--expense)' : 'var(--income)',
-            background: cycle.short > 0 ? 'color-mix(in srgb, var(--expense) 12%, transparent)' : 'color-mix(in srgb, var(--income) 10%, transparent)' }}>
-          {cycle.short > 0 && <TriangleAlert size={13} style={{ flexShrink: 0, marginTop: 2 }} />}
+            color: 'var(--text-secondary)', background: 'var(--kpi-bg)', border: '1px solid var(--border)' }}>
+          <CalendarClock size={13} style={{ flexShrink: 0, marginTop: 2, opacity: 0.7 }} />
           {/* Leads with the account name so the card states what it's describing rather than
               leaving it to the pill alone. Wraps rather than ellipsising — truncating would
               drop the dollar amount at the end. */}
           <span style={{ minWidth: 0 }}>
-            <b style={{ fontWeight: 700 }}>{activeTab?.name}</b>{' · '}{cycle.short > 0
+            <b style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{activeTab?.name}</b>{' · '}{cycle.short > 0
               ? cutoff
-                ? <>covers {cycle.coveredCount} bill{cycle.coveredCount === 1 ? '' : 's'} to {fmtDay(new Date(cutoff + 'T00:00:00'))} · {money(cycle.short)} short</>
-                : <>no bills covered · {money(cycle.short)} short{cycle.firstShort ? <> from {fmtDay(new Date(cycle.firstShort.iso + 'T00:00:00'))}</> : null}</>
+                ? <>covers {cycle.coveredCount} bill{cycle.coveredCount === 1 ? '' : 's'} to {fmtDay(new Date(cutoff + 'T00:00:00'))} · <b style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{money(cycle.short)}</b> short</>
+                : <>no bills covered · <b style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{money(cycle.short)}</b> short{cycle.firstShort ? <> from {fmtDay(new Date(cycle.firstShort.iso + 'T00:00:00'))}</> : null}</>
               : 'covers every upcoming bill'}</span>
           <span style={{ marginLeft: 'auto', flexShrink: 0, opacity: 0.6, fontWeight: 700 }}>›</span>
         </a>
