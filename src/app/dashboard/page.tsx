@@ -20,10 +20,10 @@ type Tab = 'income' | 'expenses' | 'savings' | 'debts' | 'investments' | 'budget
 const TABS: { key: Tab; label: string; Icon: LucideIcon; soon?: boolean }[] = [
   { key: 'budget', label: 'Budget', Icon: Target },
   { key: 'bills', label: 'Bills', Icon: Receipt },
+  { key: 'debts', label: 'Debts', Icon: Banknote },
   { key: 'income', label: 'Income', Icon: Wallet },
   { key: 'expenses', label: 'Expenses', Icon: CreditCard },
   { key: 'savings', label: 'Savings', Icon: PiggyBank },
-  { key: 'debts', label: 'Debts', Icon: Banknote },
   { key: 'investments', label: 'Investments', Icon: LineChart },
   { key: 'household', label: 'Household', Icon: Users },
 ]

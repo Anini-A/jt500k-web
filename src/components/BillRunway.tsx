@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo, Fragment } from 'react'
 import { useConfirm } from './Feedback'
-import { Pencil, Plus, Trash2, TriangleAlert, CheckCircle2, CalendarClock } from 'lucide-react'
+import { Pencil, Plus, Trash2, TriangleAlert, CheckCircle2, CalendarClock, ChevronDown } from 'lucide-react'
 import { getJSON } from '@/lib/fresh'
 import { ymd, today } from '@/lib/date'
 import { projectCycle, type Cycle } from '@/lib/billRunway'
@@ -38,6 +38,7 @@ export default function BillRunway() {
   const [editBalance, setEditBalance] = useState(false) // edits the active account
   const [newAccount, setNewAccount] = useState(false)
   const [editBill, setEditBill] = useState<Bill | 'new' | null>(null)
+  const [billsCollapsed, setBillsCollapsed] = useState(true) // the schedule opens on request
 
   const load = useCallback(async () => {
     const d = await getJSON('/api/bills').catch(() => null)
@@ -197,16 +198,29 @@ export default function BillRunway() {
         </div>
       </div>
 
-      {/* COVERAGE TIMELINE — full-width long card */}
-      {proj && <CoverageTimeline proj={proj} asOf={asOf} urgent={!coveredMonth || topUpSoon} />}
+      {/* One card: what the balance covers, then the bills behind it */}
+      <div className="card glass">
+        {proj && <CoverageTimeline proj={proj} asOf={asOf} urgent={!coveredMonth || topUpSoon} />}
 
-      {/* BILL SCHEDULE */}
-      <div className="card glass" style={{ marginTop: 16 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-          <h3 style={{ margin: 0, fontSize: 15 }}>Bill schedule</h3>
-          <button className="chip" onClick={() => setEditBill('new')}><Plus size={14} style={{ marginRight: 4 }} />Add bill</button>
+        {/* Same footer control as Debt Management and Budget: count, add, reveal */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 18 }}>
+          <span style={{ fontSize: 13, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {acctBills.length > 0 ? `${acctBills.length} ${acctBills.length === 1 ? 'bill' : 'bills'} · ${money(monthlyTotal)}/mo` : 'No bills yet'}
+          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+            <button onClick={() => setEditBill('new')} aria-label="Add bill" title="Add bill"
+              style={{ width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-muted)', cursor: 'pointer' }}>
+              <Plus size={16} />
+            </button>
+            <button onClick={() => setBillsCollapsed((v) => !v)} aria-expanded={!billsCollapsed} aria-label={billsCollapsed ? 'Show bill schedule' : 'Hide bill schedule'} title={billsCollapsed ? 'Show bill schedule' : 'Hide bill schedule'}
+              style={{ width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-muted)', cursor: 'pointer' }}>
+              <ChevronDown size={16} style={{ transform: billsCollapsed ? 'none' : 'rotate(180deg)', transition: 'transform .2s ease' }} />
+            </button>
+          </div>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 4px 8px', borderBottom: '1px solid var(--border)' }}>
+
+        {!billsCollapsed && (<>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 4px 8px', borderBottom: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
             <span style={{ width: 34, textAlign: 'center', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', flexShrink: 0 }}>Day</span>
             <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Description</span>
@@ -232,6 +246,7 @@ export default function BillRunway() {
             </div>
           ))}
         </div>
+        </>)}
       </div>
 
       <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 12, textAlign: 'center' }}>
@@ -258,7 +273,7 @@ function MiniStat({ label, value, accent }: { label: string; value: string; acce
 // Green tiles are covered by the balance; an amber marker shows where it runs out.
 function CoverageTimeline({ proj, asOf, urgent }: { proj: Projection; asOf: string; urgent: boolean }) {
   return (
-    <div className="card glass">
+    <>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
         <h3 style={{ margin: 0, fontSize: 15, display: 'flex', alignItems: 'center', gap: 8 }}><CalendarClock size={16} /> Coverage timeline</h3>
         <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>
@@ -300,7 +315,7 @@ function CoverageTimeline({ proj, asOf, urgent }: { proj: Projection; asOf: stri
           })}
         </div>
       )}
-    </div>
+    </>
   )
 }
 
