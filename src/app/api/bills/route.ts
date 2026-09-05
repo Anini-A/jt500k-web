@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
   const { error } = await supabaseAdmin.from('bills').insert({
     household_id: hh, account_id: b.account_id || null, name: b.name.trim(), day: Math.max(1, Math.min(31, Number(b.day))),
     amount: Number(b.amount), quarterly: !!b.quarterly, next_due: b.next_due || null,
-    category: b.category || null,
+    category: b.category || null, debt_name: b.debt_name || null,
   })
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ ok: true }, { status: 201 })
@@ -46,6 +46,9 @@ export async function PATCH(req: NextRequest) {
   if (b.quarterly !== undefined) patch.quarterly = !!b.quarterly
   if (b.next_due !== undefined) patch.next_due = b.next_due || null
   if (b.account_id !== undefined) patch.account_id = b.account_id || null
+  if (b.category?.trim()) patch.category = b.category
+  // which debt this bill pays down; '' clears the link
+  if (b.debt_name !== undefined) patch.debt_name = b.debt_name || null
   if (!Object.keys(patch).length) return NextResponse.json({ error: 'nothing to update' }, { status: 400 })
   const { error } = await supabaseAdmin.from('bills').update(patch).eq('id', b.id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
     }
     const e = envMap.get(l.category)!
     e.budgeted += Number(l.amount)
-    e.items.push({ id: l.id, name: l.name, amount: Number(l.amount) })
+    e.items.push({ id: l.id, name: l.name, amount: Number(l.amount), debt_name: l.debt_name ?? null })
   }
 
   const envelopes = [...envMap.values()].map((e) => ({
@@ -67,28 +67,30 @@ export async function GET(req: NextRequest) {
   }, noStore)
 }
 
-// POST /api/budgets  { name, category, amount }
+// POST /api/budgets  { name, category, amount, debt_name? }
 export async function POST(req: NextRequest) {
-  const { name, category, amount } = await req.json().catch(() => ({}))
+  const { name, category, amount, debt_name } = await req.json().catch(() => ({}))
   if (!name?.trim() || !category?.trim() || amount == null || isNaN(Number(amount)) || Number(amount) <= 0) {
     return NextResponse.json({ error: 'name, category and a positive amount are required' }, { status: 400 })
   }
   const hh = await household()
   if (!hh) return NextResponse.json({ error: 'No household found' }, { status: 400 })
   const { error } = await supabaseAdmin.from('budgets')
-    .insert({ household_id: hh, name: name.trim(), category, amount: Number(amount) })
+    .insert({ household_id: hh, name: name.trim(), category, amount: Number(amount), debt_name: debt_name || null })
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ ok: true }, { status: 201 })
 }
 
-// PATCH /api/budgets  { id, name?, category?, amount? }
+// PATCH /api/budgets  { id, name?, category?, amount?, debt_name? }
 export async function PATCH(req: NextRequest) {
-  const { id, name, category, amount } = await req.json().catch(() => ({}))
+  const { id, name, category, amount, debt_name } = await req.json().catch(() => ({}))
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
   const patch: Record<string, unknown> = {}
   if (name?.trim()) patch.name = name.trim()
   if (category?.trim()) patch.category = category
   if (amount != null && !isNaN(Number(amount)) && Number(amount) > 0) patch.amount = Number(amount)
+  // which debt this line pays down; '' clears the link
+  if (debt_name !== undefined) patch.debt_name = debt_name || null
   if (Object.keys(patch).length === 0) return NextResponse.json({ error: 'Nothing to update' }, { status: 400 })
   const { error } = await supabaseAdmin.from('budgets').update(patch).eq('id', id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

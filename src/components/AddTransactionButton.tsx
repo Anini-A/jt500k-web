@@ -80,6 +80,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   // again, so it just clutters the picker. `keep` re-adds one that's already selected on a
   // row, so an existing pick never silently blanks out.
   const openDebts = (keep?: string) => debts.filter((d) => (d.remaining ?? 1) > 0 || d.name === keep)
+  const debtPaidOff = (name?: string | null) => !!name && debts.some((d) => d.name === name && (d.remaining ?? 1) <= 0)
   const [form, setForm] = useState({
     date: today(), type: 'expense', category: '', amount: '', description: '',
   })
@@ -115,10 +116,17 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   const setOver = (id: string, patch: { amount?: string; description?: string }) =>
     setRecOver((p) => ({ ...p, [id]: { ...p[id], ...patch } }))
   const recAmount = (r: any) => { const o = recOver[r.id]?.amount; const v = o === undefined ? Number(r.amount) : parseFloat(o); return isNaN(v) ? 0 : v }
-  const recDesc = (r: any) => recOver[r.id]?.description || r.description || r.name
+  // What the logged transaction is described as. A debt row carries its target debt
+  // (debt_name) so payments match the debt; the per-log override still wins for a one-off.
+  const recDesc = (r: any) => recOver[r.id]?.description || r.debt_name || r.description || r.name
+  // A debt row whose debt is fully paid is retired from the list: it will never be paid
+  // again, so offering it only invites a payment against a settled debt. Rows with no debt
+  // linked stay put — we can't tell what they pay down.
+  const visibleRecs = recs.filter((r) => !debtPaidOff(r.debt_name))
+  const retiredCount = recs.length - visibleRecs.length
   const [recDate, setRecDate] = useState(today())
   const [recEdit, setRecEdit] = useState<null | 'new' | string>(null) // manage recurring items
-  const [recForm, setRecForm] = useState({ name: '', type: 'expense', category: '', amount: '', description: '' })
+  const [recForm, setRecForm] = useState({ name: '', type: 'expense', category: '', amount: '', description: '', debt_name: '' })
 
   useEffect(() => {
     if (open && cats.length === 0) {
@@ -162,7 +170,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
     setForm({ date: today(), type: 'expense', category: '', amount: '', description: '' })
     setRaw(''); setRows([]); setImages([]); setDraftId(null); setAddOpen(true); setImportErr(''); setManageCardsOpen(false)
     setPicked(new Set()); setRecEdit(null); setRecDate(today())
-    setRecForm({ name: '', type: 'expense', category: '', amount: '', description: '' })
+    setRecForm({ name: '', type: 'expense', category: '', amount: '', description: '', debt_name: '' })
   }
 
   // The "log my usual stuff" list is bills + Budget lines, deduped by name.
@@ -185,7 +193,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
         const key = String(it.name).trim().toLowerCase()
         if (seen.has(key)) continue
         seen.add(key)
-        rows.push({ id: it.id, name: it.name, amount: it.amount, category: env.category, type: env.type, src: 'budget' as const })
+        rows.push({ id: it.id, name: it.name, amount: it.amount, category: env.category, type: env.type, debt_name: it.debt_name ?? null, src: 'budget' as const })
       }
     }
     setRecs(rows)
@@ -193,7 +201,9 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   const srcOf = (id: string | null) => recs.find((r) => r.id === id)?.src ?? 'bill'
 
   const logRecurring = async () => {
-    const chosen = recs.filter((r) => picked.has(r.id))
+    // visibleRecs, not recs: a row retired mid-session (its debt just hit zero) must not
+    // log even if it was ticked before that.
+    const chosen = visibleRecs.filter((r) => picked.has(r.id))
     if (!chosen.length) return
     setSaving(true)
     try {
@@ -215,11 +225,11 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
     fetch(srcOf(id) === 'budget' ? '/api/budgets' : '/api/bills', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, ...patch }) })
       .then((res) => { if (!res.ok) reloadRecs() }).catch(() => reloadRecs())
   }
-  const startNewRec = () => { setRecForm({ name: '', type: 'expense', category: '', amount: '', description: '' }); setRecEdit('new') }
+  const startNewRec = () => { setRecForm({ name: '', type: 'expense', category: '', amount: '', description: '', debt_name: '' }); setRecEdit('new') }
   const saveRec = async () => {
     const amount = parseFloat(recForm.amount)
     if (!recForm.name.trim() || !recForm.category || !(amount > 0)) { setRecErr('Name, category and a positive amount are required.'); return }
-    const payload = { name: recForm.name.trim(), type: recForm.type, category: recForm.category, amount, description: recForm.description }
+    const payload = { name: recForm.name.trim(), type: recForm.type, category: recForm.category, amount, description: recForm.description, debt_name: recForm.debt_name }
     setSaving(true)
     try {
       const res = recEdit === 'new'
@@ -481,8 +491,8 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
     { key: 'saving', label: 'Saving', color: 'var(--savings)', soft: 'var(--savings-soft)' },
     { key: 'debt', label: 'Debt', color: '#c2892f', soft: 'rgba(224,161,43,0.16)' },
   ]
-  const recGroupsPresent = REC_GROUPS.filter((g) => recs.some((r) => recGroup(r) === g.key))
-  const pickedTotal = recs.filter((r) => picked.has(r.id)).reduce((s, r) => s + recAmount(r), 0)
+  const recGroupsPresent = REC_GROUPS.filter((g) => visibleRecs.some((r) => recGroup(r) === g.key))
+  const pickedTotal = visibleRecs.filter((r) => picked.has(r.id)).reduce((s, r) => s + recAmount(r), 0)
   const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })
 
   const updateRow = (i: number, patch: Partial<Row>) =>
@@ -790,12 +800,12 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                       <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Amount</span>
                         <input style={inp} type="number" step="0.01" value={recForm.amount} onChange={(e) => setRecForm({ ...recForm, amount: e.target.value })} placeholder="0.00" /></label>
                     </div>
-                    {recForm.category === 'Debt Repayment' && openDebts(recForm.description).length > 0 && (
+                    {recForm.category === 'Debt Repayment' && openDebts(recForm.debt_name).length > 0 && (
                       <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Which debt?</span>
-                        <select style={inp} value={debts.some((d) => d.name === recForm.description) ? recForm.description : ''}
-                          onChange={(e) => setRecForm({ ...recForm, description: e.target.value })}>
-                          <option value="">— pick a debt (fills description) —</option>
-                          {openDebts(recForm.description).map((d) => <option key={d.name} value={d.name}>{d.name}</option>)}
+                        <select style={inp} value={debts.some((d) => d.name === recForm.debt_name) ? recForm.debt_name : ''}
+                          onChange={(e) => setRecForm({ ...recForm, debt_name: e.target.value })}>
+                          <option value="">— pick a debt —</option>
+                          {openDebts(recForm.debt_name).map((d) => <option key={d.name} value={d.name}>{d.name}</option>)}
                         </select></label>
                     )}
                     <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Description (optional)</span>
@@ -825,7 +835,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                         <div key={g.key}>
                           <span style={{ display: 'inline-block', background: g.soft, color: g.color, padding: '3px 11px', borderRadius: 999, fontSize: 12, fontWeight: 700, marginBottom: 6 }}>{g.label}</span>
                           <div style={{ display: 'grid', gap: 2 }}>
-                            {recs.filter((r) => recGroup(r) === g.key).map((r) => {
+                            {visibleRecs.filter((r) => recGroup(r) === g.key).map((r) => {
                               const on = picked.has(r.id)
                               const toggle = () => setPicked((p) => { const n = new Set(p); n.has(r.id) ? n.delete(r.id) : n.add(r.id); return n })
                               // fields edit in place: name (text), category (select → also sets type), amount (number)
@@ -846,12 +856,12 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                                     </select>
                                     {/* A debt payment is matched to its debt by DESCRIPTION, and these row
                                         names ("Loan payment (1 of 2)") aren't debt names — so pick one. */}
-                                    {r.category === 'Debt Repayment' && openDebts(recDesc(r)).length > 0 && (
-                                      <select value={debts.some((d) => d.name === recDesc(r)) ? recDesc(r) : ''} aria-label="Which debt"
-                                        onChange={(e) => setOver(r.id, { description: e.target.value })} className="rec-inline"
-                                        style={{ ...recInline, fontSize: 12, color: debts.some((d) => d.name === recDesc(r)) ? 'var(--text-secondary)' : 'var(--expense)', width: 'auto', maxWidth: '100%' }}>
+                                    {r.category === 'Debt Repayment' && openDebts(r.debt_name).length > 0 && (
+                                      <select value={debts.some((d) => d.name === r.debt_name) ? r.debt_name : ''} aria-label="Which debt"
+                                        onChange={(e) => patchRec(r.id, { debt_name: e.target.value })} className="rec-inline"
+                                        style={{ ...recInline, fontSize: 12, color: debts.some((d) => d.name === r.debt_name) ? 'var(--text-secondary)' : 'var(--expense)', width: 'auto', maxWidth: '100%' }}>
                                         <option value="">— which debt? —</option>
-                                        {openDebts(recDesc(r)).map((d) => <option key={d.name} value={d.name}>{d.name}</option>)}
+                                        {openDebts(r.debt_name).map((d) => <option key={d.name} value={d.name}>{d.name}</option>)}
                                       </select>
                                     )}
                                   </div>
@@ -876,6 +886,11 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                         </div>
                       ))}
                     </div>
+                    {retiredCount > 0 && (
+                      <div style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>
+                        {retiredCount} paid-off item{retiredCount !== 1 ? 's' : ''} hidden.
+                      </div>
+                    )}
                     {recErr && <div style={{ fontSize: 13, color: 'var(--expense)', fontWeight: 600 }}>{recErr}</div>}
                     {/* Log for [date] sits beside the action button */}
                     <div style={{ display: 'flex', gap: 10, alignItems: 'stretch' }}>
