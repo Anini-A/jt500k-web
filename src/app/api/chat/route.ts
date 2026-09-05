@@ -157,7 +157,9 @@ async function buildContext(clientDate?: string) {
   // reference data so the assistant can act with valid names / ids
   const { data: cats } = await supabaseAdmin.from('categories').select('name, type')
   const catsByType = (type: string) => (cats ?? []).filter((c) => c.type === type).map((c) => c.name).join(', ')
-  const { data: budgetRows } = await supabaseAdmin.from('budgets').select('id, name, category, amount').order('category')
+  const { data: budgetRows } = await supabaseAdmin.from('budgets').select('id, name, category, amount, debt_name').order('category')
+  const { data: catBudgetRows } = await supabaseAdmin.from('category_budgets').select('category, amount')
+    .then((r) => r, () => ({ data: [] as { category: string; amount: number }[] }))
   const { data: recRows } = await supabaseAdmin.from('recurring').select('id, name, type, category, amount').eq('active', true)
   const billsRes = await supabaseAdmin.from('bills').select('id, account_id, name, day, amount, quarterly, next_due, active').then((r) => r, () => ({ data: null }))
   const billAcctRes = await supabaseAdmin.from('bill_accounts').select('*').then((r) => r, () => ({ data: null }))
@@ -172,11 +174,71 @@ async function buildContext(clientDate?: string) {
     .sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 25)
     .map((t: any) => `  - id=${t.id ?? '?'} · ${t.date} · ${t.type} · ${t.category ?? '—'} · ${t.description ?? '—'} · ${money(Number(t.amount))}`).join('\n')
 
+  // ── THIS MONTH, AS THE BUDGET TAB SHOWS IT ────────────────────────────────
+  // Computed the same way /api/budgets does, so the assistant quotes the same figures
+  // the user is looking at rather than re-deriving them and disagreeing.
+  const bMonth = cutoff.slice(0, 7)
+  const typeOfCat = new Map((cats ?? []).map((c) => [c.name as string, c.type as string]))
+  const setBudget = new Map((catBudgetRows ?? []).map((o) => [o.category as string, Number(o.amount)]))
+  const lineTotalByCat = new Map<string, number>()
+  for (const b of budgetRows ?? []) lineTotalByCat.set(b.category, (lineTotalByCat.get(b.category) || 0) + Number(b.amount))
+  const spentByCatMonth = new Map<string, number>()
+  let mIncome = 0, mOutflow = 0
+  for (const t of txns) {
+    if ((t.date as string).slice(0, 7) !== bMonth) continue
+    const amt = Number(t.amount) || 0
+    if (t.type === 'income') mIncome += amt
+    else mOutflow += amt
+    if (t.category) spentByCatMonth.set(t.category, (spentByCatMonth.get(t.category) || 0) + amt)
+  }
+  const budgetedOf = (cat: string) => setBudget.get(cat) ?? (lineTotalByCat.get(cat) || 0)
+  const allCats = [...new Set([...lineTotalByCat.keys(), ...setBudget.keys()])]
+  const groupOf = (cat: string) => (typeOfCat.get(cat) === 'income' ? 'income' : typeOfCat.get(cat) === 'savings' ? 'saving' : cat === 'Debt Repayment' ? 'debt' : 'spending')
+  const groupTotals: Record<string, { budgeted: number; actual: number }> = { income: { budgeted: 0, actual: 0 }, spending: { budgeted: 0, actual: 0 }, saving: { budgeted: 0, actual: 0 }, debt: { budgeted: 0, actual: 0 } }
+  for (const cat of allCats) {
+    const g = groupTotals[groupOf(cat)]
+    g.budgeted += budgetedOf(cat)
+    g.actual += spentByCatMonth.get(cat) || 0
+  }
+  const allocated = groupTotals.spending.budgeted + groupTotals.saving.budgeted + groupTotals.debt.budgeted
+  const unallocated = groupTotals.income.budgeted - allocated
+  const envelopeList = allCats.sort((a, b) => budgetedOf(b) - budgetedOf(a))
+    .map((c) => `  - ${c} (${groupOf(c)}): ${money(spentByCatMonth.get(c) || 0)} of ${money(budgetedOf(c))}${setBudget.has(c) ? ' [budget set directly on the envelope, not summed from its lines]' : ''}`)
+    .join('\n')
+  // where this month's debt payments actually went, and what each debt still owes
+  const paidThisMonthByName = new Map<string, number>()
+  for (const p of pays ?? []) {
+    if ((p.date as string).slice(0, 7) !== bMonth) continue
+    paidThisMonthByName.set(norm(p.description), (paidThisMonthByName.get(norm(p.description)) || 0) + Number(p.amount))
+  }
+  const debtMonthList = (debts ?? []).filter((d) => debtRemainingOf(d) > 0 || (paidThisMonthByName.get(norm(d.name)) || 0) > 0)
+    .map((d) => `  - ${d.name}: ${money(paidThisMonthByName.get(norm(d.name)) || 0)} paid this month · ${money(debtRemainingOf(d))} remaining${debtRemainingOf(d) <= 0 ? ' (PAID OFF this month)' : ''}`)
+    .join('\n')
+  const unbudgetedSpend = [...spentByCatMonth.entries()]
+    .filter(([c]) => typeOfCat.get(c) !== 'income' && !lineTotalByCat.has(c) && !setBudget.has(c))
+    .map(([c, v]) => `${c} ${money(v)}`).join(', ')
+
+  const budgetPicture = `
+THIS MONTH ON THE BUDGET TAB (${bMonth}) — quote THESE figures when asked about the budget, "what's left", or "can I afford":
+- Received (all income logged this month): ${money(mIncome)}
+- Out so far (everything else logged this month, spending + saving + debt): ${money(mOutflow)}
+- Unspent so far (Received − Out — the page's headline figure): ${money(mIncome - mOutflow)}
+- Balance check: ${money(groupTotals.income.budgeted)} of income budgeted vs ${money(allocated)} allocated → ${unallocated < 0 ? `OVER-ALLOCATED by ${money(-unallocated)} (the plan cannot fund itself)` : `${money(unallocated)} unallocated`}
+- Group totals (actual of budgeted): income ${money(groupTotals.income.actual)}/${money(groupTotals.income.budgeted)} · spending ${money(groupTotals.spending.actual)}/${money(groupTotals.spending.budgeted)} · saving ${money(groupTotals.saving.actual)}/${money(groupTotals.saving.budgeted)} · debt ${money(groupTotals.debt.actual)}/${money(groupTotals.debt.budgeted)}
+${unbudgetedSpend ? `- Spent this month in categories with NO budget line (counted in "Out", absent from the group bars): ${unbudgetedSpend}` : '- Every category spent in this month has a budget line.'}
+
+BUDGET ENVELOPES THIS MONTH (actual of budgeted, per category):
+${envelopeList || '  (none)'}
+
+DEBT REPAYMENT THIS MONTH (the Debt Repayment envelope keeps ONE budget; these rows only attribute the month's payments across debts and never add to what is budgeted):
+${debtMonthList || '  (none)'}
+`
+
   const topCats = [...byCat.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10)
     .map(([c, v]) => `  - ${c}: ${money(v)}`).join('\n')
   const months = [...byMonth.entries()].sort().slice(-6)
     .map(([mo, v]) => `  - ${mo}: income ${money(v.i)}, expenses ${money(v.e)}, savings ${money(v.s)}`).join('\n')
-  const budgetList = (budgetRows ?? []).map((b) => `  - id=${b.id} · ${b.category} · ${b.name} · ${money(Number(b.amount))}/mo`).join('\n')
+  const budgetList = (budgetRows ?? []).map((b) => `  - id=${b.id} · ${b.category} · ${b.name} · ${money(Number(b.amount))}/mo${b.debt_name ? ` · pays down debt "${b.debt_name}"` : ''}`).join('\n')
   const recList = (recRows ?? []).map((r) => `  - id=${r.id} · ${r.type} · ${r.category} · ${r.name} · ${money(Number(r.amount))}`).join('\n')
 
   // investment holdings detail — so "what's in my TFSA" is answered, never acted on
@@ -280,7 +342,8 @@ VALID CATEGORY NAMES (use these exact names when adding/editing — never invent
 RECENT TRANSACTIONS (most recent 25 — use the exact id to edit or delete one):
 ${recent}
 
-BUDGET LINE ITEMS (use the id to edit or delete one):
+${budgetPicture}
+BUDGET LINE ITEMS (the monthly PLAN — use the id to edit or delete one. A category's envelope budget is the sum of its lines unless a budget is set directly on the envelope, noted above):
 ${budgetList || '  (none)'}
 
 ACTIVE RECURRING ITEMS:

@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { Home, Receipt, LayoutDashboard, Sparkles, Target, Wallet, CreditCard, PiggyBank, Banknote, LineChart, Users, type LucideIcon } from 'lucide-react'
+import { Home, Receipt, LayoutDashboard, Sparkles, Target, Wallet, CreditCard, PiggyBank, Banknote, LineChart, Users, TriangleAlert, Plus, type LucideIcon } from 'lucide-react'
 import { nav } from '@/lib/nav'
 import ChatWidget from './ChatWidget'
 
@@ -27,11 +27,22 @@ const DASH_TABS: { key: string; label: string; Icon: LucideIcon }[] = [
   { key: 'household', label: 'Household', Icon: Users },
 ]
 
+// Long-press the AI button for the questions worth not retyping. Verbs, not topics —
+// each one either answers on the spot or starts the entry it names.
+const AI_ACTIONS: { label: string; Icon: LucideIcon; prompt?: string; input?: string }[] = [
+  { label: 'What can I afford?', Icon: Wallet, prompt: 'What can I afford to spend right now? Use this month\u2019s unspent figure and subtract the bills still due.' },
+  { label: 'How am I doing?', Icon: Target, prompt: 'How am I doing this month against my budget? Compare spending to where I should be at this point in the month, and name anything running hot.' },
+  { label: 'Log a payment', Icon: Plus, input: 'Log ' },
+  { label: 'Any surprises?', Icon: TriangleAlert, prompt: 'Any surprises in my spending recently? Look for unusual charges, categories tracking above their normal level, and bills that changed amount.' },
+]
+
 export default function BottomNav() {
   const pathname = usePathname()
   const router = useRouter()
   const [chatOpen, setChatOpen] = useState(false)
+  const [chatSeed, setChatSeed] = useState<{ prompt?: string; input?: string }>({})
   const [dashMenu, setDashMenu] = useState(false)
+  const [aiMenu, setAiMenu] = useState(false)
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const longPressed = useRef(false)
   const current = pathname === '/' ? 'home' : pathname.startsWith('/transactions') ? 'transactions' : pathname.startsWith('/dashboard') ? 'dashboard' : ''
@@ -71,6 +82,22 @@ export default function BottomNav() {
         </>
       )}
 
+      {aiMenu && (
+        <>
+          <div onClick={() => setAiMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 95 }} />
+          <div className="dash-menu">
+            {AI_ACTIONS.map((a) => {
+              const Icon = a.Icon
+              return (
+                <button key={a.label} onClick={() => { setAiMenu(false); setChatSeed({ prompt: a.prompt, input: a.input }); setChatOpen(true) }}>
+                  <Icon size={17} /> {a.label}
+                </button>
+              )
+            })}
+          </div>
+        </>
+      )}
+
       <nav className="bottom-nav" aria-label="Sections">
         <div className="nav-pill">
         {ITEMS.map((it) => {
@@ -93,11 +120,15 @@ export default function BottomNav() {
         </div>
         {/* the AI chat sits outside the pill as its own button — it opens a sheet rather
             than switching section, so it isn't one of the nav destinations */}
-        <button className="nav-fab" onClick={() => setChatOpen(true)} aria-label="Ask AI" title="Ask AI">
+        <button className="nav-fab" aria-label="Ask AI" title="Ask AI — hold for quick actions"
+          onClick={() => { if (longPressed.current) { longPressed.current = false; return } setChatSeed({}); setChatOpen(true) }}
+          onTouchStart={() => startPress(() => setAiMenu(true))} onTouchEnd={cancelPress} onTouchMove={cancelPress}
+          onMouseDown={() => startPress(() => setAiMenu(true))} onMouseUp={cancelPress} onMouseLeave={cancelPress}
+          onContextMenu={(e) => { e.preventDefault(); setAiMenu(true) }}>
           <Sparkles size={22} />
         </button>
       </nav>
-      {chatOpen && <ChatWidget onClose={() => setChatOpen(false)} />}
+      {chatOpen && <ChatWidget onClose={() => setChatOpen(false)} initialPrompt={chatSeed.prompt} initialInput={chatSeed.input} />}
     </>
   )
 }

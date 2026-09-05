@@ -100,10 +100,10 @@ function loadStore(): { threads: Thread[]; activeId: string } {
 // Centered modal chat (opened from the header nav). Fixed size — it never grows
 // while you type; only the message area scrolls. Threads are persisted so you
 // can resume, start a new chat, or jump back to a recent one.
-export default function ChatWidget({ onClose }: { onClose: () => void }) {
+export default function ChatWidget({ onClose, initialPrompt, initialInput }: { onClose: () => void; initialPrompt?: string; initialInput?: string }) {
   const { confirm, confirmNode } = useConfirm()
   const [{ threads, activeId }, setStore] = useState(loadStore)
-  const [input, setInput] = useState('')
+  const [input, setInput] = useState(initialInput ?? '')
   const [busy, setBusy] = useState(false)
   const [pending, setPending] = useState<{ name: string; args: any; label: string }[] | null>(null)
   const [recentOpen, setRecentOpen] = useState(false)
@@ -757,6 +757,15 @@ export default function ChatWidget({ onClose }: { onClose: () => void }) {
     }
   }
   sendRef.current = send
+
+  // Opened from a quick action: ask the question straight away rather than making the
+  // user retype what they just tapped. Fires once, never on a re-render.
+  const askedRef = useRef(false)
+  useEffect(() => {
+    if (!initialPrompt || askedRef.current) return
+    askedRef.current = true
+    sendRef.current(initialPrompt)
+  }, [initialPrompt])
 
   // resolve a bill-account by name (falls back to the only account if there's one)
   const findBillAccount = async (nameLike: string) => {
