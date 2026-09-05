@@ -13,10 +13,14 @@ const timeOf = (at?: number) => at ? new Date(at).toLocaleTimeString('en-US', { 
 // strip markdown so speech reads naturally
 const plain = (t: string) => t.replace(/\*\*/g, '').replace(/^#{1,6}\s+/gm, '').replace(/^\s*[*-]\s+/gm, '').replace(/`/g, '').trim()
 
+// Shown on an empty chat — the questions worth not typing. Kept to what the context can
+// answer from real figures rather than guess at.
 const SUGGESTIONS = [
+  'What can I afford right now?',
+  'How am I doing this month?',
+  'How is my debt payoff going?',
+  'Any surprises in my spending?',
   'How am I doing toward 500K?',
-  'Where can I cut spending?',
-  'What was my best savings month?',
 ]
 
 const GREETING: Msg = { role: 'assistant', content: "Hi! I'm your finance assistant. Ask me anything about your income, spending, or your journey to $500K." }
