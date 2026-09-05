@@ -1043,12 +1043,12 @@ header.top h1 {
    own beside it. The wrapper only positions them — the glass lives on each piece. */
 .bottom-nav {
   display: none;
-  /* Spanning the width, not centred as one clump: the sections capsule sits at the left
-     edge and the AI button at the right, so the two are read as separate things and the
-     thumb has the full span between them. Insets match the page gutter. */
+  /* Set apart rather than centred as one clump, so the sections capsule and the AI
+     button read as two separate things — but held in from the screen edges, not pinned
+     to them. */
   position: fixed;
-  left: calc(12px + env(safe-area-inset-left, 0px));
-  right: calc(12px + env(safe-area-inset-right, 0px));
+  left: calc(30px + env(safe-area-inset-left, 0px));
+  right: calc(30px + env(safe-area-inset-right, 0px));
   bottom: max(4px, calc(env(safe-area-inset-bottom, 0px) - 12px));
   z-index: 90; gap: 10px; align-items: center; justify-content: space-between;
   pointer-events: none;   /* the gap between the pieces isn't a target */
