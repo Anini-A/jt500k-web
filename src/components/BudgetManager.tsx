@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { Plus, Pencil, Trash2, ChevronDown, Wallet, CreditCard, PiggyBank, Banknote, type LucideIcon } from 'lucide-react'
 import CategorySelect from './CategorySelect'
 import { today } from '@/lib/date'
-import { getJSON } from '@/lib/fresh'
+import { getJSON, cachedValue } from '@/lib/fresh'
 import { useConfirm, useToast } from './Feedback'
 
 interface Item { id: string; name: string; amount: number; debt_name?: string | null }
@@ -45,12 +45,16 @@ function envStatus(e: Envelope) {
 }
 
 export default function BudgetManager() {
-  const [data, setData] = useState<{ month: string; label: string; availableMonths?: string[]; envelopes: Envelope[]; monthActuals?: { income: number; outflow: number }; debtSummary?: DebtSummary; totalBudgeted: number; totalSpent: number } | null>(null)
+  type BudgetData = { month: string; label: string; availableMonths?: string[]; envelopes: Envelope[]; monthActuals?: { income: number; outflow: number }; debtSummary?: DebtSummary; totalBudgeted: number; totalSpent: number }
+  // Seeded from cache only when it holds the month being asked for — otherwise the card
+  // would paint another month's figures for a frame.
+  const cachedBudget = (() => { const c = cachedValue<BudgetData>('/api/budgets'); return c?.month === today().slice(0, 7) ? c : null })()
+  const [data, setData] = useState<BudgetData | null>(cachedBudget)
   const [cats, setCats] = useState<{ name: string; type: string }[]>([])
   const [month, setMonth] = useState(today().slice(0, 7)) // current local month
   const { confirm, confirmNode } = useConfirm()
   const { toast, toastNode } = useToast()
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(!cachedBudget)
   const [collapsed, setCollapsed] = useState(true) // budget items open on request, not by default
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<string | null>(null)
@@ -241,7 +245,7 @@ export default function BudgetManager() {
         <div style={{ marginTop: 16 }} />
 
         {loading ? (
-          <div style={{ padding: 16, color: 'var(--text-muted)' }}>Loading…</div>
+          <div style={{ padding: '6px 0' }}>{[0, 1, 2, 3].map((i) => <div key={i} className="skel skel-row" />)}</div>
         ) : envelopes.length === 0 ? (
           <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>No budget yet — add your first item above.</div>
         ) : (

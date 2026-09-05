@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useMemo, Fragment } from 'react'
 import { useConfirm } from './Feedback'
 import { Pencil, Plus, Trash2, TriangleAlert, CheckCircle2, CalendarClock, ChevronDown } from 'lucide-react'
-import { getJSON } from '@/lib/fresh'
+import { getJSON, cachedValue } from '@/lib/fresh'
 import { ymd, today } from '@/lib/date'
 import { projectCycle, type Cycle } from '@/lib/billRunway'
 
@@ -31,10 +31,11 @@ const inp: React.CSSProperties = {
 
 // ── UI ──────────────────────────────────────────────────────────────
 export default function BillRunway() {
-  const [bills, setBills] = useState<Bill[]>([])
+  const cachedBills = cachedValue<{ bills: Bill[]; accounts: Account[] }>('/api/bills')
+  const [bills, setBills] = useState<Bill[]>(() => cachedBills?.bills ?? [])
   const [accounts, setAccounts] = useState<Account[]>([])
   const [activeId, setActiveId] = useState<string>('')
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(!cachedBills)
   const [editBalance, setEditBalance] = useState(false) // edits the active account
   const [newAccount, setNewAccount] = useState(false)
   const [editBill, setEditBill] = useState<Bill | 'new' | null>(null)

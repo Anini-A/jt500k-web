@@ -7,7 +7,7 @@ import PagePill from '@/components/PagePill'
 import NotificationBell from '@/components/NotificationCenter'
 import EditTransactionModal from '@/components/EditTransactionModal'
 import { useConfirm, useToast } from '@/components/Feedback'
-import { getJSON } from '@/lib/fresh'
+import { getJSON, cachedValue } from '@/lib/fresh'
 import { today, ymd } from '@/lib/date'
 
 interface Txn {
@@ -44,8 +44,11 @@ const PRESETS: { key: Preset; label: string }[] = [
 const subMonths = (iso: string, n: number) => { const d = new Date(iso + 'T12:00:00'); d.setMonth(d.getMonth() - n); return ymd(d) }
 
 export default function Transactions() {
-  const [txns, setTxns] = useState<Txn[]>([])
-  const [loading, setLoading] = useState(true)
+  // Paint from the last good response, then revalidate — a revisited page shows its
+  // numbers immediately instead of a blank frame that fills in and jumps.
+  const cachedTxns = cachedValue<Txn[]>('/api/data')
+  const [txns, setTxns] = useState<Txn[]>(() => cachedTxns ?? [])
+  const [loading, setLoading] = useState(!cachedTxns)
   const [q, setQ] = useState('')
   const [type, setType] = useState('all')
   const [cat, setCat] = useState('all')
@@ -206,7 +209,9 @@ export default function Transactions() {
               )}
             </div>
 
-            {!loading && filtered.length === 0 ? (
+            {loading ? (
+              <div style={{ padding: '6px 0' }}>{[0, 1, 2, 3, 4, 5].map((i) => <div key={i} className="skel skel-row" />)}</div>
+            ) : filtered.length === 0 ? (
               <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>No matching transactions.</div>
             ) : (
               <div style={{ maxHeight: 1140, overflowY: 'auto', overscrollBehavior: 'contain' }}>

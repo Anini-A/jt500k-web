@@ -12,7 +12,7 @@ import InvestmentsPanel from '@/components/InvestmentsPanel'
 import ProfilePanel from '@/components/ProfilePanel'
 import EditTransactionModal from '@/components/EditTransactionModal'
 import { useConfirm, useToast } from '@/components/Feedback'
-import { getJSON } from '@/lib/fresh'
+import { getJSON, cachedValue } from '@/lib/fresh'
 import { ymd, today } from '@/lib/date'
 import { MonthlyArea, HBar, COLORS } from '@/components/DashCharts'
 
@@ -58,8 +58,11 @@ function subMonths(iso: string, n: number) {
 }
 
 export default function Dashboard() {
-  const [txns, setTxns] = useState<Txn[]>([])
-  const [loading, setLoading] = useState(true)
+  // Paint from the last good response, then revalidate — a revisited page shows its
+  // numbers immediately instead of a blank frame that fills in and jumps.
+  const cachedTxns = cachedValue<Txn[]>('/api/data')
+  const [txns, setTxns] = useState<Txn[]>(() => cachedTxns ?? [])
+  const [loading, setLoading] = useState(!cachedTxns)
   const [preset, setPreset] = useState<Preset>('ytd') // default range for Income/Expenses/Savings
   const [customFrom, setCustomFrom] = useState('')
   const [customTo, setCustomTo] = useState('')

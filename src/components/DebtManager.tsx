@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { Plus, Pencil, Trash2, ChevronDown, CheckCircle2 } from 'lucide-react'
-import { getJSON } from '@/lib/fresh'
+import { getJSON, cachedValue } from '@/lib/fresh'
 import { useConfirm, useToast } from './Feedback'
 import EditTransactionModal from './EditTransactionModal'
 
@@ -31,8 +31,9 @@ const inp: React.CSSProperties = {
 }
 
 export default function DebtManager() {
-  const [debts, setDebts] = useState<Debt[]>([])
-  const [loading, setLoading] = useState(true)
+  const cachedDebts = cachedValue<Debt[]>('/api/debts')
+  const [debts, setDebts] = useState<Debt[]>(() => cachedDebts ?? [])
+  const [loading, setLoading] = useState(!cachedDebts)
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<string | null>(null)
   const { confirm, confirmNode } = useConfirm()
@@ -210,7 +211,7 @@ export default function DebtManager() {
       <div style={{ marginTop: 16 }} />
       {/* Debt rows — active first; paid-off hidden behind a toggle */}
       {loading ? (
-        <div style={{ padding: 16, color: 'var(--text-muted)' }}>Loading…</div>
+        <div style={{ padding: '6px 0' }}>{[0, 1, 2, 3].map((i) => <div key={i} className="skel skel-row" />)}</div>
       ) : debts.length === 0 ? (
         <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>
           No debts tracked yet — add your first one above.

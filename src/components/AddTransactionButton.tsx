@@ -863,7 +863,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                       {recGroupsPresent.map((g) => (
                         <div key={g.key}>
                           <span style={{ display: 'inline-block', background: g.soft, color: g.color, padding: '3px 11px', borderRadius: 999, fontSize: 12, fontWeight: 700, marginBottom: 6 }}>{g.label}</span>
-                          <div style={{ display: 'grid', gap: 2 }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 2 }}>
                             {rowsOfGroup(g.key).map((r) => {
                               const on = picked.has(r.id)
                               const toggle = () => setPicked((p) => { const n = new Set(p); n.has(r.id) ? n.delete(r.id) : n.add(r.id); return n })

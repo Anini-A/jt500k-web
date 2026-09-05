@@ -4,6 +4,7 @@ import { useState, useRef } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { Home, Receipt, LayoutDashboard, Sparkles, Target, Wallet, CreditCard, PiggyBank, Banknote, LineChart, Users, TriangleAlert, Plus, type LucideIcon } from 'lucide-react'
 import { nav } from '@/lib/nav'
+import { getJSON } from '@/lib/fresh'
 import ChatWidget from './ChatWidget'
 
 // Floating, glass bottom bar — mobile only. Section switching + the AI chat.
@@ -48,6 +49,15 @@ export default function BottomNav() {
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const longPressed = useRef(false)
   const current = pathname === '/' ? 'home' : pathname.startsWith('/transactions') ? 'transactions' : pathname.startsWith('/dashboard') ? 'dashboard' : ''
+
+  // Start the page's data on touch-down. By the time the route renders the response is
+  // usually in flight or already cached, so the new page paints with numbers rather than
+  // arriving empty and filling in.
+  const warm = (key: string) => {
+    if (key === current) return
+    getJSON('/api/data').catch(() => {})
+    if (key === 'dashboard') { getJSON('/api/budgets').catch(() => {}); getJSON('/api/debts').catch(() => {}) }
+  }
 
   const go = (key: string, href: string) => {
     if (key === current) return
@@ -115,8 +125,8 @@ export default function BottomNav() {
           return (
             <button key={it.key}
               onClick={() => { if (longPressed.current) { longPressed.current = false; return } go(it.key, it.href) }}
-              onTouchStart={longAction ? () => startPress(longAction) : undefined} onTouchEnd={longAction ? cancelPress : undefined} onTouchMove={longAction ? cancelPress : undefined}
-              onMouseDown={longAction ? () => startPress(longAction) : undefined} onMouseUp={longAction ? cancelPress : undefined} onMouseLeave={longAction ? cancelPress : undefined}
+              onTouchStart={() => { warm(it.key); if (longAction) startPress(longAction) }} onTouchEnd={longAction ? cancelPress : undefined} onTouchMove={longAction ? cancelPress : undefined}
+              onMouseDown={() => { warm(it.key); if (longAction) startPress(longAction) }} onMouseUp={longAction ? cancelPress : undefined} onMouseLeave={longAction ? cancelPress : undefined}
               onContextMenu={longAction ? (e) => { e.preventDefault(); longAction() } : undefined}
               className={active ? 'active' : ''} aria-label={it.label} aria-current={active}>
               <Icon size={22} strokeWidth={active ? 2.4 : 2} />
