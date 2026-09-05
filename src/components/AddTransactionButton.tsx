@@ -117,9 +117,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
 
   useEffect(() => {
     if (open && mode === 'recurring' && recs.length === 0) {
-      getJSON('/api/bills').then((d) => {
-        if (Array.isArray(d?.bills)) { setRecs(d.bills); setPicked(new Set()) }
-      }).catch(() => {})
+      loadRecs().then(() => setPicked(new Set()))
     }
   }, [open, mode, recs.length])
 
@@ -155,6 +153,33 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
     setRecForm({ name: '', type: 'expense', category: '', amount: '', description: '' })
   }
 
+  // The "log my usual stuff" list is bills + Budget lines, deduped by name.
+  //
+  // Bills are the ones paid out of a tracked bill account (they carry a due day and drive
+  // the cash-flow forecast). Budget holds everything else that recurs — paycheque, savings
+  // transfers, car, subscriptions — which is loggable but has no balance to run short
+  // against. Neither list alone covers a month, and the same item can sit in both, so the
+  // bill wins on a name collision: it is the one with the real due date and amount.
+  const loadRecs = async () => {
+    const [billsRes, budgetRes] = await Promise.all([
+      getJSON('/api/bills').catch(() => null),
+      getJSON('/api/budgets').catch(() => null),
+    ])
+    const bills = Array.isArray(billsRes?.bills) ? billsRes.bills : []
+    const rows = bills.map((b: any) => ({ ...b, src: 'bill' as const }))
+    const seen = new Set(rows.map((r: any) => String(r.name).trim().toLowerCase()))
+    for (const env of (budgetRes?.envelopes ?? [])) {
+      for (const it of (env.items ?? [])) {
+        const key = String(it.name).trim().toLowerCase()
+        if (seen.has(key)) continue
+        seen.add(key)
+        rows.push({ id: it.id, name: it.name, amount: it.amount, category: env.category, type: env.type, src: 'budget' as const })
+      }
+    }
+    setRecs(rows)
+  }
+  const srcOf = (id: string | null) => recs.find((r) => r.id === id)?.src ?? 'bill'
+
   const logRecurring = async () => {
     const chosen = recs.filter((r) => picked.has(r.id))
     if (!chosen.length) return
@@ -170,12 +195,12 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   }
 
   // ---- manage recurring items (add / edit / delete) ----
-  const reloadRecs = async () => { const d = await getJSON('/api/bills').catch(() => null); if (Array.isArray(d?.bills)) setRecs(d.bills) }
+  const reloadRecs = async () => { await loadRecs() }
   // Inline edit: update one recurring item's field live (optimistic local + PATCH). Empty/invalid reverts.
   const setRecLocal = (id: string, patch: Record<string, unknown>) => setRecs((prev) => prev.map((r) => r.id === id ? { ...r, ...patch } : r))
   const patchRec = (id: string, patch: Record<string, unknown>) => {
     setRecLocal(id, patch)
-    fetch('/api/bills', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, ...patch }) })
+    fetch(srcOf(id) === 'budget' ? '/api/budgets' : '/api/bills', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, ...patch }) })
       .then((res) => { if (!res.ok) reloadRecs() }).catch(() => reloadRecs())
   }
   const startNewRec = () => { setRecForm({ name: '', type: 'expense', category: '', amount: '', description: '' }); setRecEdit('new') }
@@ -186,8 +211,8 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
     setSaving(true)
     try {
       const res = recEdit === 'new'
-        ? await fetch('/api/bills', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-        : await fetch('/api/bills', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: recEdit, ...payload }) })
+        ? await fetch('/api/budgets', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+        : await fetch(srcOf(recEdit) === 'budget' ? '/api/budgets' : '/api/bills', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: recEdit, ...payload }) })
       if (res.ok) { setRecEdit(null); setRecErr(''); await reloadRecs() } else setRecErr((await res.json()).error || 'Could not save.')
     } finally { setSaving(false) }
   }
@@ -308,7 +333,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
     const { kind, id, name } = confirmDel
     if (kind === 'card') { await fetch(`/api/cards?id=${id}`, { method: 'DELETE' }).catch(() => {}); await loadCards(); if (selectedCard === name) setSelectedCard('') }
     else if (kind === 'draft') { await fetch(`/api/drafts?id=${id}`, { method: 'DELETE' }).catch(() => {}); await loadDrafts(); window.dispatchEvent(new CustomEvent('drafts-changed')); if (draftId === id) setDraftId(null) }
-    else if (kind === 'rec') { await fetch(`/api/bills?id=${id}`, { method: 'DELETE' }).catch(() => {}); setRecEdit(null); await reloadRecs() }
+    else if (kind === 'rec') { await fetch(`${srcOf(id) === 'budget' ? '/api/budgets' : '/api/bills'}?id=${id}`, { method: 'DELETE' }).catch(() => {}); setRecEdit(null); await reloadRecs() }
     setConfirmDel(null)
   }
 
