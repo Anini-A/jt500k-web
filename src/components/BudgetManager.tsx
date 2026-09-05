@@ -7,8 +7,10 @@ import { today } from '@/lib/date'
 import { getJSON } from '@/lib/fresh'
 import { useConfirm, useToast } from './Feedback'
 
-interface Item { id: string; name: string; amount: number }
+interface Item { id: string; name: string; amount: number; debt_name?: string | null }
 interface Envelope { category: string; type: string; budgeted: number; spent: number; items: Item[] }
+// Attribution of the month's debt payments — display only; never feeds a budgeted total.
+interface DebtSummary { rows: { name: string; paid: number }[]; unassigned: number; paidOff: number; unlinkedPlanned: number }
 
 const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })
 const money2 = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })
@@ -43,7 +45,7 @@ function envStatus(e: Envelope) {
 }
 
 export default function BudgetManager() {
-  const [data, setData] = useState<{ month: string; label: string; availableMonths?: string[]; envelopes: Envelope[]; totalBudgeted: number; totalSpent: number } | null>(null)
+  const [data, setData] = useState<{ month: string; label: string; availableMonths?: string[]; envelopes: Envelope[]; debtSummary?: DebtSummary; totalBudgeted: number; totalSpent: number } | null>(null)
   const [cats, setCats] = useState<{ name: string; type: string }[]>([])
   const [month, setMonth] = useState(today().slice(0, 7)) // current local month
   const { confirm, confirmNode } = useConfirm()
@@ -53,6 +55,8 @@ export default function BudgetManager() {
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<string | null>(null)
   const [groupFilter, setGroupFilter] = useState('all') // 'all' | group key
+  const [openEnv, setOpenEnv] = useState<Set<string>>(new Set()) // envelopes whose line items are revealed
+  const toggleEnv = (cat: string) => setOpenEnv((p) => { const n = new Set(p); n.has(cat) ? n.delete(cat) : n.add(cat); return n })
   const [busy, setBusy] = useState(false)
 
   const load = useCallback(async () => {
@@ -108,6 +112,20 @@ export default function BudgetManager() {
     return Math.round((day / dim) * 100)
   })()
 
+  // ── The two headline figures ───────────────────────────────────────────────
+  // Left to spend: income actually RECEIVED minus everything actually spent, saved and
+  // repaid. The number to check before saying yes to a purchase. Budgeted income that
+  // hasn't landed yet is reported separately rather than folded in, so the figure never
+  // promises money that isn't there.
+  const income = groups.find((g) => g.key === 'income')!
+  const outflow = groups.filter((g) => g.key !== 'income').reduce((s2, g) => s2 + g.actual, 0)
+  const leftToSpend = income.actual - outflow
+  const incomeToCome = Math.max(0, income.budgeted - income.actual)
+  // Does the plan balance? Budgeted income against every dollar allocated to a job.
+  const allocated = groups.filter((g) => g.key !== 'income').reduce((s2, g) => s2 + g.budgeted, 0)
+  const unallocated = income.budgeted - allocated
+  const debtSummary = data?.debtSummary
+
   return (
     <>
       {confirmNode}{toastNode}
@@ -126,8 +144,34 @@ export default function BudgetManager() {
           </div>
         </div>
 
-        {/* Four independent group bars: income · spending · saving · debt */}
-        <div style={{ display: 'grid', gap: 16 }}>
+        {/* The headline: one number, then the evidence for it */}
+        <div style={{ display: 'grid', gap: 3, marginBottom: 4 }}>
+          <span className="stat-label">Left to spend</span>
+          <span style={{ fontSize: 46, fontWeight: 700, letterSpacing: '-0.025em', lineHeight: 1, fontVariantNumeric: 'tabular-nums', color: leftToSpend < 0 ? 'var(--expense)' : 'var(--text-primary)' }}>
+            {money(leftToSpend)}
+          </span>
+          <span style={{ fontSize: 13.5, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+            <b style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: 'var(--text-primary)' }}>{money(income.actual)}</b> received &minus;{' '}
+            <b style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: 'var(--text-primary)' }}>{money(outflow)}</b> out so far.
+            {incomeToCome > 0 && <> Another <b style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: 'var(--text-primary)' }}>{money(incomeToCome)}</b> of budgeted income still expected.</>}
+          </span>
+        </div>
+
+        {/* Does the plan fund itself? Caught before the month runs, not after. */}
+        {income.budgeted > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginTop: 16, padding: '11px 13px', borderRadius: 13, fontSize: 13.5, lineHeight: 1.45,
+            background: unallocated < 0 ? 'var(--expense-soft)' : 'var(--income-soft)' }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: unallocated < 0 ? 'var(--expense)' : 'var(--income)' }} />
+            <span>
+              {unallocated < 0
+                ? <>Plan doesn&rsquo;t balance — over-allocated by <b style={{ fontVariantNumeric: 'tabular-nums' }}>{money(-unallocated)}</b>.</>
+                : <>Plan balances — <b style={{ fontVariantNumeric: 'tabular-nums' }}>{money(unallocated)}</b> of budgeted income is unallocated.</>}
+            </span>
+          </div>
+        )}
+
+        {/* The four group bars are the breakdown, not the headline */}
+        <div style={{ display: 'grid', gap: 16, marginTop: 20, paddingTop: 18, borderTop: '1px solid var(--border)' }}>
           {groups.map((g) => (
             <GroupBar key={g.key} icon={g.icon} label={g.label} color={g.color}
               budgeted={g.budgeted} actual={g.actual} goodUp={g.goodUp}
@@ -199,7 +243,66 @@ export default function BudgetManager() {
                   </div>
                   <Bar pct={s.pct} pace={pace} fill={s.fill} height={6} />
 
-                  {/* Line items — always shown; tap any row to edit it inline */}
+                  {/* Line items — hidden until asked for, so a long budget scans in one pass. */}
+                  <button onClick={() => toggleEnv(e.category)} aria-expanded={openEnv.has(e.category)}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 9, padding: '3px 7px 3px 0', background: 'none', border: 'none', font: 'inherit', fontSize: 12, fontWeight: 500, color: 'var(--text-muted)', cursor: 'pointer' }}>
+                    <ChevronDown size={12} style={{ transition: 'transform .18s ease', transform: openEnv.has(e.category) ? 'none' : 'rotate(-90deg)', opacity: 0.7 }} />
+                    {e.category === 'Debt Repayment' && debtSummary
+                      ? `paid to ${debtSummary.rows.length} debt${debtSummary.rows.length !== 1 ? 's' : ''}`
+                      : `${e.items.length} item${e.items.length !== 1 ? 's' : ''}`}
+                  </button>
+
+                  {/* The Debt Repayment envelope keeps ONE budgeted figure and one bar. Its rows
+                      attribute the month's payments across the active debts — they carry no
+                      balances (that's the Debts page) and never add to what's budgeted. Each row
+                      still opens its own plan line for editing where one exists. */}
+                  {openEnv.has(e.category) && e.category === 'Debt Repayment' && debtSummary ? (
+                    <div style={{ display: 'grid', gap: 1, marginTop: 9, paddingLeft: 4 }}>
+                      {debtSummary.rows.map((d) => {
+                        // A debt can be funded by several plan lines (the RBC loan is paid in two
+                        // instalments), so the planned figure is their sum. Only a single line is
+                        // editable straight from the row — with two, which one to open is ambiguous.
+                        const lines = e.items.filter((it) => it.debt_name === d.name)
+                        const planned = lines.reduce((s2, it) => s2 + it.amount, 0)
+                        const plan = lines.length === 1 ? lines[0] : null
+                        if (plan && editing === plan.id) return (
+                          <ItemForm key={d.name} cats={cats} busy={busy} item={{ ...plan, category: e.category }}
+                            onDone={async (pl) => { if (await call('PATCH', { id: plan.id, ...pl })) setEditing(null) }}
+                            onDelete={() => confirm({ title: `Delete “${plan.name}”?`, run: async () => { if (await call('DELETE', undefined, `?id=${plan.id}`)) setEditing(null) } })}
+                            onCancel={() => setEditing(null)} />
+                        )
+                        return (
+                          <button key={d.name} onClick={() => { if (plan) { setEditing(plan.id); setAdding(false) } }} title={plan ? 'Edit' : undefined}
+                            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '5px 6px', margin: '0 -6px', borderRadius: 7, background: 'transparent', border: 'none', cursor: plan ? 'pointer' : 'default', color: 'var(--text-secondary)', width: 'calc(100% + 12px)', textAlign: 'left', font: 'inherit', fontSize: 13 }}>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 7, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
+                              {plan && <Pencil size={12} style={{ opacity: 0.4, flexShrink: 0 }} />}
+                              {d.name}
+                              {planned > 0 && <span style={{ color: 'var(--text-muted)', flexShrink: 0 }}>· {money2(planned)}/mo</span>}
+                            </span>
+                            <span style={{ flexShrink: 0, fontVariantNumeric: 'tabular-nums', fontWeight: d.paid > 0 ? 600 : 400, color: d.paid > 0 ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                              {d.paid > 0 ? money2(d.paid) : '—'}
+                            </span>
+                          </button>
+                        )
+                      })}
+                      {debtSummary.unassigned > 0 && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, padding: '5px 0', fontSize: 13, color: 'var(--text-secondary)' }}>
+                          <span>Unassigned <span style={{ color: 'var(--text-muted)' }}>— paid against no debt</span></span>
+                          <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>{money2(debtSummary.unassigned)}</span>
+                        </div>
+                      )}
+                      {debtSummary.unlinkedPlanned > 0 && (
+                        <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--expense)', marginTop: 6 }}>
+                          {money(debtSummary.unlinkedPlanned)}/mo of this budget isn&rsquo;t pointed at a debt yet — link it in Add ▸ Recurring.
+                        </div>
+                      )}
+                      {debtSummary.paidOff > 0 && (
+                        <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 6 }}>
+                          {debtSummary.paidOff} debt{debtSummary.paidOff !== 1 ? 's' : ''} fully repaid — hidden.
+                        </div>
+                      )}
+                    </div>
+                  ) : openEnv.has(e.category) ? (
                   <div style={{ display: 'grid', gap: 2, marginTop: 9, paddingLeft: 4 }}>
                     {e.items.map((it) => editing === it.id ? (
                       <ItemForm key={it.id} cats={cats} busy={busy} item={{ ...it, category: e.category }}
@@ -216,6 +319,7 @@ export default function BudgetManager() {
                       </button>
                     ))}
                   </div>
+                  ) : null}
                 </div>
               )
                   })}
@@ -226,9 +330,6 @@ export default function BudgetManager() {
           </>
         )}
 
-        <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 16, marginBottom: 0 }}>
-          Each envelope tracks its budgeted total against your actual {data?.label ?? 'monthly'} activity. The faint vertical tick marks today's pace ({pace}% through the month) — a fill sitting well past it is running ahead of schedule. Expense envelopes turn red when over; savings & debt turn green at target.
-        </p>
       </>)}
       </div>
     </>

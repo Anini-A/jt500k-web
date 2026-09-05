@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
   const { data: cats } = await supabaseAdmin.from('categories').select('name, type')
   const typeByCat = new Map((cats ?? []).map((c) => [c.name, c.type]))
 
-  const { data: allTx } = await supabaseAdmin.from('transactions').select('date, category, amount')
+  const { data: allTx } = await supabaseAdmin.from('transactions').select('date, category, amount, description')
   const tx = allTx ?? []
   // tracking month = requested ?month=YYYY-MM, else the CURRENT calendar month
   // (not the latest month in data — future-dated entries must not hijack it)
@@ -54,6 +54,44 @@ export async function GET(req: NextRequest) {
     spent: Math.round((spentByCat.get(e.category) || 0) * 100) / 100,
   })).sort((a, b) => b.budgeted - a.budgeted)
 
+  // ── Debt Repayment breakdown ────────────────────────────────────────────────
+  // The envelope keeps ONE budgeted figure and one bar. These rows only attribute the
+  // month's actual payments across the debts, so they always sum to what the envelope
+  // already shows and can never inflate what's budgeted. Balances live on the Debts page.
+  const { data: debtRows } = await supabaseAdmin.from('debts').select('name, amount')
+  const norm = (v: string | null | undefined) => (v || '').trim().toLowerCase()
+  const paidAllTime = new Map<string, number>()
+  const paidThisMonth = new Map<string, number>()
+  let debtSpentThisMonth = 0
+  for (const t of tx) {
+    if (t.category !== 'Debt Repayment') continue
+    const k = norm(t.description as string)
+    paidAllTime.set(k, (paidAllTime.get(k) || 0) + Number(t.amount))
+    if ((t.date as string).slice(0, 7) === month) {
+      paidThisMonth.set(k, (paidThisMonth.get(k) || 0) + Number(t.amount))
+      debtSpentThisMonth += Number(t.amount)
+    }
+  }
+  const round = (n: number) => Math.round(n * 100) / 100
+  const scored = (debtRows ?? []).map((d) => ({
+    name: d.name as string,
+    remaining: round(Number(d.amount) - (paidAllTime.get(norm(d.name as string)) || 0)),
+    paid: round(paidThisMonth.get(norm(d.name as string)) || 0),
+  }))
+  // A settled debt drops off the list — it will never be paid again. Anything paid toward
+  // a description that matches no debt is money that landed nowhere, so it is named.
+  const active = scored.filter((d) => d.remaining > 0).sort((a, b) => b.remaining - a.remaining)
+  const namedThisMonth = scored.reduce((s2, d) => s2 + d.paid, 0)
+  const debtSummary = {
+    rows: active.map(({ name, paid }) => ({ name, paid })),
+    unassigned: round(debtSpentThisMonth - namedThisMonth),
+    paidOff: scored.length - active.length,
+    // planned money on Debt Repayment lines not yet pointed at a debt
+    unlinkedPlanned: round((lines ?? [])
+      .filter((l) => l.category === 'Debt Repayment' && !l.debt_name)
+      .reduce((s2, l) => s2 + Number(l.amount), 0)),
+  }
+
   const [y, mo] = month.split('-')
   const label = new Date(Number(y), Number(mo) - 1).toLocaleString('en', { month: 'long', year: 'numeric' })
 
@@ -62,6 +100,7 @@ export async function GET(req: NextRequest) {
     label,
     availableMonths,
     envelopes,
+    debtSummary,
     totalBudgeted: Math.round(envelopes.reduce((s, e) => s + e.budgeted, 0) * 100) / 100,
     totalSpent: Math.round(envelopes.reduce((s, e) => s + e.spent, 0) * 100) / 100,
   }, noStore)
