@@ -8,7 +8,7 @@ import { getJSON } from '@/lib/fresh'
 import { useConfirm, useToast } from './Feedback'
 
 interface Item { id: string; name: string; amount: number; debt_name?: string | null }
-interface Envelope { category: string; type: string; budgeted: number; spent: number; items: Item[] }
+interface Envelope { category: string; type: string; budgeted: number; spent: number; items: Item[]; lineTotal?: number; budgetSet?: boolean }
 // Attribution of the month's debt payments — display only; never feeds a budgeted total.
 interface DebtSummary { rows: { name: string; paid: number }[]; unassigned: number; paidOff: number; unlinkedPlanned: number }
 
@@ -56,6 +56,25 @@ export default function BudgetManager() {
   const [editing, setEditing] = useState<string | null>(null)
   const [groupFilter, setGroupFilter] = useState('all') // 'all' | group key
   const [openEnv, setOpenEnv] = useState<Set<string>>(new Set()) // envelopes whose line items are revealed
+  // Debt Repayment's budget is typed directly rather than summed from its plan lines —
+  // those lines are the rows you tick to log payments, so they can't be rewritten to make
+  // a total come out. Blank clears it and the envelope goes back to summing.
+  const [editBudget, setEditBudget] = useState<string | null>(null)
+  const [budgetDraft, setBudgetDraft] = useState('')
+  const saveBudget = async (category: string) => {
+    const raw = budgetDraft.trim()
+    if (raw !== '' && !(parseFloat(raw) >= 0)) { toast('Enter an amount, or clear the box to go back to summing the lines.'); return }
+    setBusy(true)
+    try {
+      const res = await fetch('/api/budgets', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ category, amount: raw === '' ? null : parseFloat(raw) }),
+      })
+      if (!res.ok) { toast((await res.json()).error || 'Could not save.'); return }
+      setEditBudget(null)
+      await load()
+    } finally { setBusy(false) }
+  }
   const toggleEnv = (cat: string) => setOpenEnv((p) => { const n = new Set(p); n.has(cat) ? n.delete(cat) : n.add(cat); return n })
   const [busy, setBusy] = useState(false)
 
@@ -237,7 +256,26 @@ export default function BudgetManager() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginBottom: 8 }}>
                     <span style={{ fontSize: 16, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{e.category}</span>
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <div style={{ fontSize: 16, fontWeight: 600 }}>{money(e.spent)} <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>/ {money(e.budgeted)}</span></div>
+                      <div style={{ fontSize: 16, fontWeight: 600 }}>{money(e.spent)}{' '}
+                        {e.category === 'Debt Repayment' ? (
+                          editBudget === e.category ? (
+                            <input autoFocus inputMode="decimal" value={budgetDraft} disabled={busy}
+                              onChange={(ev) => setBudgetDraft(ev.target.value.replace(/[^0-9.]/g, ''))}
+                              onBlur={() => saveBudget(e.category)}
+                              onKeyDown={(ev) => { if (ev.key === 'Enter') ev.currentTarget.blur(); if (ev.key === 'Escape') setEditBudget(null) }}
+                              aria-label="Budgeted amount" placeholder="sum of lines"
+                              style={{ ...inp, height: 28, width: 108, display: 'inline-block', textAlign: 'right', fontSize: 15, fontWeight: 600, padding: '0 8px', fontVariantNumeric: 'tabular-nums' }} />
+                          ) : (
+                            <button onClick={() => { setBudgetDraft(e.budgetSet ? String(e.budgeted) : ''); setEditBudget(e.category) }}
+                              title="Edit the budgeted amount"
+                              style={{ background: 'transparent', border: 'none', borderBottom: '1px dashed var(--text-muted)', borderRadius: 0, padding: '0 1px', font: 'inherit', fontWeight: 400, color: 'var(--text-muted)', cursor: 'pointer' }}>
+                              / {money(e.budgeted)}
+                            </button>
+                          )
+                        ) : (
+                          <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>/ {money(e.budgeted)}</span>
+                        )}
+                      </div>
                       <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, color: s.noteColor }}>{s.note}</div>
                     </div>
                   </div>
@@ -251,6 +289,11 @@ export default function BudgetManager() {
                       ? `paid to ${debtSummary.rows.length} debt${debtSummary.rows.length !== 1 ? 's' : ''}`
                       : `${e.items.length} item${e.items.length !== 1 ? 's' : ''}`}
                   </button>
+                  {e.budgetSet && e.lineTotal != null && Math.abs(e.lineTotal - e.budgeted) >= 0.01 && (
+                    <span style={{ fontSize: 11.5, color: 'var(--text-muted)', marginLeft: 8 }}>
+                      lines total {money(e.lineTotal)}
+                    </span>
+                  )}
 
                   {/* The Debt Repayment envelope keeps ONE budgeted figure and one bar. Its rows
                       attribute the month's payments across the active debts — they carry no

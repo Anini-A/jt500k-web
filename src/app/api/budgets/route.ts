@@ -18,6 +18,13 @@ export async function GET(req: NextRequest) {
   const { data: lines, error } = await supabaseAdmin.from('budgets').select('*').order('amount', { ascending: false })
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
+  // An envelope can carry its own budget (category_budgets) instead of taking the sum of
+  // its plan lines. Where one is set it wins — the lines are left alone because they're
+  // what gets ticked in Add > Recurring to log payments.
+  const { data: overrides } = await supabaseAdmin.from('category_budgets').select('category, amount')
+    .then((r) => r, () => ({ data: [] as { category: string; amount: number }[] }))
+  const budgetByCat = new Map((overrides ?? []).map((o) => [o.category as string, Number(o.amount)]))
+
   // category types (for status semantics: expense over = bad, savings/debt over = good)
   const { data: cats } = await supabaseAdmin.from('categories').select('name, type')
   const typeByCat = new Map((cats ?? []).map((c) => [c.name, c.type]))
@@ -48,11 +55,17 @@ export async function GET(req: NextRequest) {
     e.items.push({ id: l.id, name: l.name, amount: Number(l.amount), debt_name: l.debt_name ?? null })
   }
 
-  const envelopes = [...envMap.values()].map((e) => ({
-    ...e,
-    budgeted: Math.round(e.budgeted * 100) / 100,
-    spent: Math.round((spentByCat.get(e.category) || 0) * 100) / 100,
-  })).sort((a, b) => b.budgeted - a.budgeted)
+  const envelopes = [...envMap.values()].map((e) => {
+    const lineTotal = Math.round(e.budgeted * 100) / 100
+    const set = budgetByCat.get(e.category)
+    return {
+      ...e,
+      budgeted: set != null ? Math.round(set * 100) / 100 : lineTotal,
+      lineTotal,               // what the plan lines add up to, for the drift hint
+      budgetSet: set != null,  // true when this envelope carries its own budget
+      spent: Math.round((spentByCat.get(e.category) || 0) * 100) / 100,
+    }
+  }).sort((a, b) => b.budgeted - a.budgeted)
 
   // ── Debt Repayment breakdown ────────────────────────────────────────────────
   // The envelope keeps ONE budgeted figure and one bar. These rows only attribute the
@@ -132,6 +145,28 @@ export async function PATCH(req: NextRequest) {
   if (debt_name !== undefined) patch.debt_name = debt_name || null
   if (Object.keys(patch).length === 0) return NextResponse.json({ error: 'Nothing to update' }, { status: 400 })
   const { error } = await supabaseAdmin.from('budgets').update(patch).eq('id', id)
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ ok: true })
+}
+
+// PUT /api/budgets  { category, amount }  — set an envelope's own budget.
+// amount null (or blank) clears it, so the envelope goes back to summing its lines.
+export async function PUT(req: NextRequest) {
+  const { category, amount } = await req.json().catch(() => ({}))
+  if (!category?.trim()) return NextResponse.json({ error: 'category required' }, { status: 400 })
+  const hh = await household()
+  if (!hh) return NextResponse.json({ error: 'No household found' }, { status: 400 })
+
+  if (amount == null || amount === '') {
+    const { error } = await supabaseAdmin.from('category_budgets').delete().eq('household_id', hh).eq('category', category)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ ok: true })
+  }
+  if (isNaN(Number(amount)) || Number(amount) < 0) {
+    return NextResponse.json({ error: 'amount must be a positive number' }, { status: 400 })
+  }
+  const { error } = await supabaseAdmin.from('category_budgets')
+    .upsert({ household_id: hh, category, amount: Number(amount) }, { onConflict: 'household_id,category' })
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ ok: true })
 }
