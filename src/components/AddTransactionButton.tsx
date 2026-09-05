@@ -104,6 +104,14 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   const [images, setImages] = useState<{ id: string; data: string; mime: string; preview: string }[]>([])
   const [recs, setRecs] = useState<any[]>([])
   const [picked, setPicked] = useState<Set<string>>(new Set())
+  // Per-LOG overrides, keyed by row id: an amount that differs this month, or which debt a
+  // repayment is going against. Deliberately not persisted — the row is a plan, and a
+  // one-off hydro bill shouldn't silently rewrite the budget. Cleared after logging.
+  const [recOver, setRecOver] = useState<Record<string, { amount?: string; description?: string }>>({})
+  const setOver = (id: string, patch: { amount?: string; description?: string }) =>
+    setRecOver((p) => ({ ...p, [id]: { ...p[id], ...patch } }))
+  const recAmount = (r: any) => { const o = recOver[r.id]?.amount; const v = o === undefined ? Number(r.amount) : parseFloat(o); return isNaN(v) ? 0 : v }
+  const recDesc = (r: any) => recOver[r.id]?.description || r.description || r.name
   const [recDate, setRecDate] = useState(today())
   const [recEdit, setRecEdit] = useState<null | 'new' | string>(null) // manage recurring items
   const [recForm, setRecForm] = useState({ name: '', type: 'expense', category: '', amount: '', description: '' })
@@ -187,9 +195,9 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
     try {
       const res = await fetch('/api/transactions', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(chosen.map((r) => ({ date: recDate, type: recType(r), category: r.category, amount: Number(r.amount), description: r.description || r.name }))),
+        body: JSON.stringify(chosen.map((r) => ({ date: recDate, type: recType(r), category: r.category, amount: recAmount(r), description: recDesc(r) }))),
       })
-      if (res.ok) { close(); window.dispatchEvent(new CustomEvent('transaction-added')) }
+      if (res.ok) { setRecOver({}); close(); window.dispatchEvent(new CustomEvent('transaction-added')) }
       else setRecErr((await res.json()).error || 'Could not log.')
     } finally { setSaving(false) }
   }
@@ -470,7 +478,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
     { key: 'debt', label: 'Debt', color: '#c2892f', soft: 'rgba(224,161,43,0.16)' },
   ]
   const recGroupsPresent = REC_GROUPS.filter((g) => recs.some((r) => recGroup(r) === g.key))
-  const pickedTotal = recs.filter((r) => picked.has(r.id)).reduce((s, r) => s + Number(r.amount), 0)
+  const pickedTotal = recs.filter((r) => picked.has(r.id)).reduce((s, r) => s + recAmount(r), 0)
   const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })
 
   const updateRow = (i: number, patch: Partial<Row>) =>
@@ -832,6 +840,16 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                                       <optgroup label="Expense">{grouped.expense.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}</optgroup>
                                       <optgroup label="Savings">{grouped.savings.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}</optgroup>
                                     </select>
+                                    {/* A debt payment is matched to its debt by DESCRIPTION, and these row
+                                        names ("Loan payment (1 of 2)") aren't debt names — so pick one. */}
+                                    {r.category === 'Debt Repayment' && debts.length > 0 && (
+                                      <select value={debts.some((d) => d.name === recDesc(r)) ? recDesc(r) : ''} aria-label="Which debt"
+                                        onChange={(e) => setOver(r.id, { description: e.target.value })} className="rec-inline"
+                                        style={{ ...recInline, fontSize: 12, color: debts.some((d) => d.name === recDesc(r)) ? 'var(--text-secondary)' : 'var(--expense)', width: 'auto', maxWidth: '100%' }}>
+                                        <option value="">— which debt? —</option>
+                                        {debts.map((d) => <option key={d.name} value={d.name}>{d.name}</option>)}
+                                      </select>
+                                    )}
                                   </div>
                                   {/* Fixed money column. Sizing this to the value in `ch` clipped short
                                       amounts: box-sizing is border-box, so the width swallowed
@@ -840,9 +858,9 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                                       the amounts up as a column. */}
                                   <div style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 1, width: 104 }}>
                                     <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-muted)', flexShrink: 0 }}>$</span>
-                                    <input inputMode="decimal" value={String(r.amount)} aria-label="Amount" className="rec-inline"
-                                      onChange={(e) => setRecLocal(r.id, { amount: e.target.value.replace(/[^0-9.]/g, '') })}
-                                      onBlur={(e) => { const v = parseFloat(e.target.value); v > 0 ? patchRec(r.id, { amount: v }) : reloadRecs() }}
+                                    <input inputMode="decimal" value={recOver[r.id]?.amount ?? String(r.amount)} aria-label="Amount" className="rec-inline"
+                                      onChange={(e) => setOver(r.id, { amount: e.target.value.replace(/[^0-9.]/g, '') })}
+                                      onBlur={(e) => { if (!(parseFloat(e.target.value) > 0)) setRecOver((p) => { const n = { ...p }; delete n[r.id]?.amount; if (n[r.id] && !n[r.id].amount && !n[r.id].description) delete n[r.id]; return { ...n } }) }}
                                       style={{ ...recInline, flex: 1, minWidth: 0, textAlign: 'right', fontWeight: 700, fontSize: 15, fontVariantNumeric: 'tabular-nums' }} />
                                   </div>
                                   <button type="button" aria-label={`Delete ${r.name}`} title="Delete" onClick={() => setConfirmDel({ kind: 'rec', id: r.id, name: r.name })}
