@@ -33,7 +33,7 @@ const inp: React.CSSProperties = {
 export default function BillRunway() {
   const cachedBills = cachedValue<{ bills: Bill[]; accounts: Account[] }>('/api/bills')
   const [bills, setBills] = useState<Bill[]>(() => cachedBills?.bills ?? [])
-  const [accounts, setAccounts] = useState<Account[]>([])
+  const [accounts, setAccounts] = useState<Account[]>(() => cachedBills?.accounts ?? [])
   const [activeId, setActiveId] = useState<string>('')
   const [loading, setLoading] = useState(!cachedBills)
   const [editBalance, setEditBalance] = useState(false) // edits the active account
@@ -80,10 +80,23 @@ export default function BillRunway() {
   // per-account coverage for the pill status dots — green when this month is funded
   const coverageOf = useCallback((a: Account) => coveredThisMonthOf(project(bills.filter((b) => b.account_id === a.id), a)), [bills, coveredThisMonthOf])
 
-  if (loading) return <div className="card glass" style={{ padding: 40, textAlign: 'center' }}>Loading your bill runway…</div>
+  if (loading) return (
+    <div className="card glass">
+      <div className="skel skel-bar" style={{ width: '45%', marginBottom: 14 }} />
+      {[0, 1, 2].map((i) => <div key={i} className="skel skel-row" />)}
+    </div>
+  )
+  // Nothing to show yet — an invitation, not a setup instruction. (This read as
+  // "Run sql/bill_accounts_setup.sql in Supabase", which is a note to the developer,
+  // and it also flashed while the accounts were still loading.)
   if (!accounts.length) return (
-    <div className="card glass" style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
-      No bill accounts yet. Run <code>sql/bill_accounts_setup.sql</code> in Supabase to get started.
+    <div className="card glass" style={{ padding: '32px 20px', textAlign: 'center' }}>
+      <div style={{ fontSize: 15.5, fontWeight: 650, marginBottom: 5 }}>No bill account yet</div>
+      <div style={{ fontSize: 13.5, color: 'var(--text-muted)', lineHeight: 1.5, maxWidth: 340, margin: '0 auto 16px' }}>
+        Add the account your bills come out of, with its balance, and this page shows how far that balance carries you.
+      </div>
+      <button className="btn btn-primary" onClick={() => setNewAccount(true)}><Plus size={16} /> Add bill account</button>
+      {newAccount && <AccountModal account={null} canDelete={false} onClose={() => setNewAccount(false)} onSaved={(id) => { setNewAccount(false); if (id) setActiveId(id); load() }} />}
     </div>
   )
   if (!active) return null
