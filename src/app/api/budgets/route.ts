@@ -67,6 +67,20 @@ export async function GET(req: NextRequest) {
     }
   }).sort((a, b) => b.budgeted - a.budgeted)
 
+  // ── The month as it actually happened ──────────────────────────────────────
+  // Envelopes only exist for categories that carry a budget line, so summing them misses
+  // real money: August's Misc, Clothing, Side Hustle and Refund had no line and vanished
+  // from the headline. These totals come from every transaction in the month instead.
+  let actualIncome = 0
+  let actualOutflow = 0
+  for (const t of tx) {
+    if ((t.date as string).slice(0, 7) !== month) continue
+    const amt = Number(t.amount)
+    if ((typeByCat.get(t.category as string) || 'expense') === 'income') actualIncome += amt
+    else actualOutflow += amt
+  }
+  const monthActuals = { income: Math.round(actualIncome * 100) / 100, outflow: Math.round(actualOutflow * 100) / 100 }
+
   // ── Debt Repayment breakdown ────────────────────────────────────────────────
   // The envelope keeps ONE budgeted figure and one bar. These rows only attribute the
   // month's actual payments across the debts, so they always sum to what the envelope
@@ -91,14 +105,20 @@ export async function GET(req: NextRequest) {
     remaining: round(Number(d.amount) - (paidAllTime.get(norm(d.name as string)) || 0)),
     paid: round(paidThisMonth.get(norm(d.name as string)) || 0),
   }))
-  // A settled debt drops off the list — it will never be paid again. Anything paid toward
-  // a description that matches no debt is money that landed nowhere, so it is named.
+  // A settled debt drops off the list — it will never be paid again — UNLESS it was paid
+  // in this month, in which case dropping it would hide where the month's money actually
+  // went and leave the rows summing to less than the envelope. Anything paid toward a
+  // description that matches no debt is money that landed nowhere, so it is named.
   const active = scored.filter((d) => d.remaining > 0).sort((a, b) => b.remaining - a.remaining)
+  const settledThisMonth = scored.filter((d) => d.remaining <= 0 && d.paid > 0).sort((a, b) => b.paid - a.paid)
   const namedThisMonth = scored.reduce((s2, d) => s2 + d.paid, 0)
   const debtSummary = {
-    rows: active.map(({ name, paid }) => ({ name, paid })),
+    rows: [
+      ...active.map(({ name, paid }) => ({ name, paid, done: false })),
+      ...settledThisMonth.map(({ name, paid }) => ({ name, paid, done: true })),
+    ],
     unassigned: round(debtSpentThisMonth - namedThisMonth),
-    paidOff: scored.length - active.length,
+    paidOff: scored.length - active.length - settledThisMonth.length,
     // planned money on Debt Repayment lines not yet pointed at a debt
     unlinkedPlanned: round((lines ?? [])
       .filter((l) => l.category === 'Debt Repayment' && !l.debt_name)
@@ -113,6 +133,7 @@ export async function GET(req: NextRequest) {
     label,
     availableMonths,
     envelopes,
+    monthActuals,
     debtSummary,
     totalBudgeted: Math.round(envelopes.reduce((s, e) => s + e.budgeted, 0) * 100) / 100,
     totalSpent: Math.round(envelopes.reduce((s, e) => s + e.spent, 0) * 100) / 100,

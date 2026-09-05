@@ -10,7 +10,7 @@ import { useConfirm, useToast } from './Feedback'
 interface Item { id: string; name: string; amount: number; debt_name?: string | null }
 interface Envelope { category: string; type: string; budgeted: number; spent: number; items: Item[]; lineTotal?: number; budgetSet?: boolean }
 // Attribution of the month's debt payments — display only; never feeds a budgeted total.
-interface DebtSummary { rows: { name: string; paid: number }[]; unassigned: number; paidOff: number; unlinkedPlanned: number }
+interface DebtSummary { rows: { name: string; paid: number; done?: boolean }[]; unassigned: number; paidOff: number; unlinkedPlanned: number }
 
 const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })
 const money2 = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })
@@ -45,7 +45,7 @@ function envStatus(e: Envelope) {
 }
 
 export default function BudgetManager() {
-  const [data, setData] = useState<{ month: string; label: string; availableMonths?: string[]; envelopes: Envelope[]; debtSummary?: DebtSummary; totalBudgeted: number; totalSpent: number } | null>(null)
+  const [data, setData] = useState<{ month: string; label: string; availableMonths?: string[]; envelopes: Envelope[]; monthActuals?: { income: number; outflow: number }; debtSummary?: DebtSummary; totalBudgeted: number; totalSpent: number } | null>(null)
   const [cats, setCats] = useState<{ name: string; type: string }[]>([])
   const [month, setMonth] = useState(today().slice(0, 7)) // current local month
   const { confirm, confirmNode } = useConfirm()
@@ -137,12 +137,19 @@ export default function BudgetManager() {
   // hasn't landed yet is reported separately rather than folded in, so the figure never
   // promises money that isn't there.
   const income = groups.find((g) => g.key === 'income')!
-  const outflow = groups.filter((g) => g.key !== 'income').reduce((s2, g) => s2 + g.actual, 0)
-  const leftToSpend = income.actual - outflow
+  // From every transaction in the month, not just the budgeted categories — spending in a
+  // category with no budget line is still money out of the account.
+  const received = data?.monthActuals?.income ?? income.actual
+  const outflow = data?.monthActuals?.outflow ?? groups.filter((g) => g.key !== 'income').reduce((s2, g) => s2 + g.actual, 0)
+  const leftToSpend = received - outflow
   // Does the plan balance? Budgeted income against every dollar allocated to a job.
   const allocated = groups.filter((g) => g.key !== 'income').reduce((s2, g) => s2 + g.budgeted, 0)
   const unallocated = income.budgeted - allocated
   const debtSummary = data?.debtSummary
+  // A closed month is a record, not a plan in progress: its labels read in the past tense,
+  // and the balance check is withheld because budget lines aren't stored per month — the
+  // only plan we have is today's, which says nothing true about August.
+  const isCurrentMonth = (data?.month ?? month) === today().slice(0, 7)
 
   return (
     <>
@@ -166,21 +173,21 @@ export default function BudgetManager() {
             leads, but at a size that sits inside the card rather than dominating it. */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 12 }}>
           <div style={{ textAlign: 'left', minWidth: 0 }}>
-            <div className="stat-label">Left to spend</div>
+            <div className="stat-label">{isCurrentMonth ? 'Unspent so far' : leftToSpend < 0 ? 'Overspent by' : 'Left over'}</div>
             <div style={{ fontSize: 'clamp(20px, 5.5vw, 30px)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', color: leftToSpend < 0 ? 'var(--expense)' : 'var(--text-primary)' }}>{money(leftToSpend)}</div>
           </div>
           <div style={{ textAlign: 'center', minWidth: 0 }}>
             <div className="stat-label">Received</div>
-            <div style={{ fontSize: 'clamp(20px, 5.5vw, 30px)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', color: 'var(--income)' }}>{money(income.actual)}</div>
+            <div style={{ fontSize: 'clamp(20px, 5.5vw, 30px)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', color: 'var(--income)' }}>{money(received)}</div>
           </div>
           <div style={{ textAlign: 'right', minWidth: 0 }}>
-            <div className="stat-label">Out so far</div>
+            <div className="stat-label">{isCurrentMonth ? 'Out so far' : 'Out'}</div>
             <div style={{ fontSize: 'clamp(20px, 5.5vw, 30px)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>{money(outflow)}</div>
           </div>
         </div>
 
         {/* Does the plan fund itself? Caught before the month runs, not after. */}
-        {income.budgeted > 0 && (
+        {income.budgeted > 0 && isCurrentMonth && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 11px', borderRadius: 11, fontSize: 12.5, lineHeight: 1.4,
             background: unallocated < 0 ? 'var(--expense-soft)' : 'var(--income-soft)' }}>
             <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, background: unallocated < 0 ? 'var(--expense)' : 'var(--income)' }} />
@@ -309,7 +316,10 @@ export default function BudgetManager() {
                           no editor — they're a read-only breakdown of where the money went. */}
                       {debtSummary.rows.map((d) => (
                         <div key={d.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '5px 0', fontSize: 13, color: 'var(--text-secondary)' }}>
-                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{d.name}</span>
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
+                            {d.name}
+                            {d.done && <span style={{ marginLeft: 7, fontSize: 10.5, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--income)' }}>paid off</span>}
+                          </span>
                           <span style={{ flexShrink: 0, fontVariantNumeric: 'tabular-nums', fontWeight: d.paid > 0 ? 600 : 400, color: d.paid > 0 ? 'var(--text-primary)' : 'var(--text-muted)' }}>
                             {d.paid > 0 ? money2(d.paid) : '—'}
                           </span>
