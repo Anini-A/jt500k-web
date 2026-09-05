@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { useLockScroll } from '@/lib/lockScroll'
 import { createPortal } from 'react-dom'
 import { Bell, CheckCircle2 } from 'lucide-react'
 import { getJSON } from '@/lib/fresh'
@@ -12,6 +13,7 @@ interface Notif { id: string; icon: string; title: string; detail: string; sever
 export default function NotificationBell() {
   const [items, setItems] = useState<Notif[] | null>(null)
   const [open, setOpen] = useState(false)
+  useLockScroll(open) // the page behind a sheet stays put
   const [tab, setTab] = useState<'action' | 'info'>('action')
 
   const load = useCallback(() => {

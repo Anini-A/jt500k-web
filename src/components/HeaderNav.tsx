@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useLockScroll } from '@/lib/lockScroll'
 import { createPortal } from 'react-dom'
 import { Settings, Sparkles } from 'lucide-react'
 import IconPill from './IconPill'
@@ -14,6 +15,7 @@ type Page = 'home' | 'dashboard' | 'transactions' | 'settings'
 // both in the top-right action cluster. Page navigation lives in the centered PagePill.
 export default function HeaderNav({ current }: { current: Page }) {
   const [settingsOpen, setSettingsOpen] = useState(false)
+  useLockScroll(settingsOpen) // the page behind a sheet stays put
   const [chatOpen, setChatOpen] = useState(false)
 
   return (

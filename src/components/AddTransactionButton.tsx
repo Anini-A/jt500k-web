@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useLockScroll } from '@/lib/lockScroll'
 import { createPortal } from 'react-dom'
 import { Plus, Trash2, ClipboardPaste, PencilLine, Repeat, Settings2, ImagePlus, RotateCcw, X, ChevronDown, Save } from 'lucide-react'
 import CategorySelect from './CategorySelect'
@@ -72,6 +73,7 @@ function parsePaste(raw: string, cats: Category[]): Row[] {
 export default function AddTransactionButton({ trigger = true }: { trigger?: boolean }) {
   const { confirm, confirmNode } = useConfirm()
   const [open, setOpen] = useState(false)
+  useLockScroll(open) // the page behind a sheet stays put
   const [mode, setMode] = useState<'single' | 'batch' | 'recurring'>('single')
   const [saving, setSaving] = useState(false)
   const [cats, setCats] = useState<Category[]>([])
@@ -870,12 +872,16 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                                       recInline's 10px padding + 2px border, and one ch of slack never
                                       covered it ("350" lost its last digit). A fixed width also lines
                                       the amounts up as a column. */}
-                                  <div style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 1, width: 104 }}>
+                                  {/* The $ hugs the number instead of anchoring the far side of a
+                                      fixed column, where it read as belonging to nothing. The column
+                                      keeps its width so the amounts still line up on the right. */}
+                                  <div style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1, width: 104 }}>
                                     <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-muted)', flexShrink: 0 }}>$</span>
                                     <input inputMode="decimal" value={recOver[r.id]?.amount ?? String(r.amount)} aria-label="Amount" className="rec-inline"
+                                      size={1}
                                       onChange={(e) => setOver(r.id, { amount: e.target.value.replace(/[^0-9.]/g, '') })}
                                       onBlur={(e) => { if (!(parseFloat(e.target.value) > 0)) setRecOver((p) => { const n = { ...p }; delete n[r.id]?.amount; if (n[r.id] && !n[r.id].amount && !n[r.id].description) delete n[r.id]; return { ...n } }) }}
-                                      style={{ ...recInline, flex: 1, minWidth: 0, textAlign: 'right', fontWeight: 700, fontSize: 15, fontVariantNumeric: 'tabular-nums' }} />
+                                      style={{ ...recInline, width: `${Math.max(4, String(recOver[r.id]?.amount ?? r.amount).length + 1)}ch`, minWidth: 0, maxWidth: 92, textAlign: 'right', fontWeight: 700, fontSize: 15, fontVariantNumeric: 'tabular-nums' }} />
                                   </div>
                                   <button type="button" aria-label={`Delete ${r.name}`} title="Delete" onClick={() => setConfirmDel({ kind: 'rec', id: r.id, name: r.name })}
                                     style={{ flexShrink: 0, display: 'inline-flex', padding: 5, borderRadius: 8, border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}><Trash2 size={15} /></button>
