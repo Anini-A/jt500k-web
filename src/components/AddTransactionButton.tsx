@@ -77,7 +77,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   const [mode, setMode] = useState<'single' | 'batch' | 'recurring'>('single')
   const [saving, setSaving] = useState(false)
   const [cats, setCats] = useState<Category[]>([])
-  const [debts, setDebts] = useState<{ name: string; remaining?: number }[]>([])
+  const [debts, setDebts] = useState<{ name: string; remaining?: number; history?: { amount: number }[] }[]>([])
   // Only debts with a balance left are offerable — a debt paid to zero will never be paid
   // again, so it just clutters the picker. `keep` re-adds one that's already selected on a
   // row, so an existing pick never silently blanks out.
@@ -205,7 +205,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   const logRecurring = async () => {
     // visibleRecs, not recs: a row retired mid-session (its debt just hit zero) must not
     // log even if it was ticked before that.
-    const chosen = allRows.filter((r) => picked.has(r.id))
+    const chosen = allRows.filter((r) => picked.has(r.id) && recAmount(r) > 0)
     if (!chosen.length) return
     setSaving(true)
     try {
@@ -487,21 +487,28 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   // Recurring: group into the same buckets as the Budget tab
   const recType = (r: any) => r.type ?? cats.find((c) => c.name === r.category)?.type ?? 'expense'
   const recGroup = (r: any) => { const t = recType(r); return t === 'income' ? 'income' : t === 'savings' ? 'saving' : r.category === 'Debt Repayment' ? 'debt' : 'spending' }
-  // One row per DEBT, not per plan line: the RBC loan is two instalments and JH Margin is
-  // its own line, but you pay debts, not instalments. Lines pointing at the same debt are
-  // rolled into a single tickable row carrying their combined amount, so several debts can
-  // be picked and logged in one go. A line with no debt linked stays as itself.
+  // The Debt group lists your DEBTS, not the budget lines that fund them — that's the
+  // choice being made here ("which debts am I paying this month"), and four of the debts
+  // have no plan line at all, so a line-driven list left them unloggable.
+  //
+  // The default amount is what the plan says, else what you last paid, else nothing —
+  // a row with no amount can be typed into but won't log.
   const debtRows = (() => {
-    const byDebt = new Map<string, { id: string; name: string; amount: number; category: string; type: string; debt_name: string; lines: number }>()
-    const loose: any[] = []
-    for (const r of visibleRecs) {
-      if (recGroup(r) !== 'debt') continue
-      if (!r.debt_name) { loose.push(r); continue }
-      const cur = byDebt.get(r.debt_name)
-      if (cur) { cur.amount += Number(r.amount); cur.lines += 1 }
-      else byDebt.set(r.debt_name, { id: `debt:${r.debt_name}`, name: r.debt_name, amount: Number(r.amount), category: r.category, type: r.type, debt_name: r.debt_name, lines: 1 })
-    }
-    return [...byDebt.values(), ...loose]
+    const plannedFor = (name: string) => visibleRecs
+      .filter((r) => recGroup(r) === 'debt' && r.debt_name === name)
+      .reduce((n, r) => n + Number(r.amount), 0)
+    const rows = openDebts().map((d) => {
+      const planned = plannedFor(d.name)
+      const last = d.history?.[0]?.amount ?? 0
+      return {
+        id: `debt:${d.name}`, name: d.name, debt_name: d.name,
+        amount: planned || last || 0, planned, remaining: d.remaining ?? 0,
+        category: 'Debt Repayment', type: 'expense' as const,
+      }
+    })
+    // a debt line pointing at nothing yet still needs somewhere to live
+    const unlinked = visibleRecs.filter((r) => recGroup(r) === 'debt' && !r.debt_name)
+    return [...rows.sort((a, b) => b.amount - a.amount || b.remaining - a.remaining), ...unlinked]
   })()
   const rowsOfGroup = (key: string) => (key === 'debt' ? debtRows : visibleRecs.filter((r) => recGroup(r) === key))
   const REC_GROUPS = [
@@ -512,7 +519,9 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   ]
   const recGroupsPresent = REC_GROUPS.filter((g) => rowsOfGroup(g.key).length > 0)
   const allRows = REC_GROUPS.flatMap((g) => rowsOfGroup(g.key))
-  const pickedTotal = allRows.filter((r) => picked.has(r.id)).reduce((s, r) => s + recAmount(r), 0)
+  // a ticked row with no amount yet isn't loggable, so it doesn't count toward the button
+  const pickedRows = allRows.filter((r) => picked.has(r.id) && recAmount(r) > 0)
+  const pickedTotal = pickedRows.reduce((s, r) => s + recAmount(r), 0)
   const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })
 
   const updateRow = (i: number, patch: Partial<Row>) =>
@@ -865,7 +874,9 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                                   <input type="checkbox" checked={on} onChange={toggle} aria-label={`Select ${r.name}`} style={{ flexShrink: 0 }} />
                                   <div style={{ flex: 1, minWidth: 0 }}>
                                     <div style={{ fontWeight: 600, fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</div>
-                                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{r.lines > 1 ? `${r.lines} payments` : 'Debt Repayment'}</div>
+                                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                                      {money(r.remaining)} left{r.planned > 0 ? ` · ${money(r.planned)}/mo planned` : ''}
+                                    </div>
                                   </div>
                                   <div style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1, width: 104 }}>
                                     <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-muted)', flexShrink: 0 }}>$</span>
@@ -935,10 +946,11 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                     {/* Log for [date] sits beside the action button */}
                     <div style={{ display: 'flex', gap: 10, alignItems: 'stretch' }}>
                       <input type="date" value={recDate} onChange={(e) => setRecDate(e.target.value)} aria-label="Log for date" style={{ ...inp, flexShrink: 0, width: 'auto', height: 46 }} />
-                      <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center', height: 46 }} disabled={saving || picked.size === 0} onClick={logRecurring}>
+                      <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center', height: 46 }} disabled={saving || pickedRows.length === 0} onClick={logRecurring}>
                         {saving ? 'Logging…'
                           : picked.size === 0 ? 'Select items to log'
-                          : `Log ${picked.size} item${picked.size !== 1 ? 's' : ''} · ${money(pickedTotal)}`}
+                          : pickedRows.length === 0 ? 'Enter an amount'
+                          : `Log ${pickedRows.length} item${pickedRows.length !== 1 ? 's' : ''} · ${money(pickedTotal)}`}
                       </button>
                     </div>
                   </>
