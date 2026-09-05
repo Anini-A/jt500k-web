@@ -17,14 +17,15 @@ export default function PullToRefresh() {
 
   useEffect(() => {
     const atTop = () => (window.scrollY || document.documentElement.scrollTop || 0) <= 0
-    // The page can sit at scrollY 0 while a list inside it is scrolled down — the
-    // transactions list, the recurring picker, the chat log all scroll in their own box.
-    // Pulling down there means "scroll this list back up", never "reload the app", so a
-    // touch that starts inside a scrolled container is left alone.
-    const insideScrolledList = (target: EventTarget | null) => {
+    // The page sits at scrollY 0 while a list inside it scrolls in its own box — the
+    // transactions list, the recurring picker, the chat log. A downward swipe there means
+    // "move this list", never "reload the app", so the gesture doesn't arm inside a
+    // scrollable list at all — not merely one that's already scrolled down. Refreshing is
+    // still a pull from anywhere else on the page: the header, the summary, the filters.
+    const insideScrollableList = (target: EventTarget | null) => {
       let el = target instanceof Element ? target : null
       while (el && el !== document.body && el !== document.documentElement) {
-        if (el.scrollTop > 0 && el.scrollHeight > el.clientHeight) {
+        if (el.scrollHeight > el.clientHeight + 1) {
           const oy = getComputedStyle(el).overflowY
           if (oy === 'auto' || oy === 'scroll' || oy === 'overlay') return true
         }
@@ -33,8 +34,8 @@ export default function PullToRefresh() {
       return false
     }
     const onStart = (e: TouchEvent) => {
-      // don't hijack a pull inside an open modal/sheet, or inside a scrolled-down list
-      if (refreshing || e.touches.length !== 1 || document.querySelector('.modal-backdrop') || !atTop() || insideScrolledList(e.target)) { startY.current = null; return }
+      // don't hijack a pull inside an open modal/sheet, or inside a scrollable list
+      if (refreshing || e.touches.length !== 1 || document.querySelector('.modal-backdrop') || !atTop() || insideScrollableList(e.target)) { startY.current = null; return }
       startY.current = e.touches[0].clientY
     }
     const onMove = (e: TouchEvent) => {
