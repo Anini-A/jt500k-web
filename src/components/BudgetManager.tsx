@@ -51,7 +51,7 @@ export default function BudgetManager() {
   const { confirm, confirmNode } = useConfirm()
   const { toast, toastNode } = useToast()
   const [loading, setLoading] = useState(true)
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed, setCollapsed] = useState(true) // budget items open on request, not by default
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<string | null>(null)
   const [groupFilter, setGroupFilter] = useState('all') // 'all' | group key

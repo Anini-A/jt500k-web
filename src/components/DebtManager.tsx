@@ -38,7 +38,7 @@ export default function DebtManager() {
   const { confirm, confirmNode } = useConfirm()
   const { toast, toastNode } = useToast()
   const [busy, setBusy] = useState(false)
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed, setCollapsed] = useState(true) // the debt list open on request, not by default
   const [showPaid, setShowPaid] = useState(false)
   const [expanded, setExpanded] = useState<string | null>(null) // which debt's payment history is open
   const [editTx, setEditTx] = useState<Payment | null>(null)     // a payment being edited
