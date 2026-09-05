@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { Home, Receipt, LayoutDashboard, Sparkles, Target, Wallet, CreditCard, PiggyBank, Banknote, LineChart, Users, TriangleAlert, Plus, type LucideIcon } from 'lucide-react'
+import { Home, Receipt, LayoutDashboard, Sparkles, Target, Wallet, CreditCard, PiggyBank, Banknote, LineChart, Users, TriangleAlert, type LucideIcon } from 'lucide-react'
 import { nav } from '@/lib/nav'
 import { getJSON } from '@/lib/fresh'
 import ChatWidget from './ChatWidget'
@@ -30,12 +30,10 @@ const DASH_TABS: { key: string; label: string; Icon: LucideIcon }[] = [
 
 // Long-press the AI button for the questions worth not retyping. Verbs, not topics —
 // each one either answers on the spot or starts the entry it names.
-const AI_ACTIONS: { label: string; Icon: LucideIcon; prompt?: string; open?: 'add' }[] = [
+const AI_ACTIONS: { label: string; Icon: LucideIcon; prompt?: string }[] = [
   { label: 'What can I afford?', Icon: Wallet, prompt: 'What can I afford to spend right now? Use this month\u2019s unspent figure and subtract the bills still due.' },
   { label: 'How am I doing?', Icon: Target, prompt: 'How am I doing this month against my budget? Compare spending to where I should be at this point in the month, and name anything running hot.' },
-  // Not a chat prompt: logging is a form, and asking the model to interview you for the
-  // amount and category is slower than the sheet that already does it.
-  { label: 'Log a payment', Icon: Plus, open: 'add' },
+  { label: 'How\u2019s my debt going?', Icon: Banknote, prompt: 'How is my debt payoff going? Give me the total remaining, what I have paid this month, and which debt is closest to being cleared.' },
   { label: 'Any surprises?', Icon: TriangleAlert, prompt: 'Any surprises in my spending recently? Look for unusual charges, categories tracking above their normal level, and bills that changed amount.' },
 ]
 
@@ -101,11 +99,7 @@ export default function BottomNav() {
             {AI_ACTIONS.map((a) => {
               const Icon = a.Icon
               return (
-                <button key={a.label} onClick={() => {
-                  setAiMenu(false)
-                  if (a.open === 'add') { window.dispatchEvent(new CustomEvent('open-add-transaction')); return }
-                  setChatSeed({ prompt: a.prompt }); setChatOpen(true)
-                }}>
+                <button key={a.label} onClick={() => { setAiMenu(false); setChatSeed({ prompt: a.prompt }); setChatOpen(true) }}>
                   <Icon size={17} /> {a.label}
                 </button>
               )

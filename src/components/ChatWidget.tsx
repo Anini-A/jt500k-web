@@ -1097,7 +1097,6 @@ export default function ChatWidget({ onClose, initialPrompt, initialInput }: { o
               <ArrowUp size={20} />
             </button>
           </div>
-          <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--text-muted)', marginTop: 7 }}>Gemini can make mistakes — double-check important numbers.</div>
         </form>
         </>
         )}
