@@ -301,33 +301,17 @@ export default function BudgetManager() {
                       still opens its own plan line for editing where one exists. */}
                   {openEnv.has(e.category) && e.category === 'Debt Repayment' && debtSummary ? (
                     <div style={{ display: 'grid', gap: 1, marginTop: 9, paddingLeft: 4 }}>
-                      {debtSummary.rows.map((d) => {
-                        // A debt can be funded by several plan lines (the RBC loan is paid in two
-                        // instalments), so the planned figure is their sum. Only a single line is
-                        // editable straight from the row — with two, which one to open is ambiguous.
-                        const lines = e.items.filter((it) => it.debt_name === d.name)
-                        const planned = lines.reduce((s2, it) => s2 + it.amount, 0)
-                        const plan = lines.length === 1 ? lines[0] : null
-                        if (plan && editing === plan.id) return (
-                          <ItemForm key={d.name} cats={cats} busy={busy} item={{ ...plan, category: e.category }}
-                            onDone={async (pl) => { if (await call('PATCH', { id: plan.id, ...pl })) setEditing(null) }}
-                            onDelete={() => confirm({ title: `Delete “${plan.name}”?`, run: async () => { if (await call('DELETE', undefined, `?id=${plan.id}`)) setEditing(null) } })}
-                            onCancel={() => setEditing(null)} />
-                        )
-                        return (
-                          <button key={d.name} onClick={() => { if (plan) { setEditing(plan.id); setAdding(false) } }} title={plan ? 'Edit' : undefined}
-                            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '5px 6px', margin: '0 -6px', borderRadius: 7, background: 'transparent', border: 'none', cursor: plan ? 'pointer' : 'default', color: 'var(--text-secondary)', width: 'calc(100% + 12px)', textAlign: 'left', font: 'inherit', fontSize: 13 }}>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: 7, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
-                              {plan && <Pencil size={12} style={{ opacity: 0.4, flexShrink: 0 }} />}
-                              {d.name}
-                              {planned > 0 && <span style={{ color: 'var(--text-muted)', flexShrink: 0 }}>· {money2(planned)}/mo</span>}
-                            </span>
-                            <span style={{ flexShrink: 0, fontVariantNumeric: 'tabular-nums', fontWeight: d.paid > 0 ? 600 : 400, color: d.paid > 0 ? 'var(--text-primary)' : 'var(--text-muted)' }}>
-                              {d.paid > 0 ? money2(d.paid) : '—'}
-                            </span>
-                          </button>
-                        )
-                      })}
+                      {/* Name and what it got this month, nothing else. The envelope's budget is
+                          edited on the total above, so these rows carry no plan amount and open
+                          no editor — they're a read-only breakdown of where the money went. */}
+                      {debtSummary.rows.map((d) => (
+                        <div key={d.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '5px 0', fontSize: 13, color: 'var(--text-secondary)' }}>
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{d.name}</span>
+                          <span style={{ flexShrink: 0, fontVariantNumeric: 'tabular-nums', fontWeight: d.paid > 0 ? 600 : 400, color: d.paid > 0 ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                            {d.paid > 0 ? money2(d.paid) : '—'}
+                          </span>
+                        </div>
+                      ))}
                       {debtSummary.unassigned > 0 && (
                         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, padding: '5px 0', fontSize: 13, color: 'var(--text-secondary)' }}>
                           <span>Unassigned <span style={{ color: 'var(--text-muted)' }}>— paid against no debt</span></span>
@@ -337,11 +321,6 @@ export default function BudgetManager() {
                       {debtSummary.unlinkedPlanned > 0 && (
                         <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--expense)', marginTop: 6 }}>
                           {money(debtSummary.unlinkedPlanned)}/mo of this budget isn&rsquo;t pointed at a debt yet — link it in Add ▸ Recurring.
-                        </div>
-                      )}
-                      {debtSummary.paidOff > 0 && (
-                        <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 6 }}>
-                          {debtSummary.paidOff} debt{debtSummary.paidOff !== 1 ? 's' : ''} fully repaid — hidden.
                         </div>
                       )}
                     </div>
