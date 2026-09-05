@@ -862,8 +862,10 @@ header.top h1 {
   -ms-overflow-style: none;
 }
 .tabs::-webkit-scrollbar { display: none; }
-/* when the row scrolls (many tabs), start from the left so no tab is unreachable */
-.tabs-scroll { justify-content: flex-start; }
+/* Centred when the tabs fit, left-aligned once they overflow — plain `center` would push
+   the first tab off the scrollable edge and make it unreachable. `safe` picks per-case;
+   flex-start is the fallback for engines that don't parse it. */
+.tabs-scroll { justify-content: flex-start; justify-content: safe center; }
 /* keep the specular from scrolling with tab content */
 .tabs::before { position: absolute; }
 
