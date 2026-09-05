@@ -105,6 +105,7 @@ export default function BudgetManager() {
 
 
   const envelopes = data?.envelopes ?? []
+  const itemCount = envelopes.reduce((n, e) => n + e.items.length, 0)
 
   // Savings & debt repayment are money kept, not spent — so the summary splits into
   // four independent groups instead of one blended cushion.
@@ -154,8 +155,8 @@ export default function BudgetManager() {
   return (
     <>
       {confirmNode}{toastNode}
-      {/* ── Card 1: summary (always visible) ── */}
-      <div className="card glass" style={{ marginBottom: 16 }}>
+      {/* One card: the month's summary, then its items behind the collapse toggle */}
+      <div className="card glass">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 18 }}>
           <span className="hdr-label">Monthly Budget</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -209,28 +210,35 @@ export default function BudgetManager() {
               pace={g.paced ? pace : null} />
           ))}
         </div>
+
+      {/* Summary and items are one card, collapsed from the bottom-right — the same
+          shape as Debt Management, so the two tabs read as siblings. */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 18 }}>
+        <span style={{ fontSize: 13, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {envelopes.length > 0
+            ? `${envelopes.length} ${envelopes.length === 1 ? 'envelope' : 'envelopes'} · ${itemCount} ${itemCount === 1 ? 'item' : 'items'}`
+            : ''}
+        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          <button onClick={() => { setAdding((v) => !v); setEditing(null); setCollapsed(false) }} aria-label={adding ? 'Cancel add item' : 'Add budget item'} title={adding ? 'Cancel' : 'Add budget item'}
+            style={{ width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-muted)', cursor: 'pointer' }}>
+            <Plus size={16} style={{ transform: adding ? 'rotate(45deg)' : 'none', transition: 'transform .2s ease' }} />
+          </button>
+          <button onClick={() => setCollapsed((v) => !v)} aria-expanded={!collapsed} aria-label={collapsed ? 'Show budget items' : 'Hide budget items'} title={collapsed ? 'Show budget items' : 'Hide budget items'}
+            style={{ width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-muted)', cursor: 'pointer' }}>
+            <ChevronDown size={16} style={{ transform: collapsed ? 'none' : 'rotate(180deg)', transition: 'transform .2s ease' }} />
+          </button>
+        </div>
       </div>
 
-      {/* ── Card 2: the individual items (collapsible) ── */}
-      <div className="card glass">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: collapsed ? 0 : 16, gap: 8 }}>
-          <button onClick={() => setCollapsed((v) => !v)}
-            style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-primary)', padding: 0 }}
-            aria-label={collapsed ? 'Expand budget items' : 'Collapse budget items'}>
-            <ChevronDown size={20} style={{ transition: 'transform .2s ease', transform: collapsed ? 'rotate(-90deg)' : 'none', opacity: 0.7 }} />
-            <span className="hdr-label">Budget Items</span>
-          </button>
-          {!collapsed && (
-            <button className="btn btn-secondary" onClick={() => { setAdding((v) => !v); setEditing(null) }}>
-              <Plus size={16} /> {adding ? 'Cancel' : 'Add Item'}
-            </button>
-          )}
+      {adding && (
+        <div style={{ marginTop: 14, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+          <ItemForm cats={cats} busy={busy} onDone={async (p) => { if (await call('POST', p)) setAdding(false) }} onCancel={() => setAdding(false)} />
         </div>
+      )}
 
       {!collapsed && (<>
-        {adding && (
-          <ItemForm cats={cats} busy={busy} onDone={async (p) => { if (await call('POST', p)) setAdding(false) }} />
-        )}
+        <div style={{ marginTop: 16 }} />
 
         {loading ? (
           <div style={{ padding: 16, color: 'var(--text-muted)' }}>Loading…</div>
