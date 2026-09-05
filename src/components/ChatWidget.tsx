@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { SquarePen, History, ArrowUp, Trash2, Check, X, AudioLines, MessageSquare, ImagePlus, Copy, RotateCcw, Pencil } from 'lucide-react'
+import { SquarePen, History, ArrowUp, Trash2, Check, X, AudioLines, MessageSquare, ImagePlus, Copy, RotateCcw, Pencil, MoreHorizontal } from 'lucide-react'
 import { today } from '@/lib/date'
 import { useConfirm } from './Feedback'
 import { useLockScroll } from '@/lib/lockScroll'
@@ -895,26 +895,33 @@ export default function ChatWidget({ onClose, initialPrompt, initialInput }: { o
       <div className="modal-card glass chat-sheet" onClick={(e) => { e.stopPropagation(); setRecentOpen(false) }}
         style={{ ['--kb' as string]: `${kb}px`, width: 'min(720px, 100%)', padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'var(--surface-1)', position: 'relative' }}>
 
-        {/* Header — X (close/interrupt) · Chat|Voice pill · history + new chat */}
+        {/* Header — close on the left; new chat and everything else on the right. Mode,
+            history and clearing live in the menu so the bar stays quiet. */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 14px', borderBottom: '1px solid var(--border)', position: 'relative' }}>
           <button style={roundBtn} aria-label="Close" title="Close" onClick={closeAll}><X size={20} /></button>
-          <div style={{ flex: 1, display: 'flex', justifyContent: 'center', minWidth: 0 }}>
-            <div className="mode-pill" role="tablist" aria-label="Chat or voice mode">
-              <button role="tab" aria-selected={!voiceMode} className={`mode-seg ${!voiceMode ? 'is-active' : ''}`}
-                onClick={() => { if (voiceMode) toggleVoice() }}><MessageSquare size={15} /> Chat</button>
-              <button role="tab" aria-selected={voiceMode} disabled={!micOK} title={micOK ? '' : 'Microphone unavailable'}
-                className={`mode-seg ${voiceMode ? 'is-active' : ''}`}
-                onClick={() => { if (!voiceMode) toggleVoice() }}><AudioLines size={15} /> Voice</button>
-            </div>
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 7, paddingLeft: 2 }}>
+            <span style={{ fontSize: 15, fontWeight: 650, letterSpacing: '-0.01em' }}>{voiceMode ? 'Voice' : 'Assistant'}</span>
+            {voiceMode && <AudioLines size={15} style={{ color: 'var(--accent)' }} />}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-            <button style={roundBtn} title="Recent chats" onClick={(e) => { e.stopPropagation(); setRecentOpen((v) => !v) }}><History size={19} /></button>
-            <button style={roundBtn} title="New chat" onClick={newChat}><SquarePen size={19} /></button>
+            <button style={roundBtn} aria-label="New chat" title="New chat" onClick={newChat}><SquarePen size={19} /></button>
+            <button style={roundBtn} aria-label="More" title="More" aria-expanded={recentOpen}
+              onClick={(e) => { e.stopPropagation(); setRecentOpen((v) => !v) }}><MoreHorizontal size={19} /></button>
           </div>
 
           {recentOpen && (
             <div onClick={(e) => e.stopPropagation()}
               style={{ position: 'absolute', top: 52, right: 12, zIndex: 5, width: 'min(320px, 80%)', maxHeight: 320, overflowY: 'auto', background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: 14, boxShadow: 'var(--glass-shadow)', padding: 6 }}>
+              <button onClick={() => { setRecentOpen(false); toggleVoice() }} disabled={!voiceMode && !micOK}
+                title={micOK ? '' : 'Microphone unavailable'}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', textAlign: 'left', padding: '9px 10px', borderRadius: 9, border: 'none', cursor: micOK || voiceMode ? 'pointer' : 'not-allowed', fontSize: 13, fontFamily: 'inherit', background: 'transparent', color: 'var(--text-primary)', fontWeight: 600, opacity: micOK || voiceMode ? 1 : 0.5 }}>
+                {voiceMode ? <><MessageSquare size={15} /> Switch to chat</> : <><AudioLines size={15} /> Voice mode</>}
+              </button>
+              {recents.length > 0 && (
+                <div className="stat-label" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 10px 4px', borderTop: '1px solid var(--border)', marginTop: 4 }}>
+                  <History size={13} /> Recent chats
+                </div>
+              )}
               {recents.map((t) => (
                 <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                   <button onClick={() => selectThread(t.id)}
@@ -1072,7 +1079,14 @@ export default function ChatWidget({ onClose, initialPrompt, initialInput }: { o
             </button>
             <textarea
               ref={taRef} value={input} rows={1} onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(input) } }}
+              enterKeyHint="enter"
+              // On a touch keyboard Return means "new line" — sending is the arrow. Only a
+              // real keyboard (fine pointer) keeps Enter-to-send, where it's the convention.
+              onKeyDown={(e) => {
+                if (e.key !== 'Enter' || e.shiftKey) return
+                if (typeof window !== 'undefined' && !window.matchMedia('(pointer: fine)').matches) return
+                e.preventDefault(); send(input)
+              }}
               onPaste={(e) => { const f = Array.from(e.clipboardData.items).find((it) => it.type.startsWith('image/'))?.getAsFile(); if (f) { e.preventDefault(); pickImage(f) } }}
               placeholder="Ask anything" autoFocus
               /* fontSize 16 keeps iOS Safari from auto-zooming the page on focus */
