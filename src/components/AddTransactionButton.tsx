@@ -75,7 +75,11 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   const [mode, setMode] = useState<'single' | 'batch' | 'recurring'>('single')
   const [saving, setSaving] = useState(false)
   const [cats, setCats] = useState<Category[]>([])
-  const [debts, setDebts] = useState<{ name: string }[]>([])
+  const [debts, setDebts] = useState<{ name: string; remaining?: number }[]>([])
+  // Only debts with a balance left are offerable — a debt paid to zero will never be paid
+  // again, so it just clutters the picker. `keep` re-adds one that's already selected on a
+  // row, so an existing pick never silently blanks out.
+  const openDebts = (keep?: string) => debts.filter((d) => (d.remaining ?? 1) > 0 || d.name === keep)
   const [form, setForm] = useState({
     date: today(), type: 'expense', category: '', amount: '', description: '',
   })
@@ -571,12 +575,12 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                       {catsForType.map((c) => <option key={c.name} value={c.name} style={{ color: 'var(--text-primary)' }}>{c.name}</option>)}
                     </select></label>
 
-                  {form.category === 'Debt Repayment' && debts.length > 0 && (
+                  {form.category === 'Debt Repayment' && openDebts(form.description).length > 0 && (
                     <label style={{ display: 'grid', gap: 5 }}><span className="stat-label">Which debt?</span>
                       <select value={debts.some((d) => d.name === form.description) ? form.description : ''}
                         onChange={(e) => setForm({ ...form, description: e.target.value })} style={inp}>
                         <option value="">— pick a debt (fills description) —</option>
-                        {debts.map((d) => <option key={d.name} value={d.name}>{d.name}</option>)}
+                        {openDebts(form.description).map((d) => <option key={d.name} value={d.name}>{d.name}</option>)}
                       </select></label>
                   )}
 
@@ -786,12 +790,12 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                       <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Amount</span>
                         <input style={inp} type="number" step="0.01" value={recForm.amount} onChange={(e) => setRecForm({ ...recForm, amount: e.target.value })} placeholder="0.00" /></label>
                     </div>
-                    {recForm.category === 'Debt Repayment' && debts.length > 0 && (
+                    {recForm.category === 'Debt Repayment' && openDebts(recForm.description).length > 0 && (
                       <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Which debt?</span>
                         <select style={inp} value={debts.some((d) => d.name === recForm.description) ? recForm.description : ''}
                           onChange={(e) => setRecForm({ ...recForm, description: e.target.value })}>
                           <option value="">— pick a debt (fills description) —</option>
-                          {debts.map((d) => <option key={d.name} value={d.name}>{d.name}</option>)}
+                          {openDebts(recForm.description).map((d) => <option key={d.name} value={d.name}>{d.name}</option>)}
                         </select></label>
                     )}
                     <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Description (optional)</span>
@@ -842,12 +846,12 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                                     </select>
                                     {/* A debt payment is matched to its debt by DESCRIPTION, and these row
                                         names ("Loan payment (1 of 2)") aren't debt names — so pick one. */}
-                                    {r.category === 'Debt Repayment' && debts.length > 0 && (
+                                    {r.category === 'Debt Repayment' && openDebts(recDesc(r)).length > 0 && (
                                       <select value={debts.some((d) => d.name === recDesc(r)) ? recDesc(r) : ''} aria-label="Which debt"
                                         onChange={(e) => setOver(r.id, { description: e.target.value })} className="rec-inline"
                                         style={{ ...recInline, fontSize: 12, color: debts.some((d) => d.name === recDesc(r)) ? 'var(--text-secondary)' : 'var(--expense)', width: 'auto', maxWidth: '100%' }}>
                                         <option value="">— which debt? —</option>
-                                        {debts.map((d) => <option key={d.name} value={d.name}>{d.name}</option>)}
+                                        {openDebts(recDesc(r)).map((d) => <option key={d.name} value={d.name}>{d.name}</option>)}
                                       </select>
                                     )}
                                   </div>
