@@ -163,28 +163,38 @@ export default function BudgetManager() {
           </div>
         </div>
 
-        {/* The headline: one number, then the evidence for it */}
-        <div style={{ display: 'grid', gap: 3, marginBottom: 4 }}>
-          <span className="stat-label">Left to spend</span>
-          <span style={{ fontSize: 46, fontWeight: 700, letterSpacing: '-0.025em', lineHeight: 1, fontVariantNumeric: 'tabular-nums', color: leftToSpend < 0 ? 'var(--expense)' : 'var(--text-primary)' }}>
-            {money(leftToSpend)}
-          </span>
-          <span style={{ fontSize: 13.5, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-            <b style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: 'var(--text-primary)' }}>{money(income.actual)}</b> received &minus;{' '}
-            <b style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: 'var(--text-primary)' }}>{money(outflow)}</b> out so far.
-            {incomeToCome > 0 && <> Another <b style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: 'var(--text-primary)' }}>{money(incomeToCome)}</b> of budgeted income still expected.</>}
-          </span>
+        {/* The headline, on the same three-stat pattern as Debt Management — the figure
+            leads, but at a size that sits inside the card rather than dominating it. */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 12 }}>
+          <div style={{ textAlign: 'left', minWidth: 0 }}>
+            <div className="stat-label">Left to spend</div>
+            <div style={{ fontSize: 'clamp(20px, 5.5vw, 30px)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', color: leftToSpend < 0 ? 'var(--expense)' : 'var(--text-primary)' }}>{money(leftToSpend)}</div>
+          </div>
+          <div style={{ textAlign: 'center', minWidth: 0 }}>
+            <div className="stat-label">Received</div>
+            <div style={{ fontSize: 'clamp(20px, 5.5vw, 30px)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', color: 'var(--income)' }}>{money(income.actual)}</div>
+          </div>
+          <div style={{ textAlign: 'right', minWidth: 0 }}>
+            <div className="stat-label">Out so far</div>
+            <div style={{ fontSize: 'clamp(20px, 5.5vw, 30px)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>{money(outflow)}</div>
+          </div>
         </div>
+
+        {incomeToCome > 0 && (
+          <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginBottom: 10 }}>
+            Another {money(incomeToCome)} of budgeted income still expected.
+          </div>
+        )}
 
         {/* Does the plan fund itself? Caught before the month runs, not after. */}
         {income.budgeted > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginTop: 16, padding: '11px 13px', borderRadius: 13, fontSize: 13.5, lineHeight: 1.45,
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 11px', borderRadius: 11, fontSize: 12.5, lineHeight: 1.4,
             background: unallocated < 0 ? 'var(--expense-soft)' : 'var(--income-soft)' }}>
-            <span style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: unallocated < 0 ? 'var(--expense)' : 'var(--income)' }} />
+            <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, background: unallocated < 0 ? 'var(--expense)' : 'var(--income)' }} />
             <span>
               {unallocated < 0
                 ? <>Plan doesn&rsquo;t balance — over-allocated by <b style={{ fontVariantNumeric: 'tabular-nums' }}>{money(-unallocated)}</b>.</>
-                : <>Plan balances — <b style={{ fontVariantNumeric: 'tabular-nums' }}>{money(unallocated)}</b> of budgeted income is unallocated.</>}
+                : <>Plan balances — <b style={{ fontVariantNumeric: 'tabular-nums' }}>{money(unallocated)}</b> unallocated.</>}
             </span>
           </div>
         )}
@@ -300,7 +310,7 @@ export default function BudgetManager() {
                       balances (that's the Debts page) and never add to what's budgeted. Each row
                       still opens its own plan line for editing where one exists. */}
                   {openEnv.has(e.category) && e.category === 'Debt Repayment' && debtSummary ? (
-                    <div style={{ display: 'grid', gap: 1, marginTop: 9, paddingLeft: 4 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 1, marginTop: 9, paddingLeft: 4 }}>
                       {/* Name and what it got this month, nothing else. The envelope's budget is
                           edited on the total above, so these rows carry no plan amount and open
                           no editor — they're a read-only breakdown of where the money went. */}
@@ -325,7 +335,7 @@ export default function BudgetManager() {
                       )}
                     </div>
                   ) : openEnv.has(e.category) ? (
-                  <div style={{ display: 'grid', gap: 2, marginTop: 9, paddingLeft: 4 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 2, marginTop: 9, paddingLeft: 4 }}>
                     {e.items.map((it) => editing === it.id ? (
                       <ItemForm key={it.id} cats={cats} busy={busy} item={{ ...it, category: e.category }}
                         onDone={async (p) => { if (await call('PATCH', { id: it.id, ...p })) setEditing(null) }}

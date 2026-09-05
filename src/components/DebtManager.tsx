@@ -218,7 +218,7 @@ export default function DebtManager() {
       ) : (
         <>
           {activeDebts.length > 0
-            ? <div style={{ display: 'grid', gap: 4 }}>{activeDebts.map(renderDebt)}</div>
+            ? <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 4 }}>{activeDebts.map(renderDebt)}</div>
             : <div style={{ padding: '18px 0 6px', textAlign: 'center', color: 'var(--income)', fontWeight: 700 }}>🎉 Every debt paid off</div>}
 
           {paidDebts.length > 0 && (
@@ -229,7 +229,7 @@ export default function DebtManager() {
                 {showPaid ? 'Hide paid off' : `Show ${paidDebts.length} paid off`}
                 <ChevronDown size={14} style={{ transform: showPaid ? 'rotate(180deg)' : 'none', transition: 'transform .2s ease' }} />
               </button>
-              {showPaid && <div style={{ display: 'grid', gap: 4 }}>{paidDebts.map(renderDebt)}</div>}
+              {showPaid && <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 4 }}>{paidDebts.map(renderDebt)}</div>}
             </>
           )}
         </>
@@ -258,9 +258,9 @@ function AddDebtForm({ busy, onDone }: { busy: boolean; onDone: (p: { name: stri
   return (
     <div style={{ display: 'grid', gap: 10 }}>
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 8 }}>
-        <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Debt name</span>
+        <label style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 4 }}><span className="stat-label">Debt name</span>
           <input style={inp} value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. JH Margin - Water heater" /></label>
-        <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Balance ($)</span>
+        <label style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 4 }}><span className="stat-label">Balance ($)</span>
           <input style={inp} type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" /></label>
       </div>
       <button className="btn btn-primary" disabled={busy || !name.trim() || !parseFloat(amount)}
@@ -280,9 +280,9 @@ function EditDebtForm({ debt, busy, onSave, onDelete, onCancel }: {
   return (
     <div className="card" style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', display: 'grid', gap: 10, margin: '8px 0' }}>
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 8 }}>
-        <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Debt name</span>
+        <label style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 4 }}><span className="stat-label">Debt name</span>
           <input style={inp} value={name} onChange={(e) => setName(e.target.value)} /></label>
-        <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Balance ($)</span>
+        <label style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 4 }}><span className="stat-label">Balance ($)</span>
           <input style={inp} type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} /></label>
       </div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
