@@ -1047,8 +1047,8 @@ header.top h1 {
      button read as two separate things — but held in from the screen edges, not pinned
      to them. */
   position: fixed;
-  left: calc(30px + env(safe-area-inset-left, 0px));
-  right: calc(30px + env(safe-area-inset-right, 0px));
+  left: calc(52px + env(safe-area-inset-left, 0px));
+  right: calc(52px + env(safe-area-inset-right, 0px));
   bottom: max(4px, calc(env(safe-area-inset-bottom, 0px) - 12px));
   z-index: 90; gap: 10px; align-items: center; justify-content: space-between;
   pointer-events: none;   /* the gap between the pieces isn't a target */
