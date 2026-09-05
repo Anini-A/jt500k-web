@@ -139,7 +139,6 @@ export default function BudgetManager() {
   const income = groups.find((g) => g.key === 'income')!
   const outflow = groups.filter((g) => g.key !== 'income').reduce((s2, g) => s2 + g.actual, 0)
   const leftToSpend = income.actual - outflow
-  const incomeToCome = Math.max(0, income.budgeted - income.actual)
   // Does the plan balance? Budgeted income against every dollar allocated to a job.
   const allocated = groups.filter((g) => g.key !== 'income').reduce((s2, g) => s2 + g.budgeted, 0)
   const unallocated = income.budgeted - allocated
@@ -173,11 +172,6 @@ export default function BudgetManager() {
           <div style={{ textAlign: 'center', minWidth: 0 }}>
             <div className="stat-label">Received</div>
             <div style={{ fontSize: 'clamp(20px, 5.5vw, 30px)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', color: 'var(--income)' }}>{money(income.actual)}</div>
-            {incomeToCome > 0 && (
-              <div style={{ fontSize: 11.5, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums', marginTop: 1 }}>
-                +{money(incomeToCome)} expected
-              </div>
-            )}
           </div>
           <div style={{ textAlign: 'right', minWidth: 0 }}>
             <div className="stat-label">Out so far</div>
