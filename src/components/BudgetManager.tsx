@@ -220,7 +220,7 @@ export default function BudgetManager() {
             : ''}
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-          <button onClick={() => { setAdding((v) => !v); setEditing(null); setCollapsed(false) }} aria-label={adding ? 'Cancel add item' : 'Add budget item'} title={adding ? 'Cancel' : 'Add budget item'}
+          <button onClick={() => { setAdding((v) => !v); setEditing(null) }} aria-label={adding ? 'Cancel add item' : 'Add budget item'} title={adding ? 'Cancel' : 'Add budget item'}
             style={{ width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-muted)', cursor: 'pointer' }}>
             <Plus size={16} style={{ transform: adding ? 'rotate(45deg)' : 'none', transition: 'transform .2s ease' }} />
           </button>
