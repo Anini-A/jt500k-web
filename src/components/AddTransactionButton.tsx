@@ -117,8 +117,8 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
 
   useEffect(() => {
     if (open && mode === 'recurring' && recs.length === 0) {
-      getJSON('/api/recurring').then((d) => {
-        if (Array.isArray(d)) { setRecs(d.filter((r: any) => r.active)); setPicked(new Set()) }
+      getJSON('/api/bills').then((d) => {
+        if (Array.isArray(d?.bills)) { setRecs(d.bills); setPicked(new Set()) }
       }).catch(() => {})
     }
   }, [open, mode, recs.length])
@@ -162,7 +162,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
     try {
       const res = await fetch('/api/transactions', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(chosen.map((r) => ({ date: recDate, type: r.type, category: r.category, amount: Number(r.amount), description: r.description || r.name }))),
+        body: JSON.stringify(chosen.map((r) => ({ date: recDate, type: recType(r), category: r.category, amount: Number(r.amount), description: r.description || r.name }))),
       })
       if (res.ok) { close(); window.dispatchEvent(new CustomEvent('transaction-added')) }
       else setRecErr((await res.json()).error || 'Could not log.')
@@ -170,12 +170,12 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   }
 
   // ---- manage recurring items (add / edit / delete) ----
-  const reloadRecs = async () => { const d = await getJSON('/api/recurring').catch(() => []); if (Array.isArray(d)) setRecs(d.filter((r: any) => r.active)) }
+  const reloadRecs = async () => { const d = await getJSON('/api/bills').catch(() => null); if (Array.isArray(d?.bills)) setRecs(d.bills) }
   // Inline edit: update one recurring item's field live (optimistic local + PATCH). Empty/invalid reverts.
   const setRecLocal = (id: string, patch: Record<string, unknown>) => setRecs((prev) => prev.map((r) => r.id === id ? { ...r, ...patch } : r))
   const patchRec = (id: string, patch: Record<string, unknown>) => {
     setRecLocal(id, patch)
-    fetch('/api/recurring', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, ...patch }) })
+    fetch('/api/bills', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, ...patch }) })
       .then((res) => { if (!res.ok) reloadRecs() }).catch(() => reloadRecs())
   }
   const startNewRec = () => { setRecForm({ name: '', type: 'expense', category: '', amount: '', description: '' }); setRecEdit('new') }
@@ -186,8 +186,8 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
     setSaving(true)
     try {
       const res = recEdit === 'new'
-        ? await fetch('/api/recurring', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-        : await fetch('/api/recurring', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: recEdit, ...payload }) })
+        ? await fetch('/api/bills', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+        : await fetch('/api/bills', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: recEdit, ...payload }) })
       if (res.ok) { setRecEdit(null); setRecErr(''); await reloadRecs() } else setRecErr((await res.json()).error || 'Could not save.')
     } finally { setSaving(false) }
   }
@@ -308,7 +308,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
     const { kind, id, name } = confirmDel
     if (kind === 'card') { await fetch(`/api/cards?id=${id}`, { method: 'DELETE' }).catch(() => {}); await loadCards(); if (selectedCard === name) setSelectedCard('') }
     else if (kind === 'draft') { await fetch(`/api/drafts?id=${id}`, { method: 'DELETE' }).catch(() => {}); await loadDrafts(); window.dispatchEvent(new CustomEvent('drafts-changed')); if (draftId === id) setDraftId(null) }
-    else if (kind === 'rec') { await fetch(`/api/recurring?id=${id}`, { method: 'DELETE' }).catch(() => {}); setRecEdit(null); await reloadRecs() }
+    else if (kind === 'rec') { await fetch(`/api/bills?id=${id}`, { method: 'DELETE' }).catch(() => {}); setRecEdit(null); await reloadRecs() }
     setConfirmDel(null)
   }
 
@@ -436,7 +436,8 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   )
 
   // Recurring: group into the same buckets as the Budget tab
-  const recGroup = (r: any) => r.type === 'income' ? 'income' : r.type === 'savings' ? 'saving' : r.category === 'Debt Repayment' ? 'debt' : 'spending'
+  const recType = (r: any) => r.type ?? cats.find((c) => c.name === r.category)?.type ?? 'expense'
+  const recGroup = (r: any) => { const t = recType(r); return t === 'income' ? 'income' : t === 'savings' ? 'saving' : r.category === 'Debt Repayment' ? 'debt' : 'spending' }
   const REC_GROUPS = [
     { key: 'income', label: 'Income', color: 'var(--income)', soft: 'var(--income-soft)' },
     { key: 'spending', label: 'Spending', color: 'var(--savings)', soft: 'var(--savings-soft)' },

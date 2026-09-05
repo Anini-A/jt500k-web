@@ -29,6 +29,7 @@ export async function POST(req: NextRequest) {
   const { error } = await supabaseAdmin.from('bills').insert({
     household_id: hh, account_id: b.account_id || null, name: b.name.trim(), day: Math.max(1, Math.min(31, Number(b.day))),
     amount: Number(b.amount), quarterly: !!b.quarterly, next_due: b.next_due || null,
+    category: b.category || null,
   })
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ ok: true }, { status: 201 })

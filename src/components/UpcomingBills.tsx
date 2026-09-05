@@ -14,7 +14,6 @@ interface BillsResp { bills: Bill[]; accounts: Account[] }
 const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })
 const strip = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate())
 const ROW_H = 38   // one bill row (9px padding x 2 + line + border) - 5 of them sets the scroll height
-const UNASSIGNED = '__none__' // pseudo-account for bills not attached to one
 const fmtDay = (d: Date) => d.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })
 
 // Compact "what's due next" list for Home — pulls from the same bills the Bills tab uses.
@@ -53,12 +52,12 @@ export default function UpcomingBills() {
       cycles.set(a.id, projectCycle(ab, { current_balance: a.current_balance, balance_as_of: a.balance_as_of, buffer: a.buffer }))
     }
   }
-  const orphans = bills.filter((b) => !b.account_id || !accounts.some((a) => a.id === b.account_id))
-  const tabs: { id: string; name: string; shortFrom: string | null }[] = [
-    ...accounts.filter((a) => bills.some((b) => b.account_id === a.id))
-      .map((a) => ({ id: a.id, name: a.name, shortFrom: cycles.get(a.id)?.firstShort?.iso ?? null })),
-    ...(orphans.length ? [{ id: UNASSIGNED, name: 'Other', shortFrom: null }] : []),
-  ]
+  // Items with no account (income, savings, spending not paid from a bill account) are
+  // scheduled and loggable but have no balance to run short against — they belong to the
+  // logging list, not the cash-flow forecast, so no tab.
+  const tabs: { id: string; name: string; shortFrom: string | null }[] = accounts
+    .filter((a) => bills.some((b) => b.account_id === a.id))
+    .map((a) => ({ id: a.id, name: a.name, shortFrom: cycles.get(a.id)?.firstShort?.iso ?? null }))
 
   // Which tab to show: whatever was tapped, else the account that runs short soonest so the
   // card opens on the problem rather than waiting to be found. Derived rather than stored,
@@ -66,7 +65,7 @@ export default function UpcomingBills() {
   const urgent = tabs.filter((t) => t.shortFrom).sort((x, y) => x.shortFrom!.localeCompare(y.shortFrom!))[0]
   const activeId = picked && tabs.some((t) => t.id === picked) ? picked : (urgent?.id ?? tabs[0]?.id ?? '')
 
-  const activeBills = activeId === UNASSIGNED ? orphans : bills.filter((b) => b.account_id === activeId)
+  const activeBills = bills.filter((b) => b.account_id === activeId)
   const upcoming = nextOccurrences(activeBills, from)
   const cycle = cycles.get(activeId) ?? null
 
@@ -85,7 +84,7 @@ export default function UpcomingBills() {
   const goBills = (accountId?: string) => {
     try {
       localStorage.setItem('jt-dash-tab', 'bills')
-      if (accountId && accountId !== UNASSIGNED) localStorage.setItem('jt-bill-account', accountId)
+      if (accountId) localStorage.setItem('jt-bill-account', accountId)
     } catch { /* ignore */ }
   }
 
