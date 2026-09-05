@@ -23,22 +23,25 @@ interface Notif { id: string; icon: string; title: string; detail: string; sever
 
 // GET /api/notifications — recurring reminders, category trends, over-budget alerts.
 export async function GET() {
-  const [{ data: txAll }, { data: recs }, { data: budgetLines }, { data: cats }, { data: prof }, billsRes, billSetRes, dismRes] = await Promise.all([
+  const [{ data: txAll }, { data: budgetLines }, { data: cats }, { data: prof }, billsRes, billSetRes, dismRes, catBudgetRes, debtRes] = await Promise.all([
     supabaseAdmin.from('transactions').select('type, amount, date, category, description'),
-    supabaseAdmin.from('recurring').select('name, type, category, amount, description, active'),
-    supabaseAdmin.from('budgets').select('category, amount'),
+    supabaseAdmin.from('budgets').select('name, category, amount, debt_name'),
     supabaseAdmin.from('categories').select('name, type'),
     supabaseAdmin.from('household_profile').select('data').order('updated_at', { ascending: false }).limit(1).maybeSingle(),
     supabaseAdmin.from('bills').select('account_id, name, day, amount, quarterly, next_due, active').then((r) => r, () => ({ data: null })),
     supabaseAdmin.from('bill_accounts').select('*').then((r) => r, () => ({ data: null })),
     supabaseAdmin.from('dismissed_notifs').select('notif_id').then((r) => r, () => ({ data: null })),
+    supabaseAdmin.from('category_budgets').select('category, amount').then((r) => r, () => ({ data: null })),
+    supabaseAdmin.from('debts').select('name, amount').then((r) => r, () => ({ data: null })),
   ])
   const txns = txAll ?? []
   const typeByCat = new Map((cats ?? []).map((c) => [c.name, c.type]))
   const out: Notif[] = []
 
-  // latest month present in the data (the "current" tracking month)
-  const curMonth = txns.reduce((mx, t) => ((t.date as string) > mx ? (t.date as string) : mx), '0000-00').slice(0, 7)
+  // The CURRENT calendar month. Bills are often logged ahead of time, and taking the
+  // furthest-dated row instead would hand the whole alert set to a future month the
+  // moment one October payment is entered — going quiet about the month you're in.
+  const curMonth = ymd(new Date()).slice(0, 7)
 
   // ---- 1) Over-budget alerts (this month) ----
   const spentThisMonth = new Map<string, number>()
@@ -48,6 +51,8 @@ export async function GET() {
   }
   const budgetByCat = new Map<string, number>()
   for (const b of budgetLines ?? []) budgetByCat.set(b.category, (budgetByCat.get(b.category) || 0) + Number(b.amount))
+  const lineTotalByCat = new Map(budgetByCat)
+  for (const o of catBudgetRes?.data ?? []) budgetByCat.set(o.category as string, Number(o.amount))
   for (const [cat, budgeted] of budgetByCat) {
     if (cat === 'Debt Repayment' || typeByCat.get(cat) !== 'expense') continue
     const spent = spentThisMonth.get(cat) || 0
@@ -88,17 +93,74 @@ export async function GET() {
   }
 
   // ---- 3) Recurring items not yet logged this month ----
-  const active = (recs ?? []).filter((r) => r.active)
-  if (active.length) {
+  // Built from the SAME source as the Recurring tab — bills first, then budget lines that
+  // aren't already covered by a bill of the same name. The old `recurring` table is a
+  // third list nothing else reads, and it had drifted: it still named a debt the plan no
+  // longer pays and amounts that no longer match, so this nagged about items already
+  // logged and stayed quiet about ones that weren't.
+  const planRows = (() => {
+    const rows = (billsRes?.data ?? []).filter((b: any) => b.active !== false)
+      .map((b: any) => ({ name: b.name as string, category: (b.category as string) ?? null, amount: Number(b.amount), debt_name: null as string | null }))
+    const seen = new Set(rows.map((r) => norm(r.name)))
+    for (const b of budgetLines ?? []) {
+      if (seen.has(norm(b.name as string))) continue
+      seen.add(norm(b.name as string))
+      rows.push({ name: b.name as string, category: b.category as string, amount: Number(b.amount), debt_name: (b.debt_name as string) ?? null })
+    }
+    return rows
+  })()
+  if (planRows.length) {
     const curTx = txns.filter((t) => (t.date as string).slice(0, 7) === curMonth)
-    const isLogged = (r: any) => curTx.some((t) =>
-      t.type === r.type && t.category === r.category &&
-      (norm(t.description) === norm(r.name) || norm(t.description) === norm(r.description) ||
-        Math.abs(Number(t.amount) - Number(r.amount)) <= Math.max(1, Number(r.amount) * 0.05)))
-    const missing = active.filter((r) => !isLogged(r))
+    // A debt line counts as logged when its DEBT was paid this month — the payment is
+    // described with the debt's name, never the plan line's.
+    const isLogged = (r: { name: string; category: string | null; amount: number; debt_name: string | null }) => curTx.some((t) => {
+      if (r.debt_name) return t.category === 'Debt Repayment' && norm(t.description) === norm(r.debt_name)
+      if (r.category && t.category !== r.category) return false
+      return norm(t.description) === norm(r.name) ||
+        Math.abs(Number(t.amount) - r.amount) <= Math.max(1, r.amount * 0.05)
+    })
+    const missing = planRows.filter((r) => !isLogged(r))
     if (missing.length) {
       const names = missing.slice(0, 6).map((r) => r.name).join(', ')
       out.push({ id: `recurring-${curMonth}`, icon: '🔁', severity: 'info', kind: 'action', dismissible: true, title: `${missing.length} recurring item${missing.length !== 1 ? 's' : ''} to log this month`, detail: `${names}${missing.length > 6 ? '…' : ''}. Open ➕ Add → Recurring, or ask the assistant to log them.` })
+    }
+  }
+
+  // ---- 3b) The plan doesn't fund itself ----
+  // Budgeted income against every dollar given a job. Worth knowing before the month
+  // runs, not after — and it's the one thing the Budget page can't nag you about,
+  // because you have to be looking at it.
+  {
+    const budgetedIncome = [...budgetByCat].filter(([c]) => typeByCat.get(c) === 'income').reduce((n, [, v]) => n + v, 0)
+    const allocated = [...budgetByCat].filter(([c]) => typeByCat.get(c) !== 'income').reduce((n, [, v]) => n + v, 0)
+    if (budgetedIncome > 0 && allocated > budgetedIncome) {
+      out.push({ id: `plan-overallocated-${curMonth}`, icon: '⚖️', severity: 'warn', kind: 'action', dismissible: false,
+        title: 'Your budget doesn\u2019t balance',
+        detail: `${money(allocated)} is allocated against ${money(budgetedIncome)} of budgeted income — over by ${money(allocated - budgetedIncome)}. Trim an envelope or raise the income you expect.` })
+    }
+  }
+
+  // ---- 3c) Debt payments that landed against no debt ----
+  // A payment counts toward a debt only when its description matches the debt's name, so
+  // a typo or a renamed debt silently loses the money. Nothing else surfaces that.
+  {
+    const debtNames = new Set((debtRes?.data ?? []).map((d: any) => norm(d.name)))
+    if (debtNames.size) {
+      const orphans = txns.filter((t) => t.category === 'Debt Repayment' && (t.date as string).slice(0, 7) === curMonth && !debtNames.has(norm(t.description)))
+      const total = orphans.reduce((n, t) => n + Number(t.amount), 0)
+      if (orphans.length) {
+        out.push({ id: `debt-unmatched-${curMonth}`, icon: '🔗', severity: 'warn', kind: 'action', dismissible: false,
+          title: `${money(total)} of debt payments match no debt`,
+          detail: `${orphans.length} payment${orphans.length !== 1 ? 's' : ''} this month (${orphans.slice(0, 3).map((t) => t.description || 'no description').join(', ')}) don\u2019t match a tracked debt, so no balance came down. Edit the description to the debt's exact name.` })
+      }
+    }
+    // a repayment line pointing at no debt sends its money nowhere the tracker can see
+    const unlinked = (budgetLines ?? []).filter((b) => b.category === 'Debt Repayment' && !b.debt_name)
+    const unlinkedTotal = unlinked.reduce((n, b) => n + Number(b.amount), 0)
+    if (unlinked.length && debtNames.size) {
+      out.push({ id: `debt-unlinked-lines-${curMonth}`, icon: '🔗', severity: 'info', kind: 'info', dismissible: true,
+        title: `${money(unlinkedTotal)}/mo of debt budget isn\u2019t pointed at a debt`,
+        detail: `${unlinked.map((b) => b.name).join(', ')} — pick the debt in \u2795 Add \u2192 Recurring so payments count against a balance.` })
     }
   }
 
