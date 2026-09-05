@@ -21,6 +21,16 @@ export default function CapacitorInit() {
         cleanup = () => mq.removeEventListener('change', apply)
       } catch { /* status-bar plugin unavailable */ }
       try {
+        // iOS draws its own bar above the keyboard (the ∧ ∨ ✓ strip) for any focused web
+        // input. Nothing in the page can remove it — but inside the native shell the
+        // keyboard plugin can, which puts the composer right against the keys the way a
+        // native app does. No effect in Safari or the home-screen PWA.
+        const { Keyboard, KeyboardResize } = await import('@capacitor/keyboard')
+        await Keyboard.setAccessoryBarVisible({ isVisible: false }).catch(() => {})
+        await Keyboard.setResizeMode({ mode: KeyboardResize.Native }).catch(() => {})
+        await Keyboard.setScroll({ isDisabled: true }).catch(() => {}) // the sheet handles its own sizing
+      } catch { /* keyboard plugin unavailable */ }
+      try {
         const { SplashScreen } = await import('@capacitor/splash-screen')
         await SplashScreen.hide()
       } catch { /* splash plugin unavailable */ }
