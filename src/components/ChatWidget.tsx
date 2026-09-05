@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import { SquarePen, History, ArrowUp, Trash2, Check, X, AudioLines, MessageSquare, ImagePlus, Copy, RotateCcw, Pencil } from 'lucide-react'
 import { today } from '@/lib/date'
 import { useConfirm } from './Feedback'
+import { useLockScroll } from '@/lib/lockScroll'
 
 interface Msg { role: 'user' | 'assistant'; content: string; at?: number; image?: string } // image = data-URL thumbnail to show in the bubble
 interface Thread { id: string; msgs: Msg[]; updatedAt: number }
@@ -102,20 +103,26 @@ function loadStore(): { threads: Thread[]; activeId: string } {
 // can resume, start a new chat, or jump back to a recent one.
 export default function ChatWidget({ onClose, initialPrompt, initialInput }: { onClose: () => void; initialPrompt?: string; initialInput?: string }) {
   const { confirm, confirmNode } = useConfirm()
-  // When the keyboard opens, the layout viewport doesn't change — only the visual one
-  // does, so a sheet pinned to the layout bottom ends up underneath the keyboard with its
-  // input out of sight. Tracking visualViewport keeps the sheet inside what's actually
-  // visible, which is what makes it feel like a native one.
-  const [vv, setVv] = useState<{ h: number; top: number } | null>(null)
+  useLockScroll(true) // same as the other sheets — the page behind must not move
+  // The keyboard doesn't shrink the layout viewport, only the visual one, so a sheet sized
+  // in dvh keeps its full height and the composer ends up behind the keys. Measuring the
+  // difference gives the keyboard's height; the sheet then shortens by exactly that and
+  // grows back when the keyboard goes away. It never gets taller than it starts.
+  const [kb, setKb] = useState(0)
   useEffect(() => {
     const v = typeof window !== 'undefined' ? window.visualViewport : null
     if (!v) return
-    const sync = () => setVv({ h: v.height, top: v.offsetTop })
+    const sync = () => setKb(Math.max(0, Math.round(window.innerHeight - v.height - v.offsetTop)))
     sync()
     v.addEventListener('resize', sync)
     v.addEventListener('scroll', sync)
     return () => { v.removeEventListener('resize', sync); v.removeEventListener('scroll', sync) }
   }, [])
+  // the sheet just got shorter or taller — hold the newest message at the bottom
+  useEffect(() => {
+    const el = scrollRef.current
+    if (el) requestAnimationFrame(() => el.scrollTo(0, el.scrollHeight))
+  }, [kb])
   const [{ threads, activeId }, setStore] = useState(loadStore)
   const [input, setInput] = useState(initialInput ?? '')
   const [busy, setBusy] = useState(false)
@@ -883,11 +890,10 @@ export default function ChatWidget({ onClose, initialPrompt, initialInput }: { o
   const roundBtn: React.CSSProperties = { width: 38, height: 38, flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-primary)', cursor: 'pointer' }
 
   return createPortal(
-    <div className="modal-backdrop" onClick={onClose}
-      style={vv ? { top: vv.top, height: vv.h, bottom: 'auto' } : undefined}>
+    <div className="modal-backdrop" onClick={onClose} style={{ paddingBottom: kb || undefined }}>
       {confirmNode}
-      <div className="modal-card glass" onClick={(e) => { e.stopPropagation(); setRecentOpen(false) }}
-        style={{ width: 'min(720px, 100%)', height: vv ? Math.min(vv.h - 8, 760) : 'min(88vh, 760px)', maxHeight: vv ? vv.h - 8 : '88vh', padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'var(--surface-1)', position: 'relative' }}>
+      <div className="modal-card glass chat-sheet" onClick={(e) => { e.stopPropagation(); setRecentOpen(false) }}
+        style={{ ['--kb' as string]: `${kb}px`, width: 'min(720px, 100%)', padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'var(--surface-1)', position: 'relative' }}>
 
         {/* Header — X (close/interrupt) · Chat|Voice pill · history + new chat */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 14px', borderBottom: '1px solid var(--border)', position: 'relative' }}>

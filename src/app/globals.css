@@ -1593,3 +1593,20 @@ header.top h1 {
 @media (prefers-reduced-motion: reduce) { .skel::after { animation: none; } }
 .skel-row { height: 46px; margin-bottom: 8px; }
 .skel-bar { height: 12px; }
+
+/* The chat sheet is the same object as Alerts / Settings / Add transaction: same height,
+   same radius, same entrance. --kb carries the keyboard's height, so the sheet shortens
+   by exactly that much and the composer stays in view — it never grows past its own
+   height, and it returns to full height when the keyboard closes. */
+.chat-sheet {
+  height: min(88vh, 760px);
+  max-height: 88vh;
+  transition: height .18s ease;
+}
+@media (max-width: 640px) {
+  .chat-sheet {
+    height: calc(92dvh - 38px - var(--kb, 0px));
+    max-height: calc(92dvh - 38px - var(--kb, 0px));
+  }
+}
+@media (prefers-reduced-motion: reduce) { .chat-sheet { transition: none; } }
