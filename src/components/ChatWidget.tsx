@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { SquarePen, History, ArrowUp, Trash2, Check, X, AudioLines, MessageSquare, ImagePlus } from 'lucide-react'
+import { SquarePen, History, ArrowUp, Trash2, Check, X, AudioLines, MessageSquare, ImagePlus, Copy, RotateCcw, Pencil } from 'lucide-react'
 import { today } from '@/lib/date'
 import { useConfirm } from './Feedback'
 
@@ -102,6 +102,20 @@ function loadStore(): { threads: Thread[]; activeId: string } {
 // can resume, start a new chat, or jump back to a recent one.
 export default function ChatWidget({ onClose, initialPrompt, initialInput }: { onClose: () => void; initialPrompt?: string; initialInput?: string }) {
   const { confirm, confirmNode } = useConfirm()
+  // When the keyboard opens, the layout viewport doesn't change — only the visual one
+  // does, so a sheet pinned to the layout bottom ends up underneath the keyboard with its
+  // input out of sight. Tracking visualViewport keeps the sheet inside what's actually
+  // visible, which is what makes it feel like a native one.
+  const [vv, setVv] = useState<{ h: number; top: number } | null>(null)
+  useEffect(() => {
+    const v = typeof window !== 'undefined' ? window.visualViewport : null
+    if (!v) return
+    const sync = () => setVv({ h: v.height, top: v.offsetTop })
+    sync()
+    v.addEventListener('resize', sync)
+    v.addEventListener('scroll', sync)
+    return () => { v.removeEventListener('resize', sync); v.removeEventListener('scroll', sync) }
+  }, [])
   const [{ threads, activeId }, setStore] = useState(loadStore)
   const [input, setInput] = useState(initialInput ?? '')
   const [busy, setBusy] = useState(false)
@@ -869,10 +883,11 @@ export default function ChatWidget({ onClose, initialPrompt, initialInput }: { o
   const roundBtn: React.CSSProperties = { width: 38, height: 38, flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-primary)', cursor: 'pointer' }
 
   return createPortal(
-    <div className="modal-backdrop" onClick={onClose}>
+    <div className="modal-backdrop" onClick={onClose}
+      style={vv ? { top: vv.top, height: vv.h, bottom: 'auto' } : undefined}>
       {confirmNode}
       <div className="modal-card glass" onClick={(e) => { e.stopPropagation(); setRecentOpen(false) }}
-        style={{ width: 'min(720px, 100%)', height: 'min(88vh, 760px)', maxHeight: '88vh', padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'var(--surface-1)', position: 'relative' }}>
+        style={{ width: 'min(720px, 100%)', height: vv ? Math.min(vv.h - 8, 760) : 'min(88vh, 760px)', maxHeight: vv ? vv.h - 8 : '88vh', padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'var(--surface-1)', position: 'relative' }}>
 
         {/* Header — X (close/interrupt) · Chat|Voice pill · history + new chat */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 14px', borderBottom: '1px solid var(--border)', position: 'relative' }}>
@@ -982,12 +997,12 @@ export default function ChatWidget({ onClose, initialPrompt, initialInput }: { o
               </div>
               {actionIdx === i && (
                 <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
-                  <button className="chip" onClick={(e) => { e.stopPropagation(); copyMsg(m.content, i) }} style={{ padding: '5px 12px', fontSize: 12 }}>Copy</button>
+                  <button className="msg-act" title="Copy" aria-label="Copy message" onClick={(e) => { e.stopPropagation(); copyMsg(m.content, i) }}><Copy size={15} /></button>
                   {m.role === 'user' ? (
-                    <button className="chip" onClick={(e) => { e.stopPropagation(); setActionIdx(null); setInput(m.content); taRef.current?.focus() }} style={{ padding: '5px 12px', fontSize: 12 }}>Edit</button>
+                    <button className="msg-act" title="Edit" aria-label="Edit message" onClick={(e) => { e.stopPropagation(); setActionIdx(null); setInput(m.content); taRef.current?.focus() }}><Pencil size={15} /></button>
                   ) : (
                     (() => { const prev = msgs.slice(0, i).reverse().find((x) => x.role === 'user')
-                      return prev ? <button className="chip" onClick={(e) => { e.stopPropagation(); setActionIdx(null); sendRef.current(prev.content) }} style={{ padding: '5px 12px', fontSize: 12 }}>Retry</button> : null })()
+                      return prev ? <button className="msg-act" title="Retry" aria-label="Retry" onClick={(e) => { e.stopPropagation(); setActionIdx(null); sendRef.current(prev.content) }}><RotateCcw size={15} /></button> : null })()
                   )}
                 </div>
               )}
@@ -1010,13 +1025,18 @@ export default function ChatWidget({ onClose, initialPrompt, initialInput }: { o
 
         {/* Confirm-before-write card */}
         {pending && (
-          <div style={{ flexShrink: 0, padding: '12px 14px', borderTop: '1px solid var(--border)', background: 'var(--kpi-bg)' }}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>
-              Confirm {pending.length > 1 ? `these ${pending.length} changes` : 'this change'}?
+          <div className="chat-confirm" style={{ flexShrink: 0, padding: '12px 14px', borderTop: '1px solid var(--border)', background: 'var(--kpi-bg)' }}>
+            <div className="stat-label" style={{ marginBottom: 8 }}>
+              {pending.length > 1 ? `${pending.length} changes to make` : 'One change to make'}
             </div>
-            <ul style={{ margin: '0 0 10px', paddingLeft: 18, display: 'grid', gap: 4, fontSize: 13, color: 'var(--text-secondary)' }}>
-              {pending.map((p, i) => <li key={i}>{p.label}</li>)}
-            </ul>
+            <div style={{ display: 'grid', gap: 6, marginBottom: 12 }}>
+              {pending.map((p, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '9px 11px', borderRadius: 12, background: 'var(--surface-1)', border: '1px solid var(--border)', fontSize: 13.5, lineHeight: 1.4 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)', flexShrink: 0, marginTop: 6 }} />
+                  <span>{p.label}</span>
+                </div>
+              ))}
+            </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center', padding: '9px 14px', gap: 6 }} disabled={busy} onClick={confirmAction}><Check size={15} /> Confirm</button>
               <button className="btn" style={{ background: 'var(--expense-soft)', color: 'var(--expense)', border: '1px solid var(--expense)', padding: '9px 14px', gap: 6 }} disabled={busy} onClick={cancelAction}><X size={15} /> Cancel</button>
