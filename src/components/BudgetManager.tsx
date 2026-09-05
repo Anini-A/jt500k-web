@@ -272,7 +272,8 @@ export default function BudgetManager() {
                             onCancel={() => setEditing(null)} />
                         )
                         return (
-                          <button key={d.name} onClick={() => { if (plan) { setEditing(plan.id); setAdding(false) } }} title={plan ? 'Edit' : undefined}
+                          <div key={d.name}>
+                          <button onClick={() => { if (plan) { setEditing(plan.id); setAdding(false) } }} title={plan ? 'Edit' : undefined}
                             style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '5px 6px', margin: '0 -6px', borderRadius: 7, background: 'transparent', border: 'none', cursor: plan ? 'pointer' : 'default', color: 'var(--text-secondary)', width: 'calc(100% + 12px)', textAlign: 'left', font: 'inherit', fontSize: 13 }}>
                             <span style={{ display: 'flex', alignItems: 'center', gap: 7, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
                               {plan && <Pencil size={12} style={{ opacity: 0.4, flexShrink: 0 }} />}
@@ -283,6 +284,24 @@ export default function BudgetManager() {
                               {d.paid > 0 ? money2(d.paid) : '—'}
                             </span>
                           </button>
+                          {/* Funded by more than one line (e.g. a loan paid in two instalments):
+                              the row can't say which to open, so the lines sit under it, each
+                              editable on its own. Every plan line stays reachable from here. */}
+                          {lines.length > 1 && lines.map((it) => editing === it.id ? (
+                            <ItemForm key={it.id} cats={cats} busy={busy} item={{ ...it, category: e.category }}
+                              onDone={async (pl) => { if (await call('PATCH', { id: it.id, ...pl })) setEditing(null) }}
+                              onDelete={() => confirm({ title: `Delete “${it.name}”?`, run: async () => { if (await call('DELETE', undefined, `?id=${it.id}`)) setEditing(null) } })}
+                              onCancel={() => setEditing(null)} />
+                          ) : (
+                            <button key={it.id} onClick={() => { setEditing(it.id); setAdding(false) }} title="Edit"
+                              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '4px 6px', margin: '0 -6px', borderRadius: 7, background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', width: 'calc(100% + 12px)', textAlign: 'left', font: 'inherit', fontSize: 12.5, paddingLeft: 20 }}>
+                              <span style={{ display: 'flex', alignItems: 'center', gap: 7, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
+                                <Pencil size={11} style={{ opacity: 0.4, flexShrink: 0 }} /> {it.name}
+                              </span>
+                              <span style={{ flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{money2(it.amount)}/mo</span>
+                            </button>
+                          ))}
+                          </div>
                         )
                       })}
                       {debtSummary.unassigned > 0 && (
