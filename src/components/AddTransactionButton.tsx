@@ -205,7 +205,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   const logRecurring = async () => {
     // visibleRecs, not recs: a row retired mid-session (its debt just hit zero) must not
     // log even if it was ticked before that.
-    const chosen = visibleRecs.filter((r) => picked.has(r.id))
+    const chosen = allRows.filter((r) => picked.has(r.id))
     if (!chosen.length) return
     setSaving(true)
     try {
@@ -487,14 +487,32 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   // Recurring: group into the same buckets as the Budget tab
   const recType = (r: any) => r.type ?? cats.find((c) => c.name === r.category)?.type ?? 'expense'
   const recGroup = (r: any) => { const t = recType(r); return t === 'income' ? 'income' : t === 'savings' ? 'saving' : r.category === 'Debt Repayment' ? 'debt' : 'spending' }
+  // One row per DEBT, not per plan line: the RBC loan is two instalments and JH Margin is
+  // its own line, but you pay debts, not instalments. Lines pointing at the same debt are
+  // rolled into a single tickable row carrying their combined amount, so several debts can
+  // be picked and logged in one go. A line with no debt linked stays as itself.
+  const debtRows = (() => {
+    const byDebt = new Map<string, { id: string; name: string; amount: number; category: string; type: string; debt_name: string; lines: number }>()
+    const loose: any[] = []
+    for (const r of visibleRecs) {
+      if (recGroup(r) !== 'debt') continue
+      if (!r.debt_name) { loose.push(r); continue }
+      const cur = byDebt.get(r.debt_name)
+      if (cur) { cur.amount += Number(r.amount); cur.lines += 1 }
+      else byDebt.set(r.debt_name, { id: `debt:${r.debt_name}`, name: r.debt_name, amount: Number(r.amount), category: r.category, type: r.type, debt_name: r.debt_name, lines: 1 })
+    }
+    return [...byDebt.values(), ...loose]
+  })()
+  const rowsOfGroup = (key: string) => (key === 'debt' ? debtRows : visibleRecs.filter((r) => recGroup(r) === key))
   const REC_GROUPS = [
     { key: 'income', label: 'Income', color: 'var(--income)', soft: 'var(--income-soft)' },
     { key: 'spending', label: 'Spending', color: 'var(--savings)', soft: 'var(--savings-soft)' },
     { key: 'saving', label: 'Saving', color: 'var(--savings)', soft: 'var(--savings-soft)' },
     { key: 'debt', label: 'Debt', color: '#c2892f', soft: 'rgba(224,161,43,0.16)' },
   ]
-  const recGroupsPresent = REC_GROUPS.filter((g) => visibleRecs.some((r) => recGroup(r) === g.key))
-  const pickedTotal = visibleRecs.filter((r) => picked.has(r.id)).reduce((s, r) => s + recAmount(r), 0)
+  const recGroupsPresent = REC_GROUPS.filter((g) => rowsOfGroup(g.key).length > 0)
+  const allRows = REC_GROUPS.flatMap((g) => rowsOfGroup(g.key))
+  const pickedTotal = allRows.filter((r) => picked.has(r.id)).reduce((s, r) => s + recAmount(r), 0)
   const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })
 
   const updateRow = (i: number, patch: Partial<Row>) =>
@@ -512,7 +530,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                 <h2 style={{ margin: 0, fontSize: 18, display: 'flex', alignItems: 'center', gap: 8 }}><Plus size={18} /> Add Transaction</h2>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  {mode !== 'single' && (
+                  {(
                     <button type="button" onClick={resetAll} title="Reset this card" aria-label="Reset"
                       style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 34, padding: '0 14px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface-1)', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>
                       <RotateCcw size={14} /> Reset
@@ -837,10 +855,28 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                         <div key={g.key}>
                           <span style={{ display: 'inline-block', background: g.soft, color: g.color, padding: '3px 11px', borderRadius: 999, fontSize: 12, fontWeight: 700, marginBottom: 6 }}>{g.label}</span>
                           <div style={{ display: 'grid', gap: 2 }}>
-                            {visibleRecs.filter((r) => recGroup(r) === g.key).map((r) => {
+                            {rowsOfGroup(g.key).map((r) => {
                               const on = picked.has(r.id)
                               const toggle = () => setPicked((p) => { const n = new Set(p); n.has(r.id) ? n.delete(r.id) : n.add(r.id); return n })
                               // fields edit in place: name (text), category (select → also sets type), amount (number)
+                              const rolled = String(r.id).startsWith('debt:')
+                              if (rolled) return (
+                                <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 4px', borderBottom: '1px solid var(--border)' }}>
+                                  <input type="checkbox" checked={on} onChange={toggle} aria-label={`Select ${r.name}`} style={{ flexShrink: 0 }} />
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ fontWeight: 600, fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</div>
+                                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{r.lines > 1 ? `${r.lines} payments` : 'Debt Repayment'}</div>
+                                  </div>
+                                  <div style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1, width: 104 }}>
+                                    <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-muted)', flexShrink: 0 }}>$</span>
+                                    <input inputMode="decimal" value={recOver[r.id]?.amount ?? String(r.amount)} aria-label="Amount" className="rec-inline"
+                                      onChange={(e) => setOver(r.id, { amount: e.target.value.replace(/[^0-9.]/g, '') })}
+                                      onBlur={(e) => { if (!(parseFloat(e.target.value) > 0)) setRecOver((p) => { const n = { ...p }; delete n[r.id]?.amount; if (n[r.id] && !n[r.id].amount && !n[r.id].description) delete n[r.id]; return { ...n } }) }}
+                                      style={{ ...recInline, width: `calc(${Math.max(4, String(recOver[r.id]?.amount ?? r.amount).length)}ch + 22px)`, minWidth: 0, maxWidth: 96, textAlign: 'right', fontWeight: 700, fontSize: 15, fontVariantNumeric: 'tabular-nums' }} />
+                                  </div>
+                                  <span style={{ width: 25, flexShrink: 0 }} />
+                                </div>
+                              )
                               return (
                                 <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 4px', borderBottom: '1px solid var(--border)' }}>
                                   <input type="checkbox" checked={on} onChange={toggle} aria-label={`Select ${r.name}`} style={{ flexShrink: 0 }} />
@@ -867,21 +903,19 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                                       </select>
                                     )}
                                   </div>
-                                  {/* Fixed money column. Sizing this to the value in `ch` clipped short
-                                      amounts: box-sizing is border-box, so the width swallowed
-                                      recInline's 10px padding + 2px border, and one ch of slack never
-                                      covered it ("350" lost its last digit). A fixed width also lines
-                                      the amounts up as a column. */}
-                                  {/* The $ hugs the number instead of anchoring the far side of a
-                                      fixed column, where it read as belonging to nothing. The column
-                                      keeps its width so the amounts still line up on the right. */}
+                                  {/* The $ hugs the number rather than anchoring the far side of the
+                                      column, where it read as belonging to nothing; the column keeps
+                                      its width so amounts still line up on the right.
+                                      The field is sized in ch PLUS 22px: box-sizing is border-box, so
+                                      the width has to cover recInline's padding and border, and a ch
+                                      measures the "0" glyph — without the slack the last digit is cut. */}
                                   <div style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1, width: 104 }}>
                                     <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-muted)', flexShrink: 0 }}>$</span>
                                     <input inputMode="decimal" value={recOver[r.id]?.amount ?? String(r.amount)} aria-label="Amount" className="rec-inline"
                                       size={1}
                                       onChange={(e) => setOver(r.id, { amount: e.target.value.replace(/[^0-9.]/g, '') })}
                                       onBlur={(e) => { if (!(parseFloat(e.target.value) > 0)) setRecOver((p) => { const n = { ...p }; delete n[r.id]?.amount; if (n[r.id] && !n[r.id].amount && !n[r.id].description) delete n[r.id]; return { ...n } }) }}
-                                      style={{ ...recInline, width: `${Math.max(4, String(recOver[r.id]?.amount ?? r.amount).length + 1)}ch`, minWidth: 0, maxWidth: 92, textAlign: 'right', fontWeight: 700, fontSize: 15, fontVariantNumeric: 'tabular-nums' }} />
+                                      style={{ ...recInline, width: `calc(${Math.max(4, String(recOver[r.id]?.amount ?? r.amount).length)}ch + 22px)`, minWidth: 0, maxWidth: 96, textAlign: 'right', fontWeight: 700, fontSize: 15, fontVariantNumeric: 'tabular-nums' }} />
                                   </div>
                                   <button type="button" aria-label={`Delete ${r.name}`} title="Delete" onClick={() => setConfirmDel({ kind: 'rec', id: r.id, name: r.name })}
                                     style={{ flexShrink: 0, display: 'inline-flex', padding: 5, borderRadius: 8, border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}><Trash2 size={15} /></button>
