@@ -406,15 +406,6 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   // in the empty-state card browser, where the card is already chosen by which tile was opened.
   const intakeBox = (
     <div style={{ display: 'grid', gap: 10 }}>
-      {rows.length > 0 && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span className="stat-label">Add more</span>
-          <button type="button" onClick={() => setAddOpen(false)}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '6px 13px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface-1)', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>
-            Done <X size={13} />
-          </button>
-        </div>
-      )}
       <div style={{ border: '1.5px dashed var(--border-strong, var(--border))', borderRadius: 16, background: 'var(--surface-1)', padding: '14px 14px 12px' }}>
         <textarea value={raw} onChange={(e) => setRaw(e.target.value)} onPaste={onPasteInput} rows={5}
           placeholder={'Paste text or an image from your bank or card — the AI cleans it up.'}
@@ -696,7 +687,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                 {/* Review — compact rows that expand to edit */}
                 {rows.length > 0 && (
                   <>
-                    {/* All-drafts pill (left) + summary pill (right), one line */}
+                    {/* All-drafts pill (left) + summary pill + Add more/Done toggle (right), one line */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
                       {(drafts.length > 0 || draftId) ? (
                         <button type="button" onClick={backToDrafts} disabled={savingDraft}
@@ -704,20 +695,18 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                           <ChevronDown size={14} style={{ transform: 'rotate(90deg)' }} /> {savingDraft ? 'Saving…' : 'All drafts'}
                         </button>
                       ) : <span />}
-                      <span style={{ minWidth: 0, display: 'inline-flex', alignItems: 'baseline', padding: '6px 13px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface-1)', fontSize: 14, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {rows.length} item{rows.length !== 1 ? 's' : ''} · <b style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{' ' + money(validTotal)}</b>
-                        {cardTotals.map(([card]) => <span key={card} style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{`  ·  ${card}`}</span>)}
-                        {invalidCount > 0 && <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{`  ·  ${invalidCount} to fix`}</span>}
-                      </span>
-                    </div>
-                    {!addOpen && (
-                      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                        <button type="button" onClick={() => setAddOpen(true)}
-                          style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 4, padding: '6px 13px', borderRadius: 999, border: '1px solid var(--accent)', background: 'var(--accent-soft)', color: 'var(--accent)', cursor: 'pointer', fontSize: 13.5, fontWeight: 600, fontFamily: 'inherit' }}>
-                          <Plus size={15} /> Add more
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                        <span style={{ minWidth: 0, display: 'inline-flex', alignItems: 'baseline', padding: '6px 13px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface-1)', fontSize: 14, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {rows.length} item{rows.length !== 1 ? 's' : ''} · <b style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{' ' + money(validTotal)}</b>
+                          {cardTotals.map(([card]) => <span key={card} style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{`  ·  ${card}`}</span>)}
+                          {invalidCount > 0 && <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{`  ·  ${invalidCount} to fix`}</span>}
+                        </span>
+                        <button type="button" onClick={() => setAddOpen((v) => !v)}
+                          style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 4, padding: '6px 13px', borderRadius: 999, border: `1px solid ${addOpen ? 'var(--border)' : 'var(--accent)'}`, background: addOpen ? 'var(--surface-1)' : 'var(--accent-soft)', color: addOpen ? 'var(--text-secondary)' : 'var(--accent)', cursor: 'pointer', fontSize: 13.5, fontWeight: 600, fontFamily: 'inherit' }}>
+                          {addOpen ? <>Done <X size={13} /></> : <><Plus size={15} /> Add more</>}
                         </button>
                       </div>
-                    )}
+                    </div>
 
                     {/* newest transaction date first; bad/undated rows float to the top so they get fixed.
                         We sort a copy of the indices so updateRow/delete/expand still address the true row. */}
