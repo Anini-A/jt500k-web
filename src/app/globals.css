@@ -929,6 +929,11 @@ header.top h1 {
   padding: 24px;
   max-height: 90vh;
   overflow-y: auto;
+  /* flex column so a scrollable child (like the Import row list) can claim the
+     remaining height with its own internal scroll, keeping action buttons below
+     it in view instead of everything scrolling together as one long page. */
+  display: flex;
+  flex-direction: column;
   animation: modalIn 0.24s cubic-bezier(0.2, 0.9, 0.3, 1);
 }
 /* liquid-glass: specular top highlight + inner light rim on the modal shell */
