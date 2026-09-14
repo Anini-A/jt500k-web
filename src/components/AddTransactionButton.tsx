@@ -407,9 +407,9 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   const intakeBox = (
     <div style={{ display: 'grid', gap: 10 }}>
       <div style={{ border: '1.5px dashed var(--border-strong, var(--border))', borderRadius: 16, background: 'var(--surface-1)', padding: '14px 14px 12px' }}>
-        <textarea value={raw} onChange={(e) => setRaw(e.target.value)} onPaste={onPasteInput} rows={5}
+        <textarea value={raw} onChange={(e) => setRaw(e.target.value)} onPaste={onPasteInput} rows={2}
           placeholder={'Paste text or an image from your bank or card — the AI cleans it up.'}
-          style={{ width: '100%', border: 'none', background: 'transparent', resize: 'vertical', minHeight: 92, fontFamily: 'inherit', fontSize: 14, lineHeight: 1.5, color: 'var(--text-primary)', outline: 'none' }} />
+          style={{ width: '100%', border: 'none', background: 'transparent', resize: 'vertical', minHeight: 44, fontFamily: 'inherit', fontSize: 14, lineHeight: 1.5, color: 'var(--text-primary)', outline: 'none' }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, paddingTop: 12, borderTop: '1px dashed var(--border)' }}>
           <button type="button" disabled={(!raw.trim() && images.length === 0) || parsing} onClick={formatWithAI}
             style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 999, cursor: (!raw.trim() && images.length === 0) || parsing ? 'default' : 'pointer', fontSize: 13, fontWeight: 700, fontFamily: 'inherit', border: 'none', background: (!raw.trim() && images.length === 0) ? 'var(--surface-1)' : 'var(--accent)', color: (!raw.trim() && images.length === 0) ? 'var(--text-muted)' : '#fff' }}>
@@ -708,6 +708,9 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                       </div>
                     </div>
 
+                    {/* Add-more input sits right below the summary row, above the list */}
+                    {addOpen && intakeBox}
+
                     {/* newest transaction date first; bad/undated rows float to the top so they get fixed.
                         We sort a copy of the indices so updateRow/delete/expand still address the true row. */}
                     <div style={{ maxHeight: 282, overflowY: 'auto', WebkitOverflowScrolling: 'touch', borderTop: '1px solid var(--border)' }}>
@@ -770,9 +773,6 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                         )
                       })}
                     </div>
-
-                    {/* Add-more input opens from the top-right link; sits just above the action button */}
-                    {addOpen && intakeBox}
 
                     {invalidCount > 0 && (
                       <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
