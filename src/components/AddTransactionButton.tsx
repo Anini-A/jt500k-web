@@ -687,24 +687,27 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                 {/* Review — compact rows that expand to edit */}
                 {rows.length > 0 && (
                   <>
-                    {/* All-drafts pill (left) + summary pill + Add more/Done toggle (right), one line.
-                        The toggle is icon-only so the row still fits on a phone screen. */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {/* All-drafts pill (left) + summary pill, sized to its content + Add
+                        more/collapse toggle (right). The toggle stays accent blue in both
+                        states and just flips direction, like the row/card chevrons elsewhere. */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', rowGap: 8 }}>
                       {(drafts.length > 0 || draftId) && (
                         <button type="button" onClick={backToDrafts} disabled={savingDraft}
                           style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 4, padding: '6px 13px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface-1)', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>
                           <ChevronDown size={14} style={{ transform: 'rotate(90deg)' }} /> {savingDraft ? 'Saving…' : 'All drafts'}
                         </button>
                       )}
-                      <span style={{ flex: 1, minWidth: 0, display: 'inline-flex', alignItems: 'baseline', padding: '6px 13px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface-1)', fontSize: 14, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {rows.length} item{rows.length !== 1 ? 's' : ''} · <b style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{' ' + money(validTotal)}</b>
-                        {cardTotals.map(([card]) => <span key={card} style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{`  ·  ${card}`}</span>)}
-                        {invalidCount > 0 && <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{`  ·  ${invalidCount} to fix`}</span>}
-                      </span>
-                      <button type="button" onClick={() => setAddOpen((v) => !v)} aria-label={addOpen ? 'Done adding' : 'Add more'} title={addOpen ? 'Done adding' : 'Add more'}
-                        style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 999, border: `1px solid ${addOpen ? 'var(--border)' : 'var(--accent)'}`, background: addOpen ? 'var(--surface-1)' : 'var(--accent-soft)', color: addOpen ? 'var(--text-secondary)' : 'var(--accent)', cursor: 'pointer' }}>
-                        {addOpen ? <X size={16} /> : <Plus size={16} />}
-                      </button>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto', minWidth: 0 }}>
+                        <span style={{ minWidth: 0, display: 'inline-flex', alignItems: 'baseline', padding: '6px 13px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface-1)', fontSize: 14, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {rows.length} item{rows.length !== 1 ? 's' : ''} · <b style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{' ' + money(validTotal)}</b>
+                          {cardTotals.map(([card]) => <span key={card} style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{`  ·  ${card}`}</span>)}
+                          {invalidCount > 0 && <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{`  ·  ${invalidCount} to fix`}</span>}
+                        </span>
+                        <button type="button" onClick={() => setAddOpen((v) => !v)} aria-label={addOpen ? 'Collapse add more' : 'Add more'} title={addOpen ? 'Collapse add more' : 'Add more'}
+                          style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 999, border: '1px solid var(--accent)', background: 'var(--accent-soft)', color: 'var(--accent)', cursor: 'pointer' }}>
+                          <ChevronDown size={17} style={{ transform: addOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s ease' }} />
+                        </button>
+                      </div>
                     </div>
 
                     {/* Add-more input sits right below the summary row, above the list */}
