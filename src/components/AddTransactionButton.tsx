@@ -678,7 +678,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
 
             {/* ---------------- IMPORT — two-step flow: Add → Review ---------------- */}
             {mode === 'batch' && (
-              <div style={{ display: 'grid', gap: 12 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, flex: 1, minHeight: 0 }}>
                 {/* Card breakdown — only at the top when nothing has been parsed yet. Tapping a
                     card with a pending draft opens straight into that draft; otherwise it opens
                     the paste/screenshot intake inline, inside that card's tile. */}
@@ -715,7 +715,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
 
                     {/* newest transaction date first; bad/undated rows float to the top so they get fixed.
                         We sort a copy of the indices so updateRow/delete/expand still address the true row. */}
-                    <div style={{ maxHeight: 'min(56vh, 564px)', overflowY: 'auto', WebkitOverflowScrolling: 'touch', borderTop: '1px solid var(--border)' }}>
+                    <div style={{ flex: '1 1 auto', minHeight: 0, maxHeight: 'min(56vh, 564px)', overflowY: 'auto', WebkitOverflowScrolling: 'touch', borderTop: '1px solid var(--border)' }}>
                       {rows.map((r, i) => i).sort((a, b) => {
                         const da = isDate(rows[a].date), db = isDate(rows[b].date)
                         if (da !== db) return da ? 1 : -1 // undated rows first
