@@ -487,7 +487,16 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   // Just the paste/screenshot intake box (no card picker) — used inside an expanded card tile
   // in the empty-state card browser, where the card is already chosen by which tile was opened.
   const intakeBox = (
-    <div>
+    <div style={{ display: 'grid', gap: 10 }}>
+      {rows.length > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span className="stat-label">Add more</span>
+          <button type="button" onClick={() => setAddOpen(false)}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: 0, border: 'none', background: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>
+            Done <X size={13} />
+          </button>
+        </div>
+      )}
       <div style={{ border: '1.5px dashed var(--border-strong, var(--border))', borderRadius: 16, background: 'var(--surface-1)', padding: '14px 14px 12px' }}>
         <textarea value={raw} onChange={(e) => setRaw(e.target.value)} onPaste={onPasteInput} rows={5}
           placeholder={'Paste text or an image from your bank or card — the AI cleans it up.'}
@@ -854,7 +863,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                     </div>
 
                     {/* Add-more input opens from the top-right link; sits just above the action button */}
-                    {addOpen && pasteInput}
+                    {addOpen && intakeBox}
 
                     {invalidCount > 0 && (
                       <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
