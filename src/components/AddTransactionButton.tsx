@@ -402,6 +402,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   const draftItemCount = drafts.reduce((s, d) => s + (d.rows?.length || 0), 0)
   // color the review row's left edge by transaction type
   const typeColor = (t: string) => (t === 'income' ? 'var(--income)' : t === 'savings' ? 'var(--savings)' : 'var(--expense)')
+  const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })
 
   // The Import paste/screenshot input — reused at the top (empty state) and above the
   // action button (once there are rows), so it always sits where it's needed.
@@ -623,7 +624,6 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   // a ticked row with no amount yet isn't loggable, so it doesn't count toward the button
   const pickedRows = allRows.filter((r) => picked.has(r.id) && recAmount(r) > 0)
   const pickedTotal = pickedRows.reduce((s, r) => s + recAmount(r), 0)
-  const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })
 
   const updateRow = (i: number, patch: Partial<Row>) =>
     setRows((prev) => prev.map((r, idx) => idx === i ? { ...r, ...patch } : r))
