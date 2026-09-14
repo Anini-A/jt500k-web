@@ -402,88 +402,6 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   const typeColor = (t: string) => (t === 'income' ? 'var(--income)' : t === 'savings' ? 'var(--savings)' : 'var(--expense)')
   const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })
 
-  // The Import paste/screenshot input — reused at the top (empty state) and above the
-  // action button (once there are rows), so it always sits where it's needed.
-  const pasteInput = (
-    <div style={{ display: 'grid', gap: 10 }}>
-      {rows.length > 0 && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span className="stat-label">Add more</span>
-          <button type="button" onClick={() => setAddOpen(false)}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: 0, border: 'none', background: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>
-            Done <X size={13} />
-          </button>
-        </div>
-      )}
-      <div>
-        <div className="chip-scroll" style={{ gap: 7 }}>
-          {cards.map((c) => {
-            const on = selectedCard === c.name
-            return (
-              <button key={c.id} type="button" onClick={() => setSelectedCard(c.name)} title={`Tag this batch as ${c.name}`}
-                style={{ display: 'inline-flex', alignItems: 'center', padding: '7px 14px', borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', border: `1px solid ${on ? 'var(--accent)' : 'var(--border)'}`, background: on ? 'var(--accent)' : 'var(--surface-1)', color: on ? '#fff' : 'var(--text-primary)' }}>
-                {c.name}
-              </button>
-            )
-          })}
-          <button type="button" onClick={() => setManageCardsOpen((v) => !v)} title="Add or remove cards"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', border: `1px solid ${manageCardsOpen ? 'var(--accent)' : 'var(--border)'}`, background: manageCardsOpen ? 'var(--accent-soft)' : 'transparent', color: 'var(--accent)' }}>
-            <Settings2 size={14} /> Manage
-          </button>
-        </div>
-        {manageCardsOpen && (
-          <div style={{ display: 'grid', gap: 6, padding: 12, borderRadius: 12, border: '1px solid var(--border)', background: 'var(--surface-1)', marginTop: 8 }}>
-            <span className="stat-label">Manage cards</span>
-            {cards.map((c) => (
-              <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '7px 4px', borderBottom: '1px solid var(--border)' }}>
-                <span style={{ fontWeight: 600 }}>{c.name}</span>
-                <button type="button" onClick={() => setConfirmDel({ kind: 'card', id: c.id, name: c.name })} aria-label={`Delete ${c.name}`} title="Delete card"
-                  style={{ display: 'inline-flex', padding: 6, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--expense)', cursor: 'pointer' }}><Trash2 size={15} /></button>
-              </div>
-            ))}
-            <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
-              <input value={newCard} onChange={(e) => setNewCard(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCardInline() } }}
-                placeholder="New card name (e.g. WS Visa)" style={{ ...cell, flex: 1, height: 38 }} />
-              <button type="button" onClick={addCardInline} disabled={!newCard.trim()} style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 5, padding: '0 14px', height: 38, borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: 600, border: '1px solid var(--accent)', background: 'var(--accent)', color: '#fff', fontFamily: 'inherit' }}>
-                <Plus size={14} /> Add
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-      <div>
-        <div style={{ border: '1.5px dashed var(--border-strong, var(--border))', borderRadius: 16, background: 'var(--surface-1)', padding: '14px 14px 12px' }}>
-          <textarea value={raw} onChange={(e) => setRaw(e.target.value)} onPaste={onPasteInput} rows={5}
-            placeholder={'Paste text or an image from your bank or card — the AI cleans it up.'}
-            style={{ width: '100%', border: 'none', background: 'transparent', resize: 'vertical', minHeight: 92, fontFamily: 'inherit', fontSize: 14, lineHeight: 1.5, color: 'var(--text-primary)', outline: 'none' }} />
-          {/* Actions live inside the intake card, left-aligned: Format with AI + add-image icon */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, paddingTop: 12, borderTop: '1px dashed var(--border)' }}>
-            <button type="button" disabled={(!raw.trim() && images.length === 0) || parsing} onClick={formatWithAI}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 999, cursor: (!raw.trim() && images.length === 0) || parsing ? 'default' : 'pointer', fontSize: 13, fontWeight: 700, fontFamily: 'inherit', border: 'none', background: (!raw.trim() && images.length === 0) ? 'var(--surface-1)' : 'var(--accent)', color: (!raw.trim() && images.length === 0) ? 'var(--text-muted)' : '#fff' }}>
-              {parsing ? 'Reading…' : `✨ Format with AI${images.length ? ` · ${images.length}` : ''}`}
-            </button>
-            <label aria-label="Add screenshot" title="Add a screenshot" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 999, cursor: 'pointer', border: '1px solid var(--border)', background: 'var(--surface-1)', color: 'var(--text-secondary)' }}>
-              <ImagePlus size={16} />
-              <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={(e) => { if (e.target.files) addImageFiles(e.target.files); e.target.value = '' }} />
-            </label>
-          </div>
-        </div>
-        {images.length > 0 && (
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
-            {images.map((im) => (
-              <div key={im.id} style={{ position: 'relative' }}>
-                <img src={im.preview} alt="screenshot" style={{ height: 68, width: 'auto', maxWidth: 120, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--border)' }} />
-                <button type="button" onClick={() => setImages((prev) => prev.filter((x) => x.id !== im.id))} aria-label="Remove"
-                  style={{ position: 'absolute', top: -7, right: -7, width: 20, height: 20, borderRadius: 999, border: 'none', background: 'var(--expense)', color: '#fff', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, lineHeight: 1 }}>✕</button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-      {importErr && <div style={{ fontSize: 13, color: 'var(--expense)', fontWeight: 600 }}>{importErr}</div>}
-    </div>
-  )
-
   // Just the paste/screenshot intake box (no card picker) — used inside an expanded card tile
   // in the empty-state card browser, where the card is already chosen by which tile was opened.
   const intakeBox = (
@@ -492,7 +410,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span className="stat-label">Add more</span>
           <button type="button" onClick={() => setAddOpen(false)}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: 0, border: 'none', background: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '6px 13px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface-1)', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>
             Done <X size={13} />
           </button>
         </div>
@@ -778,26 +696,28 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                 {/* Review — compact rows that expand to edit */}
                 {rows.length > 0 && (
                   <>
-                    {(drafts.length > 0 || draftId) && (
-                      <button type="button" onClick={backToDrafts} disabled={savingDraft}
-                        style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 4, padding: 0, border: 'none', background: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>
-                        <ChevronDown size={14} style={{ transform: 'rotate(90deg)' }} /> {savingDraft ? 'Saving…' : 'All drafts'}
-                      </button>
-                    )}
-                    {/* Quiet summary + Add more, each as a pill */}
+                    {/* All-drafts pill (left) + summary pill (right), one line */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                      {(drafts.length > 0 || draftId) ? (
+                        <button type="button" onClick={backToDrafts} disabled={savingDraft}
+                          style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 4, padding: '6px 13px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface-1)', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>
+                          <ChevronDown size={14} style={{ transform: 'rotate(90deg)' }} /> {savingDraft ? 'Saving…' : 'All drafts'}
+                        </button>
+                      ) : <span />}
                       <span style={{ minWidth: 0, display: 'inline-flex', alignItems: 'baseline', padding: '6px 13px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface-1)', fontSize: 14, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {rows.length} item{rows.length !== 1 ? 's' : ''} · <b style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{' ' + money(validTotal)}</b>
                         {cardTotals.map(([card]) => <span key={card} style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{`  ·  ${card}`}</span>)}
                         {invalidCount > 0 && <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{`  ·  ${invalidCount} to fix`}</span>}
                       </span>
-                      {!addOpen && (
+                    </div>
+                    {!addOpen && (
+                      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                         <button type="button" onClick={() => setAddOpen(true)}
                           style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 4, padding: '6px 13px', borderRadius: 999, border: '1px solid var(--accent)', background: 'var(--accent-soft)', color: 'var(--accent)', cursor: 'pointer', fontSize: 13.5, fontWeight: 600, fontFamily: 'inherit' }}>
                           <Plus size={15} /> Add more
                         </button>
-                      )}
-                    </div>
+                      </div>
+                    )}
 
                     {/* newest transaction date first; bad/undated rows float to the top so they get fixed.
                         We sort a copy of the indices so updateRow/delete/expand still address the true row. */}
