@@ -687,25 +687,24 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                 {/* Review — compact rows that expand to edit */}
                 {rows.length > 0 && (
                   <>
-                    {/* All-drafts pill (left) + summary pill + Add more/Done toggle (right), one line */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-                      {(drafts.length > 0 || draftId) ? (
+                    {/* All-drafts pill (left) + summary pill + Add more/Done toggle (right), one line.
+                        The toggle is icon-only so the row still fits on a phone screen. */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      {(drafts.length > 0 || draftId) && (
                         <button type="button" onClick={backToDrafts} disabled={savingDraft}
                           style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 4, padding: '6px 13px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface-1)', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>
                           <ChevronDown size={14} style={{ transform: 'rotate(90deg)' }} /> {savingDraft ? 'Saving…' : 'All drafts'}
                         </button>
-                      ) : <span />}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-                        <span style={{ minWidth: 0, display: 'inline-flex', alignItems: 'baseline', padding: '6px 13px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface-1)', fontSize: 14, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {rows.length} item{rows.length !== 1 ? 's' : ''} · <b style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{' ' + money(validTotal)}</b>
-                          {cardTotals.map(([card]) => <span key={card} style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{`  ·  ${card}`}</span>)}
-                          {invalidCount > 0 && <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{`  ·  ${invalidCount} to fix`}</span>}
-                        </span>
-                        <button type="button" onClick={() => setAddOpen((v) => !v)}
-                          style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 4, padding: '6px 13px', borderRadius: 999, border: `1px solid ${addOpen ? 'var(--border)' : 'var(--accent)'}`, background: addOpen ? 'var(--surface-1)' : 'var(--accent-soft)', color: addOpen ? 'var(--text-secondary)' : 'var(--accent)', cursor: 'pointer', fontSize: 13.5, fontWeight: 600, fontFamily: 'inherit' }}>
-                          {addOpen ? <>Done <X size={13} /></> : <><Plus size={15} /> Add more</>}
-                        </button>
-                      </div>
+                      )}
+                      <span style={{ flex: 1, minWidth: 0, display: 'inline-flex', alignItems: 'baseline', padding: '6px 13px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface-1)', fontSize: 14, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {rows.length} item{rows.length !== 1 ? 's' : ''} · <b style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{' ' + money(validTotal)}</b>
+                        {cardTotals.map(([card]) => <span key={card} style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{`  ·  ${card}`}</span>)}
+                        {invalidCount > 0 && <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{`  ·  ${invalidCount} to fix`}</span>}
+                      </span>
+                      <button type="button" onClick={() => setAddOpen((v) => !v)} aria-label={addOpen ? 'Done adding' : 'Add more'} title={addOpen ? 'Done adding' : 'Add more'}
+                        style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 999, border: `1px solid ${addOpen ? 'var(--border)' : 'var(--accent)'}`, background: addOpen ? 'var(--surface-1)' : 'var(--accent-soft)', color: addOpen ? 'var(--text-secondary)' : 'var(--accent)', cursor: 'pointer' }}>
+                        {addOpen ? <X size={16} /> : <Plus size={16} />}
+                      </button>
                     </div>
 
                     {/* Add-more input sits right below the summary row, above the list */}
