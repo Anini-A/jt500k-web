@@ -99,7 +99,6 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   const [draftId, setDraftId] = useState<string | null>(null) // the draft currently being edited
   const [addOpen, setAddOpen] = useState(true)                 // Import: the paste/screenshot input (collapses once rows exist)
   const [expandedRow, setExpandedRow] = useState<number | null>(null) // which review row is expanded for editing
-  const [draftsOpen, setDraftsOpen] = useState(false)          // "Continue a draft" collapsible
   const [manageCardsOpen, setManageCardsOpen] = useState(false)
   const [expandedCard, setExpandedCard] = useState<string | null>(null) // Import: which card tile is expanded to reveal the paste/screenshot intake
   const [newCard, setNewCard] = useState('')      // inline add-card input
@@ -163,7 +162,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
 
   const close = () => {
     setOpen(false); setMode('single'); setRaw(''); setRows([]); setImages([])
-    setDraftId(null); setAddOpen(true); setExpandedRow(null); setDraftsOpen(false); setImportErr(''); setSaved(null); setSingleErr('')
+    setDraftId(null); setAddOpen(true); setExpandedRow(null); setExpandedCard(null); setImportErr(''); setSaved(null); setSingleErr('')
     setRecEdit(null); setRecErr('')
     setForm({ date: today(), type: 'expense', category: '', amount: '', description: '' })
   }
@@ -377,13 +376,13 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   }
   const openDraft = (dr: Draft) => {
     setRows((dr.rows || []).map((r) => ({ ...r, amount: String(r.amount) })))
-    setDraftId(dr.id); setAddOpen(false); setExpandedRow(null); setDraftsOpen(false); setImportErr('')
+    setDraftId(dr.id); setAddOpen(false); setExpandedRow(null); setExpandedCard(null); setImportErr('')
   }
-  // Return to the drafts list without closing the modal — persist current work first so
+  // Return to the card breakdown without closing the modal — persist current work first so
   // switching to another card's draft never loses edits.
   const backToDrafts = async () => {
     if (rows.length) await saveDraft()
-    setRows([]); setDraftId(null); setExpandedRow(null); setAddOpen(true); setRaw(''); setImages([]); setImportErr(''); setDraftsOpen(true)
+    setRows([]); setDraftId(null); setExpandedRow(null); setAddOpen(true); setRaw(''); setImages([]); setImportErr('')
   }
   const deleteDraft = (id: string) => setConfirmDel({ kind: 'draft', id, name: 'this draft' })
 
@@ -399,7 +398,6 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   })()
   // headline = the VALID total that will actually log (not the raw sum of every row)
   const validTotal = rows.filter(rowValid).reduce((s, r) => s + signedRowAmount(r), 0)
-  const draftItemCount = drafts.reduce((s, d) => s + (d.rows?.length || 0), 0)
   // color the review row's left edge by transaction type
   const typeColor = (t: string) => (t === 'income' ? 'var(--income)' : t === 'savings' ? 'var(--savings)' : 'var(--expense)')
   const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })
@@ -568,16 +566,26 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
         {cards.map((c) => {
           const stat = cardImportStats.get(c.name)
           const isOpen = expandedCard === c.name
+          const draft = drafts.find((d) => (d.rows || []).some((r) => r.card === c.name))
           return (
             <div key={c.id} style={{ border: `1px solid ${isOpen ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 14, background: 'var(--surface-1)', overflow: 'hidden' }}>
-              <button type="button" onClick={() => { setExpandedCard(isOpen ? null : c.name); setSelectedCard(c.name) }} aria-expanded={isOpen}
-                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '13px 14px', background: 'transparent', border: 'none', cursor: 'pointer', font: 'inherit', color: 'inherit', textAlign: 'left' }}>
-                <span style={{ flex: 1, minWidth: 0, fontWeight: 600, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
-                <span style={{ flexShrink: 0, fontSize: 13, color: 'var(--text-secondary)' }}>
-                  {stat ? `${stat.count} item${stat.count !== 1 ? 's' : ''} · ${money(stat.total)}` : 'No pending items'}
-                </span>
-                <ChevronDown size={15} style={{ flexShrink: 0, color: 'var(--text-muted)', transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s ease' }} />
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                <button type="button" onClick={() => {
+                  if (draft) { openDraft(draft); setSelectedCard(c.name); return }
+                  setExpandedCard(isOpen ? null : c.name); setSelectedCard(c.name)
+                }} aria-expanded={isOpen}
+                  style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 10, padding: '13px 14px', background: 'transparent', border: 'none', cursor: 'pointer', font: 'inherit', color: 'inherit', textAlign: 'left' }}>
+                  <span style={{ flex: 1, minWidth: 0, fontWeight: 600, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
+                  <span style={{ flexShrink: 0, fontSize: 13, color: 'var(--text-secondary)' }}>
+                    {stat ? `${stat.count} item${stat.count !== 1 ? 's' : ''} · ${money(stat.total)}` : 'No pending items'}
+                  </span>
+                  <ChevronDown size={15} style={{ flexShrink: 0, color: 'var(--text-muted)', transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s ease' }} />
+                </button>
+                {draft && (
+                  <button type="button" onClick={() => deleteDraft(draft.id)} aria-label={`Delete ${c.name} draft`} title="Delete draft"
+                    style={{ flexShrink: 0, width: 32, height: 32, marginRight: 10, borderRadius: 9, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><Trash2 size={14} /></button>
+                )}
+              </div>
               {isOpen && <div style={{ padding: '0 14px 14px' }}>{intakeBox}</div>}
             </div>
           )
@@ -753,44 +761,9 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
             {/* ---------------- IMPORT — two-step flow: Add → Review ---------------- */}
             {mode === 'batch' && (
               <div style={{ display: 'grid', gap: 12 }}>
-                {/* Continue a draft — only shows when nothing is in progress */}
-                {drafts.length > 0 && rows.length === 0 && (
-                      <div>
-                        <button type="button" onClick={() => setDraftsOpen((v) => !v)} aria-expanded={draftsOpen}
-                          style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 11, padding: '12px 14px', borderRadius: 14, border: '1px solid var(--border)', background: 'var(--surface-1)', cursor: 'pointer', font: 'inherit', color: 'inherit', textAlign: 'left' }}>
-                          <span style={{ width: 34, height: 34, borderRadius: 10, display: 'grid', placeItems: 'center', background: 'var(--accent-soft)', color: 'var(--accent)', flexShrink: 0 }}><ClipboardPaste size={16} /></span>
-                          <span style={{ minWidth: 0 }}>
-                            <span style={{ display: 'block', fontWeight: 600, fontSize: 14 }}>Continue a draft</span>
-                            <span style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginTop: 1 }}>{drafts.length} saved · {draftItemCount} item{draftItemCount !== 1 ? 's' : ''}</span>
-                          </span>
-                          <span style={{ marginLeft: 'auto', color: 'var(--text-muted)', transform: draftsOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s ease', display: 'inline-flex' }}><ChevronDown size={16} /></span>
-                        </button>
-                        {draftsOpen && (
-                          <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
-                            {drafts.map((dr) => {
-                              const items = dr.rows?.length || 0
-                              const tot = (dr.rows || []).reduce((s, r) => s + signedRowAmount(r), 0)
-                              const cardsIn = [...new Set((dr.rows || []).map((r) => r.card).filter(Boolean))] as string[]
-                              const cardLabel = cardsIn.length === 0 ? 'No card' : cardsIn.length === 1 ? cardsIn[0] : `${cardsIn.length} cards`
-                              const dateStr = new Date(dr.updated_at).toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })
-                              return (
-                                <div key={dr.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                  <button onClick={() => openDraft(dr)} style={{ flex: 1, minWidth: 0, display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: 10, alignItems: 'baseline', textAlign: 'left', padding: '11px 13px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--surface-1)', cursor: 'pointer', fontFamily: 'inherit', color: 'var(--text-primary)', fontSize: 13 }}>
-                                    <span style={{ fontWeight: 700, whiteSpace: 'nowrap' }}>{items} item{items !== 1 ? 's' : ''} · {money(tot)}</span>
-                                    <span style={{ textAlign: 'center', fontWeight: 600, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cardLabel}</span>
-                                    <span className="stat-label" style={{ flexShrink: 0 }}>{dateStr}</span>
-                                  </button>
-                                  <button onClick={() => deleteDraft(dr.id)} aria-label="Delete draft" title="Delete draft" style={{ flexShrink: 0, width: 32, height: 32, borderRadius: 9, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}><Trash2 size={14} /></button>
-                                </div>
-                              )
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                {/* Card breakdown — only at the top when nothing has been parsed yet. Pick a
-                    card to open its paste/screenshot intake inline, inside that card's tile. */}
+                {/* Card breakdown — only at the top when nothing has been parsed yet. Tapping a
+                    card with a pending draft opens straight into that draft; otherwise it opens
+                    the paste/screenshot intake inline, inside that card's tile. */}
                 {rows.length === 0 && cardBrowser}
 
                 {/* Review — compact rows that expand to edit */}
