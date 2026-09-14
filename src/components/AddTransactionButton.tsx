@@ -101,6 +101,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   const [expandedRow, setExpandedRow] = useState<number | null>(null) // which review row is expanded for editing
   const [draftsOpen, setDraftsOpen] = useState(false)          // "Continue a draft" collapsible
   const [manageCardsOpen, setManageCardsOpen] = useState(false)
+  const [expandedCard, setExpandedCard] = useState<string | null>(null) // Import: which card tile is expanded to reveal the paste/screenshot intake
   const [newCard, setNewCard] = useState('')      // inline add-card input
   const [flash, setFlash] = useState('')          // inline success message (replaces alert)
   const [confirmDel, setConfirmDel] = useState<null | { kind: 'card' | 'draft' | 'rec'; id: string; name?: string }>(null)
@@ -484,6 +485,106 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
     </div>
   )
 
+  // Just the paste/screenshot intake box (no card picker) — used inside an expanded card tile
+  // in the empty-state card browser, where the card is already chosen by which tile was opened.
+  const intakeBox = (
+    <div>
+      <div style={{ border: '1.5px dashed var(--border-strong, var(--border))', borderRadius: 16, background: 'var(--surface-1)', padding: '14px 14px 12px' }}>
+        <textarea value={raw} onChange={(e) => setRaw(e.target.value)} onPaste={onPasteInput} rows={5}
+          placeholder={'Paste text or an image from your bank or card — the AI cleans it up.'}
+          style={{ width: '100%', border: 'none', background: 'transparent', resize: 'vertical', minHeight: 92, fontFamily: 'inherit', fontSize: 14, lineHeight: 1.5, color: 'var(--text-primary)', outline: 'none' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, paddingTop: 12, borderTop: '1px dashed var(--border)' }}>
+          <button type="button" disabled={(!raw.trim() && images.length === 0) || parsing} onClick={formatWithAI}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 999, cursor: (!raw.trim() && images.length === 0) || parsing ? 'default' : 'pointer', fontSize: 13, fontWeight: 700, fontFamily: 'inherit', border: 'none', background: (!raw.trim() && images.length === 0) ? 'var(--surface-1)' : 'var(--accent)', color: (!raw.trim() && images.length === 0) ? 'var(--text-muted)' : '#fff' }}>
+            {parsing ? 'Reading…' : `✨ Format with AI${images.length ? ` · ${images.length}` : ''}`}
+          </button>
+          <label aria-label="Add screenshot" title="Add a screenshot" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 999, cursor: 'pointer', border: '1px solid var(--border)', background: 'var(--surface-1)', color: 'var(--text-secondary)' }}>
+            <ImagePlus size={16} />
+            <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={(e) => { if (e.target.files) addImageFiles(e.target.files); e.target.value = '' }} />
+          </label>
+        </div>
+      </div>
+      {images.length > 0 && (
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
+          {images.map((im) => (
+            <div key={im.id} style={{ position: 'relative' }}>
+              <img src={im.preview} alt="screenshot" style={{ height: 68, width: 'auto', maxWidth: 120, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--border)' }} />
+              <button type="button" onClick={() => setImages((prev) => prev.filter((x) => x.id !== im.id))} aria-label="Remove"
+                style={{ position: 'absolute', top: -7, right: -7, width: 20, height: 20, borderRadius: 999, border: 'none', background: 'var(--expense)', color: '#fff', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, lineHeight: 1 }}>✕</button>
+            </div>
+          ))}
+        </div>
+      )}
+      {importErr && <div style={{ fontSize: 13, color: 'var(--expense)', fontWeight: 600 }}>{importErr}</div>}
+    </div>
+  )
+
+  // Per-card breakdown for the Import empty state: pending (draft) item count + total per card,
+  // so you pick a card first and the paste intake opens inside that card's tile.
+  const cardImportStats = (() => {
+    const m = new Map<string, { count: number; total: number }>()
+    for (const d of drafts) for (const r of d.rows || []) {
+      if (!r.card) continue
+      const cur = m.get(r.card) || { count: 0, total: 0 }
+      cur.count += 1; cur.total += signedRowAmount(r)
+      m.set(r.card, cur)
+    }
+    return m
+  })()
+
+  // Card browser — replaces the free-floating paste box at the top of Import. Each card is a
+  // tile showing its pending-item summary; tapping it selects the card and opens the paste
+  // intake inline, inside that tile.
+  const cardBrowser = (
+    <div style={{ display: 'grid', gap: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span className="stat-label">Cards</span>
+        <button type="button" onClick={() => setManageCardsOpen((v) => !v)} title="Add or remove cards"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', border: `1px solid ${manageCardsOpen ? 'var(--accent)' : 'var(--border)'}`, background: manageCardsOpen ? 'var(--accent-soft)' : 'transparent', color: 'var(--accent)' }}>
+          <Settings2 size={14} /> Manage
+        </button>
+      </div>
+      {manageCardsOpen && (
+        <div style={{ display: 'grid', gap: 6, padding: 12, borderRadius: 12, border: '1px solid var(--border)', background: 'var(--surface-1)' }}>
+          <span className="stat-label">Manage cards</span>
+          {cards.map((c) => (
+            <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '7px 4px', borderBottom: '1px solid var(--border)' }}>
+              <span style={{ fontWeight: 600 }}>{c.name}</span>
+              <button type="button" onClick={() => setConfirmDel({ kind: 'card', id: c.id, name: c.name })} aria-label={`Delete ${c.name}`} title="Delete card"
+                style={{ display: 'inline-flex', padding: 6, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--expense)', cursor: 'pointer' }}><Trash2 size={15} /></button>
+            </div>
+          ))}
+          <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+            <input value={newCard} onChange={(e) => setNewCard(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCardInline() } }}
+              placeholder="New card name (e.g. WS Visa)" style={{ ...cell, flex: 1, height: 38 }} />
+            <button type="button" onClick={addCardInline} disabled={!newCard.trim()} style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 5, padding: '0 14px', height: 38, borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: 600, border: '1px solid var(--accent)', background: 'var(--accent)', color: '#fff', fontFamily: 'inherit' }}>
+              <Plus size={14} /> Add
+            </button>
+          </div>
+        </div>
+      )}
+      <div style={{ display: 'grid', gap: 8 }}>
+        {cards.map((c) => {
+          const stat = cardImportStats.get(c.name)
+          const isOpen = expandedCard === c.name
+          return (
+            <div key={c.id} style={{ border: `1px solid ${isOpen ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 14, background: 'var(--surface-1)', overflow: 'hidden' }}>
+              <button type="button" onClick={() => { setExpandedCard(isOpen ? null : c.name); setSelectedCard(c.name) }} aria-expanded={isOpen}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '13px 14px', background: 'transparent', border: 'none', cursor: 'pointer', font: 'inherit', color: 'inherit', textAlign: 'left' }}>
+                <span style={{ flex: 1, minWidth: 0, fontWeight: 600, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
+                <span style={{ flexShrink: 0, fontSize: 13, color: 'var(--text-secondary)' }}>
+                  {stat ? `${stat.count} item${stat.count !== 1 ? 's' : ''} · ${money(stat.total)}` : 'No pending items'}
+                </span>
+                <ChevronDown size={15} style={{ flexShrink: 0, color: 'var(--text-muted)', transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s ease' }} />
+              </button>
+              {isOpen && <div style={{ padding: '0 14px 14px' }}>{intakeBox}</div>}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+
   // Recurring: group into the same buckets as the Budget tab
   const recType = (r: any) => r.type ?? cats.find((c) => c.name === r.category)?.type ?? 'expense'
   const recGroup = (r: any) => { const t = recType(r); return t === 'income' ? 'income' : t === 'savings' ? 'saving' : r.category === 'Debt Repayment' ? 'debt' : 'spending' }
@@ -688,8 +789,9 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                       </div>
                     )}
 
-                {/* Paste input — only at the top when nothing has been parsed yet */}
-                {rows.length === 0 && pasteInput}
+                {/* Card breakdown — only at the top when nothing has been parsed yet. Pick a
+                    card to open its paste/screenshot intake inline, inside that card's tile. */}
+                {rows.length === 0 && cardBrowser}
 
                 {/* Review — compact rows that expand to edit */}
                 {rows.length > 0 && (
