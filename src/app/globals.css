@@ -1,10 +1,10 @@
 :root {
-  --surface-1: #fcfcfb;
-  --page-plane: #f9f9f7;
+  --surface-1: #fbfbfc;
+  --page-plane: #f4f4f3;
   --text-primary: #0b0b0b;
-  --text-secondary: #52514e;
-  --text-muted: #898781;
-  --gridline: #e1e0d9;
+  --text-secondary: #51535a;
+  --text-muted: #87898f;
+  --gridline: #e0e0e2;
   --border: rgba(11, 11, 11, 0.1);
   --accent: #2a78d6;
   --accent-rgb: 42, 120, 214;
@@ -17,12 +17,12 @@
   --savings-soft: #e0e7ff;
 
   --glass-bg: rgba(255, 255, 255, 0.55);
-  --glass-bg-strong: rgba(243, 243, 241, 0.9); /* modal shell — more opaque so content reads with full contrast */
+  --glass-bg-strong: rgba(240, 240, 242, 0.9); /* modal shell — more opaque so content reads with full contrast */
   --glass-border: rgba(255, 255, 255, 0.65);
-  --glass-shadow: 0 8px 32px rgba(30, 30, 25, 0.1);
+  --glass-shadow: 0 8px 32px rgba(24, 26, 30, 0.1);
   --glass-sheen: inset 0 1px 0 rgba(255, 255, 255, 0.7);
   --kpi-bg: rgba(255, 255, 255, 0.4);
-  --header-bg: rgba(249, 249, 247, 0.95);
+  --header-bg: rgba(244, 244, 243, 0.95);
   /* Liquid-glass polish: specular top highlight + inner light rim */
   --glass-specular: linear-gradient(177deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.16) 18%, rgba(255, 255, 255, 0) 48%);
   --glass-rim: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
@@ -30,12 +30,12 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --surface-1: #1a1a19;
-    --page-plane: #0d0d0d;
+    --surface-1: #181a1d;
+    --page-plane: #0e0f10;
     --text-primary: #ffffff;
-    --text-secondary: #cbcabf;
-    --text-muted: #9b998f;
-    --gridline: #333331;
+    --text-secondary: #c8cad0;
+    --text-muted: #93959c;
+    --gridline: #313338;
     --border: rgba(255, 255, 255, 0.14);
     --accent: #3987e5;
     --accent-rgb: 57, 135, 229;
@@ -47,13 +47,13 @@
     --savings: #818cf8;
     --savings-soft: #312e81;
 
-    --glass-bg: rgba(30, 30, 29, 0.5);
-    --glass-bg-strong: rgba(26, 26, 25, 0.88); /* modal shell — more opaque for content contrast */
+    --glass-bg: rgba(28, 30, 33, 0.55);
+    --glass-bg-strong: rgba(24, 26, 29, 0.9); /* modal shell — more opaque for content contrast */
     --glass-border: rgba(255, 255, 255, 0.16);
     --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
     --glass-sheen: inset 0 1px 0 rgba(255, 255, 255, 0.12);
     --kpi-bg: rgba(255, 255, 255, 0.07);
-    --header-bg: rgba(13, 13, 13, 0.95);
+    --header-bg: rgba(14, 15, 16, 0.95);
     --glass-specular: linear-gradient(177deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.08) 20%, rgba(255, 255, 255, 0) 50%);
     --glass-rim: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
   }
@@ -414,13 +414,15 @@ a:hover {
   z-index: -1;
   pointer-events: none;
   background:
-    /* the aurora runs edge to edge, under the status bar too — the tints up there stay
-       light enough that the dark status-bar glyphs still read cleanly against them */
-    radial-gradient(640px circle at 12% 22%, rgba(42, 120, 214, 0.24), transparent 60%),
-    radial-gradient(560px circle at 88% 16%, rgba(235, 104, 52, 0.22), transparent 58%),
-    radial-gradient(620px circle at 18% 88%, rgba(27, 175, 122, 0.18), transparent 60%),
-    radial-gradient(600px circle at 90% 82%, rgba(74, 58, 167, 0.16), transparent 60%);
-  background-color: #f9f9f7;
+    /* Horizon: one soft light, high and off-frame to the left, with a cooler second tone
+       top right. Wide ellipses read as light rather than as blobs, and both die out well
+       above the fold — the lower half stays pure --page-plane, which is what keeps sheets,
+       canvas and the strip under the home indicator all landing on one colour. It runs
+       edge to edge under the status bar; the tints are light enough that the dark glyphs
+       still read against them. */
+    radial-gradient(1200px 620px at 22% -8%, rgba(72, 80, 94, 0.15), transparent 70%),
+    radial-gradient(760px 420px at 92% 2%, rgba(42, 120, 214, 0.11), transparent 66%);
+  background-color: var(--page-plane);
 }
 
 /* Dark mode: the aurora must also go dark, or the translucent dark cards sit
@@ -429,11 +431,9 @@ a:hover {
 @media (prefers-color-scheme: dark) {
   .bg-aurora::before {
     background:
-      radial-gradient(680px circle at 12% 20%, rgba(57, 135, 229, 0.30), transparent 60%),
-      radial-gradient(600px circle at 88% 14%, rgba(217, 89, 38, 0.22), transparent 58%),
-      radial-gradient(640px circle at 16% 90%, rgba(25, 158, 112, 0.22), transparent 60%),
-      radial-gradient(620px circle at 92% 84%, rgba(129, 140, 248, 0.20), transparent 60%);
-    background-color: #0d0d0d;
+      radial-gradient(1200px 620px at 22% -8%, rgba(122, 134, 152, 0.18), transparent 70%),
+      radial-gradient(760px 420px at 92% 2%, rgba(57, 135, 229, 0.13), transparent 66%);
+    background-color: var(--page-plane);
   }
 }
 
@@ -953,8 +953,8 @@ header.top h1 {
 .modal-card.glass {
   background-image:
     var(--glass-specular),
-    radial-gradient(640px circle at 12% 18%, rgba(42, 120, 214, 0.16), transparent 60%),
-    radial-gradient(560px circle at 88% 12%, rgba(235, 104, 52, 0.14), transparent 58%);
+    radial-gradient(1200px 560px at 22% -6%, rgba(72, 80, 94, 0.13), transparent 70%),
+    radial-gradient(700px 380px at 92% 2%, rgba(42, 120, 214, 0.09), transparent 66%);
   background-repeat: no-repeat;
   background-size: 100% 96px, auto, auto;
 }
@@ -962,8 +962,8 @@ header.top h1 {
   .modal-card.glass {
     background-image:
       var(--glass-specular),
-      radial-gradient(680px circle at 12% 16%, rgba(57, 135, 229, 0.20), transparent 60%),
-      radial-gradient(600px circle at 88% 10%, rgba(217, 89, 38, 0.15), transparent 58%);
+      radial-gradient(1200px 560px at 22% -6%, rgba(122, 134, 152, 0.16), transparent 70%),
+      radial-gradient(700px 380px at 92% 2%, rgba(57, 135, 229, 0.11), transparent 66%);
   }
 }
 .modal-card.glass::before {

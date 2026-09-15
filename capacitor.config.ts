@@ -13,12 +13,12 @@ const config: CapacitorConfig = {
   },
   ios: {
     contentInset: 'never',       // we handle safe areas in CSS (env(safe-area-inset-*))
-    backgroundColor: '#f9f9f7',
+    backgroundColor: '#f4f4f3',
   },
   plugins: {
     SplashScreen: {
       launchAutoHide: false,      // we hide it from JS once the app is ready
-      backgroundColor: '#f9f9f7',
+      backgroundColor: '#f4f4f3',
     },
   },
 }
