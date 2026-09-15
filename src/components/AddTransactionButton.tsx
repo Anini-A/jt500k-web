@@ -860,13 +860,16 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                   </div>
                 ) : (
                   <>
-                    {/* The date these get logged under pairs with "New recurring" up here, which
-                        leaves the whole bottom row to the action button. Items are edited live
-                        via the fields on each row. */}
+                    {/* Add on the left, the date these get logged under on the right — two pills
+                        cut from the same cloth, leaving the whole bottom row to the action
+                        button. Items are edited live via the fields on each row. */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                      <button type="button" onClick={startNewRec} aria-label="New recurring" title="New recurring"
+                        style={{ flexShrink: 0, width: 34, height: 34, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface-1)', color: 'var(--accent)', cursor: 'pointer', fontFamily: 'inherit' }}>
+                        <Plus size={17} />
+                      </button>
                       <input type="date" value={recDate} onChange={(e) => setRecDate(e.target.value)} aria-label="Log for date"
                         style={{ flexShrink: 0, height: 34, padding: '0 14px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface-1)', color: 'var(--text-primary)', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', WebkitAppearance: 'none', appearance: 'none', outline: 'none' }} />
-                      <button type="button" onClick={startNewRec} style={{ background: 'transparent', border: 'none', color: 'var(--accent)', fontSize: 13.5, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: 'inherit' }}><Plus size={15} /> New recurring</button>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 14, flex: '1 1 auto', minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
                       {recGroupsPresent.map((g) => (
