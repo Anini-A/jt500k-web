@@ -975,20 +975,24 @@ header.top h1 {
 @media (max-width: 640px) {
   .modal-backdrop { align-items: flex-end; padding: 0; }
   .modal-card {
+    /* The layout viewport stops short of the physical bottom in the installed PWA, so no
+       amount of padding trimming brings the action buttons any closer to the edge — the
+       sheet has to hang PAST the viewport instead. It drops by the safe-area inset less a
+       small guard, so it never crowds the home indicator in a plain browser tab. Height
+       grows by the same amount, which leaves the top edge exactly where it was and simply
+       carries the buttons down with the bottom. */
+    --sheet-drop: max(0px, calc(env(safe-area-inset-bottom, 0px) - 10px));
     width: 100% !important;
     max-width: 100%;
     border-radius: 22px 22px 0 0;
-    max-height: calc(92dvh - 38px);
-    /* The layout viewport already stops short of the home indicator in the installed PWA,
-       so a full safe-area inset on top of that floats the action buttons well clear of the
-       bottom. Take a trimmed share of it — still clear of the indicator in a browser tab,
-       without the dead band under the buttons. */
-    padding: 22px 16px max(12px, calc(env(safe-area-inset-bottom, 0px) - 14px));
+    max-height: calc(92dvh - 38px + var(--sheet-drop));
+    margin-bottom: calc(-1 * var(--sheet-drop));
+    padding: 22px 16px 10px;
     animation: sheetIn 0.3s cubic-bezier(0.2, 0.9, 0.3, 1);
   }
   .modal-card.glass::before { border-radius: 22px 22px 0 0; }
   /* a "tall" sheet fills to the top (like Settings) even when its content is short */
-  .modal-card.modal-tall { height: calc(92dvh - 38px); display: flex; flex-direction: column; }
+  .modal-card.modal-tall { height: calc(92dvh - 38px + var(--sheet-drop)); display: flex; flex-direction: column; }
   /* grab handle at the top of the sheet */
   .modal-card::after {
     content: ''; position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
