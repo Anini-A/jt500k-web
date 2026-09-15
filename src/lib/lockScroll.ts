@@ -26,6 +26,12 @@ export function useLockScroll(active: boolean) {
       style.left = '0'
       style.right = '0'
       style.width = '100%'
+      // Without an explicit height, a fixed body sizes to its own (static) content —
+      // usually taller than one screen, but not always. Any fixed-position descendant
+      // (a modal backdrop portaled onto document.body) then gets clipped to that
+      // shorter box by the overflow:hidden below, leaving a blank gap at the bottom
+      // of the viewport instead of the backdrop reaching all the way down.
+      style.height = '100dvh'
       style.overflow = 'hidden'
     }
     depth += 1
@@ -38,6 +44,7 @@ export function useLockScroll(active: boolean) {
       style.left = ''
       style.right = ''
       style.width = ''
+      style.height = ''
       style.overflow = ''
       window.scrollTo(0, savedY)
     }
