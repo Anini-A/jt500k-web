@@ -53,7 +53,7 @@ export default function NotificationBell() {
 
       {open && createPortal(
         <div className="modal-backdrop" onClick={() => setOpen(false)}>
-          <div className="modal-card glass modal-tall" style={{ width: 'min(560px, 100%)' }} onClick={(e) => e.stopPropagation()}>
+          <div className="modal-card glass" style={{ width: 'min(560px, 100%)' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
               <h2 style={{ margin: 0, fontSize: 18, display: 'flex', alignItems: 'center', gap: 8 }}><Bell size={18} /> Alerts{total ? <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)' }}>· {total}</span> : null}</h2>
               <button className="modal-x" aria-label="Close" onClick={() => setOpen(false)}>✕</button>
@@ -75,7 +75,7 @@ export default function NotificationBell() {
                   <TabPill active={tab === 'info'} onClick={() => setTab('info')} label="Good to know" count={infos.length} />
                 </div>
 
-                <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ maxHeight: 'min(56vh, 520px)', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {tab === 'action' ? (
                     actions.length === 0 ? <Empty label="Nothing needs action" />
                       : actions.map((n) => <Item key={n.id} n={n} onDismiss={n.dismissible ? () => dismiss(n.id) : undefined} skip={n.dismissible} />)
