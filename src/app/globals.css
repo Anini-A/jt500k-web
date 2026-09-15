@@ -1390,19 +1390,23 @@ header.top h1 {
   color: #fff;
 }
 
-/* The affirmative twin of .modal-x — same 34px tinted ring, in the accent. For an "add"
-   action sitting in a sheet's toolbar. */
+/* The affirmative twin of .modal-x — same tinted-ring treatment and height, in the accent,
+   but sized to its label. For an "add" action sitting in a sheet's toolbar. */
 .modal-add {
   flex-shrink: 0;
-  width: 34px;
   height: 34px;
+  padding: 0 15px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 5px;
   border-radius: 999px;
   border: 1px solid var(--accent);
   background: var(--accent-soft);
   color: var(--accent);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
   line-height: 1;
   transition: background 0.15s ease, color 0.15s ease;

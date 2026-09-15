@@ -864,9 +864,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                         cut from the same cloth, leaving the whole bottom row to the action
                         button. Items are edited live via the fields on each row. */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-                      <button type="button" className="modal-add" onClick={startNewRec} aria-label="New recurring" title="New recurring">
-                        <Plus size={17} />
-                      </button>
+                      <button type="button" className="modal-add" onClick={startNewRec} title="New recurring item">New</button>
                       <input type="date" value={recDate} onChange={(e) => setRecDate(e.target.value)} aria-label="Log for date"
                         style={{ flexShrink: 0, height: 34, padding: '0 14px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface-1)', color: 'var(--text-primary)', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', WebkitAppearance: 'none', appearance: 'none', outline: 'none' }} />
                     </div>
