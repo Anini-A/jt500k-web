@@ -979,7 +979,11 @@ header.top h1 {
     max-width: 100%;
     border-radius: 22px 22px 0 0;
     max-height: calc(92dvh - 38px);
-    padding: 22px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+    /* The layout viewport already stops short of the home indicator in the installed PWA,
+       so a full safe-area inset on top of that floats the action buttons well clear of the
+       bottom. Take a trimmed share of it — still clear of the indicator in a browser tab,
+       without the dead band under the buttons. */
+    padding: 22px 16px max(12px, calc(env(safe-area-inset-bottom, 0px) - 14px));
     animation: sheetIn 0.3s cubic-bezier(0.2, 0.9, 0.3, 1);
   }
   .modal-card.glass::before { border-radius: 22px 22px 0 0; }

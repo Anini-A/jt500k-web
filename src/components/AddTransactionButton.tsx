@@ -715,7 +715,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
 
                     {/* newest transaction date first; bad/undated rows float to the top so they get fixed.
                         We sort a copy of the indices so updateRow/delete/expand still address the true row. */}
-                    <div style={{ flex: '1 1 auto', minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', borderTop: '1px solid var(--border)' }}>
+                    <div style={{ flex: '1 1 auto', minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
                       {rows.map((r, i) => i).sort((a, b) => {
                         const da = isDate(rows[a].date), db = isDate(rows[b].date)
                         if (da !== db) return da ? 1 : -1 // undated rows first
@@ -727,11 +727,20 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                         const bad = badAmt || !r.category || !isDate(r.date)
                         const rowOpen = expandedRow === i
                         const dLabel = isDate(r.date) ? new Date(r.date + 'T00:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric' }) : '—'
+                        // No dividers: collapsed rows are separated by their own breathing room,
+                        // and opening one lifts it into a rounded card so the edit fields read as
+                        // one object rather than a band spliced into the list.
                         return (
-                          <div key={i} style={{ borderBottom: '1px solid var(--border)', background: rowOpen ? 'var(--kpi-bg)' : 'transparent' }}>
-                            {/* Hairline list row — no border/rail/card. A muted dot marks rows to fix. */}
+                          <div key={i} style={{
+                            borderRadius: 16,
+                            background: rowOpen ? 'var(--surface-1)' : 'transparent',
+                            border: `1px solid ${rowOpen ? 'var(--border)' : 'transparent'}`,
+                            boxShadow: rowOpen ? '0 8px 24px rgba(20, 20, 25, 0.10)' : 'none',
+                            margin: rowOpen ? '6px 0' : 0,
+                            transition: 'background .18s ease, box-shadow .18s ease',
+                          }}>
                             <button type="button" onClick={() => setExpandedRow(rowOpen ? null : i)} aria-expanded={rowOpen}
-                              style={{ width: '100%', minHeight: 46, display: 'flex', alignItems: 'center', gap: 11, padding: '11px 2px', background: 'transparent', border: 'none', cursor: 'pointer', font: 'inherit', color: 'inherit', textAlign: 'left' }}>
+                              style={{ width: '100%', minHeight: 46, display: 'flex', alignItems: 'center', gap: 11, padding: rowOpen ? '13px 12px' : '13px 2px', background: 'transparent', border: 'none', cursor: 'pointer', font: 'inherit', color: 'inherit', textAlign: 'left' }}>
                               <span aria-hidden style={{ flexShrink: 0, width: 6, height: 6, borderRadius: '50%', background: bad ? 'var(--text-muted)' : 'transparent' }} />
                               <span style={{ flexShrink: 0, width: 44, fontSize: 12, fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>{dLabel}</span>
                               <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500, fontSize: 14.5, color: r.category ? 'var(--text-primary)' : 'var(--text-muted)' }}>
@@ -741,7 +750,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                               <ChevronDown size={15} style={{ flexShrink: 0, color: 'var(--text-muted)', transform: rowOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s ease' }} />
                             </button>
                             {rowOpen && (
-                              <div style={{ padding: '2px 2px 14px', display: 'grid', gap: 8 }}>
+                              <div style={{ padding: '2px 12px 14px', display: 'grid', gap: 8 }}>
                                 <select value={r.category}
                                   onChange={(e) => { const c = cats.find((x) => x.name === e.target.value); updateRow(i, { category: e.target.value, type: c?.type ?? r.type }) }}
                                   style={{ ...cell, height: 40, borderColor: r.category ? 'var(--border)' : 'var(--expense)' }}>
@@ -805,7 +814,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
 
             {/* ---------------- RECURRING ---------------- */}
             {mode === 'recurring' && (
-              <div style={{ display: 'grid', gap: 12 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, flex: 1, minHeight: 0 }}>
                 {recEdit === 'new' ? (
                   /* Add a recurring item (existing items are edited inline in the list) */
                   <div style={{ display: 'grid', gap: 10 }}>
@@ -854,18 +863,18 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                     <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                       <button type="button" onClick={startNewRec} style={{ background: 'transparent', border: 'none', color: 'var(--accent)', fontSize: 13.5, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: 'inherit' }}><Plus size={15} /> New recurring</button>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 14, maxHeight: '46vh', overflowY: 'auto' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 14, flex: '1 1 auto', minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
                       {recGroupsPresent.map((g) => (
                         <div key={g.key}>
                           <span style={{ display: 'inline-block', background: g.soft, color: g.color, padding: '3px 11px', borderRadius: 999, fontSize: 12, fontWeight: 700, marginBottom: 6 }}>{g.label}</span>
-                          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 2 }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 4 }}>
                             {rowsOfGroup(g.key).map((r) => {
                               const on = picked.has(r.id)
                               const toggle = () => setPicked((p) => { const n = new Set(p); n.has(r.id) ? n.delete(r.id) : n.add(r.id); return n })
                               // fields edit in place: name (text), category (select → also sets type), amount (number)
                               const rolled = String(r.id).startsWith('debt:')
                               if (rolled) return (
-                                <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 4px', borderBottom: '1px solid var(--border)' }}>
+                                <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px', borderRadius: 12, background: on ? 'var(--accent-soft)' : 'transparent', transition: 'background .16s ease' }}>
                                   <input type="checkbox" checked={on} onChange={toggle} aria-label={`Select ${r.name}`} style={{ flexShrink: 0 }} />
                                   <div style={{ flex: 1, minWidth: 0 }}>
                                     <div style={{ fontWeight: 600, fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</div>
@@ -884,7 +893,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                                 </div>
                               )
                               return (
-                                <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 4px', borderBottom: '1px solid var(--border)' }}>
+                                <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px', borderRadius: 12, background: on ? 'var(--accent-soft)' : 'transparent', transition: 'background .16s ease' }}>
                                   <input type="checkbox" checked={on} onChange={toggle} aria-label={`Select ${r.name}`} style={{ flexShrink: 0 }} />
                                   <div style={{ flex: 1, minWidth: 0, display: 'grid', gap: 1 }}>
                                     <input value={r.name} aria-label="Name" className="rec-inline"
