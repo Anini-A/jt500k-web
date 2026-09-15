@@ -1,4 +1,7 @@
 :root {
+  /* set from JS (ViewportFix) to window.visualViewport.height — always correct, unlike
+     vh/dvh which can get stuck at the keyboard-shrunk size in an iOS standalone PWA */
+  --vvh: 100dvh;
   --surface-1: #fcfcfb;
   --page-plane: #f9f9f7;
   --text-primary: #0b0b0b;
@@ -911,6 +914,9 @@ header.top h1 {
 .modal-backdrop {
   position: fixed;
   inset: 0;
+  /* explicit height wins over the inset-derived bottom — pins this to the real, JS-measured
+     viewport instead of a vh/dvh value that can get stuck short after the keyboard closes */
+  height: var(--vvh);
   z-index: 200;
   background: rgba(10, 10, 10, 0.45);
   -webkit-backdrop-filter: blur(4px);
