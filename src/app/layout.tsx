@@ -5,7 +5,6 @@ import BottomNav from '@/components/BottomNav'
 import PullToRefresh from '@/components/PullToRefresh'
 import AddTransactionButton from '@/components/AddTransactionButton'
 import CapacitorInit from '@/components/CapacitorInit'
-import ViewportFix from '@/components/ViewportFix'
 import './globals.css'
 
 // Close free match to Wealthsimple's brand sans — warm geometric grotesque.
@@ -42,7 +41,6 @@ export default function RootLayout({
   return (
     <html lang="en" className={hanken.variable}>
       <body>
-        <ViewportFix />
         <PullToRefresh />
         {children}
         {/* headless — receives app-wide open events (Home 'to log' card, long-press Settings) */}

@@ -561,7 +561,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
 
       {open && createPortal(
         <div className="modal-backdrop" onClick={close}>
-          <div className="modal-card glass" style={{ width: 'min(820px, 100%)' }} onClick={(e) => e.stopPropagation()}>
+          <div className="modal-card modal-tall glass" style={{ width: 'min(820px, 100%)' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ marginBottom: 14 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                 <h2 style={{ margin: 0, fontSize: 18, display: 'flex', alignItems: 'center', gap: 8 }}><Plus size={18} /> Add Transaction</h2>
@@ -678,7 +678,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
 
             {/* ---------------- IMPORT — two-step flow: Add → Review ---------------- */}
             {mode === 'batch' && (
-              <div style={{ display: 'grid', gap: 12 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, flex: 1, minHeight: 0 }}>
                 {/* Card breakdown — only at the top when nothing has been parsed yet. Tapping a
                     card with a pending draft opens straight into that draft; otherwise it opens
                     the paste/screenshot intake inline, inside that card's tile. */}
@@ -715,7 +715,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
 
                     {/* newest transaction date first; bad/undated rows float to the top so they get fixed.
                         We sort a copy of the indices so updateRow/delete/expand still address the true row. */}
-                    <div style={{ maxHeight: 'min(56vh, 564px)', overflowY: 'auto', WebkitOverflowScrolling: 'touch', borderTop: '1px solid var(--border)' }}>
+                    <div style={{ flex: '1 1 auto', minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', borderTop: '1px solid var(--border)' }}>
                       {rows.map((r, i) => i).sort((a, b) => {
                         const da = isDate(rows[a].date), db = isDate(rows[b].date)
                         if (da !== db) return da ? 1 : -1 // undated rows first

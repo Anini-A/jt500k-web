@@ -27,12 +27,7 @@ export default function CapacitorInit() {
         // native app does. No effect in Safari or the home-screen PWA.
         const { Keyboard, KeyboardResize } = await import('@capacitor/keyboard')
         await Keyboard.setAccessoryBarVisible({ isVisible: false }).catch(() => {})
-        // 'Native' resizes the WKWebView's own frame to the space above the keyboard —
-        // but on dismiss it doesn't reliably restore the frame to full height, leaving a
-        // blank gap at the bottom of every sheet (matching the page's own background)
-        // until something else forces a reflow. 'Body' resizes the CSS body element
-        // instead, which restores correctly and is what our dvh-based layout expects.
-        await Keyboard.setResizeMode({ mode: KeyboardResize.Body }).catch(() => {})
+        await Keyboard.setResizeMode({ mode: KeyboardResize.Native }).catch(() => {})
         await Keyboard.setScroll({ isDisabled: true }).catch(() => {}) // the sheet handles its own sizing
       } catch { /* keyboard plugin unavailable */ }
       try {

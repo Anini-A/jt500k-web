@@ -1,9 +1,10 @@
 :root {
-  /* set from JS (ViewportFix) to window.visualViewport.height — always correct, unlike
-     vh/dvh which can get stuck at the keyboard-shrunk size in an iOS standalone PWA */
-  --vvh: 100dvh;
   --surface-1: #fcfcfb;
   --page-plane: #f9f9f7;
+  /* What a sheet actually composites to on screen: the glass shell over the dimmed
+     backdrop over the page plane. useLockScroll paints the canvas this colour while a
+     sheet is open — see the note there. */
+  --sheet-plane: #e9e9e7;
   --text-primary: #0b0b0b;
   --text-secondary: #52514e;
   --text-muted: #898781;
@@ -35,6 +36,7 @@
   :root {
     --surface-1: #1a1a19;
     --page-plane: #0d0d0d;
+    --sheet-plane: #181817;
     --text-primary: #ffffff;
     --text-secondary: #cbcabf;
     --text-muted: #9b998f;
@@ -914,9 +916,6 @@ header.top h1 {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  /* explicit height wins over the inset-derived bottom — pins this to the real, JS-measured
-     viewport instead of a vh/dvh value that can get stuck short after the keyboard closes */
-  height: var(--vvh);
   z-index: 200;
   background: rgba(10, 10, 10, 0.45);
   -webkit-backdrop-filter: blur(4px);
@@ -937,6 +936,13 @@ header.top h1 {
   overflow-y: auto;
   animation: modalIn 0.24s cubic-bezier(0.2, 0.9, 0.3, 1);
 }
+/* Only a "tall" sheet (one whose content is meant to fill/scroll within it, like Import)
+   needs to be a flex column so a scrollable child can claim the remaining height and pin
+   action buttons below it. This used to be mobile-only; making it unconditional here also
+   fixes the same "whole card scrolls as one block" issue on desktop. A plain .modal-card
+   (Settings, Alerts short lists) stays ordinary block flow on every viewport — giving it
+   flex column too was a regression that changed how those sheets size themselves. */
+.modal-card.modal-tall { display: flex; flex-direction: column; }
 /* liquid-glass: specular top highlight + inner light rim on the modal shell */
 .modal-card.glass { background-color: var(--glass-bg-strong); box-shadow: var(--glass-shadow), var(--glass-sheen), var(--glass-rim); }
 .modal-card.glass::before {
@@ -956,6 +962,8 @@ header.top h1 {
     animation: sheetIn 0.3s cubic-bezier(0.2, 0.9, 0.3, 1);
   }
   .modal-card.glass::before { border-radius: 22px 22px 0 0; }
+  /* a "tall" sheet fills to the top (like Settings) even when its content is short */
+  .modal-card.modal-tall { height: calc(92dvh - 38px); display: flex; flex-direction: column; }
   /* grab handle at the top of the sheet */
   .modal-card::after {
     content: ''; position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
