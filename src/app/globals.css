@@ -419,8 +419,8 @@ a:hover {
   z-index: -1;
   pointer-events: none;
   background:
-    /* top fades from the status-bar white into the aurora — no seam under the white status bar */
-    linear-gradient(to bottom, #f9f9f7 0, #f9f9f7 calc(env(safe-area-inset-top, 0px) + 6px), rgba(249, 249, 247, 0) calc(env(safe-area-inset-top, 0px) + 120px)),
+    /* the aurora runs edge to edge, under the status bar too — the tints up there stay
+       light enough that the dark status-bar glyphs still read cleanly against them */
     radial-gradient(640px circle at 12% 22%, rgba(42, 120, 214, 0.24), transparent 60%),
     radial-gradient(560px circle at 88% 16%, rgba(235, 104, 52, 0.22), transparent 58%),
     radial-gradient(620px circle at 18% 88%, rgba(27, 175, 122, 0.18), transparent 60%),
@@ -434,7 +434,6 @@ a:hover {
 @media (prefers-color-scheme: dark) {
   .bg-aurora::before {
     background:
-      linear-gradient(to bottom, #0d0d0d 0, #0d0d0d calc(env(safe-area-inset-top, 0px) + 6px), rgba(13, 13, 13, 0) calc(env(safe-area-inset-top, 0px) + 120px)),
       radial-gradient(680px circle at 12% 20%, rgba(57, 135, 229, 0.30), transparent 60%),
       radial-gradient(600px circle at 88% 14%, rgba(217, 89, 38, 0.22), transparent 58%),
       radial-gradient(640px circle at 16% 90%, rgba(25, 158, 112, 0.22), transparent 60%),
