@@ -1390,6 +1390,28 @@ header.top h1 {
   color: #fff;
 }
 
+/* The affirmative twin of .modal-x — same 34px tinted ring, in the accent. For an "add"
+   action sitting in a sheet's toolbar. */
+.modal-add {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  cursor: pointer;
+  line-height: 1;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.modal-add:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
 /* Stat grid */
 .stat-grid {
   display: grid;
