@@ -27,15 +27,6 @@ export function useLockScroll(active: boolean) {
       style.right = '0'
       style.width = '100%'
       style.overflow = 'hidden'
-      // In the installed iOS PWA (standalone + black-translucent), the layout viewport's
-      // bottom edge sits above the real screen bottom, so nothing anchored at bottom:0 —
-      // the backdrop included — reaches that last strip. What shows there is the canvas
-      // background, which body paints --page-plane, so a near-white band appears under
-      // every sheet. The root element's background is the one thing propagated across the
-      // whole canvas, so painting it the sheet's own colour makes the strip continuous
-      // with the sheet above it. Body keeps painting --page-plane over its own box, so the
-      // page behind is unchanged.
-      document.documentElement.style.backgroundColor = 'var(--sheet-plane)'
     }
     depth += 1
     return () => {
@@ -48,7 +39,6 @@ export function useLockScroll(active: boolean) {
       style.right = ''
       style.width = ''
       style.overflow = ''
-      document.documentElement.style.backgroundColor = ''
       window.scrollTo(0, savedY)
     }
   }, [active])

@@ -1,10 +1,6 @@
 :root {
   --surface-1: #fcfcfb;
   --page-plane: #f9f9f7;
-  /* What a sheet actually composites to on screen: the glass shell over the dimmed
-     backdrop over the page plane. useLockScroll paints the canvas this colour while a
-     sheet is open — see the note there. */
-  --sheet-plane: #e9e9e7;
   --text-primary: #0b0b0b;
   --text-secondary: #52514e;
   --text-muted: #898781;
@@ -36,7 +32,6 @@
   :root {
     --surface-1: #1a1a19;
     --page-plane: #0d0d0d;
-    --sheet-plane: #181817;
     --text-primary: #ffffff;
     --text-secondary: #cbcabf;
     --text-muted: #9b998f;
@@ -943,7 +938,12 @@ header.top h1 {
    flex column too was a regression that changed how those sheets size themselves. */
 .modal-card.modal-tall { display: flex; flex-direction: column; }
 /* liquid-glass: specular top highlight + inner light rim on the modal shell */
-.modal-card.glass { background-color: var(--glass-bg-strong); box-shadow: var(--glass-shadow), var(--glass-sheen), var(--glass-rim); }
+/* A sheet sits on the site's own plane rather than a translucent grey. Two reasons:
+   cards inside it (--surface-1) then read against exactly the background they do on the
+   page, and — because body paints the canvas this same colour — the strip below the
+   layout viewport in the installed iOS PWA is already the sheet's colour, so no white
+   band can appear under it. The specular sheen and rim still carry the glass look. */
+.modal-card.glass { background-color: var(--page-plane); box-shadow: var(--glass-shadow), var(--glass-sheen), var(--glass-rim); }
 .modal-card.glass::before {
   content: ''; position: absolute; top: 0; left: 0; right: 0; height: 120px;
   border-radius: 22px 22px 0 0; background: var(--glass-specular); opacity: 0.7; pointer-events: none;
