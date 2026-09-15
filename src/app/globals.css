@@ -944,6 +944,28 @@ header.top h1 {
    layout viewport in the installed iOS PWA is already the sheet's colour, so no white
    band can appear under it. The specular sheen and rim still carry the glass look. */
 .modal-card.glass { background-color: var(--page-plane); box-shadow: var(--glass-shadow), var(--glass-sheen), var(--glass-rim); }
+/* …and carries the aurora's own top tints, so a sheet reads as the site's surface rather
+   than a flat panel. Only the TOP two radials, at softer alpha than the page (content in
+   here is dense) and sized to die out well above the sheet's bottom edge — that edge has
+   to stay pure --page-plane, because it's what meets the canvas in the strip below the
+   layout viewport. Put the bottom radials back and the white band returns as a colour
+   mismatch down there. */
+.modal-card.glass {
+  background-image:
+    var(--glass-specular),
+    radial-gradient(640px circle at 12% 18%, rgba(42, 120, 214, 0.16), transparent 60%),
+    radial-gradient(560px circle at 88% 12%, rgba(235, 104, 52, 0.14), transparent 58%);
+  background-repeat: no-repeat;
+  background-size: 100% 96px, auto, auto;
+}
+@media (prefers-color-scheme: dark) {
+  .modal-card.glass {
+    background-image:
+      var(--glass-specular),
+      radial-gradient(680px circle at 12% 16%, rgba(57, 135, 229, 0.20), transparent 60%),
+      radial-gradient(600px circle at 88% 10%, rgba(217, 89, 38, 0.15), transparent 58%);
+  }
+}
 .modal-card.glass::before {
   content: ''; position: absolute; top: 0; left: 0; right: 0; height: 120px;
   border-radius: 22px 22px 0 0; background: var(--glass-specular); opacity: 0.7; pointer-events: none;
