@@ -127,6 +127,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   const visibleRecs = recs.filter((r) => !debtPaidOff(r.debt_name))
   const retiredCount = recs.length - visibleRecs.length
   const [recDate, setRecDate] = useState(today())
+  const [confirmLog, setConfirmLog] = useState(false) // Recurring: review the picked items before they're logged
   const [recEdit, setRecEdit] = useState<null | 'new' | string>(null) // manage recurring items
   const [recForm, setRecForm] = useState({ name: '', type: 'expense', category: '', amount: '', description: '', debt_name: '' })
 
@@ -163,7 +164,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   const close = () => {
     setOpen(false); setMode('single'); setRaw(''); setRows([]); setImages([])
     setDraftId(null); setAddOpen(true); setExpandedRow(null); setExpandedCard(null); setImportErr(''); setSaved(null); setSingleErr('')
-    setRecEdit(null); setRecErr('')
+    setRecEdit(null); setRecErr(''); setConfirmLog(false)
     setForm({ date: today(), type: 'expense', category: '', amount: '', description: '' })
   }
 
@@ -171,7 +172,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   const resetAll = () => {
     setForm({ date: today(), type: 'expense', category: '', amount: '', description: '' })
     setRaw(''); setRows([]); setImages([]); setDraftId(null); setAddOpen(true); setImportErr(''); setManageCardsOpen(false)
-    setPicked(new Set()); setRecEdit(null); setRecDate(today())
+    setPicked(new Set()); setRecEdit(null); setRecDate(today()); setConfirmLog(false)
     setRecForm({ name: '', type: 'expense', category: '', amount: '', description: '', debt_name: '' })
   }
 
@@ -859,8 +860,12 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                   </div>
                 ) : (
                   <>
-                    {/* New recurring item — items are edited live via the pencil on each row */}
-                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    {/* The date these get logged under pairs with "New recurring" up here, which
+                        leaves the whole bottom row to the action button. Items are edited live
+                        via the fields on each row. */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                      <input type="date" value={recDate} onChange={(e) => setRecDate(e.target.value)} aria-label="Log for date"
+                        style={{ flexShrink: 0, height: 34, padding: '0 14px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface-1)', color: 'var(--text-primary)', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', WebkitAppearance: 'none', appearance: 'none', outline: 'none' }} />
                       <button type="button" onClick={startNewRec} style={{ background: 'transparent', border: 'none', color: 'var(--accent)', fontSize: 13.5, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: 'inherit' }}><Plus size={15} /> New recurring</button>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 14, flex: '1 1 auto', minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
@@ -947,22 +952,55 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                       </div>
                     )}
                     {recErr && <div style={{ fontSize: 13, color: 'var(--expense)', fontWeight: 600 }}>{recErr}</div>}
-                    {/* Log for [date] sits beside the action button */}
-                    <div style={{ display: 'flex', gap: 10, alignItems: 'stretch' }}>
-                      <input type="date" value={recDate} onChange={(e) => setRecDate(e.target.value)} aria-label="Log for date" style={{ ...inp, flexShrink: 0, width: 'auto', height: 46 }} />
-                      <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center', height: 46 }} disabled={saving || pickedRows.length === 0} onClick={logRecurring}>
-                        {saving ? 'Logging…'
-                          : picked.size === 0 ? 'Select items to log'
-                          : pickedRows.length === 0 ? 'Enter an amount'
-                          : `Log ${pickedRows.length} item${pickedRows.length !== 1 ? 's' : ''} · ${money(pickedTotal)}`}
-                      </button>
-                    </div>
+                    {/* Full width now that the date moved up top. Opens the review step rather
+                        than logging straight away — these post real transactions. */}
+                    <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', height: 46 }} disabled={saving || pickedRows.length === 0} onClick={() => setConfirmLog(true)}>
+                      {saving ? 'Logging…'
+                        : picked.size === 0 ? 'Select items to log'
+                        : pickedRows.length === 0 ? 'Enter an amount'
+                        : `Log ${pickedRows.length} item${pickedRows.length !== 1 ? 's' : ''} · ${money(pickedTotal)}`}
+                    </button>
                   </>
                 )}
               </div>
             )}
 
             {confirmNode}
+            {/* Recurring: review exactly what's about to be posted, and under which date,
+                before it becomes real transactions. */}
+            {confirmLog && (
+              <div onClick={() => setConfirmLog(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', borderRadius: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, zIndex: 10 }}>
+                <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: 18, padding: 18, width: '100%', maxWidth: 380, maxHeight: '100%', display: 'flex', flexDirection: 'column', gap: 12, boxShadow: '0 12px 34px rgba(0,0,0,0.35)' }}>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 16 }}>Log {pickedRows.length} item{pickedRows.length !== 1 ? 's' : ''}?</div>
+                    <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
+                      Dated {isDate(recDate) ? new Date(recDate + 'T12:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' }) : recDate}
+                    </div>
+                  </div>
+                  <div style={{ flex: '1 1 auto', minHeight: 0, overflowY: 'auto', display: 'grid', gap: 6 }}>
+                    {pickedRows.map((r) => (
+                      <div key={r.id} style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '9px 11px', borderRadius: 12, background: 'var(--kpi-bg)' }}>
+                        <span style={{ flex: 1, minWidth: 0, fontWeight: 600, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {r.name}
+                          <span style={{ display: 'block', fontSize: 12, fontWeight: 400, color: 'var(--text-muted)' }}>{r.category}</span>
+                        </span>
+                        <span style={{ flexShrink: 0, fontWeight: 700, fontSize: 14, fontVariantNumeric: 'tabular-nums' }}>{money(recAmount(r))}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', paddingTop: 2 }}>
+                    <span className="stat-label">Total</span>
+                    <span style={{ fontWeight: 800, fontSize: 17, fontVariantNumeric: 'tabular-nums' }}>{money(pickedTotal)}</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button type="button" className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }} disabled={saving} onClick={() => setConfirmLog(false)}>Cancel</button>
+                    <button type="button" className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} disabled={saving} onClick={() => { setConfirmLog(false); logRecurring() }}>
+                      {saving ? 'Logging…' : 'Confirm'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
             {/* inline confirm (replaces window.confirm) */}
             {confirmDel && (
               <div onClick={() => setConfirmDel(null)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', borderRadius: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, zIndex: 10 }}>
