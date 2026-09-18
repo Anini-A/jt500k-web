@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { fetchAllRows } from '@/lib/fetchAll'
 
 export const dynamic = 'force-dynamic'
 export const fetchCache = 'force-no-store'
@@ -7,11 +8,12 @@ export const revalidate = 0
 
 // Returns a summary for the most recent month that has data.
 export async function GET() {
-  const { data, error } = await supabaseAdmin
-    .from('transactions')
-    .select('type, amount, date, category')
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  let data: any[]
+  try {
+    data = await fetchAllRows('transactions', 'type, amount, date, category')
+  } catch (e) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 500 })
+  }
 
   const txns = data ?? []
   if (txns.length === 0) return NextResponse.json({ empty: true })

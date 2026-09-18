@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { fetchAllRows } from '@/lib/fetchAll'
 
 export const dynamic = 'force-dynamic'
 export const fetchCache = 'force-no-store'
@@ -25,7 +26,7 @@ export async function GET(req: NextRequest) {
   const noStore = { headers: { 'Cache-Control': 'no-store, max-age=0' } }
   if (!withCounts) return NextResponse.json(cats, noStore)
 
-  const { data: txns } = await supabaseAdmin.from('transactions').select('category, amount')
+  const txns = await fetchAllRows<any>('transactions', 'category, amount')
   const count = new Map<string, number>()
   const total = new Map<string, number>()
   for (const t of txns ?? []) {

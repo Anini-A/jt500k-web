@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { fetchAllRows } from '@/lib/fetchAll'
 import { projectCycle } from '@/lib/billRunway'
 
 export const dynamic = 'force-dynamic'
@@ -114,9 +115,7 @@ function parseGemini(data: any) {
 
 // Build a compact financial context so the assistant can answer accurately.
 async function buildContext(clientDate?: string) {
-  const { data } = await supabaseAdmin
-    .from('transactions')
-    .select('id, type, amount, date, category, description')
+  const data = await fetchAllRows<any>('transactions', 'id, type, amount, date, category, description')
 
   const txns = data ?? []
   // keep cents when a value has them (e.g. $1,000.56), clean whole dollars otherwise
@@ -141,7 +140,7 @@ async function buildContext(clientDate?: string) {
   const holdingsValue = (holds ?? []).reduce((s, h) => s + Number(h.market_value_cad), 0)
   const cashValue = (manual ?? []).reduce((s, a) => s + Number(a.value_cad), 0)
   const { data: debts } = await supabaseAdmin.from('debts').select('id, name, amount')
-  const { data: pays } = await supabaseAdmin.from('transactions').select('date, description, amount').eq('category', 'Debt Repayment')
+  const pays = await fetchAllRows<any>('transactions', 'date, description, amount', (q) => q.eq('category', 'Debt Repayment'))
   const paidByName = new Map<string, number>()
   for (const p of pays ?? []) paidByName.set(norm(p.description), (paidByName.get(norm(p.description)) || 0) + Number(p.amount))
   const payList = [...(pays ?? [])].sort((a, b) => (a.date < b.date ? 1 : -1))

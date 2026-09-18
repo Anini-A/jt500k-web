@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { fetchAllRows } from '@/lib/fetchAll'
 import { projectCycle } from '@/lib/billRunway'
 import { ymd } from '@/lib/date'
 
@@ -24,7 +25,7 @@ interface Notif { id: string; icon: string; title: string; detail: string; sever
 // GET /api/notifications — recurring reminders, category trends, over-budget alerts.
 export async function GET() {
   const [{ data: txAll }, { data: budgetLines }, { data: cats }, { data: prof }, billsRes, billSetRes, dismRes, catBudgetRes, debtRes] = await Promise.all([
-    supabaseAdmin.from('transactions').select('type, amount, date, category, description'),
+    fetchAllRows<any>('transactions', 'type, amount, date, category, description').then((data) => ({ data })),
     supabaseAdmin.from('budgets').select('name, category, amount, debt_name'),
     supabaseAdmin.from('categories').select('name, type'),
     supabaseAdmin.from('household_profile').select('data').order('updated_at', { ascending: false }).limit(1).maybeSingle(),

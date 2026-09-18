@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { fetchAllRows } from '@/lib/fetchAll'
 import { indexMonthlyReturns, reconstructHistory, type MonthlyFlow } from '@/lib/backfill'
 
 export const dynamic = 'force-dynamic'
@@ -34,7 +35,7 @@ export async function GET() {
 
   // debts remaining = amount − payments (category 'Debt Repayment', desc matches debt name)
   const { data: debts } = await supabaseAdmin.from('debts').select('name, amount')
-  const { data: pays } = await supabaseAdmin.from('transactions').select('description, amount').eq('category', 'Debt Repayment')
+  const pays = await fetchAllRows<any>('transactions', 'description, amount', (q) => q.eq('category', 'Debt Repayment'))
   const paidByName = new Map<string, number>()
   for (const p of pays ?? []) paidByName.set(norm(p.description), (paidByName.get(norm(p.description)) || 0) + Number(p.amount))
   const debtsRemaining = (debts ?? []).reduce((s, d) => s + Math.max(0, Number(d.amount) - (paidByName.get(norm(d.name)) || 0)), 0)
@@ -60,7 +61,7 @@ export async function GET() {
   let estimated: { month: string; net: number; est: true }[] = []
   try {
     if (snaps && snaps.length) {
-      const { data: txns } = await supabaseAdmin.from('transactions').select('type, amount, date, category')
+      const txns = await fetchAllRows<any>('transactions', 'type, amount, date, category')
       const rows = txns ?? []
       if (rows.length) {
         const flows = new Map<string, MonthlyFlow>()

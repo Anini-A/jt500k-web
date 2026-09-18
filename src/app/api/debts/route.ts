@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { fetchAllRows } from '@/lib/fetchAll'
 
 export const dynamic = 'force-dynamic'
 export const fetchCache = 'force-no-store'
@@ -21,10 +22,8 @@ export async function GET() {
     .from('debts').select('*').order('created_at')
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  const { data: payments } = await supabaseAdmin
-    .from('transactions')
-    .select('id, description, amount, date, type')
-    .eq('category', 'Debt Repayment')
+  const payments = await fetchAllRows<any>('transactions', 'id, description, amount, date, type', (q) =>
+    q.eq('category', 'Debt Repayment'))
 
   interface PayItem { id: string; date: string; amount: number; type: string; description: string | null }
   const byDesc = new Map<string, { paid: number; count: number; last: string; items: PayItem[] }>()

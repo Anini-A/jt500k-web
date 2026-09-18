@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { fetchAllRows } from '@/lib/fetchAll'
 
 export const dynamic = 'force-dynamic'
 export const fetchCache = 'force-no-store'
@@ -29,7 +30,7 @@ export async function GET(req: NextRequest) {
   const { data: cats } = await supabaseAdmin.from('categories').select('name, type')
   const typeByCat = new Map((cats ?? []).map((c) => [c.name, c.type]))
 
-  const { data: allTx } = await supabaseAdmin.from('transactions').select('date, category, amount, description')
+  const allTx = await fetchAllRows<any>('transactions', 'date, category, amount, description')
   const tx = allTx ?? []
   // tracking month = requested ?month=YYYY-MM, else the CURRENT calendar month
   // (not the latest month in data — future-dated entries must not hijack it)
