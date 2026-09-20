@@ -131,6 +131,11 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   const [recDate, setRecDate] = useState(today())
   const [confirmLog, setConfirmLog] = useState(false) // Recurring: review the picked items before they're logged
   const [recEdit, setRecEdit] = useState<null | 'new' | string>(null) // manage recurring items
+  // Collapsed recurring groups (by key). The list runs long once every regular is in it,
+  // so each pill folds its own section away; selections inside a folded group are kept
+  // and surfaced on the pill, never silently logged out of sight.
+  const [recFold, setRecFold] = useState<Set<string>>(new Set())
+  const toggleFold = (k: string) => setRecFold((p) => { const n = new Set(p); n.has(k) ? n.delete(k) : n.add(k); return n })
   const [recForm, setRecForm] = useState({ name: '', type: 'expense', category: '', amount: '', description: '', debt_name: '' })
 
   // Refresh on every open, not just when empty: a single failed fetch used to leave the
@@ -875,11 +880,22 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                         style={{ flexShrink: 0, height: 34, padding: '0 14px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface-1)', color: 'var(--text-primary)', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', WebkitAppearance: 'none', appearance: 'none', outline: 'none' }} />
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 14, flex: '1 1 auto', minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
-                      {recGroupsPresent.map((g) => (
+                      {recGroupsPresent.map((g) => {
+                        const groupRows = rowsOfGroup(g.key)
+                        const folded = recFold.has(g.key)
+                        const pickedHere = groupRows.filter((r) => picked.has(r.id)).length
+                        return (
                         <div key={g.key}>
-                          <span style={{ display: 'inline-block', background: g.soft, color: g.color, padding: '3px 11px', borderRadius: 999, fontSize: 12, fontWeight: 700, marginBottom: 6 }}>{g.label}</span>
-                          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 4 }}>
-                            {rowsOfGroup(g.key).map((r) => {
+                          <button type="button" onClick={() => toggleFold(g.key)} aria-expanded={!folded}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: g.soft, color: g.color, padding: '3px 9px 3px 11px', borderRadius: 999, fontSize: 12, fontWeight: 700, marginBottom: 6, border: 'none', fontFamily: 'inherit', cursor: 'pointer' }}>
+                            {g.label}
+                            <span style={{ opacity: 0.75, fontWeight: 600 }}>{pickedHere > 0 ? `${pickedHere}/${groupRows.length}` : groupRows.length}</span>
+                            <ChevronDown size={13} style={{ transform: folded ? 'rotate(-90deg)' : 'none', transition: 'transform .18s ease' }} />
+                          </button>
+                          {/* display, not `hidden`: an inline display:grid would override the
+                              hidden attribute. Rows stay mounted so in-progress edits survive a fold. */}
+                          <div style={{ display: folded ? 'none' : 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 4 }}>
+                            {groupRows.map((r) => {
                               const on = picked.has(r.id)
                               const toggle = () => setPicked((p) => { const n = new Set(p); n.has(r.id) ? n.delete(r.id) : n.add(r.id); return n })
                               // fields edit in place: name (text), category (select → also sets type), amount (number)
@@ -950,7 +966,8 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                             })}
                           </div>
                         </div>
-                      ))}
+                        )
+                      })}
                     </div>
                     {retiredCount > 0 && (
                       <div style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>
