@@ -8,6 +8,7 @@ import CategorySelect from './CategorySelect'
 import IconPill from './IconPill'
 import { useConfirm } from './Feedback'
 import { getJSON, cachedValue } from '@/lib/fresh'
+import { useCssSupports } from '@/lib/useCssSupports'
 import { signedRowAmount } from '@/lib/draftTotals'
 import { ymd, today } from '@/lib/date'
 
@@ -135,6 +136,15 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   // so each pill folds its own section away; selections inside a folded group are kept
   // and surfaced on the pill, never silently logged out of sight.
   const [recFold, setRecFold] = useState<Set<string>>(new Set())
+  // Safari 27+ sizes these inputs to their content natively; below that we keep
+  // measuring the value ourselves (see amountWidth).
+  const autoSize = useCssSupports('field-sizing', 'content')
+  // The field is sized in ch PLUS 22px: box-sizing is border-box, so the width has to
+  // cover recInline's padding and border, and a ch measures the "0" glyph — without the
+  // slack the last digit is cut. Where field-sizing works, we set no width at all and
+  // let the browser do it properly; an inline width would otherwise win over the CSS.
+  const amountWidth = (v: string | number): React.CSSProperties =>
+    autoSize ? {} : { width: `calc(${Math.max(4, String(v).length)}ch + 22px)` }
   const toggleFold = (k: string) => setRecFold((p) => { const n = new Set(p); n.has(k) ? n.delete(k) : n.add(k); return n })
   const [recForm, setRecForm] = useState({ name: '', type: 'expense', category: '', amount: '', description: '', debt_name: '' })
 
@@ -552,7 +562,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
     { key: 'income', label: 'Income', color: 'var(--income)', soft: 'var(--income-soft)' },
     { key: 'spending', label: 'Spending', color: 'var(--savings)', soft: 'var(--savings-soft)' },
     { key: 'saving', label: 'Saving', color: 'var(--savings)', soft: 'var(--savings-soft)' },
-    { key: 'debt', label: 'Debt', color: '#c2892f', soft: 'rgba(224,161,43,0.16)' },
+    { key: 'debt', label: 'Debt', color: 'var(--warning)', soft: 'var(--warning-soft)' },
   ]
   const recGroupsPresent = REC_GROUPS.filter((g) => rowsOfGroup(g.key).length > 0)
   const allRows = REC_GROUPS.flatMap((g) => rowsOfGroup(g.key))
@@ -911,10 +921,10 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                                   </div>
                                   <div style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1, width: 104 }}>
                                     <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-muted)', flexShrink: 0 }}>$</span>
-                                    <input inputMode="decimal" value={recOver[r.id]?.amount ?? String(r.amount)} aria-label="Amount" className="rec-inline"
+                                    <input inputMode="decimal" value={recOver[r.id]?.amount ?? String(r.amount)} aria-label="Amount" className="rec-inline field-sized"
                                       onChange={(e) => setOver(r.id, { amount: e.target.value.replace(/[^0-9.]/g, '') })}
                                       onBlur={(e) => { if (!(parseFloat(e.target.value) > 0)) setRecOver((p) => { const n = { ...p }; delete n[r.id]?.amount; if (n[r.id] && !n[r.id].amount && !n[r.id].description) delete n[r.id]; return { ...n } }) }}
-                                      style={{ ...recInline, width: `calc(${Math.max(4, String(recOver[r.id]?.amount ?? r.amount).length)}ch + 22px)`, minWidth: 0, maxWidth: 96, textAlign: 'right', fontWeight: 700, fontSize: 15, fontVariantNumeric: 'tabular-nums' }} />
+                                      style={{ ...recInline, ...amountWidth(recOver[r.id]?.amount ?? r.amount), minWidth: 0, maxWidth: 96, textAlign: 'right', fontWeight: 700, fontSize: 15, fontVariantNumeric: 'tabular-nums' }} />
                                   </div>
                                   <span style={{ width: 25, flexShrink: 0 }} />
                                 </div>
@@ -947,17 +957,14 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                                   </div>
                                   {/* The $ hugs the number rather than anchoring the far side of the
                                       column, where it read as belonging to nothing; the column keeps
-                                      its width so amounts still line up on the right.
-                                      The field is sized in ch PLUS 22px: box-sizing is border-box, so
-                                      the width has to cover recInline's padding and border, and a ch
-                                      measures the "0" glyph — without the slack the last digit is cut. */}
+                                      its width so amounts still line up on the right. */}
                                   <div style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1, width: 104 }}>
                                     <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-muted)', flexShrink: 0 }}>$</span>
-                                    <input inputMode="decimal" value={recOver[r.id]?.amount ?? String(r.amount)} aria-label="Amount" className="rec-inline"
+                                    <input inputMode="decimal" value={recOver[r.id]?.amount ?? String(r.amount)} aria-label="Amount" className="rec-inline field-sized"
                                       size={1}
                                       onChange={(e) => setOver(r.id, { amount: e.target.value.replace(/[^0-9.]/g, '') })}
                                       onBlur={(e) => { if (!(parseFloat(e.target.value) > 0)) setRecOver((p) => { const n = { ...p }; delete n[r.id]?.amount; if (n[r.id] && !n[r.id].amount && !n[r.id].description) delete n[r.id]; return { ...n } }) }}
-                                      style={{ ...recInline, width: `calc(${Math.max(4, String(recOver[r.id]?.amount ?? r.amount).length)}ch + 22px)`, minWidth: 0, maxWidth: 96, textAlign: 'right', fontWeight: 700, fontSize: 15, fontVariantNumeric: 'tabular-nums' }} />
+                                      style={{ ...recInline, ...amountWidth(recOver[r.id]?.amount ?? r.amount), minWidth: 0, maxWidth: 96, textAlign: 'right', fontWeight: 700, fontSize: 15, fontVariantNumeric: 'tabular-nums' }} />
                                   </div>
                                   <button type="button" aria-label={`Delete ${r.name}`} title="Delete" onClick={() => setConfirmDel({ kind: 'rec', id: r.id, name: r.name })}
                                     style={{ flexShrink: 0, display: 'inline-flex', padding: 5, borderRadius: 8, border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}><Trash2 size={15} /></button>
