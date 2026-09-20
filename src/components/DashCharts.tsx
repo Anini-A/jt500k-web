@@ -5,12 +5,16 @@ import {
   XAxis, YAxis, Tooltip, CartesianGrid, Legend,
 } from 'recharts'
 
+// The lane colours, as tokens so the charts follow dark mode. These are passed straight
+// to SVG attributes (stroke, fill, stopColor) with opacity kept separate, so var() is
+// safe here — never append an alpha suffix to one of these strings.
 export const COLORS = {
-  income: '#1baf7a',
-  expense: '#eb6834',
-  savings: '#6366f1',
+  income: 'var(--income)',
+  expense: 'var(--expense)',
+  savings: 'var(--savings)',
 }
-// categorical palette for accounts / breakdowns
+// Categorical palette for accounts / breakdowns. Still literal: half of these have no
+// token and no dark-mode value. Worth revisiting as a proper chart ramp.
 export const PALETTE = ['#2a78d6', '#1baf7a', '#eb6834', '#8a5cf6', '#e0a12b', '#d9488a', '#2bb3b3', '#7a869a']
 
 const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })

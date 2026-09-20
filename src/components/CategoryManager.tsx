@@ -10,6 +10,8 @@ interface Cat { id: string; name: string; type: string; color: string | null; co
 
 const TYPES = ['income', 'expense', 'savings'] as const
 const TYPE_NAME: Record<string, string> = { income: 'Income', expense: 'Expense', savings: 'Savings' }
+// Literal hexes on purpose: these are WRITTEN TO the categories.color column, so they
+// have to be real values a database row can hold — a var() reference would not resolve.
 const DEFAULT_COLOR: Record<string, string> = { income: '#1baf7a', expense: '#eb6834', savings: '#6366f1' }
 const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })
 

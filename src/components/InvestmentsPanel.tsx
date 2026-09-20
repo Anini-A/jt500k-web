@@ -24,7 +24,7 @@ const OWNER_COLOR: Record<string, { fg: string; bg: string }> = {
   Jean: { fg: 'var(--accent)', bg: 'var(--accent-soft)' },
   Henriette: { fg: 'var(--savings)', bg: 'var(--savings-soft)' },
   Noah: { fg: 'var(--income)', bg: 'var(--income-soft)' },
-  Joint: { fg: '#b7791f', bg: 'rgba(224,161,43,0.16)' },
+  Joint: { fg: 'var(--warning)', bg: 'var(--warning-soft)' },
 }
 function OwnerPill({ owner }: { owner: string }) {
   const c = OWNER_COLOR[owner] || { fg: 'var(--text-secondary)', bg: 'var(--kpi-bg)' }

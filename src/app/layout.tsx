@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Hanken_Grotesk } from 'next/font/google'
+import { Manrope } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import BottomNav from '@/components/BottomNav'
 import PullToRefresh from '@/components/PullToRefresh'
@@ -7,10 +7,12 @@ import AddTransactionButton from '@/components/AddTransactionButton'
 import CapacitorInit from '@/components/CapacitorInit'
 import './globals.css'
 
-// Close free match to Wealthsimple's brand sans — warm geometric grotesque.
-const hanken = Hanken_Grotesk({
+// Geometric grotesque in the same family of shapes as the Wealthsimple brand sans,
+// picked for its figures: the 1 and 7 stay distinct at 11px, which is the size most of
+// this app's numbers are set at. Paired with tabular figures in globals.css.
+const manrope = Manrope({
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
+  weight: ['400', '500', '600', '700', '800'],
   variable: '--font-sans',
   display: 'swap',
 })
@@ -39,7 +41,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={hanken.variable}>
+    <html lang="en" className={manrope.variable}>
       <body>
         <PullToRefresh />
         {children}

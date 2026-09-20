@@ -18,6 +18,9 @@
   /* Debt: its own amber lane, so a repayment never reads as ordinary spending. */
   --warning: #c2892f;
   --warning-soft: color-mix(in srgb, #e0a12b 16%, transparent);
+  /* Shortfall / destructive. Was a RED constant in BillRunway and a literal in .btn-warn-red. */
+  --danger: #e5484d;
+  --danger-soft: color-mix(in srgb, #e5484d 14%, transparent);
 
   --glass-bg: rgba(255, 255, 255, 0.55);
   --glass-bg-strong: rgba(240, 240, 242, 0.9); /* modal shell — more opaque so content reads with full contrast */
@@ -51,6 +54,8 @@
     --savings-soft: #312e81;
     --warning: #e0a12b;
     --warning-soft: color-mix(in srgb, #e0a12b 22%, transparent);
+    --danger: #ff6369;
+    --danger-soft: color-mix(in srgb, #ff6369 20%, transparent);
 
     --glass-bg: rgba(28, 30, 33, 0.55);
     --glass-bg-strong: rgba(24, 26, 29, 0.9); /* modal shell — more opaque for content contrast */
@@ -321,6 +326,11 @@ body {
   background: var(--page-plane);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
+  /* Every figure in the app is tabular: stacked amounts share a decimal column, and a
+     digit that changes (a live balance, a typed amount) no longer shifts the ones beside
+     it. Set once here rather than per component — it was previously on 6 files out of 25,
+     so the home screen's headline number was proportional while the rows under it were not. */
+  font-variant-numeric: tabular-nums;
   overflow-x: hidden;                 /* never scroll sideways */
   overscroll-behavior-y: none;        /* kill the rubber-band / pull-to-refresh bounce */
   -webkit-text-size-adjust: 100%;
@@ -388,12 +398,6 @@ button:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   button:active, .tab:active, .chip:active, .icon-pill:active, .list-row:active, .fab:active { transform: none; }
-}
-
-/* Line up digits in money figures so columns don't jitter */
-.stat-value,
-.date-input {
-  font-variant-numeric: tabular-nums;
 }
 
 a {
@@ -1312,21 +1316,21 @@ header.top h1 {
 .btn-warn:hover { background: var(--warning-soft); transform: translateY(-1px); }
 .btn-warn:active { transform: translateY(0); }
 @keyframes btnWarn {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(224, 161, 43, 0.0); }
-  50%      { box-shadow: 0 0 0 6px rgba(224, 161, 43, 0.22); }
+  0%, 100% { box-shadow: 0 0 0 0 transparent; }
+  50%      { box-shadow: 0 0 0 6px color-mix(in srgb, var(--warning) 26%, transparent); }
 }
 @media (prefers-reduced-motion: reduce) { .btn-warn { animation: none; } }
 
 .btn-warn-red {
-  color: #e5484d;
+  color: var(--danger);
   transition: transform .15s ease, box-shadow .24s ease, background .2s ease;
   animation: btnWarnRed 1.8s ease-in-out infinite;
 }
-.btn-warn-red:hover { background: rgba(229, 72, 77, 0.14); transform: translateY(-1px); }
+.btn-warn-red:hover { background: var(--danger-soft); transform: translateY(-1px); }
 .btn-warn-red:active { transform: translateY(0); }
 @keyframes btnWarnRed {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(229, 72, 77, 0.0); }
-  50%      { box-shadow: 0 0 0 6px rgba(229, 72, 77, 0.24); }
+  0%, 100% { box-shadow: 0 0 0 0 transparent; }
+  50%      { box-shadow: 0 0 0 6px color-mix(in srgb, var(--danger) 24%, transparent); }
 }
 @media (prefers-reduced-motion: reduce) { .btn-warn-red { animation: none; } }
 

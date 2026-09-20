@@ -34,7 +34,7 @@ const OWNER_COLOR: Record<string, { fg: string; bg: string; initials: string }> 
   Jean: { fg: 'var(--accent)', bg: 'var(--accent-soft)', initials: 'JA' },
   Henriette: { fg: 'var(--savings)', bg: 'var(--savings-soft)', initials: 'HF' },
   Noah: { fg: 'var(--income)', bg: 'var(--income-soft)', initials: 'NN' },
-  Joint: { fg: '#b7791f', bg: 'rgba(224,161,43,0.16)', initials: 'JT' },
+  Joint: { fg: 'var(--warning)', bg: 'var(--warning-soft)', initials: 'JT' },
 }
 function detectOwner(text: string): string | null {
   const t = ` ${text.toLowerCase()} `
@@ -71,7 +71,7 @@ const isPerson = (it: Item) => !!(it.fields && it.fields.length) && /^(jean|henr
 
 const HORIZON: Record<string, { fg: string; bg: string }> = {
   short: { fg: 'var(--income)', bg: 'var(--income-soft)' },
-  medium: { fg: '#b7791f', bg: 'rgba(224,161,43,0.16)' },
+  medium: { fg: 'var(--warning)', bg: 'var(--warning-soft)' },
   long: { fg: 'var(--savings)', bg: 'var(--savings-soft)' },
 }
 const detectHorizon = (label: string) => { const t = label.toLowerCase(); return /short/.test(t) ? 'short' : /medium|mid/.test(t) ? 'medium' : /long/.test(t) ? 'long' : null }

@@ -21,8 +21,8 @@ const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', curr
 const money2 = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })
 const todayISO = today // local date, not UTC
 // stale-balance banner uses red (not amber) so it clearly grabs attention
-const RED = '#e5484d'
-const RED_SOFT = 'rgba(229, 72, 77, 0.14)'
+const RED = 'var(--danger)'
+const RED_SOFT = 'var(--danger-soft)'
 const inp: React.CSSProperties = {
   padding: '9px 11px', borderRadius: 10, border: '1px solid var(--border)',
   background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 16, width: '100%',

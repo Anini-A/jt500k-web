@@ -122,7 +122,7 @@ export default function BudgetManager() {
       envs: envelopes.filter((e) => e.type === 'expense' && e.category !== 'Debt Repayment') },
     { key: 'saving', icon: PiggyBank as LucideIcon, label: 'Saving', color: 'var(--savings)', soft: 'var(--savings-soft)', goodUp: true, paced: false,
       envs: envelopes.filter((e) => e.type === 'savings') },
-    { key: 'debt', icon: Banknote as LucideIcon, label: 'Debt Repayment', color: '#c2892f', soft: 'rgba(224,161,43,0.16)', goodUp: true, paced: false,
+    { key: 'debt', icon: Banknote as LucideIcon, label: 'Debt Repayment', color: 'var(--warning)', soft: 'var(--warning-soft)', goodUp: true, paced: false,
       envs: envelopes.filter((e) => e.category === 'Debt Repayment') },
   ].map((g) => ({ ...g, budgeted: sum(g.envs, 'budgeted'), actual: sum(g.envs, 'spent') }))
 
