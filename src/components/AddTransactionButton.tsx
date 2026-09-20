@@ -7,7 +7,7 @@ import { Plus, Trash2, ClipboardPaste, PencilLine, Repeat, Settings2, ImagePlus,
 import CategorySelect from './CategorySelect'
 import IconPill from './IconPill'
 import { useConfirm } from './Feedback'
-import { getJSON } from '@/lib/fresh'
+import { getJSON, cachedValue } from '@/lib/fresh'
 import { signedRowAmount } from '@/lib/draftTotals'
 import { ymd, today } from '@/lib/date'
 
@@ -76,7 +76,9 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   useLockScroll(open) // the page behind a sheet stays put
   const [mode, setMode] = useState<'single' | 'batch' | 'recurring'>('single')
   const [saving, setSaving] = useState(false)
-  const [cats, setCats] = useState<Category[]>([])
+  // Seed from the last good response so the pickers are never empty on a cold/offline
+  // open — an empty `cats` silently blanks every category select in the sheet.
+  const [cats, setCats] = useState<Category[]>(() => cachedValue<Category[]>('/api/categories') ?? [])
   const [debts, setDebts] = useState<{ name: string; remaining?: number; history?: { amount: number }[] }[]>([])
   // Only debts with a balance left are offerable — a debt paid to zero will never be paid
   // again, so it just clutters the picker. `keep` re-adds one that's already selected on a
@@ -131,12 +133,13 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   const [recEdit, setRecEdit] = useState<null | 'new' | string>(null) // manage recurring items
   const [recForm, setRecForm] = useState({ name: '', type: 'expense', category: '', amount: '', description: '', debt_name: '' })
 
+  // Refresh on every open, not just when empty: a single failed fetch used to leave the
+  // category pickers blank for the rest of the session with no way to retry.
   useEffect(() => {
-    if (open && cats.length === 0) {
-      getJSON('/api/categories').then((d) => Array.isArray(d) && setCats(d)).catch(() => {})
-      getJSON('/api/debts').then((d) => Array.isArray(d) && setDebts(d)).catch(() => {})
-    }
-  }, [open, cats.length])
+    if (!open) return
+    getJSON('/api/categories').then((d) => Array.isArray(d) && d.length && setCats(d)).catch(() => {})
+    getJSON('/api/debts').then((d) => Array.isArray(d) && setDebts(d)).catch(() => {})
+  }, [open])
 
   useEffect(() => {
     if (open && mode === 'recurring' && recs.length === 0) {
@@ -756,6 +759,9 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                                   onChange={(e) => { const c = cats.find((x) => x.name === e.target.value); updateRow(i, { category: e.target.value, type: c?.type ?? r.type }) }}
                                   style={{ ...cell, height: 40, borderColor: r.category ? 'var(--border)' : 'var(--expense)' }}>
                                   <option value="">— category —</option>
+                                  {/* the row's own value, if the category list hasn't loaded or the
+                                      category was since renamed — otherwise the select reads blank */}
+                                  {r.category && !cats.some((c) => c.name === r.category) && <option value={r.category}>{r.category}</option>}
                                   <optgroup label="Income">{grouped.income.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}</optgroup>
                                   <optgroup label="Expense">{grouped.expense.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}</optgroup>
                                   <optgroup label="Savings">{grouped.savings.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}</optgroup>
