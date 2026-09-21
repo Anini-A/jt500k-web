@@ -155,23 +155,19 @@ export default function DebtManager() {
         <span className="hdr-label">Debt Management</span>
       </div>
 
-      {/* Summary — three equal stats spread across the full width.
-          minmax(0, …), not 1fr alone: a bare 1fr track refuses to shrink below its
-          content, so three long figures used to shove the third one off the card
-          rather than fitting. The figures use --fs-stat, the same token as the
-          money-flow trio — a 3-up stat group, not a card headline. */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 12, marginBottom: 14 }}>
+      {/* Summary — the two figures that change. The original amount is a fixed
+          reference, not a running total, so it sits with the progress line below
+          rather than competing here; three long figures never fitted one row.
+          minmax(0, …), not a bare 1fr: a 1fr track will not shrink below its
+          content, so anything too wide grows past the card instead of giving. */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12, marginBottom: 14 }}>
         <div style={{ textAlign: 'left' }}>
           <div className="stat-label">Remaining</div>
-          <div style={{ fontSize: 'var(--fs-stat)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', color: totalRemaining > 0 ? 'var(--expense)' : 'var(--income)' }}>{money(totalRemaining)}</div>
-        </div>
-        <div style={{ textAlign: 'center' }}>
-          <div className="stat-label">Paid Off</div>
-          <div style={{ fontSize: 'var(--fs-stat)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', color: 'var(--income)' }}>{money(totalPaid)}</div>
+          <div style={{ fontSize: 'var(--fs-card)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', color: totalRemaining > 0 ? 'var(--expense)' : 'var(--income)' }}>{money(totalRemaining)}</div>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div className="stat-label">Original</div>
-          <div style={{ fontSize: 'var(--fs-stat)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>{money(totalDebt)}</div>
+          <div className="stat-label">Paid Off</div>
+          <div style={{ fontSize: 'var(--fs-card)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', color: 'var(--income)' }}>{money(totalPaid)}</div>
         </div>
       </div>
 
@@ -181,8 +177,14 @@ export default function DebtManager() {
           <div style={{ height: 12, borderRadius: 999, background: 'var(--kpi-bg)', border: '1px solid var(--border)', overflow: 'hidden' }}>
             <div style={{ width: `${overallPct}%`, height: '100%', borderRadius: 999, background: 'linear-gradient(90deg, var(--expense), var(--income))', transition: 'width .6s ease' }} />
           </div>
-          <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 6 }}>
-            {overallPct.toFixed(1)}% of all debt repaid
+          {/* what the bar has covered, against the total it is measured out of */}
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10, marginTop: 6 }}>
+            <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>
+              {overallPct.toFixed(1)}% repaid
+            </span>
+            <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>
+              {money(totalDebt)} original
+            </span>
           </div>
         </div>
       )}
