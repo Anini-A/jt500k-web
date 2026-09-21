@@ -149,7 +149,7 @@ export default function DebtManager() {
   }
 
   return (
-    <div className="card glass">
+    <div className="card">
       {confirmNode}{toastNode}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, gap: 8 }}>
         <span className="hdr-label">Debt Management</span>

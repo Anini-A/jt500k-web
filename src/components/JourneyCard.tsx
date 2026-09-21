@@ -193,7 +193,7 @@ export default function JourneyCard() {
 
       {/* Goal planner — opens from the pill; glassy like the other home cards */}
       {detailsOpen && (
-        <div className="card glass" style={{ marginTop: 14, padding: 16 }}>
+        <div className="card" style={{ marginTop: 14, padding: 16 }}>
           {reached ? (
             <div style={{ textAlign: 'center', padding: '4px 0' }}>
               <div style={{ fontSize: 'var(--fs-card)', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--income)' }}>🎉 Goal reached</div>

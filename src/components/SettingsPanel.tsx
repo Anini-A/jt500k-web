@@ -66,7 +66,7 @@ export default function SettingsPanel() {
       {toastNode}
       {/* Goal & household */}
       <section className="block">
-        <div className="card glass">
+        <div className="card">
           <span className="hdr-label">Goal &amp; household</span>
           <form onSubmit={save} style={{ display: 'grid', gap: 14, maxWidth: 420, marginTop: 12 }}>
             <label style={{ display: 'grid', gap: 4 }}>
@@ -89,7 +89,7 @@ export default function SettingsPanel() {
 
       {/* Your data — one compact line + connection dot + quick actions */}
       <section className="block">
-        <div className="card glass">
+        <div className="card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
             <span className="hdr-label">Your data</span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)' }}>
@@ -109,7 +109,7 @@ export default function SettingsPanel() {
 
       {/* Backup */}
       <section className="block">
-        <div className="card glass">
+        <div className="card">
           <span className="hdr-label">Backup</span>
           <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, margin: '8px 0 14px' }}>
             A full snapshot (transactions, budgets, debts, holdings) as one JSON file — your safety net before big changes.
@@ -120,7 +120,7 @@ export default function SettingsPanel() {
 
       {/* Account */}
       <section className="block" style={{ marginBottom: 8 }}>
-        <div className="card glass">
+        <div className="card">
           <span className="hdr-label">Account</span>
           <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, margin: '8px 0 14px' }}>
             Protected by a shared password, remembered once per device.

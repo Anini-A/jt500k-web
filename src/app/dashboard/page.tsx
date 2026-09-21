@@ -157,7 +157,7 @@ export default function Dashboard() {
     rng: { from: string; to: string }, count: number, noun = 'transactions',
   ) => (
     <section className="block">
-      <div className="card glass" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div className="chip-scroll">
           {PRESETS.map((preset) => (
             <button key={preset.key}
@@ -187,7 +187,7 @@ export default function Dashboard() {
       <div className="bg-aurora">
         <div className="wrap">
           <DashHeader />
-          <div className="card glass" style={{ padding: 40, textAlign: 'center' }}>Loading your analytics…</div>
+          <div className="card" style={{ padding: 40, textAlign: 'center' }}>Loading your analytics…</div>
         </div>
       </div>
     )
@@ -227,11 +227,11 @@ export default function Dashboard() {
             ]} />
             <section className="block">
               <div className="grid-2">
-                <div className="card glass">
+                <div className="card">
                   <ChartHead title="Income over time" />
                   <MonthlyArea data={agg.monthly} series={[{ key: 'income', name: 'Income', color: COLORS.income }]} />
                 </div>
-                <div className="card glass">
+                <div className="card">
                   <ChartHead title="Income by source" />
                   <HBar data={agg.incomeCat} color={COLORS.income} />
                 </div>
@@ -249,11 +249,11 @@ export default function Dashboard() {
             ]} />
             <section className="block">
               <div className="grid-2">
-                <div className="card glass">
+                <div className="card">
                   <ChartHead title="Expenses over time" />
                   <MonthlyArea data={agg.monthly} series={[{ key: 'expense', name: 'Expenses', color: COLORS.expense }]} />
                 </div>
-                <div className="card glass">
+                <div className="card">
                   <ChartHead title="Top categories" />
                   <HBar data={agg.expenseCat.slice(0, 10)} color={COLORS.expense} />
                 </div>
@@ -271,11 +271,11 @@ export default function Dashboard() {
             ]} />
             <section className="block">
               <div className="grid-2">
-                <div className="card glass">
+                <div className="card">
                   <ChartHead title="Savings over time" />
                   <MonthlyArea data={agg.monthly} series={[{ key: 'savings', name: 'Savings', color: COLORS.savings }]} />
                 </div>
-                <div className="card glass">
+                <div className="card">
                   <ChartHead title="Savings by account" />
                   <HBar data={agg.savingsCat} color={COLORS.savings} />
                 </div>
@@ -350,7 +350,7 @@ function HeroRow({ stats }: { stats: Stat[] }) {
   const [primary, ...rest] = stats
   return (
     <section className="block">
-      <div className="card glass">
+      <div className="card">
         <span className="hdr-label">{primary.label}</span>
         {/* the label anchors the card at the left; the figure and what qualifies it
             are centred together, so they read as one block rather than a stack */}
@@ -394,7 +394,7 @@ function RecentList({ title, txns, emptyLabel, maxHeight }: { title: string; txn
   return (
     <section className="block" style={{ marginBottom: 64 }}>
       {confirmNode}{toastNode}
-      <div className="card glass">
+      <div className="card">
         <div className="hdr-label" style={{ marginBottom: 14 }}>{title}</div>
         {txns.length === 0 ? (
           <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)' }}>{emptyLabel}</div>

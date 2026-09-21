@@ -219,8 +219,8 @@ export default function ProfilePanel() {
   }, [])
   useEffect(() => { load() }, [load])
 
-  if (!profile) return <div className="card glass" style={{ padding: 40, textAlign: 'center' }}>Loading household profile…</div>
-  if (profile.sections.length === 0) return <div className="card glass" style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>No profile yet.</div>
+  if (!profile) return <div className="card" style={{ padding: 40, textAlign: 'center' }}>Loading household profile…</div>
+  if (profile.sections.length === 0) return <div className="card" style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>No profile yet.</div>
 
   const shown = profile.sections.find((s) => s.id === filter) || profile.sections[0]
   const view = editing && draft ? draft : shown
@@ -262,7 +262,7 @@ export default function ProfilePanel() {
         </div>
       </section>
 
-      <div className="card glass">
+      <div className="card">
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, justifyContent: 'space-between' }}>
           {editing && draft ? (
             <div style={{ display: 'flex', gap: 8, flex: 1, minWidth: 0 }}>

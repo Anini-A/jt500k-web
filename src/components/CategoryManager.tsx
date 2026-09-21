@@ -55,7 +55,7 @@ export default function CategoryManager() {
   }
 
   return (
-    <div className="card glass">
+    <div className="card">
       {toastNode}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <span className="hdr-label">Categories</span>

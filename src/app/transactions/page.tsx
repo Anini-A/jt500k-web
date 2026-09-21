@@ -154,7 +154,7 @@ export default function Transactions() {
 
         {/* Controls — minimalist, all one-click: period · type · category+search (dates only for Custom) */}
         <section className="block">
-          <div className="card glass" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {/* period — This month first, Custom last */}
             <div className="chip-scroll">
               {PRESETS.map((p) => (
@@ -198,7 +198,7 @@ export default function Transactions() {
 
         {/* List */}
         <section className="block" style={{ marginBottom: 64 }}>
-          <div className="card glass">
+          <div className="card">
             {/* summary strip */}
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap', marginBottom: 6 }}>
               <span className="hdr-label">{loading ? 'Loading…' : `${summary.count} transaction${summary.count !== 1 ? 's' : ''}`}</span>

@@ -155,11 +155,11 @@ export default function InvestmentsPanel() {
     else toast((await res.json()).error || 'Could not save.')
   }
 
-  if (loading) return <div className="card glass" style={{ padding: 40, textAlign: 'center' }}>Loading portfolio…</div>
+  if (loading) return <div className="card" style={{ padding: 40, textAlign: 'center' }}>Loading portfolio…</div>
 
   if (rows.length === 0 && assets.length === 0) {
     return (
-      <div className="card glass" style={{ textAlign: 'center', padding: 40 }}>
+      <div className="card" style={{ textAlign: 'center', padding: 40 }}>
         <LineChart size={34} color="var(--text-muted)" style={{ margin: '0 auto 10px' }} />
         <h3 style={{ margin: '0 0 6px' }}>No holdings yet</h3>
         <p className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginBottom: 16 }}>Import your Wealthsimple holdings CSV to get started.</p>
@@ -173,7 +173,7 @@ export default function InvestmentsPanel() {
     <>
       {toastNode}
       {/* Person filter + actions — chips scroll on one line, actions on their own row */}
-      <div className="card glass" style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+      <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
         <div className="chip-scroll">
           {['Household', ...owners].map((o) => (
             <button key={o} className={`chip ${person === o ? 'chip-active' : ''}`} onClick={() => setPerson(o)}>{o}</button>
@@ -189,7 +189,7 @@ export default function InvestmentsPanel() {
       {refreshMsg && <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: -8, marginBottom: 16, textAlign: 'center' }}>{refreshMsg}</div>}
 
       {/* Hero — AUM + gain + owner split */}
-      <div className="card glass" style={{ marginBottom: 16 }}>
+      <div className="card" style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, minHeight: 20 }}>
           <span style={{ fontSize: 'var(--fs-2xs)', fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Portfolio value{person !== 'Household' ? ` · ${person}` : ''}</span>
           {data?.asOf && <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)' }}>As of {data.asOf}</span>}
@@ -214,7 +214,7 @@ export default function InvestmentsPanel() {
       </div>
 
       {/* Accounts — one card, sections divided */}
-      <div className="card glass" style={{ marginBottom: 16 }}>
+      <div className="card" style={{ marginBottom: 16 }}>
         {accounts.map((a, idx) => {
           const g = a.value - a.cost
           const gp = a.cost > 0 ? (g / a.cost) * 100 : 0
@@ -255,7 +255,7 @@ export default function InvestmentsPanel() {
       </div>
 
       {/* Allocation donut */}
-      <div className="card glass" style={{ marginBottom: 16 }}>
+      <div className="card" style={{ marginBottom: 16 }}>
         <h3 style={{ marginTop: 0, marginBottom: 4, fontSize: 'var(--fs-md)' }}>Allocation by account</h3>
         <Donut data={donut} />
       </div>
@@ -283,7 +283,7 @@ function OtherAssets({ assets, showOwner, onChange, defaultOwner }: {
   const [editing, setEditing] = useState<string | null>(null)
   const { confirm, confirmNode } = useConfirm()
   return (
-    <div className="card glass" style={{ marginTop: 16 }}>
+    <div className="card" style={{ marginTop: 16 }}>
       {confirmNode}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 8 }}>
         <h3 style={{ margin: 0, fontSize: 'var(--fs-md)' }}>Other Assets <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>· cash, options, etc.</span></h3>
@@ -393,7 +393,7 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
 
   return createPortal(
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-card glass" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <h2 style={{ margin: 0, fontSize: 'var(--fs-title)', display: 'flex', alignItems: 'center', gap: 8 }}><Upload size={18} /> Import Holdings</h2>
           <button className="modal-x" aria-label="Close" onClick={onClose}>✕</button>

@@ -32,7 +32,7 @@ export default function Login() {
   return (
     <div className="bg-aurora">
       <div className="wrap" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: 48 }}>
-        <div className="card glass hero" style={{ width: 'min(400px, 100%)', textAlign: 'center' }}>
+        <div className="card hero" style={{ width: 'min(400px, 100%)', textAlign: 'center' }}>
           <Wallet size={40} color="var(--accent)" style={{ margin: '0 auto' }} />
           <h1 style={{ fontSize: 'var(--fs-card)', margin: '8px 0 4px' }}>Journey to 500K</h1>
           <p className="lead" style={{ marginBottom: 20 }}>Enter the shared password to continue.</p>

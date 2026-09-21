@@ -81,7 +81,7 @@ export default function BillRunway() {
   const coverageOf = useCallback((a: Account) => coveredThisMonthOf(project(bills.filter((b) => b.account_id === a.id), a)), [bills, coveredThisMonthOf])
 
   if (loading) return (
-    <div className="card glass">
+    <div className="card">
       <div className="skel skel-bar" style={{ width: '45%', marginBottom: 14 }} />
       {[0, 1, 2].map((i) => <div key={i} className="skel skel-row" />)}
     </div>
@@ -90,7 +90,7 @@ export default function BillRunway() {
   // "Run sql/bill_accounts_setup.sql in Supabase", which is a note to the developer,
   // and it also flashed while the accounts were still loading.)
   if (!accounts.length) return (
-    <div className="card glass" style={{ padding: '32px 20px', textAlign: 'center' }}>
+    <div className="card" style={{ padding: '32px 20px', textAlign: 'center' }}>
       <div style={{ fontSize: 'var(--fs-md)', fontWeight: 650, marginBottom: 5 }}>No bill account yet</div>
       <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text-muted)', lineHeight: 1.5, maxWidth: 340, margin: '0 auto 16px' }}>
         Add the account your bills come out of, with its balance, and this page shows how far that balance carries you.
@@ -134,7 +134,7 @@ export default function BillRunway() {
       {/* VERDICT + BALANCE — side by side */}
       <div className="grid-2" style={{ marginBottom: 16 }}>
       {proj && (
-      <div className="card glass" style={{ borderLeft: `4px solid ${coveredMonth ? 'var(--income)' : RED}`, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+      <div className="card" style={{ borderLeft: `4px solid ${coveredMonth ? 'var(--income)' : RED}`, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: proj.timeline.length ? 12 : 0 }}>
           {coveredMonth ? <CheckCircle2 size={24} color="var(--income)" style={{ flexShrink: 0 }} />
             : <TriangleAlert size={24} color={RED} style={{ flexShrink: 0 }} />}
@@ -187,7 +187,7 @@ export default function BillRunway() {
       )}
 
         {/* BALANCE — with stale nudge */}
-        <div className="card glass">
+        <div className="card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: 'var(--fs-2xs)', fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
@@ -213,7 +213,7 @@ export default function BillRunway() {
       </div>
 
       {/* One card: what the balance covers, then the bills behind it */}
-      <div className="card glass">
+      <div className="card">
         {proj && <CoverageTimeline proj={proj} asOf={asOf} urgent={!coveredMonth || topUpSoon} />}
 
         {/* Same footer control as Debt Management and Budget: count, add, reveal */}

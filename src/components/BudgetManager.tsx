@@ -163,7 +163,7 @@ export default function BudgetManager() {
     <>
       {confirmNode}{toastNode}
       {/* One card: the month's summary, then its items behind the collapse toggle */}
-      <div className="card glass">
+      <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 18 }}>
           <span className="hdr-label">Monthly Budget</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

@@ -71,7 +71,7 @@ export default function Home() {
 
         {/* Current cash balance */}
         <section className="block">
-          <div className="card glass">
+          <div className="card">
               <span className="hdr-label">Cash balance</span>
               {statsError && !stats ? (
                 <LoadError onRetry={retryStats} label="Couldn't load balance" />

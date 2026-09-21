@@ -729,7 +729,7 @@ header.top h1 {
 
 /* Liquid-glass specular — a capped top highlight band so tall cards never wash out.
    Applied as a BACKGROUND layer (below content), so text/numbers stay fully crisp. */
-.card.glass, .modal-card.glass {
+.glass {
   background-image: var(--glass-specular);
   background-repeat: no-repeat;
   background-size: 100% 96px;
@@ -768,11 +768,20 @@ header.top h1 {
   }
 }
 
+/* A card is CONTENT, and content does not float. Cards sit in a column on the page
+   ground with nothing behind them but that ground, so a refractive material had
+   nothing to refract — blurring a flat colour returns that flat colour, which is
+   why glass cards read as white panels however hard the material was pushed.
+   They are a plain lit surface now; the glass moved to the layers that genuinely
+   float over scrolling content (the nav, the header pill, sheets). */
 .card {
   border-radius: var(--radius-2xl);
   padding: 20px;
   display: flex;
   flex-direction: column;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 2px rgba(20, 22, 26, 0.04), 0 6px 18px -10px rgba(20, 22, 26, 0.10);
 }
 
 
@@ -1249,13 +1258,24 @@ header.top h1 {
   pointer-events: none;   /* the gap between the pieces isn't a target */
 }
 .nav-pill, .nav-fab { pointer-events: auto; }
-/* shared glass shell for both pieces */
+/* Shared glass shell for both pieces. These float over the scrolling page, so
+   unlike a card they always have real content behind them to bend — this is where
+   the material earns its keep. Same lit bevel as .glass, with a deeper lift. */
 .nav-pill, .nav-fab {
   background: var(--glass-specular), var(--glass-bg);
+  background-repeat: no-repeat;
   -webkit-backdrop-filter: var(--blur-surface);
   backdrop-filter: var(--blur-surface);
-  border: 1px solid var(--glass-border);
-  box-shadow: 0 10px 34px rgba(20, 20, 25, 0.20), var(--glass-sheen), var(--glass-rim), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  border: none;
+  box-shadow:
+    0 10px 34px rgba(20, 20, 25, 0.20),
+    0 0 0 1px var(--glass-border),
+    inset 0 1.5px 0.5px -0.5px rgba(255, 255, 255, var(--lip-top)),
+    inset 0 -1.5px 0.5px -0.5px rgba(255, 255, 255, var(--lip-bottom)),
+    inset 1.5px 0 1px -1px rgba(255, 255, 255, var(--lip-side)),
+    inset -1.5px 0 1px -1px rgba(255, 255, 255, var(--lip-side)),
+    inset 0 14px 20px -18px rgba(255, 255, 255, var(--lip-top)),
+    inset 0 -18px 22px -20px var(--glass-underlight);
 }
 .nav-pill {
   display: flex; align-items: center; gap: 6px;
