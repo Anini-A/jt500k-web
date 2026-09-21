@@ -1202,11 +1202,6 @@ header.top h1 {
 }
 
 /* Hero row: big number on the left, supporting stats on the right — always side-by-side */
-.hero-row,
-.card.hero-row { display: flex; flex-direction: row; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: nowrap; }
-.hero-row > * { min-width: 0; }
-.hero-aside { text-align: right; flex-shrink: 1; }
-@media (max-width: 560px) { .hero-aside { font-size: var(--fs-xs); } }
 
 /* Filter chips (glass) */
 .seg-group { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }

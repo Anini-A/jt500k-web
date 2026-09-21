@@ -227,7 +227,7 @@ export default function Dashboard() {
             <HeroRow stats={[
               { label: 'Total Income', value: money(agg.income), cls: 'income' },
               { label: 'Top Source', value: topIncome ? money(topIncome.total) : '—', sub: topIncome?.name },
-              { label: 'Avg / Month', value: money(agg.income / monthsSpan), sub: `over ${monthsSpan} month${monthsSpan > 1 ? 's' : ''}` },
+              { label: 'Per month', value: money(agg.income / monthsSpan), sub: `${monthsSpan} month${monthsSpan > 1 ? 's' : ''}` },
             ]} />
             <section className="block">
               <div className="grid-2">
@@ -250,7 +250,7 @@ export default function Dashboard() {
             <HeroRow stats={[
               { label: 'Total Expenses', value: money(agg.expense), cls: 'expense' },
               { label: 'Top Category', value: topExpense ? money(topExpense.total) : '—', sub: topExpense?.name },
-              { label: 'Avg / Month', value: money(agg.expense / monthsSpan), sub: `over ${monthsSpan} month${monthsSpan > 1 ? 's' : ''}` },
+              { label: 'Per month', value: money(agg.expense / monthsSpan), sub: `${monthsSpan} month${monthsSpan > 1 ? 's' : ''}` },
             ]} />
             <section className="block">
               <div className="grid-2">
@@ -348,21 +348,27 @@ function DashHeader() {
 interface Stat { label: string; value: string; sub?: string; cls?: string }
 
 
-// One hero stat (the number that matters) with the rest as a quiet supporting line.
+// The headline figure, with its supporting stats in a sunk panel beneath it.
+// They used to sit beside the hero as run-on lines — "Top Source $74,958 · Paycheck"
+// — set nowrap and right-aligned, so on a phone they ran off the card, and the part
+// worth reading (which source) came last and dimmest. Each is now a plain
+// label / figure / name stack, and the panel groups them without a second card.
 function HeroRow({ stats }: { stats: Stat[] }) {
   const [primary, ...rest] = stats
   return (
     <section className="block">
-      <div className="card glass hero-row">
-        <div style={{ flex: '1 1 auto', minWidth: 0, textAlign: 'left' }}>
-          <span className="hdr-label">{primary.label}</span>
-          <div className={`stat-value ${primary.cls || ''}`} style={{ letterSpacing: '-0.03em', marginTop: 4, whiteSpace: 'nowrap' }}>{primary.value}</div>
-        </div>
+      <div className="card glass">
+        <span className="hdr-label">{primary.label}</span>
+        <div className={`stat-value ${primary.cls || ''}`} style={{ letterSpacing: '-0.03em', marginTop: 4, whiteSpace: 'nowrap' }}>{primary.value}</div>
         {rest.length > 0 && (
-          <div className="hero-aside" style={{ display: 'grid', gap: 4, whiteSpace: 'nowrap' }}>
-            {rest.map((s) => (
-              <div key={s.label} style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)' }}>
-                {s.label} <b style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>{s.value}</b>{s.sub ? ` · ${s.sub}` : ''}
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${rest.length}, minmax(0, 1fr))`, gap: 12, marginTop: 14, padding: '12px 14px', borderRadius: 14, background: 'var(--kpi-bg)', border: '1px solid var(--border)' }}>
+            {rest.map((s, i) => (
+              <div key={s.label} style={{ minWidth: 0, textAlign: i === 0 ? 'left' : 'right' }}>
+                <div className="stat-label">{s.label}</div>
+                <div style={{ fontSize: 'var(--fs-stat)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', marginTop: 2 }}>{s.value}</div>
+                {s.sub && (
+                  <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.sub}</div>
+                )}
               </div>
             ))}
           </div>
