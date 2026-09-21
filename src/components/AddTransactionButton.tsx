@@ -558,11 +558,14 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
     return [...rows.sort((a, b) => b.amount - a.amount || b.remaining - a.remaining), ...unlinked]
   })()
   const rowsOfGroup = (key: string) => (key === 'debt' ? debtRows : visibleRecs.filter((r) => recGroup(r) === key))
+  // One lane each: Spending was on the savings colour, so the two pills came out
+  // the same indigo and the grouping told you nothing. Text takes the lane's -ink
+  // tone — the lane colour itself is too light to read on its own -soft fill.
   const REC_GROUPS = [
-    { key: 'income', label: 'Income', color: 'var(--income)', soft: 'var(--income-soft)' },
-    { key: 'spending', label: 'Spending', color: 'var(--savings)', soft: 'var(--savings-soft)' },
-    { key: 'saving', label: 'Saving', color: 'var(--savings)', soft: 'var(--savings-soft)' },
-    { key: 'debt', label: 'Debt', color: 'var(--warning)', soft: 'var(--warning-soft)' },
+    { key: 'income', label: 'Income', color: 'var(--income-ink)', soft: 'var(--income-soft)' },
+    { key: 'spending', label: 'Spending', color: 'var(--expense-ink)', soft: 'var(--expense-soft)' },
+    { key: 'saving', label: 'Saving', color: 'var(--savings-ink)', soft: 'var(--savings-soft)' },
+    { key: 'debt', label: 'Debt', color: 'var(--warning-ink)', soft: 'var(--warning-soft)' },
   ]
   const recGroupsPresent = REC_GROUPS.filter((g) => rowsOfGroup(g.key).length > 0)
   const allRows = REC_GROUPS.flatMap((g) => rowsOfGroup(g.key))

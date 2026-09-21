@@ -15,6 +15,14 @@
   --expense-soft: #fbe3d6;
   --savings: #6366f1;
   --savings-soft: #e0e7ff;
+  /* Lane INK: the readable text tone for a pill sitting on that lane's -soft fill.
+     A lane colour on its own soft background lands around 2.3–2.6:1, so these
+     darker tones carry the label instead. Fills stay -soft, text takes -ink. */
+  --income-ink: #0e6b49;
+  --expense-ink: #9c3c14;
+  --savings-ink: #3d40b0;
+  --warning-ink: #7e5814;
+
   /* Debt: its own amber lane, so a repayment never reads as ordinary spending. */
   --warning: #c2892f;
   --warning-soft: color-mix(in srgb, #e0a12b 16%, transparent);
@@ -74,6 +82,11 @@
     --expense-soft: #4a2c1c;
     --savings: #818cf8;
     --savings-soft: #312e81;
+    --income-ink: #6fd9b0;
+    --expense-ink: #ff9a72;
+    --savings-ink: #a5adf5;
+    --warning-ink: #f0c274;
+
     --warning: #e0a12b;
     --warning-soft: color-mix(in srgb, #e0a12b 22%, transparent);
     --danger: #ff6369;
@@ -1079,9 +1092,9 @@ header.top h1 {
 .type-pill:hover { filter: brightness(0.97) saturate(1.05); }
 .type-pill:active { transform: scale(0.995); }
 
-.type-pill.income { background: var(--income-soft); color: var(--income); }
-.type-pill.expense { background: var(--expense-soft); color: var(--expense); }
-.type-pill.savings { background: var(--savings-soft); color: var(--savings); }
+.type-pill.income { background: var(--income-soft); color: var(--income-ink); }
+.type-pill.expense { background: var(--expense-soft); color: var(--expense-ink); }
+.type-pill.savings { background: var(--savings-soft); color: var(--savings-ink); }
 
 .type-pill .type-count {
   background: color-mix(in srgb, currentColor 18%, transparent);
