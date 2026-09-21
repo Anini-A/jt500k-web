@@ -23,11 +23,11 @@
      saturate(190%), blur(34px) saturate(160%) and so on — with nothing
      distinguishing them but the order they were written in. Two now: one for
      large surfaces, one for bars and chips.
-     The radius came down with the merge (30-34px to 18px). backdrop-filter costs
-     roughly with its radius, and at 55% opacity the difference is very hard to
-     see, so this is the cheap half of the trade. */
-  --blur-surface: blur(18px) saturate(180%);
-  --blur-bar: blur(12px) saturate(160%);
+     Radius carries the material: at 18px the cards stopped reading as glass and
+     started reading as flat translucent panels, so the surface blur is back up.
+     Cost goes roughly with radius, and this is where it buys something. */
+  --blur-surface: blur(28px) saturate(190%);
+  --blur-bar: blur(14px) saturate(165%);
 
   /* ── Radius ───────────────────────────────────────────────────────────────
      Sixteen distinct corner values were in use, most of them within a pixel or
@@ -692,10 +692,12 @@ header.top h1 {
   backdrop-filter: var(--blur-surface);
   -webkit-backdrop-filter: var(--blur-surface);
   border: 1px solid var(--glass-border);
-  /* the drop shadow only. The sheen and the inner rim drew the same top edge the
-     border and the specular band already draw — four light edges saying one thing.
-     Both tokens stay for the controls that use them on their own. */
-  box-shadow: var(--glass-shadow);
+  /* Shadow plus the sheen. The sheen is a 1px specular highlight along the top
+     lip — the cue that reads as glass rather than as a translucent panel — so it
+     is not interchangeable with the soft specular band or the flat border, which
+     is what dropping it proved. The inner rim IS redundant with the border, and
+     stays dropped. */
+  box-shadow: var(--glass-shadow), var(--glass-sheen);
 }
 
 /* Liquid-glass specular — a capped top highlight band so tall cards never wash out.
