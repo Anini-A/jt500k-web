@@ -356,7 +356,7 @@ function HeroRow({ stats }: { stats: Stat[] }) {
       <div className="card glass hero-row">
         <div style={{ flex: '1 1 auto', minWidth: 0, textAlign: 'left' }}>
           <span className="hdr-label">{primary.label}</span>
-          <div className={`stat-value ${primary.cls || ''}`} style={{ fontSize: 'var(--fs-hero-inline)', letterSpacing: '-0.03em', marginTop: 4, whiteSpace: 'nowrap' }}>{primary.value}</div>
+          <div className={`stat-value ${primary.cls || ''}`} style={{ letterSpacing: '-0.03em', marginTop: 4, whiteSpace: 'nowrap' }}>{primary.value}</div>
         </div>
         {rest.length > 0 && (
           <div className="hero-aside" style={{ display: 'grid', gap: 4, whiteSpace: 'nowrap' }}>

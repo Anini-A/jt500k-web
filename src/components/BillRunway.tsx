@@ -193,7 +193,7 @@ export default function BillRunway() {
               <div style={{ fontSize: 'var(--fs-2xs)', fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
                 {active.name} · as of {fmtDay(asOf)}
               </div>
-              <div style={{ fontWeight: 700, fontSize: 'var(--fs-hero-inline)', letterSpacing: '-0.03em', marginTop: 4 }}>{money2(settings.current_balance)}</div>
+              <div style={{ fontWeight: 700, fontSize: 'var(--fs-card)', letterSpacing: '-0.03em', marginTop: 4 }}>{money2(settings.current_balance)}</div>
             </div>
             {!stale && <button className="chip btn-accent" onClick={() => setEditBalance(true)}>Update balance</button>}
           </div>

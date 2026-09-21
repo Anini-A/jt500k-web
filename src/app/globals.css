@@ -34,17 +34,17 @@
   --glass-rim: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
 
   /* ── Type scale ───────────────────────────────────────────────────────────
-     Nine hand-rolled clamp() ramps used to do the work of four roles, so the
+     Nine hand-rolled clamp() ramps used to do the work of three roles, so the
      same kind of number came out at a different size depending on which card
-     it sat in. These four replace them. They stay fluid rather than fixed:
+     it sat in. These three replace them. They stay fluid rather than fixed:
      the vw term is what keeps a headline figure from looking lost on an iPad.
 
      Sizes below the ramps don't need to scale — they are already at the floor
      of comfortable reading — so they are plain steps. */
-  --fs-hero: clamp(34px, 9.5vw, 50px);          /* a number that owns its card, alone on its line */
-  --fs-hero-inline: clamp(24px, 6.5vw, 42px);   /* a hero SHARING its row with an aside: a smaller
-                                                   floor, or the aside beside it gets squeezed */
-  --fs-card: clamp(20px, 5.5vw, 30px);          /* a section total, or one of a trio */
+  --fs-hero: clamp(34px, 9.5vw, 50px);          /* Home's headline figure, and the amount being typed
+                                                   into the add sheet — a number that owns the screen */
+  --fs-card: clamp(20px, 5.5vw, 30px);          /* every dashboard card's summary figure, and each
+                                                   member of a stat pair or trio. Also .stat-value. */
   --fs-stat: clamp(15px, 4.6vw, 19px);          /* an inline stat in a group */
 
   --fs-title: 18px;                             /* a sheet or modal heading (every <h2> in a panel) */
