@@ -18,6 +18,24 @@
   /* Lane INK: the readable text tone for a pill sitting on that lane's -soft fill.
      A lane colour on its own soft background lands around 2.3–2.6:1, so these
      darker tones carry the label instead. Fills stay -soft, text takes -ink. */
+  /* ── Chart series ─────────────────────────────────────────────────────────
+     Eight categorical slots, assigned in this fixed order and never cycled.
+     Each set was picked against its own surface rather than flipped from the
+     other, and both pass the same six checks: lightness band, chroma floor,
+     colour-blind separation on every adjacent pair (deutan/protan/tritan),
+     the normal-vision floor, and 3:1 contrast against the chart surface.
+     The palette they replace failed three of those — one slot read as grey,
+     and two pairs were indistinguishable.
+     Changing a value here means re-running the check; they are not free. */
+  --chart-1: #2f6fd0;
+  --chart-2: #d4571f;
+  --chart-3: #0f8a5f;
+  --chart-4: #8046e0;
+  --chart-5: #9c7508;
+  --chart-6: #0b9aa4;
+  --chart-7: #6d8c14;
+  --chart-8: #c93770;
+
   --accent-ink: #1a5da8;
   --income-ink: #0e6b49;
   --expense-ink: #9c3c14;
@@ -83,6 +101,15 @@
     --expense-soft: #4a2c1c;
     --savings: #818cf8;
     --savings-soft: #312e81;
+    --chart-1: #5a95e6;
+    --chart-2: #db6a33;
+    --chart-3: #26a172;
+    --chart-4: #9c76e8;
+    --chart-5: #b08826;
+    --chart-6: #23a2ad;
+    --chart-7: #7d9a24;
+    --chart-8: #e25a8c;
+
     --accent-ink: #8bbdf3;
     --income-ink: #6fd9b0;
     --expense-ink: #ff9a72;

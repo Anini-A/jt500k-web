@@ -13,9 +13,15 @@ export const COLORS = {
   expense: 'var(--expense)',
   savings: 'var(--savings)',
 }
-// Categorical palette for accounts / breakdowns. Still literal: half of these have no
-// token and no dark-mode value. Worth revisiting as a proper chart ramp.
-export const PALETTE = ['#2a78d6', '#1baf7a', '#eb6834', '#8a5cf6', '#e0a12b', '#d9488a', '#2bb3b3', '#7a869a']
+// Categorical palette for accounts / breakdowns: eight slots, in this fixed order.
+// Tokens, so each mode gets colours chosen against its own surface — see globals.css
+// for the checks they pass. Use seriesColor(), which folds anything past the eighth
+// series into one "Other" slot rather than handing it a colour already in use.
+export const PALETTE = Array.from({ length: 8 }, (_, i) => `var(--chart-${i + 1})`)
+
+/** The colour for series i. Beyond the palette everything shares the muted slot:
+ *  a repeated hue would say two unrelated categories are the same thing. */
+export const seriesColor = (i: number) => (i < PALETTE.length ? PALETTE[i] : 'var(--text-muted)')
 
 const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })
 export const shortMonth = (m: string) => {
@@ -89,7 +95,7 @@ export function Donut({ data, height = 260 }: { data: { name: string; total: num
     <ResponsiveContainer width="100%" height={height}>
       <PieChart>
         <Pie data={data} dataKey="total" nameKey="name" cx="50%" cy="50%" innerRadius={60} outerRadius={95} paddingAngle={2} stroke="var(--surface-1)" strokeWidth={2}>
-          {data.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
+          {data.map((_, i) => <Cell key={i} fill={seriesColor(i)} />)}
         </Pie>
         <Tooltip content={<Tip />} />
         <Legend wrapperStyle={{ fontSize: 'var(--fs-xs)' }} />
