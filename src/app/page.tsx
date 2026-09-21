@@ -76,10 +76,10 @@ export default function Home() {
               {statsError && !stats ? (
                 <LoadError onRetry={retryStats} label="Couldn't load balance" />
               ) : (<>
-              <div style={{ fontWeight: 700, fontSize: 'clamp(30px, 8vw, 42px)', letterSpacing: '-0.03em', marginTop: 4, color: bal >= 0 ? 'var(--text-primary)' : 'var(--expense)' }}>
+              <div style={{ fontWeight: 700, fontSize: 'var(--fs-hero)', letterSpacing: '-0.03em', marginTop: 4, color: bal >= 0 ? 'var(--text-primary)' : 'var(--expense)' }}>
                 {stats ? money(bal) : <span className="skeleton" style={{ width: 170, height: '0.9em', verticalAlign: -2 }} />}
               </div>
-              <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>
+              <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginTop: 8 }}>
                 {stats ? <>Chequing · as of {today}</> : <span className="skeleton" style={{ width: 150, height: 12 }} />}
               </div>
               </>)}
@@ -92,7 +92,7 @@ export default function Home() {
                   <span className="hdr-label">Credit cards</span>
                   <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
                     {cards.map((c) => (
-                      <div key={c.card} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, fontSize: 13 }}>
+                      <div key={c.card} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, fontSize: 'var(--fs-sm)' }}>
                         <span style={{ color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.card}</span>
                         {/* net refunds can put a card in credit — don't print "−-$44.79" in red */}
                         <span style={{ fontWeight: 600, flexShrink: 0, color: c.total > 0 ? 'var(--expense)' : 'var(--income)' }}>

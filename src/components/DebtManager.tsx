@@ -159,15 +159,15 @@ export default function DebtManager() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 14 }}>
         <div style={{ textAlign: 'left' }}>
           <div className="stat-label">Remaining</div>
-          <div style={{ fontSize: 'clamp(20px, 5.5vw, 30px)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', color: totalRemaining > 0 ? 'var(--expense)' : 'var(--income)' }}>{money(totalRemaining)}</div>
+          <div style={{ fontSize: 'var(--fs-card)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', color: totalRemaining > 0 ? 'var(--expense)' : 'var(--income)' }}>{money(totalRemaining)}</div>
         </div>
         <div style={{ textAlign: 'center' }}>
           <div className="stat-label">Paid Off</div>
-          <div style={{ fontSize: 'clamp(20px, 5.5vw, 30px)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', color: 'var(--income)' }}>{money(totalPaid)}</div>
+          <div style={{ fontSize: 'var(--fs-card)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', color: 'var(--income)' }}>{money(totalPaid)}</div>
         </div>
         <div style={{ textAlign: 'right' }}>
           <div className="stat-label">Original</div>
-          <div style={{ fontSize: 'clamp(20px, 5.5vw, 30px)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>{money(totalDebt)}</div>
+          <div style={{ fontSize: 'var(--fs-card)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>{money(totalDebt)}</div>
         </div>
       </div>
 

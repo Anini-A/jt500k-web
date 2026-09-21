@@ -181,15 +181,15 @@ export default function BudgetManager() {
               what that leaves. */}
           <div style={{ textAlign: 'left', minWidth: 0 }}>
             <div className="stat-label">Received</div>
-            <div style={{ fontSize: 'clamp(20px, 5.5vw, 30px)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', color: 'var(--income)' }}>{money(received)}</div>
+            <div style={{ fontSize: 'var(--fs-card)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', color: 'var(--income)' }}>{money(received)}</div>
           </div>
           <div style={{ textAlign: 'center', minWidth: 0 }}>
             <div className="stat-label">{isCurrentMonth ? 'Out so far' : 'Out'}</div>
-            <div style={{ fontSize: 'clamp(20px, 5.5vw, 30px)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>{money(outflow)}</div>
+            <div style={{ fontSize: 'var(--fs-card)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>{money(outflow)}</div>
           </div>
           <div style={{ textAlign: 'right', minWidth: 0 }}>
             <div className="stat-label">{isCurrentMonth ? 'Unspent so far' : leftToSpend < 0 ? 'Overspent by' : 'Left over'}</div>
-            <div style={{ fontSize: 'clamp(20px, 5.5vw, 30px)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', color: leftToSpend < 0 ? 'var(--expense)' : 'var(--text-primary)' }}>{money(leftToSpend)}</div>
+            <div style={{ fontSize: 'var(--fs-card)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', color: leftToSpend < 0 ? 'var(--expense)' : 'var(--text-primary)' }}>{money(leftToSpend)}</div>
           </div>
         </div>
 

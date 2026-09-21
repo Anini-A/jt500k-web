@@ -83,7 +83,7 @@ function StatusChip({ status }: { status: Status }) {
 function Summary({ big, label }: { big: string; label: string }) {
   return (
     <div style={{ marginBottom: 12, padding: '12px 14px', background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 12 }}>
-      <div style={{ fontWeight: 800, fontSize: 'clamp(22px, 6vw, 28px)', letterSpacing: '-0.02em' }}>{big}</div>
+      <div style={{ fontWeight: 800, fontSize: 'var(--fs-card)', letterSpacing: '-0.02em' }}>{big}</div>
       <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 2 }}>{label}</div>
     </div>
   )

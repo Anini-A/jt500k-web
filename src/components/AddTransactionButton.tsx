@@ -636,7 +636,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                       <span style={{ fontSize: 30, fontWeight: 700, color: form.amount ? 'var(--text-primary)' : 'var(--text-muted)' }}>$</span>
                       <input autoFocus inputMode="decimal" value={form.amount} placeholder="0.00"
                         onChange={(e) => setForm({ ...form, amount: e.target.value.replace(/[^0-9.]/g, '') })}
-                        style={{ fontSize: 'clamp(40px, 12vw, 54px)', fontWeight: 800, letterSpacing: '-0.02em', border: 'none', background: 'transparent', textAlign: 'left', outline: 'none', color: 'var(--text-primary)', fontFamily: 'inherit', width: `${Math.max(6, form.amount.length + 2)}ch`, maxWidth: '100%' }} />
+                        style={{ fontSize: 'var(--fs-hero)', fontWeight: 800, letterSpacing: '-0.02em', border: 'none', background: 'transparent', textAlign: 'left', outline: 'none', color: 'var(--text-primary)', fontFamily: 'inherit', width: `${Math.max(6, form.amount.length + 2)}ch`, maxWidth: '100%' }} />
                     </div>
                   </div>
 

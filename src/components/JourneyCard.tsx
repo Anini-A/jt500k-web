@@ -98,7 +98,7 @@ export default function JourneyCard() {
   if (!d || avgSave === null) return (
     <div style={{ padding: '2px 0 0' }} aria-busy="true" aria-label="Loading net worth">
       <div className="journey-edge" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-        <span className="skeleton" style={{ width: 220, height: 'clamp(36px, 10vw, 52px)' }} />
+        <span className="skeleton" style={{ width: 220, height: 'var(--fs-hero)' }} />
         <span className="skeleton" style={{ width: 96, height: 34, borderRadius: 999 }} />
       </div>
       <span className="skeleton" style={{ display: 'block', width: '100%', height: 'clamp(120px, 34vw, 168px)', marginTop: 14, borderRadius: 14 }} />
@@ -147,7 +147,7 @@ export default function JourneyCard() {
       {/* big amount on the left, progress pill facing it on the right — inset to
           line up with the header actions (e.g. Settings) above */}
       <div className="journey-edge" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-        <div style={{ fontWeight: 700, fontSize: 'clamp(36px, 10vw, 52px)', letterSpacing: '-0.035em', whiteSpace: 'nowrap', minWidth: 0 }}>{money(nw)}</div>
+        <div style={{ fontWeight: 700, fontSize: 'var(--fs-hero)', letterSpacing: '-0.035em', whiteSpace: 'nowrap', minWidth: 0 }}>{money(nw)}</div>
         {/* the pill IS the planner toggle — tap to open the goal planner */}
         <button onClick={toggleDetails} aria-expanded={detailsOpen} aria-label={detailsOpen ? 'Hide goal planner' : 'Open goal planner'}
           style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'baseline', gap: 5, padding: '7px 13px', borderRadius: 999, background: detailsOpen ? 'color-mix(in srgb, var(--accent) 12%, var(--kpi-bg))' : 'var(--kpi-bg)', border: `1px solid ${detailsOpen ? 'var(--accent)' : 'var(--border)'}`, whiteSpace: 'nowrap', cursor: 'pointer', fontFamily: 'inherit', transition: 'background .15s, border-color .15s' }}>

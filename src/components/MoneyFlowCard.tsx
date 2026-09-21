@@ -72,7 +72,7 @@ export default function MoneyFlowCard() {
                 <span style={{ width: 7, height: 7, borderRadius: '50%', background: g.color, flexShrink: 0 }} />
                 <span className="stat-label" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.label}</span>
               </div>
-              <div style={{ fontWeight: 700, fontSize: 'clamp(15px, 4.6vw, 19px)', letterSpacing: '-0.02em', marginTop: 3 }}>{money(g.value)}</div>
+              <div style={{ fontWeight: 700, fontSize: 'var(--fs-stat)', letterSpacing: '-0.02em', marginTop: 3 }}>{money(g.value)}</div>
               {/* arrow = direction vs last month; color = better/worse (green good, red bad) */}
               {g.delta !== null && Math.abs(g.delta) >= 1 && (
                 <div style={{ marginTop: 3, fontSize: 11, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: (g.goodUp ? g.delta >= 0 : g.delta < 0) ? 'var(--income)' : 'var(--expense)' }}>

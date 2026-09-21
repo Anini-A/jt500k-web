@@ -199,7 +199,7 @@ export default function InvestmentsPanel() {
           <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Portfolio value{person !== 'Household' ? ` · ${person}` : ''}</span>
           {data?.asOf && <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>As of {data.asOf}</span>}
         </div>
-        <div style={{ fontWeight: 700, fontSize: 'clamp(32px, 8vw, 44px)', color: 'var(--text-primary)', margin: '6px 0 4px', letterSpacing: '-0.03em' }}>{money(value)}</div>
+        <div style={{ fontWeight: 700, fontSize: 'var(--fs-hero)', color: 'var(--text-primary)', margin: '6px 0 4px', letterSpacing: '-0.03em' }}>{money(value)}</div>
         <div style={{ fontSize: 13, color: gain >= 0 ? 'var(--income)' : 'var(--expense)' }}>
           {gain >= 0 ? '↑' : '↓'} {money2(Math.abs(gain))} ({gain >= 0 ? '+' : ''}{gainPct.toFixed(1)}%) <span style={{ color: 'var(--text-muted)' }}>· cost {money(cost)}</span>
         </div>
