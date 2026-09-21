@@ -182,8 +182,12 @@ export default function DebtManager() {
             <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>
               {overallPct.toFixed(1)}% repaid
             </span>
-            <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>
-              {money(totalDebt)} original
+            {/* unlabelled: sitting opposite the percentage, under the bar it is the
+                denominator of, it reads as the whole without needing to say so.
+                The label stays for anyone who cannot see that arrangement. */}
+            <span className="stat-label" aria-label={`${money(totalDebt)} original total`}
+              style={{ textTransform: 'none', letterSpacing: 0, fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>
+              {money(totalDebt)}
             </span>
           </div>
         </div>
