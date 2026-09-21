@@ -18,6 +18,17 @@
   /* Lane INK: the readable text tone for a pill sitting on that lane's -soft fill.
      A lane colour on its own soft background lands around 2.3–2.6:1, so these
      darker tones carry the label instead. Fills stay -soft, text takes -ink. */
+  /* ── Glass blur ───────────────────────────────────────────────────────────
+     Ten different recipes were in use — blur(30px) saturate(200%), blur(30px)
+     saturate(190%), blur(34px) saturate(160%) and so on — with nothing
+     distinguishing them but the order they were written in. Two now: one for
+     large surfaces, one for bars and chips.
+     The radius came down with the merge (30-34px to 18px). backdrop-filter costs
+     roughly with its radius, and at 55% opacity the difference is very hard to
+     see, so this is the cheap half of the trade. */
+  --blur-surface: blur(18px) saturate(180%);
+  --blur-bar: blur(12px) saturate(160%);
+
   /* ── Radius ───────────────────────────────────────────────────────────────
      Sixteen distinct corner values were in use, most of them within a pixel or
      two of each other and none of them meaning anything different. These seven
@@ -193,8 +204,8 @@
     radial-gradient(130% 75% at 50% 26%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 68%),
     radial-gradient(120% 60% at 50% 108%, color-mix(in srgb, var(--savings) 17%, transparent), transparent 70%),
     color-mix(in srgb, var(--surface-1) 78%, transparent);
-  -webkit-backdrop-filter: blur(34px) saturate(160%);
-  backdrop-filter: blur(34px) saturate(160%);
+  -webkit-backdrop-filter: var(--blur-surface);
+  backdrop-filter: var(--blur-surface);
   box-shadow: var(--glass-sheen);
 }
 
@@ -244,7 +255,7 @@
   width: 54px; height: 54px; border-radius: var(--radius-pill); cursor: pointer;
   display: inline-flex; align-items: center; justify-content: center;
   border: 1px solid var(--glass-border); background: var(--glass-bg);
-  -webkit-backdrop-filter: blur(12px) saturate(150%); backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: var(--blur-bar); backdrop-filter: var(--blur-bar);
   box-shadow: var(--glass-rim); transition: transform .15s ease;
 }
 .voice-ctrl:hover { transform: translateY(-1px); }
@@ -382,7 +393,7 @@
   color: var(--text-primary); max-width: 440px; width: 100%;
   background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl);
   padding: 14px 16px; box-sizing: border-box;
-  -webkit-backdrop-filter: blur(14px) saturate(150%); backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: var(--blur-bar); backdrop-filter: var(--blur-bar);
   box-shadow: var(--glass-sheen), var(--glass-rim);
   max-height: 42vh; overflow-y: auto;
 }
@@ -678,8 +689,8 @@ header.top h1 {
 /* Glass material */
 .glass {
   background: var(--glass-bg);
-  backdrop-filter: blur(30px) saturate(190%);
-  -webkit-backdrop-filter: blur(30px) saturate(190%);
+  backdrop-filter: var(--blur-surface);
+  -webkit-backdrop-filter: var(--blur-surface);
   border: 1px solid var(--glass-border);
   /* the drop shadow only. The sheen and the inner rim drew the same top edge the
      border and the specular band already draw — four light edges saying one thing.
@@ -729,18 +740,6 @@ header.top h1 {
   flex-direction: column;
 }
 
-/* Two weights of card, so a screen can say which one matters.
-   Plain is the default: a solid surface with a hairline boundary, no blur and no
-   shadow. `.glass` is the raised one, and a screen should have at most one — when
-   every card is raised, none of them is. Restricting the blur is also the point
-   where this stops being cosmetic: backdrop-filter is the most expensive thing on
-   the page, and four of them used to composite on every scroll frame.
-   :not(.glass) rather than ordering, so .card and .glass cannot fight over which
-   was declared last. */
-.card:not(.glass) {
-  background: var(--surface-1);
-  border: 1px solid var(--border);
-}
 
 .card.hero {
   padding: 32px;
@@ -809,8 +808,8 @@ header.top h1 {
   text-decoration: none;
   cursor: pointer;
   border: 1px solid transparent;
-  -webkit-backdrop-filter: blur(10px) saturate(160%);
-  backdrop-filter: blur(10px) saturate(160%);
+  -webkit-backdrop-filter: var(--blur-bar);
+  backdrop-filter: var(--blur-bar);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
   transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
@@ -851,8 +850,8 @@ header.top h1 {
   color: var(--text-primary);
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
-  -webkit-backdrop-filter: blur(24px) saturate(190%);
-  backdrop-filter: blur(24px) saturate(190%);
+  -webkit-backdrop-filter: var(--blur-surface);
+  backdrop-filter: var(--blur-surface);
   box-shadow: var(--glass-sheen), var(--glass-rim);
   cursor: pointer;
   text-decoration: none;
@@ -934,8 +933,8 @@ header.top h1 {
   color: var(--text-primary);
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: var(--blur-surface);
+  backdrop-filter: var(--blur-surface);
   box-shadow: var(--glass-sheen);
   transition: box-shadow 0.2s ease;
 }
@@ -976,8 +975,8 @@ header.top h1 {
   border-radius: var(--radius-xl);
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: var(--blur-surface);
+  backdrop-filter: var(--blur-surface);
   box-shadow: var(--glass-sheen), var(--glass-rim);
   width: 100%;
   overflow-x: auto;
@@ -1218,8 +1217,8 @@ header.top h1 {
 /* shared glass shell for both pieces */
 .nav-pill, .nav-fab {
   background: var(--glass-specular), var(--glass-bg);
-  -webkit-backdrop-filter: blur(30px) saturate(200%);
-  backdrop-filter: blur(30px) saturate(200%);
+  -webkit-backdrop-filter: var(--blur-surface);
+  backdrop-filter: var(--blur-surface);
   border: 1px solid var(--glass-border);
   box-shadow: 0 10px 34px rgba(20, 20, 25, 0.20), var(--glass-sheen), var(--glass-rim), inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
@@ -1256,8 +1255,8 @@ header.top h1 {
   display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
   border-radius: var(--radius-2xl);
   background: var(--glass-specular), var(--glass-bg);
-  -webkit-backdrop-filter: blur(30px) saturate(200%);
-  backdrop-filter: blur(30px) saturate(200%);
+  -webkit-backdrop-filter: var(--blur-surface);
+  backdrop-filter: var(--blur-surface);
   border: 1px solid var(--glass-border);
   box-shadow: 0 12px 36px rgba(20, 20, 25, 0.22), var(--glass-sheen), var(--glass-rim), inset 0 1px 0 rgba(255, 255, 255, 0.5);
   animation: sheetIn 0.2s cubic-bezier(0.2, 0.9, 0.3, 1);
@@ -1297,8 +1296,8 @@ header.top h1 {
   color: var(--text-secondary);
   background: var(--glass-specular), var(--glass-bg);
   border: 1px solid var(--glass-border);
-  -webkit-backdrop-filter: blur(12px) saturate(150%);
-  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: var(--blur-bar);
+  backdrop-filter: var(--blur-bar);
   box-shadow: var(--glass-rim);
   transition: transform 0.12s ease, background 0.2s ease, color 0.2s ease;
 }
@@ -1346,8 +1345,8 @@ header.top h1 {
       color-mix(in srgb, var(--accent) 60%, transparent) 0%,
       color-mix(in srgb, var(--savings) 56%, transparent) 50%,
       color-mix(in srgb, var(--income) 58%, transparent) 100%);
-  backdrop-filter: blur(12px) saturate(160%);
-  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  backdrop-filter: var(--blur-bar);
+  -webkit-backdrop-filter: var(--blur-bar);
   box-shadow: 0 6px 22px color-mix(in srgb, var(--accent) 26%, transparent), var(--glass-sheen);
   transition: transform .18s ease, box-shadow .28s ease, background .28s ease;
 }

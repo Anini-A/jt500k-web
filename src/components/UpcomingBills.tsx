@@ -72,7 +72,7 @@ export default function UpcomingBills() {
   // Nothing to show / still cold-loading with no cache → render nothing (keep Home clean)
   if (!data && !loaded) return null
   if (error && !bills.length) return (
-    <div className="card"><span className="hdr-label">Bills</span><LoadError onRetry={() => { setError(false); load() }} label="Couldn't load bills" compact /></div>
+    <div className="card glass"><span className="hdr-label">Bills</span><LoadError onRetry={() => { setError(false); load() }} label="Couldn't load bills" compact /></div>
   )
   if (!bills.length) return null
 
@@ -135,7 +135,7 @@ export default function UpcomingBills() {
   )
 
   return (
-    <div className="card">
+    <div className="card glass">
       {/* Header taps to Bills only when there's no coverage card to carry the tap */}
       {cycle || accountPill ? header : <a href="/dashboard" onClick={() => goBills(activeId)} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>{header}</a>}
 
