@@ -149,9 +149,6 @@ export default function Dashboard() {
     const [ty, tm] = to.split('-').map(Number)
     return Math.max(1, (ty - fy) * 12 + (tm - fm) + 1)
   }, [from, to])
-  const topIncome = agg.incomeCat[0]
-  const topExpense = agg.expenseCat[0]
-  const topSaving = agg.savingsCat[0]
   const savingsRate = agg.income > 0 ? Math.round((agg.savings / agg.income) * 100) : 0
 
   const renderFilterBar = (
@@ -226,8 +223,7 @@ export default function Dashboard() {
           <>
             <HeroRow stats={[
               { label: 'Total Income', value: money(agg.income), cls: 'income' },
-              { label: 'Top Source', value: topIncome ? money(topIncome.total) : '—', sub: topIncome?.name },
-              { label: 'Per month', value: money(agg.income / monthsSpan) },
+              { label: 'Per month', value: money(agg.income / monthsSpan), sub: `over ${monthsSpan} month${monthsSpan > 1 ? 's' : ''}` },
             ]} />
             <section className="block">
               <div className="grid-2">
@@ -249,8 +245,7 @@ export default function Dashboard() {
           <>
             <HeroRow stats={[
               { label: 'Total Expenses', value: money(agg.expense), cls: 'expense' },
-              { label: 'Top Category', value: topExpense ? money(topExpense.total) : '—', sub: topExpense?.name },
-              { label: 'Per month', value: money(agg.expense / monthsSpan) },
+              { label: 'Per month', value: money(agg.expense / monthsSpan), sub: `over ${monthsSpan} month${monthsSpan > 1 ? 's' : ''}` },
             ]} />
             <section className="block">
               <div className="grid-2">
@@ -272,7 +267,6 @@ export default function Dashboard() {
           <>
             <HeroRow stats={[
               { label: 'Total Savings', value: money(agg.savings), cls: 'savings' },
-              { label: 'Top Account', value: topSaving ? money(topSaving.total) : '—', sub: topSaving?.name },
               { label: 'Savings Rate', value: `${savingsRate}%`, sub: 'of income' },
             ]} />
             <section className="block">
@@ -348,38 +342,23 @@ function DashHeader() {
 interface Stat { label: string; value: string; sub?: string; cls?: string }
 
 
-// The headline figure, with its supporting stats in a sunk panel opposite it.
-// They used to sit beside the hero as run-on lines — "Top Source $74,958 · Paycheck"
-// — set nowrap, so on a phone they ran off the card, and the part worth reading
-// (which source) came last and dimmest. Each is now a plain label / figure / name
-// stack, and the panel groups them without introducing a second card.
+// The headline figure, with whatever qualifies it on one quiet line beneath.
+// This was briefly a panel of stat cards inside the card — a box in a box, and the
+// stats it held (top source / top category / top account) were the first bar of the
+// ranked chart two rows below, which shows all of them rather than just the biggest.
 function HeroRow({ stats }: { stats: Stat[] }) {
   const [primary, ...rest] = stats
   return (
     <section className="block">
-      {/* the panel sits opposite the headline, its stats abreast inside it. That
-          leaves each stat ~85px on a phone, so the figures are --fs-base: at
-          --fs-stat a value like $8,719.27 needs ~96px and the panel would push
-          past the card. flexWrap is the safety net — on anything narrower the
-          panel drops beneath rather than squeezing the figure it supports. */}
-      <div className="card glass" style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-        <div style={{ minWidth: 0 }}>
-          <span className="hdr-label">{primary.label}</span>
-          <div className={`stat-value ${primary.cls || ''}`} style={{ letterSpacing: '-0.03em', marginTop: 4, whiteSpace: 'nowrap' }}>{primary.value}</div>
-        </div>
-        {rest.length > 0 && (
-          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${rest.length}, minmax(0, 1fr))`, gap: 14, padding: '10px 14px', borderRadius: 14, background: 'var(--kpi-bg)', border: '1px solid var(--border)' }}>
-            {rest.map((s) => (
-              <div key={s.label} style={{ minWidth: 0 }}>
-                <div className="stat-label">{s.label}</div>
-                <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', marginTop: 2, whiteSpace: 'nowrap' }}>{s.value}</div>
-                {s.sub && (
-                  <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.sub}</div>
-                )}
-              </div>
-            ))}
+      <div className="card glass">
+        <span className="hdr-label">{primary.label}</span>
+        <div className={`stat-value ${primary.cls || ''}`} style={{ letterSpacing: '-0.03em', marginTop: 4, whiteSpace: 'nowrap' }}>{primary.value}</div>
+        {rest.map((s) => (
+          <div key={s.label} style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginTop: 6 }}>
+            <b style={{ color: 'var(--text-secondary)', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{s.value}</b>
+            {` ${s.label.toLowerCase()}`}{s.sub ? ` · ${s.sub}` : ''}
           </div>
-        )}
+        ))}
       </div>
     </section>
   )
