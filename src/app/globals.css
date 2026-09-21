@@ -26,7 +26,7 @@
      Radius carries the material: at 18px the cards stopped reading as glass and
      started reading as flat translucent panels, so the surface blur is back up.
      Cost goes roughly with radius, and this is where it buys something. */
-  --blur-surface: blur(36px) saturate(200%) brightness(1.08);
+  --blur-surface: blur(30px) saturate(210%) brightness(1.12);
   --blur-bar: blur(18px) saturate(175%) brightness(1.04);
 
   /* ── Radius ───────────────────────────────────────────────────────────────
@@ -74,7 +74,11 @@
   --danger: #e5484d;
   --danger-soft: color-mix(in srgb, #e5484d 14%, transparent);
 
-  --glass-bg: rgba(255, 255, 255, 0.4);
+  --lip-top: 0.95;
+  --lip-bottom: 0.5;
+  --lip-side: 0.3;
+  --glass-underlight: rgba(120, 132, 156, 0.22);
+  --glass-bg: rgba(255, 255, 255, 0.18);
   --glass-bg-strong: rgba(240, 240, 242, 0.9); /* modal shell — more opaque so content reads with full contrast */
   --glass-border: rgba(255, 255, 255, 0.8);
   --glass-shadow: 0 8px 32px rgba(24, 26, 30, 0.1);
@@ -82,7 +86,7 @@
   --kpi-bg: rgba(255, 255, 255, 0.4);
   --header-bg: rgba(244, 244, 243, 0.95);
   /* Liquid-glass polish: specular top highlight + inner light rim */
-  --glass-specular: linear-gradient(177deg, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0.22) 18%, rgba(255, 255, 255, 0) 48%);
+  --glass-specular: linear-gradient(176deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.34) 12%, rgba(255, 255, 255, 0.06) 34%, rgba(255, 255, 255, 0) 60%);
   --glass-rim: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
 
   /* ── Type scale ───────────────────────────────────────────────────────────
@@ -146,14 +150,18 @@
     --danger: #ff6369;
     --danger-soft: color-mix(in srgb, #ff6369 20%, transparent);
 
-    --glass-bg: rgba(28, 30, 33, 0.42);
+    --lip-top: 0.5;
+    --lip-bottom: 0.22;
+    --lip-side: 0.14;
+    --glass-underlight: rgba(0, 0, 0, 0.35);
+    --glass-bg: rgba(28, 30, 33, 0.28);
     --glass-bg-strong: rgba(24, 26, 29, 0.9); /* modal shell — more opaque for content contrast */
     --glass-border: rgba(255, 255, 255, 0.2);
     --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
     --glass-sheen: inset 0 1px 0 rgba(255, 255, 255, 0.12);
     --kpi-bg: rgba(255, 255, 255, 0.07);
     --header-bg: rgba(14, 15, 16, 0.95);
-    --glass-specular: linear-gradient(177deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.08) 20%, rgba(255, 255, 255, 0) 50%);
+    --glass-specular: linear-gradient(176deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.12) 12%, rgba(255, 255, 255, 0.03) 34%, rgba(255, 255, 255, 0) 60%);
     --glass-rim: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
   }
 }
@@ -686,18 +694,37 @@ header.top h1 {
   text-decoration: none;
 }
 
-/* Glass material */
+/* Liquid glass material.
+   The difference from frosted glass is where the material lives. Frosted glass is
+   a milky fill with a blur behind it: the BODY is the material. Here the body is
+   nearly clear and the EDGE is the material — a thick rounded lip that gathers
+   light, brightens along the top where light enters, and throws a second, weaker
+   highlight along the bottom where it refracts back out. That double highlight is
+   the cue; a single top sheen reads as a panel with a shiny edge.
+
+   True refraction — the background actually bending and magnifying at the rim —
+   needs an SVG displacement map or WebGL, not backdrop-filter. This is the layered
+   approximation: clear body, lit bevel, light wrapping to the far edge. */
 .glass {
   background: var(--glass-bg);
   backdrop-filter: var(--blur-surface);
   -webkit-backdrop-filter: var(--blur-surface);
-  border: 1px solid var(--glass-border);
-  /* Shadow plus the sheen. The sheen is a 1px specular highlight along the top
-     lip — the cue that reads as glass rather than as a translucent panel — so it
-     is not interchangeable with the soft specular band or the flat border, which
-     is what dropping it proved. The inner rim IS redundant with the border, and
-     stays dropped. */
-  box-shadow: var(--glass-shadow), var(--glass-sheen);
+  border: none;
+  box-shadow:
+    /* lift off the page */
+    var(--glass-shadow),
+    /* the outer rim, hairline and bright */
+    0 0 0 1px var(--glass-border),
+    /* top lip: where light enters the glass */
+    inset 0 1.5px 0.5px -0.5px rgba(255, 255, 255, var(--lip-top)),
+    /* bottom lip: the same light leaving the far side, always weaker */
+    inset 0 -1.5px 0.5px -0.5px rgba(255, 255, 255, var(--lip-bottom)),
+    /* the side walls, so the lip reads as a continuous ring rather than two lines */
+    inset 1.5px 0 1px -1px rgba(255, 255, 255, var(--lip-side)),
+    inset -1.5px 0 1px -1px rgba(255, 255, 255, var(--lip-side)),
+    /* thickness: the body shades away from the lit top edge */
+    inset 0 18px 24px -20px rgba(255, 255, 255, var(--lip-top)),
+    inset 0 -22px 26px -22px var(--glass-underlight);
 }
 
 /* Liquid-glass specular — a capped top highlight band so tall cards never wash out.
@@ -725,6 +752,12 @@ header.top h1 {
     --glass-border: var(--border);
     --glass-sheen: none;
     --glass-rim: none;
+    /* the lit bevel is the material; on an opaque surface it has nothing to
+       refract and just draws bright lines, so it goes too */
+    --lip-top: 0;
+    --lip-bottom: 0;
+    --lip-side: 0;
+    --glass-underlight: transparent;
     --glass-specular: none;
     --kpi-bg: var(--page-plane);
     --header-bg: var(--page-plane);
