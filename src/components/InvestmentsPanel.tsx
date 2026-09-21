@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useMemo, useCallback } from 'react'
+import { ownerTint } from '@/lib/lanes'
 import { createPortal } from 'react-dom'
 import { Upload, RefreshCw, Plus, Pencil, Trash2, LineChart } from 'lucide-react'
 import { Donut } from './DashCharts'
@@ -20,14 +21,8 @@ const money2 = (n: number) => n.toLocaleString('en-CA', { style: 'currency', cur
 const OWNER_ORDER = ['Jean', 'Henriette', 'Joint', 'Noah']
 const OWNERS = ['Jean', 'Henriette', 'Joint', 'Noah']
 
-const OWNER_COLOR: Record<string, { fg: string; bg: string }> = {
-  Jean: { fg: 'var(--accent-ink)', bg: 'var(--accent-soft)' },
-  Henriette: { fg: 'var(--savings-ink)', bg: 'var(--savings-soft)' },
-  Noah: { fg: 'var(--income-ink)', bg: 'var(--income-soft)' },
-  Joint: { fg: 'var(--warning-ink)', bg: 'var(--warning-soft)' },
-}
 function OwnerPill({ owner }: { owner: string }) {
-  const c = OWNER_COLOR[owner] || { fg: 'var(--text-secondary)', bg: 'var(--kpi-bg)' }
+  const c = ownerTint(owner)
   return <span style={{ background: c.bg, color: c.fg, padding: '2px 9px', borderRadius: 999, fontSize: 'var(--fs-2xs)', fontWeight: 600, whiteSpace: 'nowrap' }}>{owner}</span>
 }
 
@@ -206,7 +201,7 @@ export default function InvestmentsPanel() {
         {person === 'Household' && owners.length > 1 && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: 'clamp(14px, 3vw, 28px)', marginTop: 20 }}>
             {owners.map((o) => {
-              const c = OWNER_COLOR[o] || { fg: 'var(--text-secondary)', bg: 'var(--kpi-bg)' }
+              const c = ownerTint(o)
               return (
                 <button key={o} onClick={() => setPerson(o)} style={{ textAlign: 'left', cursor: 'pointer', background: 'transparent', border: 'none', borderLeft: `2px solid ${c.fg}`, borderRadius: 0, padding: '2px 0 2px 10px' }}>
                   <div style={{ fontSize: 'var(--fs-xs)', fontWeight: 600, color: c.fg }}>{o}</div>
@@ -223,7 +218,7 @@ export default function InvestmentsPanel() {
         {accounts.map((a, idx) => {
           const g = a.value - a.cost
           const gp = a.cost > 0 ? (g / a.cost) * 100 : 0
-          const c = OWNER_COLOR[a.owner]
+          const c = ownerTint(a.owner)
           return (
             <div key={a.key} style={{ paddingTop: idx ? 18 : 0, marginTop: idx ? 18 : 0, borderTop: idx ? '1px solid var(--border)' : 'none' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>

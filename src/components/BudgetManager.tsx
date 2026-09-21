@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { LANE } from '@/lib/lanes'
 import { Plus, Pencil, Trash2, ChevronDown, Wallet, CreditCard, PiggyBank, Banknote, type LucideIcon } from 'lucide-react'
 import CategorySelect from './CategorySelect'
 import { today } from '@/lib/date'
@@ -115,17 +116,16 @@ export default function BudgetManager() {
   // four independent groups instead of one blended cushion.
   const isSetAside = (e: Envelope) => e.type === 'savings' || e.category === 'Debt Repayment'
   const sum = (arr: Envelope[], k: 'budgeted' | 'spent') => arr.reduce((s, e) => s + e[k], 0)
-  // One lane each, text on the lane's -ink tone: Spending sat on var(--savings),
-  // so it and Saving came out the same indigo, and a lane colour is too light to
-  // read on its own -soft fill.
+  // Behaviour stays here; the label and the tint come from the shared lanes, so a
+  // lane never means one thing in Budget and another in the recurring sheet.
   const groups = [
-    { key: 'income', icon: Wallet as LucideIcon, label: 'Income', color: 'var(--income-ink)', soft: 'var(--income-soft)', goodUp: true, paced: true,
+    { ...LANE.income, icon: Wallet as LucideIcon, goodUp: true, paced: true,
       envs: envelopes.filter((e) => e.type === 'income') },
-    { key: 'spending', icon: CreditCard as LucideIcon, label: 'Spending', color: 'var(--expense-ink)', soft: 'var(--expense-soft)', goodUp: false, paced: true,
+    { ...LANE.spending, icon: CreditCard as LucideIcon, goodUp: false, paced: true,
       envs: envelopes.filter((e) => e.type === 'expense' && e.category !== 'Debt Repayment') },
-    { key: 'saving', icon: PiggyBank as LucideIcon, label: 'Saving', color: 'var(--savings-ink)', soft: 'var(--savings-soft)', goodUp: true, paced: false,
+    { ...LANE.saving, icon: PiggyBank as LucideIcon, goodUp: true, paced: false,
       envs: envelopes.filter((e) => e.type === 'savings') },
-    { key: 'debt', icon: Banknote as LucideIcon, label: 'Debt Repayment', color: 'var(--warning-ink)', soft: 'var(--warning-soft)', goodUp: true, paced: false,
+    { ...LANE.debt, label: 'Debt Repayment', icon: Banknote as LucideIcon, goodUp: true, paced: false,
       envs: envelopes.filter((e) => e.category === 'Debt Repayment') },
   ].map((g) => ({ ...g, budgeted: sum(g.envs, 'budgeted'), actual: sum(g.envs, 'spent') }))
 
@@ -212,7 +212,7 @@ export default function BudgetManager() {
         {/* The four group bars are the breakdown, not the headline */}
         <div style={{ display: 'grid', gap: 16, marginTop: 20, paddingTop: 18, borderTop: '1px solid var(--border)' }}>
           {groups.map((g) => (
-            <GroupBar key={g.key} icon={g.icon} label={g.label} color={g.color}
+            <GroupBar key={g.key} icon={g.icon} label={g.label} color={g.fg}
               budgeted={g.budgeted} actual={g.actual} goodUp={g.goodUp}
               pace={g.paced ? pace : null} />
           ))}
@@ -271,7 +271,7 @@ export default function BudgetManager() {
                 {/* Coloured group label — only needed in the 'All' view to separate groups */}
                 {groupFilter === 'all' && (
                   <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
-                    <span style={{ background: g.soft, color: g.color, padding: '3px 11px', borderRadius: 999, fontSize: 'var(--fs-xs)', fontWeight: 700, whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}><g.icon size={13} /> {g.label}</span>
+                    <span style={{ background: g.bg, color: g.fg, padding: '3px 11px', borderRadius: 999, fontSize: 'var(--fs-xs)', fontWeight: 700, whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}><g.icon size={13} /> {g.label}</span>
                     <span className="stat-label" style={{ flexShrink: 0 }}>{money(g.actual)} / {money(g.budgeted)}</span>
                   </div>
                 )}

@@ -9,6 +9,7 @@ import IconPill from './IconPill'
 import { useConfirm } from './Feedback'
 import { getJSON, cachedValue } from '@/lib/fresh'
 import { useCssSupports } from '@/lib/useCssSupports'
+import { LANES, laneOf } from '@/lib/lanes'
 import { signedRowAmount } from '@/lib/draftTotals'
 import { ymd, today } from '@/lib/date'
 
@@ -533,7 +534,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
 
   // Recurring: group into the same buckets as the Budget tab
   const recType = (r: any) => r.type ?? cats.find((c) => c.name === r.category)?.type ?? 'expense'
-  const recGroup = (r: any) => { const t = recType(r); return t === 'income' ? 'income' : t === 'savings' ? 'saving' : r.category === 'Debt Repayment' ? 'debt' : 'spending' }
+  const recGroup = (r: any) => laneOf(recType(r), r.category)
   // The Debt group lists your DEBTS, not the budget lines that fund them — that's the
   // choice being made here ("which debts am I paying this month"), and four of the debts
   // have no plan line at all, so a line-driven list left them unloggable.
@@ -558,15 +559,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
     return [...rows.sort((a, b) => b.amount - a.amount || b.remaining - a.remaining), ...unlinked]
   })()
   const rowsOfGroup = (key: string) => (key === 'debt' ? debtRows : visibleRecs.filter((r) => recGroup(r) === key))
-  // One lane each: Spending was on the savings colour, so the two pills came out
-  // the same indigo and the grouping told you nothing. Text takes the lane's -ink
-  // tone — the lane colour itself is too light to read on its own -soft fill.
-  const REC_GROUPS = [
-    { key: 'income', label: 'Income', color: 'var(--income-ink)', soft: 'var(--income-soft)' },
-    { key: 'spending', label: 'Spending', color: 'var(--expense-ink)', soft: 'var(--expense-soft)' },
-    { key: 'saving', label: 'Saving', color: 'var(--savings-ink)', soft: 'var(--savings-soft)' },
-    { key: 'debt', label: 'Debt', color: 'var(--warning-ink)', soft: 'var(--warning-soft)' },
-  ]
+  const REC_GROUPS = LANES
   const recGroupsPresent = REC_GROUPS.filter((g) => rowsOfGroup(g.key).length > 0)
   const allRows = REC_GROUPS.flatMap((g) => rowsOfGroup(g.key))
   // a ticked row with no amount yet isn't loggable, so it doesn't count toward the button
@@ -901,7 +894,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                         return (
                         <div key={g.key}>
                           <button type="button" onClick={() => toggleFold(g.key)} aria-expanded={!folded}
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: g.soft, color: g.color, padding: '3px 9px 3px 11px', borderRadius: 999, fontSize: 'var(--fs-xs)', fontWeight: 700, marginBottom: 6, border: 'none', fontFamily: 'inherit', cursor: 'pointer' }}>
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: g.bg, color: g.fg, padding: '3px 9px 3px 11px', borderRadius: 999, fontSize: 'var(--fs-xs)', fontWeight: 700, marginBottom: 6, border: 'none', fontFamily: 'inherit', cursor: 'pointer' }}>
                             {g.label}
                             <span style={{ opacity: 0.75, fontWeight: 600 }}>{pickedHere > 0 ? `${pickedHere}/${groupRows.length}` : groupRows.length}</span>
                             <ChevronDown size={13} style={{ transform: folded ? 'rotate(-90deg)' : 'none', transition: 'transform .18s ease' }} />

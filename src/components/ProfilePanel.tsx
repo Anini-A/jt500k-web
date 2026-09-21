@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { ownerTint, tint, HORIZONS } from '@/lib/lanes'
 import { Pencil, Plus, Trash2, ExternalLink, Users, Home, Shield, ScrollText, Flag, Building2, FileText, type LucideIcon } from 'lucide-react'
 import { getJSON } from '@/lib/fresh'
 import { useToast } from './Feedback'
@@ -30,12 +31,6 @@ const SECTION_META: Record<string, { Icon: LucideIcon; short: string }> = {
 }
 
 // owner colour system (shared with Investments)
-const OWNER_COLOR: Record<string, { fg: string; bg: string; initials: string }> = {
-  Jean: { fg: 'var(--accent-ink)', bg: 'var(--accent-soft)', initials: 'JA' },
-  Henriette: { fg: 'var(--savings-ink)', bg: 'var(--savings-soft)', initials: 'HF' },
-  Noah: { fg: 'var(--income-ink)', bg: 'var(--income-soft)', initials: 'NN' },
-  Joint: { fg: 'var(--warning-ink)', bg: 'var(--warning-soft)', initials: 'JT' },
-}
 function detectOwner(text: string): string | null {
   const t = ` ${text.toLowerCase()} `
   if (/\bhenriette\b|\bhf\b/.test(t)) return 'Henriette'
@@ -69,15 +64,10 @@ const parseMoney = (t: string) => parseAmounts(t)[0] || 0
 const moneyShort = (n: number) => n >= 1e6 ? '$' + +(n / 1e6).toFixed(2) + 'M' : n >= 1000 ? '$' + Math.round(n / 1000) + 'K' : '$' + Math.round(n)
 const isPerson = (it: Item) => !!(it.fields && it.fields.length) && /^(jean|henriette|noah|nono|dependent)\b/i.test(it.label)
 
-const HORIZON: Record<string, { fg: string; bg: string }> = {
-  short: { fg: 'var(--income-ink)', bg: 'var(--income-soft)' },
-  medium: { fg: 'var(--warning-ink)', bg: 'var(--warning-soft)' },
-  long: { fg: 'var(--savings-ink)', bg: 'var(--savings-soft)' },
-}
 const detectHorizon = (label: string) => { const t = label.toLowerCase(); return /short/.test(t) ? 'short' : /medium|mid/.test(t) ? 'medium' : /long/.test(t) ? 'long' : null }
 
 function StatusChip({ status }: { status: Status }) {
-  const meta = { todo: { l: '⚠ To do', fg: 'var(--expense)', bg: 'var(--expense-soft)' }, doing: { l: '◔ In progress', fg: 'var(--accent)', bg: 'var(--accent-soft)' }, done: { l: '✓ Done', fg: 'var(--income)', bg: 'var(--income-soft)' } }[status]
+  const meta = { todo: { l: '⚠ To do', ...tint('expense') }, doing: { l: '◔ In progress', ...tint('accent') }, done: { l: '✓ Done', ...tint('income') } }[status]
   return <span style={{ background: meta.bg, color: meta.fg, padding: '2px 9px', borderRadius: 999, fontSize: 'var(--fs-2xs)', fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0 }}>{meta.l}</span>
 }
 function Summary({ big, label }: { big: string; label: string }) {
@@ -104,7 +94,7 @@ function ReadinessMeter({ done, total }: { done: number; total: number }) {
   )
 }
 function Avatar({ owner, size = 34 }: { owner: string; size?: number }) {
-  const m = OWNER_COLOR[owner] || { fg: 'var(--text-secondary)', bg: 'var(--kpi-bg)', initials: owner.slice(0, 2).toUpperCase() }
+  const m = ownerTint(owner)
   return <div style={{ width: size, height: size, borderRadius: '50%', background: m.bg, color: m.fg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: size * 0.36, flexShrink: 0 }}>{m.initials}</div>
 }
 
@@ -130,7 +120,7 @@ function FieldRows({ rows }: { rows: { label: string; value: string; status?: St
 
 function PersonCard({ item }: { item: Item }) {
   const owner = detectOwner(item.label) || detectOwner(itemText(item)) || 'Joint'
-  const meta = OWNER_COLOR[owner]
+  const meta = ownerTint(owner)
   return (
     <div style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderLeft: `3px solid ${meta.fg}`, borderRadius: 12, padding: '12px 14px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
@@ -173,7 +163,7 @@ function InsuranceByProvider({ items }: { items: Item[] }) {
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 12 }}>
             {g.items.map((it, i) => {
               const owner = detectOwner(it.label)
-              const meta = owner ? OWNER_COLOR[owner] : null
+              const meta = owner ? ownerTint(owner) : null
               return (
                 <div key={i} style={{ borderLeft: meta ? `3px solid ${meta.fg}` : '1px solid var(--border)', paddingLeft: 11 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
@@ -197,7 +187,7 @@ function GoalsView({ items }: { items: Item[] }) {
     <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 8 }}>
       {items.map((it, i) => {
         const h = detectHorizon(it.label)
-        const hz = h ? HORIZON[h] : null
+        const hz = h ? HORIZONS[h] : null
         return (
           <div key={i} style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderLeft: hz ? `3px solid ${hz.fg}` : '1px solid var(--border)', borderRadius: 12, padding: '11px 12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
