@@ -223,7 +223,7 @@ export default function Dashboard() {
           <>
             <HeroRow stats={[
               { label: 'Total Income', value: money(agg.income), cls: 'income' },
-              { label: 'Per month', value: money(agg.income / monthsSpan), sub: `over ${monthsSpan} month${monthsSpan > 1 ? 's' : ''}` },
+              { label: 'Avg per month', value: money(agg.income / monthsSpan), sub: `over ${monthsSpan} month${monthsSpan > 1 ? 's' : ''}` },
             ]} />
             <section className="block">
               <div className="grid-2">
@@ -245,7 +245,7 @@ export default function Dashboard() {
           <>
             <HeroRow stats={[
               { label: 'Total Expenses', value: money(agg.expense), cls: 'expense' },
-              { label: 'Per month', value: money(agg.expense / monthsSpan), sub: `over ${monthsSpan} month${monthsSpan > 1 ? 's' : ''}` },
+              { label: 'Avg per month', value: money(agg.expense / monthsSpan), sub: `over ${monthsSpan} month${monthsSpan > 1 ? 's' : ''}` },
             ]} />
             <section className="block">
               <div className="grid-2">
