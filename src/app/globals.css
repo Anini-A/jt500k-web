@@ -26,8 +26,8 @@
      Radius carries the material: at 18px the cards stopped reading as glass and
      started reading as flat translucent panels, so the surface blur is back up.
      Cost goes roughly with radius, and this is where it buys something. */
-  --blur-surface: blur(28px) saturate(190%);
-  --blur-bar: blur(14px) saturate(165%);
+  --blur-surface: blur(36px) saturate(200%) brightness(1.08);
+  --blur-bar: blur(18px) saturate(175%) brightness(1.04);
 
   /* ── Radius ───────────────────────────────────────────────────────────────
      Sixteen distinct corner values were in use, most of them within a pixel or
@@ -74,15 +74,15 @@
   --danger: #e5484d;
   --danger-soft: color-mix(in srgb, #e5484d 14%, transparent);
 
-  --glass-bg: rgba(255, 255, 255, 0.55);
+  --glass-bg: rgba(255, 255, 255, 0.4);
   --glass-bg-strong: rgba(240, 240, 242, 0.9); /* modal shell — more opaque so content reads with full contrast */
-  --glass-border: rgba(255, 255, 255, 0.65);
+  --glass-border: rgba(255, 255, 255, 0.8);
   --glass-shadow: 0 8px 32px rgba(24, 26, 30, 0.1);
   --glass-sheen: inset 0 1px 0 rgba(255, 255, 255, 0.7);
   --kpi-bg: rgba(255, 255, 255, 0.4);
   --header-bg: rgba(244, 244, 243, 0.95);
   /* Liquid-glass polish: specular top highlight + inner light rim */
-  --glass-specular: linear-gradient(177deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.16) 18%, rgba(255, 255, 255, 0) 48%);
+  --glass-specular: linear-gradient(177deg, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0.22) 18%, rgba(255, 255, 255, 0) 48%);
   --glass-rim: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
 
   /* ── Type scale ───────────────────────────────────────────────────────────
@@ -146,9 +146,9 @@
     --danger: #ff6369;
     --danger-soft: color-mix(in srgb, #ff6369 20%, transparent);
 
-    --glass-bg: rgba(28, 30, 33, 0.55);
+    --glass-bg: rgba(28, 30, 33, 0.42);
     --glass-bg-strong: rgba(24, 26, 29, 0.9); /* modal shell — more opaque for content contrast */
-    --glass-border: rgba(255, 255, 255, 0.16);
+    --glass-border: rgba(255, 255, 255, 0.2);
     --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
     --glass-sheen: inset 0 1px 0 rgba(255, 255, 255, 0.12);
     --kpi-bg: rgba(255, 255, 255, 0.07);
