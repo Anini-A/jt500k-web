@@ -348,22 +348,28 @@ function DashHeader() {
 interface Stat { label: string; value: string; sub?: string; cls?: string }
 
 
-// The headline figure, with its supporting stats in a sunk panel beneath it.
+// The headline figure, with its supporting stats in a sunk panel opposite it.
 // They used to sit beside the hero as run-on lines — "Top Source $74,958 · Paycheck"
-// — set nowrap and right-aligned, so on a phone they ran off the card, and the part
-// worth reading (which source) came last and dimmest. Each is now a plain
-// label / figure / name stack, and the panel groups them without a second card.
+// — set nowrap, so on a phone they ran off the card, and the part worth reading
+// (which source) came last and dimmest. Each is now a plain label / figure / name
+// stack, and the panel groups them without introducing a second card.
 function HeroRow({ stats }: { stats: Stat[] }) {
   const [primary, ...rest] = stats
   return (
     <section className="block">
-      <div className="card glass">
-        <span className="hdr-label">{primary.label}</span>
-        <div className={`stat-value ${primary.cls || ''}`} style={{ letterSpacing: '-0.03em', marginTop: 4, whiteSpace: 'nowrap' }}>{primary.value}</div>
+      {/* the panel sits opposite the headline. Its two stats stack INSIDE it: side by
+          side they would need ~360px next to the hero, more than a phone's card has.
+          flexWrap is the safety net — the panel drops beneath rather than squeezing
+          the figure it supports. */}
+      <div className="card glass" style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+        <div style={{ minWidth: 0 }}>
+          <span className="hdr-label">{primary.label}</span>
+          <div className={`stat-value ${primary.cls || ''}`} style={{ letterSpacing: '-0.03em', marginTop: 4, whiteSpace: 'nowrap' }}>{primary.value}</div>
+        </div>
         {rest.length > 0 && (
-          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${rest.length}, minmax(0, 1fr))`, gap: 12, marginTop: 14, padding: '12px 14px', borderRadius: 14, background: 'var(--kpi-bg)', border: '1px solid var(--border)' }}>
-            {rest.map((s, i) => (
-              <div key={s.label} style={{ minWidth: 0, textAlign: i === 0 ? 'left' : 'right' }}>
+          <div style={{ display: 'grid', gap: 10, padding: '12px 14px', borderRadius: 14, background: 'var(--kpi-bg)', border: '1px solid var(--border)', flexShrink: 0 }}>
+            {rest.map((s) => (
+              <div key={s.label} style={{ minWidth: 0 }}>
                 <div className="stat-label">{s.label}</div>
                 <div style={{ fontSize: 'var(--fs-stat)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', marginTop: 2 }}>{s.value}</div>
                 {s.sub && (
