@@ -151,18 +151,18 @@ export default function JourneyCard() {
         {/* the pill IS the planner toggle — tap to open the goal planner */}
         <button onClick={toggleDetails} aria-expanded={detailsOpen} aria-label={detailsOpen ? 'Hide goal planner' : 'Open goal planner'}
           style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'baseline', gap: 5, padding: '7px 13px', borderRadius: 999, background: detailsOpen ? 'color-mix(in srgb, var(--accent) 12%, var(--kpi-bg))' : 'var(--kpi-bg)', border: `1px solid ${detailsOpen ? 'var(--accent)' : 'var(--border)'}`, whiteSpace: 'nowrap', cursor: 'pointer', fontFamily: 'inherit', transition: 'background .15s, border-color .15s' }}>
-          <span style={{ fontWeight: 700, fontSize: 13.5, color: 'var(--accent)', letterSpacing: '-0.01em' }}>{pct.toFixed(0)}%</span>
-          <span style={{ fontSize: 13.5, color: 'var(--text-muted)' }}>of {short(goal)}</span>
+          <span style={{ fontWeight: 700, fontSize: 'var(--fs-base)', color: 'var(--accent)', letterSpacing: '-0.01em' }}>{pct.toFixed(0)}%</span>
+          <span style={{ fontSize: 'var(--fs-base)', color: 'var(--text-muted)' }}>of {short(goal)}</span>
         </button>
       </div>
-      {!hasHistory && <div className="journey-edge" style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>Trajectory builds as months are recorded</div>}
+      {!hasHistory && <div className="journey-edge" style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginTop: 8 }}>Trajectory builds as months are recorded</div>}
 
       {/* Faint freshness line, directly under the value — just the last price refresh */}
       {d.holdingsAsOf && (() => {
         const asOfDate = new Date(d.holdingsAsOf + 'T12:00:00')
         const stale = (Date.now() - asOfDate.getTime()) / (1000 * 60 * 60 * 24 * 30.4) >= 2
         return (
-          <div className="journey-edge" style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 6, fontSize: 11, color: 'var(--text-muted)' }}>
+          <div className="journey-edge" style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 6, fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)' }}>
             <span style={{ width: 5, height: 5, borderRadius: '50%', background: stale ? 'var(--expense)' : 'var(--text-muted)', flexShrink: 0, opacity: stale ? 1 : 0.6 }} />
             <span style={{ opacity: stale ? 0.9 : 0.5 }}>{refreshing ? 'Updating…' : refreshedAt ? `Updated ${relTime(refreshedAt)}` : 'Not updated yet'}{stale && !refreshing ? ' · update due' : ''}</span>
             <button className="nw-refresh" onClick={refreshInvestments} disabled={refreshing} aria-label="Update investment prices" title="Update investment prices"
@@ -185,7 +185,7 @@ export default function JourneyCard() {
             const on = range === r
             return (
               <button key={r} onClick={() => setRange(r)}
-                style={{ padding: on ? '6px 15px' : '6px 8px', borderRadius: 999, border: 'none', cursor: 'pointer', fontSize: 12.5, fontWeight: on ? 700 : 600, fontFamily: 'inherit', background: on ? 'var(--surface-1)' : 'transparent', color: on ? 'var(--text-primary)' : 'var(--text-muted)', boxShadow: on ? '0 1px 4px rgba(20,20,25,0.08)' : 'none', transition: 'background .15s, color .15s, box-shadow .15s' }}>{r}</button>
+                style={{ padding: on ? '6px 15px' : '6px 8px', borderRadius: 999, border: 'none', cursor: 'pointer', fontSize: 'var(--fs-xs)', fontWeight: on ? 700 : 600, fontFamily: 'inherit', background: on ? 'var(--surface-1)' : 'transparent', color: on ? 'var(--text-primary)' : 'var(--text-muted)', boxShadow: on ? '0 1px 4px rgba(20,20,25,0.08)' : 'none', transition: 'background .15s, color .15s, box-shadow .15s' }}>{r}</button>
             )
           })}
         </div>
@@ -196,19 +196,19 @@ export default function JourneyCard() {
         <div className="card glass" style={{ marginTop: 14, padding: 16 }}>
           {reached ? (
             <div style={{ textAlign: 'center', padding: '4px 0' }}>
-              <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--income)' }}>🎉 Goal reached</div>
-              <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 6 }}>You’ve passed {short(goal)} — set a new goal in Settings.</div>
+              <div style={{ fontSize: 'var(--fs-card)', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--income)' }}>🎉 Goal reached</div>
+              <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginTop: 6 }}>You’ve passed {short(goal)} — set a new goal in Settings.</div>
             </div>
           ) : (
             <>
               {/* outcome */}
               <div style={{ textAlign: 'center', paddingBottom: 13, marginBottom: 14, borderBottom: '1px solid var(--border)' }}>
-                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Reaching {short(goal)}</div>
-                <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em', marginTop: 3, color: projectable ? 'var(--accent)' : 'var(--text-muted)' }}>
+                <div style={{ fontSize: 'var(--fs-2xs)', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Reaching {short(goal)}</div>
+                <div style={{ fontSize: 'var(--fs-card)', fontWeight: 800, letterSpacing: '-0.02em', marginTop: 3, color: projectable ? 'var(--accent)' : 'var(--text-muted)' }}>
                   {projectable ? dateStr : 'Set a monthly amount'}
                 </div>
                 {projectable && (
-                  <div style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 3 }}>
+                  <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', marginTop: 3 }}>
                     <b style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>{awayStr}</b> away · at <b style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>{Math.round(rate * 100 * 10) / 10}%</b>/yr
                   </div>
                 )}
@@ -216,7 +216,7 @@ export default function JourneyCard() {
 
               {/* growth rate */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Yearly growth</span>
+                <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)' }}>Yearly growth</span>
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: 2, background: 'var(--kpi-bg)', borderRadius: 999, padding: 3 }}>
                   <Seg active={rateKey === 'c'} onClick={() => setRateKey('c')}>5%</Seg>
                   <Seg active={rateKey === 'm'} onClick={() => setRateKey('m')}>7%</Seg>
@@ -226,16 +226,16 @@ export default function JourneyCard() {
 
               {/* monthly contribution */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 12 }}>
-                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Saving / month</span>
+                <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)' }}>Saving / month</span>
                 <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 8 }}>
                   <span style={{ display: 'inline-flex', alignItems: 'baseline' }}>
-                    <span style={{ fontWeight: 600, fontSize: 18, color: 'var(--text-secondary)' }}>$</span>
+                    <span style={{ fontWeight: 600, fontSize: 'var(--fs-title)', color: 'var(--text-secondary)' }}>$</span>
                     <input inputMode="numeric" value={override} placeholder="0"
                       onChange={(e) => setOverride(e.target.value.replace(/[^0-9.]/g, ''))}
-                      style={{ width: 72, fontWeight: 800, fontSize: 18, padding: '0 2px 2px', border: 'none', borderBottom: '1px solid var(--border)', background: 'transparent', color: 'var(--text-primary)', fontFamily: 'inherit', outline: 'none', textAlign: 'right' }} />
+                      style={{ width: 72, fontWeight: 800, fontSize: 'var(--fs-title)', padding: '0 2px 2px', border: 'none', borderBottom: '1px solid var(--border)', background: 'transparent', color: 'var(--text-primary)', fontFamily: 'inherit', outline: 'none', textAlign: 'right' }} />
                   </span>
                   {Math.round(Number(override) || 0) !== Math.round(avgSave) && (
-                    <button onClick={() => setOverride(String(Math.round(avgSave)))} style={{ background: 'transparent', border: 'none', padding: 0, color: 'var(--accent)', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>↺ my pace</button>
+                    <button onClick={() => setOverride(String(Math.round(avgSave)))} style={{ background: 'transparent', border: 'none', padding: 0, color: 'var(--accent)', fontSize: 'var(--fs-xs)', fontWeight: 700, cursor: 'pointer' }}>↺ my pace</button>
                   )}
                 </span>
               </div>
@@ -352,7 +352,7 @@ function Spark({ real, proj, nowM, goal, anchor }: { real: { month: string; net:
         const tx = hover.left > 80 ? 'calc(-100% + 10px)' : hover.left < 20 ? '-10px' : '-50%'
         const ty = hover.top < 26 ? '18%' : '-115%'
         return (
-          <div style={{ position: 'absolute', left: `${hover.left}%`, top: `${hover.top}%`, transform: `translate(${tx}, ${ty})`, pointerEvents: 'none', background: 'var(--text-primary)', color: 'var(--surface-1)', borderRadius: 9, padding: '6px 9px', fontSize: 12, lineHeight: 1.3, whiteSpace: 'nowrap', boxShadow: '0 6px 18px rgba(0,0,0,0.22)' }}>
+          <div style={{ position: 'absolute', left: `${hover.left}%`, top: `${hover.top}%`, transform: `translate(${tx}, ${ty})`, pointerEvents: 'none', background: 'var(--text-primary)', color: 'var(--surface-1)', borderRadius: 9, padding: '6px 9px', fontSize: 'var(--fs-xs)', lineHeight: 1.3, whiteSpace: 'nowrap', boxShadow: '0 6px 18px rgba(0,0,0,0.22)' }}>
             <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>{fmtMonth(hover.month)}{hover.proj ? ' · proj.' : hover.est ? ' · est.' : ''}</span>&nbsp; <b style={{ fontWeight: 700 }}>{money(hover.net)}</b>
           </div>
         )
@@ -368,6 +368,6 @@ function Dot({ left, top }: { left: number; top: number }) {
 
 function Seg({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button onClick={onClick} style={{ padding: '4px 10px', borderRadius: 999, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, fontFamily: 'inherit', background: active ? 'var(--surface-1)' : 'transparent', color: active ? 'var(--text-primary)' : 'var(--text-muted)', boxShadow: active ? '0 1px 3px rgba(0,0,0,0.12)' : 'none' }}>{children}</button>
+    <button onClick={onClick} style={{ padding: '4px 10px', borderRadius: 999, border: 'none', cursor: 'pointer', fontSize: 'var(--fs-xs)', fontWeight: 600, fontFamily: 'inherit', background: active ? 'var(--surface-1)' : 'transparent', color: active ? 'var(--text-primary)' : 'var(--text-muted)', boxShadow: active ? '0 1px 3px rgba(0,0,0,0.12)' : 'none' }}>{children}</button>
   )
 }

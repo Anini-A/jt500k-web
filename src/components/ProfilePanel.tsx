@@ -13,7 +13,7 @@ interface Profile { sections: Section[]; links: { label: string; url: string }[]
 
 const inp: React.CSSProperties = {
   padding: '9px 11px', borderRadius: 10, border: '1px solid var(--border)',
-  background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 14, width: '100%',
+  background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 'var(--fs-base)', width: '100%',
   fontFamily: 'inherit', boxSizing: 'border-box',
 }
 const clone = <T,>(x: T): T => JSON.parse(JSON.stringify(x))
@@ -78,7 +78,7 @@ const detectHorizon = (label: string) => { const t = label.toLowerCase(); return
 
 function StatusChip({ status }: { status: Status }) {
   const meta = { todo: { l: '⚠ To do', fg: 'var(--expense)', bg: 'var(--expense-soft)' }, doing: { l: '◔ In progress', fg: 'var(--accent)', bg: 'var(--accent-soft)' }, done: { l: '✓ Done', fg: 'var(--income)', bg: 'var(--income-soft)' } }[status]
-  return <span style={{ background: meta.bg, color: meta.fg, padding: '2px 9px', borderRadius: 999, fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0 }}>{meta.l}</span>
+  return <span style={{ background: meta.bg, color: meta.fg, padding: '2px 9px', borderRadius: 999, fontSize: 'var(--fs-2xs)', fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0 }}>{meta.l}</span>
 }
 function Summary({ big, label }: { big: string; label: string }) {
   return (
@@ -94,7 +94,7 @@ function ReadinessMeter({ done, total }: { done: number; total: number }) {
   return (
     <div style={{ marginBottom: 12, padding: '12px 14px', background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 12 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, marginBottom: 8 }}>
-        <span style={{ fontWeight: 700, fontSize: 15 }}>Estate readiness</span>
+        <span style={{ fontWeight: 700, fontSize: 'var(--fs-md)' }}>Estate readiness</span>
         <span style={{ fontWeight: 700, color: allDone ? 'var(--income)' : 'var(--text-secondary)' }}>{allDone ? '✓ ' : ''}{done} of {total} in place</span>
       </div>
       <div style={{ height: 10, borderRadius: 999, background: 'var(--surface-1)', border: '1px solid var(--border)', overflow: 'hidden' }}>
@@ -116,8 +116,8 @@ function FieldRows({ rows }: { rows: { label: string; value: string; status?: St
         const open = r.status === undefined && todoRe.test(String(r.value || ''))
         return (
           <div key={i} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, padding: '10px 0', borderTop: i ? '1px solid var(--border)' : 'none', flexWrap: 'wrap' }}>
-            <span style={{ fontWeight: 600, fontSize: 14 }}>{r.label}</span>
-            <span style={{ fontSize: 14, color: 'var(--text-secondary)', textAlign: 'right', overflowWrap: 'anywhere', wordBreak: 'break-word', minWidth: 0, display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+            <span style={{ fontWeight: 600, fontSize: 'var(--fs-base)' }}>{r.label}</span>
+            <span style={{ fontSize: 'var(--fs-base)', color: 'var(--text-secondary)', textAlign: 'right', overflowWrap: 'anywhere', wordBreak: 'break-word', minWidth: 0, display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
               {r.status ? <StatusChip status={r.status} /> : open ? <StatusChip status="todo" /> : null}
               {isUrl(r.value) ? <a href={r.value} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', gap: 5, alignItems: 'center', fontWeight: 600 }}>Open <ExternalLink size={13} /></a> : r.value}
             </span>
@@ -135,7 +135,7 @@ function PersonCard({ item }: { item: Item }) {
     <div style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderLeft: `3px solid ${meta.fg}`, borderRadius: 12, padding: '12px 14px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
         <Avatar owner={owner} />
-        <span style={{ fontWeight: 700, fontSize: 15 }}>{item.label}</span>
+        <span style={{ fontWeight: 700, fontSize: 'var(--fs-md)' }}>{item.label}</span>
         {item.status && <StatusChip status={item.status} />}
       </div>
       <FieldRows rows={item.fields || []} />
@@ -169,7 +169,7 @@ function InsuranceByProvider({ items }: { items: Item[] }) {
     <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 10 }}>
       {[...groups.entries()].map(([name, g]) => (
         <div key={name} style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 14px' }}>
-          <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 7 }}><g.Icon size={15} /> {name}</div>
+          <div style={{ fontWeight: 700, fontSize: 'var(--fs-base)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 7 }}><g.Icon size={15} /> {name}</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 12 }}>
             {g.items.map((it, i) => {
               const owner = detectOwner(it.label)
@@ -178,7 +178,7 @@ function InsuranceByProvider({ items }: { items: Item[] }) {
                 <div key={i} style={{ borderLeft: meta ? `3px solid ${meta.fg}` : '1px solid var(--border)', paddingLeft: 11 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
                     {owner && <Avatar owner={owner} size={26} />}
-                    <span style={{ fontWeight: 700, fontSize: 14 }}>{owner || it.label}</span>
+                    <span style={{ fontWeight: 700, fontSize: 'var(--fs-base)' }}>{owner || it.label}</span>
                     {it.status && <StatusChip status={it.status} />}
                   </div>
                   <FieldRows rows={it.fields || (it.value ? [{ label: 'Details', value: it.value }] : [])} />
@@ -201,11 +201,11 @@ function GoalsView({ items }: { items: Item[] }) {
         return (
           <div key={i} style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderLeft: hz ? `3px solid ${hz.fg}` : '1px solid var(--border)', borderRadius: 12, padding: '11px 12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              {hz ? <span style={{ background: hz.bg, color: hz.fg, padding: '2px 10px', borderRadius: 999, fontSize: 11, fontWeight: 700 }}>{it.label}</span>
+              {hz ? <span style={{ background: hz.bg, color: hz.fg, padding: '2px 10px', borderRadius: 999, fontSize: 'var(--fs-2xs)', fontWeight: 700 }}>{it.label}</span>
                 : <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{it.label}</span>}
               {it.status && <StatusChip status={it.status} />}
             </div>
-            <div style={{ fontSize: 15, fontWeight: 600, marginTop: 6, overflowWrap: 'anywhere' }}>{it.value}</div>
+            <div style={{ fontSize: 'var(--fs-md)', fontWeight: 600, marginTop: 6, overflowWrap: 'anywhere' }}>{it.value}</div>
           </div>
         )
       })}

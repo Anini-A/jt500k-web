@@ -19,10 +19,10 @@ interface Draft { id: string; name: string | null; rows: Row[]; updated_at: stri
 
 const inp: React.CSSProperties = {
   height: 44, padding: '0 12px', borderRadius: 10, border: '1px solid var(--border)',
-  background: 'var(--surface-1)', color: 'var(--text-primary)', fontSize: 14, width: '100%',
+  background: 'var(--surface-1)', color: 'var(--text-primary)', fontSize: 'var(--fs-base)', width: '100%',
   fontFamily: 'inherit', boxSizing: 'border-box',
 }
-const cell: React.CSSProperties = { ...inp, height: 38, padding: '0 8px', fontSize: 13, minWidth: 0 }
+const cell: React.CSSProperties = { ...inp, height: 38, padding: '0 8px', fontSize: 'var(--fs-sm)', minWidth: 0 }
 // bare in-row editable field (recurring): looks like text until focused/hovered
 const recInline: React.CSSProperties = { border: '1px solid transparent', borderRadius: 7, background: 'transparent', color: 'var(--text-primary)', fontFamily: 'inherit', padding: '2px 5px', outline: 'none', minWidth: 0, WebkitAppearance: 'none', appearance: 'none' }
 
@@ -428,10 +428,10 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
       <div style={{ border: '1.5px dashed var(--border-strong, var(--border))', borderRadius: 16, background: 'var(--surface-1)', padding: '14px 14px 12px' }}>
         <textarea value={raw} onChange={(e) => setRaw(e.target.value)} onPaste={onPasteInput} rows={2}
           placeholder={'Paste text or an image from your bank or card — the AI cleans it up.'}
-          style={{ width: '100%', border: 'none', background: 'transparent', resize: 'vertical', minHeight: 44, fontFamily: 'inherit', fontSize: 14, lineHeight: 1.5, color: 'var(--text-primary)', outline: 'none' }} />
+          style={{ width: '100%', border: 'none', background: 'transparent', resize: 'vertical', minHeight: 44, fontFamily: 'inherit', fontSize: 'var(--fs-base)', lineHeight: 1.5, color: 'var(--text-primary)', outline: 'none' }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, paddingTop: 12, borderTop: '1px dashed var(--border)' }}>
           <button type="button" disabled={(!raw.trim() && images.length === 0) || parsing} onClick={formatWithAI}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 999, cursor: (!raw.trim() && images.length === 0) || parsing ? 'default' : 'pointer', fontSize: 13, fontWeight: 700, fontFamily: 'inherit', border: 'none', background: (!raw.trim() && images.length === 0) ? 'var(--surface-1)' : 'var(--accent)', color: (!raw.trim() && images.length === 0) ? 'var(--text-muted)' : '#fff' }}>
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 999, cursor: (!raw.trim() && images.length === 0) || parsing ? 'default' : 'pointer', fontSize: 'var(--fs-sm)', fontWeight: 700, fontFamily: 'inherit', border: 'none', background: (!raw.trim() && images.length === 0) ? 'var(--surface-1)' : 'var(--accent)', color: (!raw.trim() && images.length === 0) ? 'var(--text-muted)' : '#fff' }}>
             {parsing ? 'Reading…' : `✨ Format with AI${images.length ? ` · ${images.length}` : ''}`}
           </button>
           <label aria-label="Add screenshot" title="Add a screenshot" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 999, cursor: 'pointer', border: '1px solid var(--border)', background: 'var(--surface-1)', color: 'var(--text-secondary)' }}>
@@ -446,12 +446,12 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
             <div key={im.id} style={{ position: 'relative' }}>
               <img src={im.preview} alt="screenshot" style={{ height: 68, width: 'auto', maxWidth: 120, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--border)' }} />
               <button type="button" onClick={() => setImages((prev) => prev.filter((x) => x.id !== im.id))} aria-label="Remove"
-                style={{ position: 'absolute', top: -7, right: -7, width: 20, height: 20, borderRadius: 999, border: 'none', background: 'var(--expense)', color: '#fff', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, lineHeight: 1 }}>✕</button>
+                style={{ position: 'absolute', top: -7, right: -7, width: 20, height: 20, borderRadius: 999, border: 'none', background: 'var(--expense)', color: '#fff', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--fs-xs)', lineHeight: 1 }}>✕</button>
             </div>
           ))}
         </div>
       )}
-      {importErr && <div style={{ fontSize: 13, color: 'var(--expense)', fontWeight: 600 }}>{importErr}</div>}
+      {importErr && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--expense)', fontWeight: 600 }}>{importErr}</div>}
     </div>
   )
 
@@ -476,7 +476,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span className="stat-label">Cards</span>
         <button type="button" onClick={() => setManageCardsOpen((v) => !v)} title="Add or remove cards"
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', border: `1px solid ${manageCardsOpen ? 'var(--accent)' : 'var(--border)'}`, background: manageCardsOpen ? 'var(--accent-soft)' : 'transparent', color: 'var(--accent)' }}>
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 999, cursor: 'pointer', fontSize: 'var(--fs-sm)', fontWeight: 600, fontFamily: 'inherit', border: `1px solid ${manageCardsOpen ? 'var(--accent)' : 'var(--border)'}`, background: manageCardsOpen ? 'var(--accent-soft)' : 'transparent', color: 'var(--accent)' }}>
           <Settings2 size={14} /> Manage
         </button>
       </div>
@@ -493,7 +493,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
           <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
             <input value={newCard} onChange={(e) => setNewCard(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCardInline() } }}
               placeholder="New card name (e.g. WS Visa)" style={{ ...cell, flex: 1, height: 38 }} />
-            <button type="button" onClick={addCardInline} disabled={!newCard.trim()} style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 5, padding: '0 14px', height: 38, borderRadius: 999, cursor: 'pointer', fontSize: 13, fontWeight: 600, border: '1px solid var(--accent)', background: 'var(--accent)', color: '#fff', fontFamily: 'inherit' }}>
+            <button type="button" onClick={addCardInline} disabled={!newCard.trim()} style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 5, padding: '0 14px', height: 38, borderRadius: 999, cursor: 'pointer', fontSize: 'var(--fs-sm)', fontWeight: 600, border: '1px solid var(--accent)', background: 'var(--accent)', color: '#fff', fontFamily: 'inherit' }}>
               <Plus size={14} /> Add
             </button>
           </div>
@@ -512,8 +512,8 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                   setExpandedCard(isOpen ? null : c.name); setSelectedCard(c.name)
                 }} aria-expanded={isOpen}
                   style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 10, padding: '13px 14px', background: 'transparent', border: 'none', cursor: 'pointer', font: 'inherit', color: 'inherit', textAlign: 'left' }}>
-                  <span style={{ flex: 1, minWidth: 0, fontWeight: 600, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
-                  <span style={{ flexShrink: 0, fontSize: 13, color: 'var(--text-secondary)' }}>
+                  <span style={{ flex: 1, minWidth: 0, fontWeight: 600, fontSize: 'var(--fs-base)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
+                  <span style={{ flexShrink: 0, fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)' }}>
                     {stat ? `${stat.count} item${stat.count !== 1 ? 's' : ''} · ${money(stat.total)}` : 'No pending items'}
                   </span>
                   <ChevronDown size={15} style={{ flexShrink: 0, color: 'var(--text-muted)', transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s ease' }} />
@@ -583,11 +583,11 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
           <div className="modal-card modal-tall glass" style={{ width: 'min(820px, 100%)' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ marginBottom: 14 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                <h2 style={{ margin: 0, fontSize: 18, display: 'flex', alignItems: 'center', gap: 8 }}><Plus size={18} /> Add Transaction</h2>
+                <h2 style={{ margin: 0, fontSize: 'var(--fs-title)', display: 'flex', alignItems: 'center', gap: 8 }}><Plus size={18} /> Add Transaction</h2>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   {(
                     <button type="button" onClick={resetAll} title="Reset this card" aria-label="Reset"
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 34, padding: '0 14px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface-1)', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 34, padding: '0 14px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface-1)', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 'var(--fs-sm)', fontWeight: 600, fontFamily: 'inherit' }}>
                       <RotateCcw size={14} /> Reset
                     </button>
                   )}
@@ -595,13 +595,13 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                 </div>
               </div>
               <div className="tabs" style={{ padding: 3, marginTop: 12 }}>
-                <button className={`tab ${mode === 'single' ? 'tab-active' : ''}`} style={{ flex: 1, justifyContent: 'center', padding: '7px 8px', fontSize: 13 }} onClick={() => setMode('single')}>
+                <button className={`tab ${mode === 'single' ? 'tab-active' : ''}`} style={{ flex: 1, justifyContent: 'center', padding: '7px 8px', fontSize: 'var(--fs-sm)' }} onClick={() => setMode('single')}>
                   <PencilLine size={14} /> Quick
                 </button>
-                <button className={`tab ${mode === 'batch' ? 'tab-active' : ''}`} style={{ flex: 1, justifyContent: 'center', padding: '7px 8px', fontSize: 13 }} onClick={() => setMode('batch')}>
+                <button className={`tab ${mode === 'batch' ? 'tab-active' : ''}`} style={{ flex: 1, justifyContent: 'center', padding: '7px 8px', fontSize: 'var(--fs-sm)' }} onClick={() => setMode('batch')}>
                   <ClipboardPaste size={14} /> Import
                 </button>
-                <button className={`tab ${mode === 'recurring' ? 'tab-active' : ''}`} style={{ flex: 1, justifyContent: 'center', padding: '7px 8px', fontSize: 13 }} onClick={() => setMode('recurring')}>
+                <button className={`tab ${mode === 'recurring' ? 'tab-active' : ''}`} style={{ flex: 1, justifyContent: 'center', padding: '7px 8px', fontSize: 'var(--fs-sm)' }} onClick={() => setMode('recurring')}>
                   <Repeat size={14} /> Recurring
                 </button>
               </div>
@@ -615,11 +615,12 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                 const sc = saved.type === 'income' ? 'var(--income)' : saved.type === 'savings' ? 'var(--savings)' : 'var(--expense)'
                 return (
                   <div style={{ display: 'grid', gap: 18, justifyItems: 'center', textAlign: 'center', padding: '18px 0 6px' }}>
+                    {/* the glyph is sized to its fixed 56px circle, not to the type scale */}
                     <div style={{ width: 56, height: 56, borderRadius: 999, background: 'var(--income-soft)', color: 'var(--income)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, fontWeight: 700 }}>✓</div>
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-secondary)' }}>Saved</div>
-                      <div style={{ fontWeight: 800, fontSize: 30, letterSpacing: '-0.03em', marginTop: 4, color: sc }}>{money(saved.amount)}</div>
-                      <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>{saved.category}</div>
+                      <div style={{ fontWeight: 700, fontSize: 'var(--fs-md)', color: 'var(--text-secondary)' }}>Saved</div>
+                      <div style={{ fontWeight: 800, fontSize: 'var(--fs-hero)', letterSpacing: '-0.03em', marginTop: 4, color: sc }}>{money(saved.amount)}</div>
+                      <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginTop: 4 }}>{saved.category}</div>
                     </div>
                     <div style={{ display: 'flex', gap: 10, width: '100%' }}>
                       <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} onClick={addAnother}><Plus size={15} /> Add another</button>
@@ -633,7 +634,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                   {/* amount hero */}
                   <div style={{ textAlign: 'center', padding: '6px 0 2px' }}>
                     <div style={{ display: 'inline-flex', alignItems: 'baseline', gap: 6, maxWidth: '100%' }}>
-                      <span style={{ fontSize: 30, fontWeight: 700, color: form.amount ? 'var(--text-primary)' : 'var(--text-muted)' }}>$</span>
+                      <span style={{ fontSize: 'var(--fs-card)', fontWeight: 700, color: form.amount ? 'var(--text-primary)' : 'var(--text-muted)' }}>$</span>
                       <input autoFocus inputMode="decimal" value={form.amount} placeholder="0.00"
                         onChange={(e) => setForm({ ...form, amount: e.target.value.replace(/[^0-9.]/g, '') })}
                         style={{ fontSize: 'var(--fs-hero)', fontWeight: 800, letterSpacing: '-0.02em', border: 'none', background: 'transparent', textAlign: 'left', outline: 'none', color: 'var(--text-primary)', fontFamily: 'inherit', width: `${Math.max(6, form.amount.length + 2)}ch`, maxWidth: '100%' }} />
@@ -647,7 +648,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                       const c = t.k === 'income' ? 'var(--income)' : t.k === 'savings' ? 'var(--savings)' : 'var(--expense)'
                       return (
                         <button key={t.k} type="button" onClick={() => setForm({ ...form, type: t.k, category: '' })}
-                          style={{ flex: 1, padding: '9px 0', borderRadius: 999, border: 'none', cursor: 'pointer', fontSize: 13.5, fontWeight: 700, fontFamily: 'inherit', background: on ? 'var(--surface-1)' : 'transparent', color: on ? c : 'var(--text-muted)', boxShadow: on ? '0 1px 3px rgba(0,0,0,0.12)' : 'none' }}>{t.label}</button>
+                          style={{ flex: 1, padding: '9px 0', borderRadius: 999, border: 'none', cursor: 'pointer', fontSize: 'var(--fs-base)', fontWeight: 700, fontFamily: 'inherit', background: on ? 'var(--surface-1)' : 'transparent', color: on ? c : 'var(--text-muted)', boxShadow: on ? '0 1px 3px rgba(0,0,0,0.12)' : 'none' }}>{t.label}</button>
                       )
                     })}
                   </div>
@@ -681,12 +682,12 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                         style={{ ...inp, width: 'auto', height: 38, WebkitAppearance: 'none', appearance: 'none' }} />
                     ) : (
                       <button type="button" onClick={() => setDateOpen(true)}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 34, padding: '0 14px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface-1)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>{dateLabel} ▾</button>
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 34, padding: '0 14px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface-1)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: 'var(--fs-sm)', fontWeight: 600, fontFamily: 'inherit' }}>{dateLabel} ▾</button>
                     )}
-                    {savedFlash && <span style={{ marginLeft: 'auto', color: 'var(--income)', fontWeight: 600, fontSize: 13 }}>✓ Saved</span>}
+                    {savedFlash && <span style={{ marginLeft: 'auto', color: 'var(--income)', fontWeight: 600, fontSize: 'var(--fs-sm)' }}>✓ Saved</span>}
                   </div>
 
-                  {singleErr && <div style={{ fontSize: 13, color: 'var(--expense)', fontWeight: 600 }}>{singleErr}</div>}
+                  {singleErr && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--expense)', fontWeight: 600 }}>{singleErr}</div>}
 
                   <button className="btn btn-primary" type="submit" disabled={saving} style={{ width: '100%', justifyContent: 'center' }}>
                     {saving ? 'Saving…' : 'Save'}
@@ -712,15 +713,15 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', rowGap: 8 }}>
                       {(drafts.length > 0 || draftId) && (
                         <button type="button" onClick={backToDrafts} disabled={savingDraft}
-                          style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 4, padding: '6px 13px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface-1)', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>
+                          style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 4, padding: '6px 13px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface-1)', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 'var(--fs-sm)', fontWeight: 600, fontFamily: 'inherit' }}>
                           <ChevronDown size={14} style={{ transform: 'rotate(90deg)' }} /> {savingDraft ? 'Saving…' : 'All drafts'}
                         </button>
                       )}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto', minWidth: 0 }}>
-                        <span style={{ minWidth: 0, display: 'inline-flex', alignItems: 'baseline', padding: '6px 13px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface-1)', fontSize: 14, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <span style={{ minWidth: 0, display: 'inline-flex', alignItems: 'baseline', padding: '6px 13px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface-1)', fontSize: 'var(--fs-base)', color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {rows.length} item{rows.length !== 1 ? 's' : ''} · <b style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{' ' + money(validTotal)}</b>
-                          {cardTotals.map(([card]) => <span key={card} style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{`  ·  ${card}`}</span>)}
-                          {invalidCount > 0 && <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{`  ·  ${invalidCount} to fix`}</span>}
+                          {cardTotals.map(([card]) => <span key={card} style={{ color: 'var(--text-secondary)', fontSize: 'var(--fs-sm)' }}>{`  ·  ${card}`}</span>)}
+                          {invalidCount > 0 && <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-sm)' }}>{`  ·  ${invalidCount} to fix`}</span>}
                         </span>
                         <button type="button" onClick={() => setAddOpen((v) => !v)} aria-label={addOpen ? 'Collapse add more' : 'Add more'} title={addOpen ? 'Collapse add more' : 'Add more'}
                           style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 999, border: '1px solid var(--accent)', background: 'var(--accent-soft)', color: 'var(--accent)', cursor: 'pointer' }}>
@@ -761,11 +762,11 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                             <button type="button" onClick={() => setExpandedRow(rowOpen ? null : i)} aria-expanded={rowOpen}
                               style={{ width: '100%', minHeight: 46, display: 'flex', alignItems: 'center', gap: 11, padding: rowOpen ? '13px 12px' : '13px 2px', background: 'transparent', border: 'none', cursor: 'pointer', font: 'inherit', color: 'inherit', textAlign: 'left' }}>
                               <span aria-hidden style={{ flexShrink: 0, width: 6, height: 6, borderRadius: '50%', background: bad ? 'var(--text-muted)' : 'transparent' }} />
-                              <span style={{ flexShrink: 0, width: 44, fontSize: 12, fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>{dLabel}</span>
-                              <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500, fontSize: 14.5, color: r.category ? 'var(--text-primary)' : 'var(--text-muted)' }}>
-                                {r.category || 'Set category'}{r.description ? <span style={{ color: 'var(--text-secondary)', fontSize: 12.5 }}>{'  ·  ' + r.description}</span> : ''}
+                              <span style={{ flexShrink: 0, width: 44, fontSize: 'var(--fs-xs)', fontVariantNumeric: 'tabular-nums', color: 'var(--text-secondary)' }}>{dLabel}</span>
+                              <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500, fontSize: 'var(--fs-md)', color: r.category ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                                {r.category || 'Set category'}{r.description ? <span style={{ color: 'var(--text-secondary)', fontSize: 'var(--fs-xs)' }}>{'  ·  ' + r.description}</span> : ''}
                               </span>
-                              <span style={{ fontWeight: 600, fontSize: 14.5, fontVariantNumeric: 'tabular-nums', flexShrink: 0, color: badAmt ? 'var(--text-muted)' : 'var(--text-primary)' }}>{badAmt ? '$?' : money(parseFloat(r.amount))}</span>
+                              <span style={{ fontWeight: 600, fontSize: 'var(--fs-md)', fontVariantNumeric: 'tabular-nums', flexShrink: 0, color: badAmt ? 'var(--text-muted)' : 'var(--text-primary)' }}>{badAmt ? '$?' : money(parseFloat(r.amount))}</span>
                               <ChevronDown size={15} style={{ flexShrink: 0, color: 'var(--text-muted)', transform: rowOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s ease' }} />
                             </button>
                             {rowOpen && (
@@ -784,9 +785,9 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                                 <input type="text" value={r.description} onChange={(e) => updateRow(i, { description: e.target.value })} style={{ ...cell, height: 40 }} placeholder="Note (optional)" />
                                 <div style={{ display: 'flex', gap: 7 }}>
                                   <div style={{ ...cell, display: 'inline-flex', alignItems: 'center', gap: 3, flexShrink: 0, height: 40, width: 116 }}>
-                                    <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>$</span>
+                                    <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-sm)' }}>$</span>
                                     <input inputMode="decimal" value={r.amount} onChange={(e) => updateRow(i, { amount: e.target.value.replace(/[^0-9.]/g, '') })}
-                                      style={{ border: 'none', background: 'transparent', outline: 'none', width: '100%', textAlign: 'right', fontWeight: 700, fontSize: 13, color: badAmt ? 'var(--expense)' : 'var(--text-primary)', fontFamily: 'inherit' }} placeholder="0.00" />
+                                      style={{ border: 'none', background: 'transparent', outline: 'none', width: '100%', textAlign: 'right', fontWeight: 700, fontSize: 'var(--fs-sm)', color: badAmt ? 'var(--expense)' : 'var(--text-primary)', fontFamily: 'inherit' }} placeholder="0.00" />
                                   </div>
                                   <input type="date" value={r.date} onChange={(e) => updateRow(i, { date: e.target.value })}
                                     style={{ ...cell, flex: 1, height: 40, WebkitAppearance: 'none', appearance: 'none', borderColor: isDate(r.date) ? 'var(--border)' : 'var(--expense)' }} />
@@ -808,11 +809,11 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                     </div>
 
                     {invalidCount > 0 && (
-                      <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                      <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>
                         <b style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>{invalidCount} row{invalidCount !== 1 ? 's' : ''} need a category or amount</b> — kept in a draft, not lost, when you record the rest.
                       </div>
                     )}
-                    {importErr && <div style={{ fontSize: 13, color: 'var(--expense)', fontWeight: 600 }}>{importErr}</div>}
+                    {importErr && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--expense)', fontWeight: 600 }}>{importErr}</div>}
 
                     {/* Log + Save-draft, side by side (Log is primary) */}
                     {validCount > 0 ? (
@@ -840,7 +841,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                 {recEdit === 'new' ? (
                   /* Add a recurring item (existing items are edited inline in the list) */
                   <div style={{ display: 'grid', gap: 10 }}>
-                    <div style={{ fontWeight: 700, fontSize: 15, display: 'flex', alignItems: 'center', gap: 7 }}><Repeat size={15} /> New recurring item</div>
+                    <div style={{ fontWeight: 700, fontSize: 'var(--fs-md)', display: 'flex', alignItems: 'center', gap: 7 }}><Repeat size={15} /> New recurring item</div>
                     <div className="form-2">
                       <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Name</span>
                         <input style={inp} value={recForm.name} onChange={(e) => setRecForm({ ...recForm, name: e.target.value })} placeholder="e.g. Rent" /></label>
@@ -865,7 +866,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                     )}
                     <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Description (optional)</span>
                       <input style={inp} value={recForm.description} onChange={(e) => setRecForm({ ...recForm, description: e.target.value })} placeholder="e.g. matches a debt name" /></label>
-                    {recErr && <div style={{ fontSize: 13, color: 'var(--expense)', fontWeight: 600 }}>{recErr}</div>}
+                    {recErr && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--expense)', fontWeight: 600 }}>{recErr}</div>}
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} disabled={saving} onClick={saveRec}>{recEdit === 'new' ? 'Add' : 'Save'}</button>
                       <button className="btn btn-secondary" onClick={() => { setRecEdit(null); setRecErr('') }}>Cancel</button>
@@ -887,7 +888,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
                       <button type="button" className="modal-add" onClick={startNewRec} title="New recurring item">New</button>
                       <input type="date" value={recDate} onChange={(e) => setRecDate(e.target.value)} aria-label="Log for date"
-                        style={{ flexShrink: 0, height: 34, padding: '0 14px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface-1)', color: 'var(--text-primary)', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', WebkitAppearance: 'none', appearance: 'none', outline: 'none' }} />
+                        style={{ flexShrink: 0, height: 34, padding: '0 14px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface-1)', color: 'var(--text-primary)', fontSize: 'var(--fs-sm)', fontWeight: 600, fontFamily: 'inherit', WebkitAppearance: 'none', appearance: 'none', outline: 'none' }} />
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 14, flex: '1 1 auto', minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
                       {recGroupsPresent.map((g) => {
@@ -897,7 +898,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                         return (
                         <div key={g.key}>
                           <button type="button" onClick={() => toggleFold(g.key)} aria-expanded={!folded}
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: g.soft, color: g.color, padding: '3px 9px 3px 11px', borderRadius: 999, fontSize: 12, fontWeight: 700, marginBottom: 6, border: 'none', fontFamily: 'inherit', cursor: 'pointer' }}>
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: g.soft, color: g.color, padding: '3px 9px 3px 11px', borderRadius: 999, fontSize: 'var(--fs-xs)', fontWeight: 700, marginBottom: 6, border: 'none', fontFamily: 'inherit', cursor: 'pointer' }}>
                             {g.label}
                             <span style={{ opacity: 0.75, fontWeight: 600 }}>{pickedHere > 0 ? `${pickedHere}/${groupRows.length}` : groupRows.length}</span>
                             <ChevronDown size={13} style={{ transform: folded ? 'rotate(-90deg)' : 'none', transition: 'transform .18s ease' }} />
@@ -914,17 +915,17 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                                 <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px', borderRadius: 12, background: on ? 'var(--accent-soft)' : 'transparent', transition: 'background .16s ease' }}>
                                   <input type="checkbox" checked={on} onChange={toggle} aria-label={`Select ${r.name}`} style={{ flexShrink: 0 }} />
                                   <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ fontWeight: 600, fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</div>
-                                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                                    <div style={{ fontWeight: 600, fontSize: 'var(--fs-md)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</div>
+                                    <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>
                                       {money(r.remaining)} left{r.planned > 0 ? ` · ${money(r.planned)}/mo planned` : ''}
                                     </div>
                                   </div>
                                   <div style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1, width: 104 }}>
-                                    <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-muted)', flexShrink: 0 }}>$</span>
+                                    <span style={{ fontSize: 'var(--fs-md)', fontWeight: 700, color: 'var(--text-muted)', flexShrink: 0 }}>$</span>
                                     <input inputMode="decimal" value={recOver[r.id]?.amount ?? String(r.amount)} aria-label="Amount" className="rec-inline field-sized"
                                       onChange={(e) => setOver(r.id, { amount: e.target.value.replace(/[^0-9.]/g, '') })}
                                       onBlur={(e) => { if (!(parseFloat(e.target.value) > 0)) setRecOver((p) => { const n = { ...p }; delete n[r.id]?.amount; if (n[r.id] && !n[r.id].amount && !n[r.id].description) delete n[r.id]; return { ...n } }) }}
-                                      style={{ ...recInline, ...amountWidth(recOver[r.id]?.amount ?? r.amount), minWidth: 0, maxWidth: 96, textAlign: 'right', fontWeight: 700, fontSize: 15, fontVariantNumeric: 'tabular-nums' }} />
+                                      style={{ ...recInline, ...amountWidth(recOver[r.id]?.amount ?? r.amount), minWidth: 0, maxWidth: 96, textAlign: 'right', fontWeight: 700, fontSize: 'var(--fs-md)', fontVariantNumeric: 'tabular-nums' }} />
                                   </div>
                                   <span style={{ width: 25, flexShrink: 0 }} />
                                 </div>
@@ -936,10 +937,10 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                                     <input value={r.name} aria-label="Name" className="rec-inline"
                                       onChange={(e) => setRecLocal(r.id, { name: e.target.value })}
                                       onBlur={(e) => e.target.value.trim() ? patchRec(r.id, { name: e.target.value.trim() }) : reloadRecs()}
-                                      style={{ ...recInline, fontWeight: 600, fontSize: 15 }} />
+                                      style={{ ...recInline, fontWeight: 600, fontSize: 'var(--fs-md)' }} />
                                     <select value={r.category} aria-label="Category" className="rec-inline"
                                       onChange={(e) => { const c = cats.find((x) => x.name === e.target.value); patchRec(r.id, { category: e.target.value, type: c?.type ?? r.type }) }}
-                                      style={{ ...recInline, fontSize: 12.5, color: 'var(--text-secondary)', width: 'auto', maxWidth: '100%' }}>
+                                      style={{ ...recInline, fontSize: 'var(--fs-xs)', color: 'var(--text-secondary)', width: 'auto', maxWidth: '100%' }}>
                                       <optgroup label="Income">{grouped.income.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}</optgroup>
                                       <optgroup label="Expense">{grouped.expense.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}</optgroup>
                                       <optgroup label="Savings">{grouped.savings.map((c) => <option key={c.name} value={c.name}>{c.name}</option>)}</optgroup>
@@ -949,7 +950,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                                     {r.category === 'Debt Repayment' && openDebts(r.debt_name).length > 0 && (
                                       <select value={debts.some((d) => d.name === r.debt_name) ? r.debt_name : ''} aria-label="Which debt"
                                         onChange={(e) => patchRec(r.id, { debt_name: e.target.value })} className="rec-inline"
-                                        style={{ ...recInline, fontSize: 12, color: debts.some((d) => d.name === r.debt_name) ? 'var(--text-secondary)' : 'var(--expense)', width: 'auto', maxWidth: '100%' }}>
+                                        style={{ ...recInline, fontSize: 'var(--fs-xs)', color: debts.some((d) => d.name === r.debt_name) ? 'var(--text-secondary)' : 'var(--expense)', width: 'auto', maxWidth: '100%' }}>
                                         <option value="">— which debt? —</option>
                                         {openDebts(r.debt_name).map((d) => <option key={d.name} value={d.name}>{d.name}</option>)}
                                       </select>
@@ -959,12 +960,12 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                                       column, where it read as belonging to nothing; the column keeps
                                       its width so amounts still line up on the right. */}
                                   <div style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1, width: 104 }}>
-                                    <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-muted)', flexShrink: 0 }}>$</span>
+                                    <span style={{ fontSize: 'var(--fs-md)', fontWeight: 700, color: 'var(--text-muted)', flexShrink: 0 }}>$</span>
                                     <input inputMode="decimal" value={recOver[r.id]?.amount ?? String(r.amount)} aria-label="Amount" className="rec-inline field-sized"
                                       size={1}
                                       onChange={(e) => setOver(r.id, { amount: e.target.value.replace(/[^0-9.]/g, '') })}
                                       onBlur={(e) => { if (!(parseFloat(e.target.value) > 0)) setRecOver((p) => { const n = { ...p }; delete n[r.id]?.amount; if (n[r.id] && !n[r.id].amount && !n[r.id].description) delete n[r.id]; return { ...n } }) }}
-                                      style={{ ...recInline, ...amountWidth(recOver[r.id]?.amount ?? r.amount), minWidth: 0, maxWidth: 96, textAlign: 'right', fontWeight: 700, fontSize: 15, fontVariantNumeric: 'tabular-nums' }} />
+                                      style={{ ...recInline, ...amountWidth(recOver[r.id]?.amount ?? r.amount), minWidth: 0, maxWidth: 96, textAlign: 'right', fontWeight: 700, fontSize: 'var(--fs-md)', fontVariantNumeric: 'tabular-nums' }} />
                                   </div>
                                   <button type="button" aria-label={`Delete ${r.name}`} title="Delete" onClick={() => setConfirmDel({ kind: 'rec', id: r.id, name: r.name })}
                                     style={{ flexShrink: 0, display: 'inline-flex', padding: 5, borderRadius: 8, border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}><Trash2 size={15} /></button>
@@ -977,11 +978,11 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                       })}
                     </div>
                     {retiredCount > 0 && (
-                      <div style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>
+                      <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>
                         {retiredCount} paid-off item{retiredCount !== 1 ? 's' : ''} hidden.
                       </div>
                     )}
-                    {recErr && <div style={{ fontSize: 13, color: 'var(--expense)', fontWeight: 600 }}>{recErr}</div>}
+                    {recErr && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--expense)', fontWeight: 600 }}>{recErr}</div>}
                     {/* Full width now that the date moved up top. Opens the review step rather
                         than logging straight away — these post real transactions. */}
                     <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', height: 46 }} disabled={saving || pickedRows.length === 0} onClick={() => setConfirmLog(true)}>
@@ -1002,25 +1003,25 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
               <div onClick={() => setConfirmLog(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', borderRadius: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, zIndex: 10 }}>
                 <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: 18, padding: 18, width: '100%', maxWidth: 380, maxHeight: '100%', display: 'flex', flexDirection: 'column', gap: 12, boxShadow: '0 12px 34px rgba(0,0,0,0.35)' }}>
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: 16 }}>Log {pickedRows.length} item{pickedRows.length !== 1 ? 's' : ''}?</div>
-                    <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
+                    <div style={{ fontWeight: 700, fontSize: 'var(--fs-lg)' }}>Log {pickedRows.length} item{pickedRows.length !== 1 ? 's' : ''}?</div>
+                    <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginTop: 2 }}>
                       Dated {isDate(recDate) ? new Date(recDate + 'T12:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' }) : recDate}
                     </div>
                   </div>
                   <div style={{ flex: '1 1 auto', minHeight: 0, overflowY: 'auto', display: 'grid', gap: 6 }}>
                     {pickedRows.map((r) => (
                       <div key={r.id} style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '9px 11px', borderRadius: 12, background: 'var(--kpi-bg)' }}>
-                        <span style={{ flex: 1, minWidth: 0, fontWeight: 600, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <span style={{ flex: 1, minWidth: 0, fontWeight: 600, fontSize: 'var(--fs-base)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {r.name}
-                          <span style={{ display: 'block', fontSize: 12, fontWeight: 400, color: 'var(--text-muted)' }}>{r.category}</span>
+                          <span style={{ display: 'block', fontSize: 'var(--fs-xs)', fontWeight: 400, color: 'var(--text-muted)' }}>{r.category}</span>
                         </span>
-                        <span style={{ flexShrink: 0, fontWeight: 700, fontSize: 14, fontVariantNumeric: 'tabular-nums' }}>{money(recAmount(r))}</span>
+                        <span style={{ flexShrink: 0, fontWeight: 700, fontSize: 'var(--fs-base)', fontVariantNumeric: 'tabular-nums' }}>{money(recAmount(r))}</span>
                       </div>
                     ))}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', paddingTop: 2 }}>
                     <span className="stat-label">Total</span>
-                    <span style={{ fontWeight: 800, fontSize: 17, fontVariantNumeric: 'tabular-nums' }}>{money(pickedTotal)}</span>
+                    <span style={{ fontWeight: 800, fontSize: 'var(--fs-lg)', fontVariantNumeric: 'tabular-nums' }}>{money(pickedTotal)}</span>
                   </div>
                   <div style={{ display: 'flex', gap: 10 }}>
                     <button type="button" className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }} disabled={saving} onClick={() => setConfirmLog(false)}>Cancel</button>
@@ -1036,7 +1037,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
               <div onClick={() => setConfirmDel(null)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', borderRadius: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, zIndex: 10 }}>
                 <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: 16, padding: 18, width: '100%', maxWidth: 320, boxShadow: '0 12px 34px rgba(0,0,0,0.35)' }}>
                   <div style={{ fontWeight: 700, marginBottom: 6 }}>Delete {confirmDel.name || 'this'}?</div>
-                  <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 14 }}>This can’t be undone.</div>
+                  <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 14 }}>This can’t be undone.</div>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setConfirmDel(null)}>Cancel</button>
                     <button className="btn" style={{ flex: 1, justifyContent: 'center', background: 'var(--expense)', color: '#fff', border: 'none' }} onClick={doConfirmDel}>Delete</button>
@@ -1047,7 +1048,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
 
             {/* inline success toast (replaces alert) */}
             {flash && (
-              <div style={{ position: 'absolute', left: '50%', bottom: 18, transform: 'translateX(-50%)', background: 'var(--text-primary)', color: 'var(--surface-1)', padding: '9px 18px', borderRadius: 999, fontSize: 13, fontWeight: 600, boxShadow: '0 6px 18px rgba(0,0,0,0.28)', zIndex: 11, whiteSpace: 'nowrap' }}>✓ {flash}</div>
+              <div style={{ position: 'absolute', left: '50%', bottom: 18, transform: 'translateX(-50%)', background: 'var(--text-primary)', color: 'var(--surface-1)', padding: '9px 18px', borderRadius: 999, fontSize: 'var(--fs-sm)', fontWeight: 600, boxShadow: '0 6px 18px rgba(0,0,0,0.28)', zIndex: 11, whiteSpace: 'nowrap' }}>✓ {flash}</div>
             )}
           </div>
         </div>,

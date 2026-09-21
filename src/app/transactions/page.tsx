@@ -190,7 +190,7 @@ export default function Transactions() {
                 <Search style={{ width: 18, height: 18, flexShrink: 0, color: 'var(--text-secondary)' }} />
                 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search transactions…"
                   onFocus={() => setSearchFocus(true)} onBlur={() => setSearchFocus(false)}
-                  style={{ flex: 1, minWidth: 0, border: 'none', background: 'transparent', outline: 'none', color: 'var(--text-primary)', fontSize: 16, fontFamily: 'inherit' }} />
+                  style={{ flex: 1, minWidth: 0, border: 'none', background: 'transparent', outline: 'none', color: 'var(--text-primary)', fontSize: 'var(--fs-lg)', fontFamily: 'inherit' }} />
               </label>
             </div>
           </div>
@@ -203,7 +203,7 @@ export default function Transactions() {
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap', marginBottom: 6 }}>
               <span className="hdr-label">{loading ? 'Loading…' : `${summary.count} transaction${summary.count !== 1 ? 's' : ''}`}</span>
               {!loading && summary.count > 0 && (
-                <span style={{ fontSize: 13, color: 'var(--text-muted)', marginLeft: 'auto' }}>
+                <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginLeft: 'auto' }}>
                   <b style={{ color: 'var(--income)', fontWeight: 700 }}>↑ {money0(summary.inc)}</b> in · <b style={{ color: 'var(--expense)', fontWeight: 700 }}>↓ {money0(summary.exp)}</b> out
                 </span>
               )}
@@ -223,7 +223,7 @@ export default function Transactions() {
                       const rel = lbl === 'Today' || lbl === 'Yesterday'
                       return (
                         <div style={{ position: 'sticky', top: 0, zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, padding: '8px 4px 6px', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', background: 'color-mix(in srgb, var(--surface-1) 66%, transparent)' }}>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)' }}>{lbl}</span>
+                          <span style={{ fontSize: 'var(--fs-xs)', fontWeight: 700, color: 'var(--text-secondary)' }}>{lbl}</span>
                           {rel && <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{new Date(g.date + 'T12:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })}</span>}
                         </div>
                       )
@@ -236,11 +236,11 @@ export default function Transactions() {
                           <div style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.description || t.category}</div>
                           {/* only show the category pill when it isn't already the title */}
                           {t.description && t.category && (
-                            <span style={{ display: 'inline-block', marginTop: 4, fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 999, padding: '1px 9px' }}>{t.category}</span>
+                            <span style={{ display: 'inline-block', marginTop: 4, fontSize: 'var(--fs-2xs)', fontWeight: 600, color: 'var(--text-secondary)', background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 999, padding: '1px 9px' }}>{t.category}</span>
                           )}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-                          <span className={`stat-value ${t.type}`} style={{ fontSize: 16, fontWeight: 700 }}>
+                          <span className={`stat-value ${t.type}`} style={{ fontSize: 'var(--fs-lg)', fontWeight: 700 }}>
                             {t.type === 'income' ? '+' : t.type === 'expense' ? '−' : ''}{money(t.amount)}
                           </span>
                           <div className="row-actions">

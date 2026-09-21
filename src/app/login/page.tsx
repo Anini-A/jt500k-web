@@ -34,7 +34,7 @@ export default function Login() {
       <div className="wrap" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: 48 }}>
         <div className="card glass hero" style={{ width: 'min(400px, 100%)', textAlign: 'center' }}>
           <Wallet size={40} color="var(--accent)" style={{ margin: '0 auto' }} />
-          <h1 style={{ fontSize: 24, margin: '8px 0 4px' }}>Journey to 500K</h1>
+          <h1 style={{ fontSize: 'var(--fs-card)', margin: '8px 0 4px' }}>Journey to 500K</h1>
           <p className="lead" style={{ marginBottom: 20 }}>Enter the shared password to continue.</p>
           <form onSubmit={submit} style={{ display: 'grid', gap: 12 }}>
             <input
@@ -43,9 +43,9 @@ export default function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Password"
-              style={{ padding: '12px 14px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 16, textAlign: 'center' }}
+              style={{ padding: '12px 14px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 'var(--fs-lg)', textAlign: 'center' }}
             />
-            {error && <div style={{ color: 'var(--expense)', fontSize: 14 }}>{error}</div>}
+            {error && <div style={{ color: 'var(--expense)', fontSize: 'var(--fs-base)' }}>{error}</div>}
             <button className="btn btn-primary" type="submit" disabled={busy} style={{ justifyContent: 'center' }}>
               {busy ? 'Checking…' : 'Unlock'}
             </button>

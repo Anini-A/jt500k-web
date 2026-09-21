@@ -904,7 +904,7 @@ export default function ChatWidget({ onClose, initialPrompt, initialInput }: { o
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 14px', borderBottom: '1px solid var(--border)', position: 'relative' }}>
           <button style={roundBtn} aria-label="Close" title="Close" onClick={closeAll}><X size={20} /></button>
           <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 7, paddingLeft: 2 }}>
-            <span style={{ fontSize: 15, fontWeight: 650, letterSpacing: '-0.01em' }}>{voiceMode ? 'Voice' : 'Assistant'}</span>
+            <span style={{ fontSize: 'var(--fs-md)', fontWeight: 650, letterSpacing: '-0.01em' }}>{voiceMode ? 'Voice' : 'Assistant'}</span>
             {voiceMode && <AudioLines size={15} style={{ color: 'var(--accent)' }} />}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
@@ -918,7 +918,7 @@ export default function ChatWidget({ onClose, initialPrompt, initialInput }: { o
               style={{ position: 'absolute', top: 52, right: 12, zIndex: 5, width: 'min(320px, 80%)', maxHeight: 320, overflowY: 'auto', background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: 14, boxShadow: 'var(--glass-shadow)', padding: 6 }}>
               <button onClick={() => { setRecentOpen(false); toggleVoice() }} disabled={!voiceMode && !micOK}
                 title={micOK ? '' : 'Microphone unavailable'}
-                style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', textAlign: 'left', padding: '9px 10px', borderRadius: 9, border: 'none', cursor: micOK || voiceMode ? 'pointer' : 'not-allowed', fontSize: 13, fontFamily: 'inherit', background: 'transparent', color: 'var(--text-primary)', fontWeight: 600, opacity: micOK || voiceMode ? 1 : 0.5 }}>
+                style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', textAlign: 'left', padding: '9px 10px', borderRadius: 9, border: 'none', cursor: micOK || voiceMode ? 'pointer' : 'not-allowed', fontSize: 'var(--fs-sm)', fontFamily: 'inherit', background: 'transparent', color: 'var(--text-primary)', fontWeight: 600, opacity: micOK || voiceMode ? 1 : 0.5 }}>
                 {voiceMode ? <><MessageSquare size={15} /> Switch to chat</> : <><AudioLines size={15} /> Voice mode</>}
               </button>
               {recents.length > 0 && (
@@ -929,17 +929,17 @@ export default function ChatWidget({ onClose, initialPrompt, initialInput }: { o
               {recents.map((t) => (
                 <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                   <button onClick={() => selectThread(t.id)}
-                    style={{ flex: 1, minWidth: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, textAlign: 'left', padding: '9px 10px', borderRadius: 9, border: 'none', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', background: t.id === activeId ? 'var(--kpi-bg)' : 'transparent', color: 'var(--text-primary)' }}>
+                    style={{ flex: 1, minWidth: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, textAlign: 'left', padding: '9px 10px', borderRadius: 9, border: 'none', cursor: 'pointer', fontSize: 'var(--fs-sm)', fontFamily: 'inherit', background: t.id === activeId ? 'var(--kpi-bg)' : 'transparent', color: 'var(--text-primary)' }}>
                     <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{titleOf(t)}</span>
                     <span className="stat-label" style={{ flexShrink: 0 }}>{ago(t.updatedAt)}</span>
                   </button>
                   <button onClick={() => deleteThread(t.id)} aria-label="Delete chat" title="Delete chat"
-                    style={{ flexShrink: 0, width: 26, height: 26, borderRadius: 8, border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 13 }}>✕</button>
+                    style={{ flexShrink: 0, width: 26, height: 26, borderRadius: 8, border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 'var(--fs-sm)' }}>✕</button>
                 </div>
               ))}
               <div style={{ borderTop: '1px solid var(--border)', marginTop: 4, paddingTop: 4 }}>
                 <button onClick={clearAll}
-                  style={{ display: 'flex', alignItems: 'center', gap: 7, width: '100%', textAlign: 'left', padding: '9px 10px', borderRadius: 9, border: 'none', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', background: 'transparent', color: 'var(--expense)', fontWeight: 600 }}><Trash2 size={14} /> Clear all chats</button>
+                  style={{ display: 'flex', alignItems: 'center', gap: 7, width: '100%', textAlign: 'left', padding: '9px 10px', borderRadius: 9, border: 'none', cursor: 'pointer', fontSize: 'var(--fs-sm)', fontFamily: 'inherit', background: 'transparent', color: 'var(--expense)', fontWeight: 600 }}><Trash2 size={14} /> Clear all chats</button>
               </div>
             </div>
           )}
@@ -956,7 +956,7 @@ export default function ChatWidget({ onClose, initialPrompt, initialInput }: { o
                   <div className="voice-status" style={{ color: 'var(--accent)' }}>Confirm {pending.length > 1 ? `${pending.length} changes` : 'this change'}</div>
                   <ul style={{ listStyle: 'none', margin: '14px 0 18px', padding: 0, display: 'grid', gap: 8, maxWidth: 460, width: '100%' }}>
                     {pending.map((p, i) => (
-                      <li key={i} style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)', background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 14px' }}>{p.label}</li>
+                      <li key={i} style={{ fontSize: 'var(--fs-md)', fontWeight: 500, color: 'var(--text-primary)', background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 14px' }}>{p.label}</li>
                     ))}
                   </ul>
                   <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
@@ -993,7 +993,7 @@ export default function ChatWidget({ onClose, initialPrompt, initialInput }: { o
         <div ref={scrollRef} style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
           {msgs.map((m, i) => (
             <div key={i} style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
-              {m.at && <div style={{ alignSelf: 'center', fontSize: 11, color: 'var(--text-muted)', margin: '2px 0 6px' }}>{timeOf(m.at)}</div>}
+              {m.at && <div style={{ alignSelf: 'center', fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)', margin: '2px 0 6px' }}>{timeOf(m.at)}</div>}
               <div
                 onTouchStart={() => { copyTimer.current = setTimeout(() => setActionIdx(i), 450) }}
                 onTouchEnd={() => { if (copyTimer.current) clearTimeout(copyTimer.current) }}
@@ -1001,7 +1001,7 @@ export default function ChatWidget({ onClose, initialPrompt, initialInput }: { o
                 onContextMenu={(e) => { e.preventDefault(); setActionIdx(i) }}
                 title="Hold for options"
                 style={{
-                  maxWidth: '86%', padding: '11px 14px', borderRadius: 18, fontSize: 14, lineHeight: 1.5, cursor: 'pointer',
+                  maxWidth: '86%', padding: '11px 14px', borderRadius: 18, fontSize: 'var(--fs-base)', lineHeight: 1.5, cursor: 'pointer',
                   whiteSpace: m.role === 'user' ? 'pre-wrap' : 'normal',
                   background: m.role === 'user' ? 'var(--accent)' : 'var(--kpi-bg)',
                   color: m.role === 'user' ? '#fff' : 'var(--text-primary)',
@@ -1023,17 +1023,17 @@ export default function ChatWidget({ onClose, initialPrompt, initialInput }: { o
                   )}
                 </div>
               )}
-              {copiedIdx === i && <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--income)', marginTop: 3 }}>Copied ✓</div>}
+              {copiedIdx === i && <div style={{ fontSize: 'var(--fs-2xs)', fontWeight: 600, color: 'var(--income)', marginTop: 3 }}>Copied ✓</div>}
             </div>
           ))}
-          {busy && <div style={{ alignSelf: 'flex-start', color: 'var(--text-muted)', fontSize: 13, padding: '0 4px' }}>Gemini is thinking…</div>}
+          {busy && <div style={{ alignSelf: 'flex-start', color: 'var(--text-muted)', fontSize: 'var(--fs-sm)', padding: '0 4px' }}>Gemini is thinking…</div>}
 
           {msgs.length === 1 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
               {SUGGESTIONS.map((s) => (
                 <button key={s} onClick={() => send(s)} style={{
                   textAlign: 'left', padding: '8px 10px', borderRadius: 10, cursor: 'pointer',
-                  background: 'transparent', border: '1px solid var(--border)', color: 'var(--accent)', fontSize: 13,
+                  background: 'transparent', border: '1px solid var(--border)', color: 'var(--accent)', fontSize: 'var(--fs-sm)',
                 }}>{s}</button>
               ))}
             </div>
@@ -1048,7 +1048,7 @@ export default function ChatWidget({ onClose, initialPrompt, initialInput }: { o
             </div>
             <div style={{ display: 'grid', gap: 6, marginBottom: 12 }}>
               {pending.map((p, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '9px 11px', borderRadius: 12, background: 'var(--surface-1)', border: '1px solid var(--border)', fontSize: 13.5, lineHeight: 1.4 }}>
+                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '9px 11px', borderRadius: 12, background: 'var(--surface-1)', border: '1px solid var(--border)', fontSize: 'var(--fs-base)', lineHeight: 1.4 }}>
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)', flexShrink: 0, marginTop: 6 }} />
                   <span>{p.label}</span>
                 </div>
@@ -1094,7 +1094,7 @@ export default function ChatWidget({ onClose, initialPrompt, initialInput }: { o
               onPaste={(e) => { const f = Array.from(e.clipboardData.items).find((it) => it.type.startsWith('image/'))?.getAsFile(); if (f) { e.preventDefault(); pickImage(f) } }}
               placeholder="Ask anything" autoFocus
               /* fontSize 16 keeps iOS Safari from auto-zooming the page on focus */
-              style={{ flex: 1, minWidth: 0, padding: '11px 16px', borderRadius: 22, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 16, fontFamily: 'inherit', lineHeight: 1.4, resize: 'none', maxHeight: 160, overflowY: 'auto' }}
+              style={{ flex: 1, minWidth: 0, padding: '11px 16px', borderRadius: 22, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 'var(--fs-lg)', fontFamily: 'inherit', lineHeight: 1.4, resize: 'none', maxHeight: 160, overflowY: 'auto' }}
             />
             <button type="submit" disabled={busy || (!input.trim() && !attached)} aria-label="Send"
               style={{ width: 44, height: 44, flexShrink: 0, borderRadius: 999, border: 'none', cursor: (input.trim() || attached) ? 'pointer' : 'default', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: (input.trim() || attached) ? 'var(--accent)' : 'var(--border)', color: '#fff', opacity: busy ? 0.6 : 1 }}>

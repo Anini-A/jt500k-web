@@ -106,7 +106,7 @@ export default function UpcomingBills() {
     <span style={{ position: 'relative', display: 'inline-flex', minWidth: 0 }}>
       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, minWidth: 0, padding: '3px 7px 3px 8px',
         borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)',
-        fontSize: 11.5, fontWeight: 600, color: 'var(--text-secondary)' }}>
+        fontSize: 'var(--fs-2xs)', fontWeight: 600, color: 'var(--text-secondary)' }}>
         <span style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: dotFor(activeTab) }} />
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{activeTab.name}</span>
         <ChevronDown size={11} style={{ flexShrink: 0, opacity: 0.65 }} />
@@ -114,7 +114,7 @@ export default function UpcomingBills() {
       {/* the real control sits invisibly on top, so the platform's own picker opens */}
       <select value={activeId} onChange={(e) => setPicked(e.target.value)} aria-label="Bill account"
         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0,
-          appearance: 'none', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 16 }}>
+          appearance: 'none', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 'var(--fs-lg)' }}>
         {tabs.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
       </select>
     </span>
@@ -127,7 +127,7 @@ export default function UpcomingBills() {
         {accountPill}
       </span>
       {rows.length > 0 && (
-        <span style={{ fontSize: 12, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums', textAlign: 'right', flexShrink: 0 }}>
+        <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums', textAlign: 'right', flexShrink: 0 }}>
           <b style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>{money(totalSoon)}</b> · {fmtDay(from)} → {fmtDay(horizonEnd)}
         </span>
       )}
@@ -145,7 +145,7 @@ export default function UpcomingBills() {
           account pill's dot and in the green/red dates on the rows below. */}
       {cycle && (
         <a href="/dashboard" onClick={() => goBills(activeId)}
-          style={{ display: 'flex', alignItems: 'flex-start', gap: 7, marginTop: 10, padding: '8px 11px', borderRadius: 10, fontSize: 12, fontWeight: 600, lineHeight: 1.45, textDecoration: 'none',
+          style={{ display: 'flex', alignItems: 'flex-start', gap: 7, marginTop: 10, padding: '8px 11px', borderRadius: 10, fontSize: 'var(--fs-xs)', fontWeight: 600, lineHeight: 1.45, textDecoration: 'none',
             color: 'var(--text-secondary)', background: 'var(--kpi-bg)', border: '1px solid var(--border)' }}>
           <CalendarClock size={13} style={{ flexShrink: 0, marginTop: 2, opacity: 0.7 }} />
           {/* Leads with the account name so the card states what it's describing rather than
@@ -173,16 +173,16 @@ export default function UpcomingBills() {
               {/* where the balance runs out — only worth drawing if something above it is funded */}
               {i === firstShortIdx && i > 0 && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 0 6px', borderTop: '1px solid var(--border)' }}>
-                  <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--expense)', whiteSpace: 'nowrap' }}>Balance runs out</span>
+                  <span style={{ fontSize: 'var(--fs-2xs)', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--expense)', whiteSpace: 'nowrap' }}>Balance runs out</span>
                   <span style={{ flex: 1, height: 1, background: 'var(--expense)', opacity: 0.3 }} />
                 </div>
               )}
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 0', borderTop: i > 0 && i !== firstShortIdx ? '1px solid var(--border)' : 'none' }}>
-                <span style={{ width: 52, flexShrink: 0, fontSize: 12.5, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: dateColor }}>
+                <span style={{ width: 52, flexShrink: 0, fontSize: 'var(--fs-xs)', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: dateColor }}>
                   {u.date.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}
                 </span>
-                <span style={{ flex: 1, minWidth: 0, fontWeight: 600, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.b.name}</span>
-                <span style={{ fontWeight: 700, fontSize: 14, fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{money(Number(u.b.amount))}</span>
+                <span style={{ flex: 1, minWidth: 0, fontWeight: 600, fontSize: 'var(--fs-base)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.b.name}</span>
+                <span style={{ fontWeight: 700, fontSize: 'var(--fs-base)', fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{money(Number(u.b.amount))}</span>
               </div>
             </div>
           )

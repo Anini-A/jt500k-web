@@ -18,7 +18,7 @@ interface Settings {
 
 const inp: React.CSSProperties = {
   height: 44, padding: '0 12px', borderRadius: 10, border: '1px solid var(--border)',
-  background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 14, width: '100%',
+  background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 'var(--fs-base)', width: '100%',
   fontFamily: 'inherit', boxSizing: 'border-box',
 }
 
@@ -92,12 +92,12 @@ export default function SettingsPanel() {
         <div className="card glass">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
             <span className="hdr-label">Your data</span>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-secondary)' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)' }}>
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: statusMeta.color, flexShrink: 0, animation: status === 'checking' ? 'pulse 1.2s ease-in-out infinite' : 'none' }} />
               {statusMeta.label}
             </span>
           </div>
-          <div style={{ fontSize: 14, color: 'var(--text-secondary)', marginTop: 10 }}>
+          <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text-secondary)', marginTop: 10 }}>
             {s ? <><b style={{ fontWeight: 600 }}>{s.transactionCount.toLocaleString()}</b> transactions · <b style={{ fontWeight: 600 }}>{s.categoryCount}</b> categories{s.firstDate ? <> · {s.firstDate} → {s.lastDate}</> : ''}</> : '—'}
           </div>
           <div style={{ display: 'flex', gap: 8, maxWidth: 420, marginTop: 14 }}>

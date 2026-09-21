@@ -17,7 +17,7 @@ interface Txn {
 
 const inp: React.CSSProperties = {
   height: 44, padding: '0 12px', borderRadius: 10, border: '1px solid var(--border)',
-  background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 14, width: '100%',
+  background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 'var(--fs-base)', width: '100%',
   fontFamily: 'inherit', boxSizing: 'border-box',
 }
 
@@ -67,7 +67,7 @@ export default function EditTransactionModal({ tx, onClose, onSaved }: {
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-card glass" onClick={(e) => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, gap: 12 }}>
-          <h2 style={{ margin: 0, fontSize: 18, display: 'flex', alignItems: 'center', gap: 8 }}><Pencil size={17} /> Edit Transaction</h2>
+          <h2 style={{ margin: 0, fontSize: 'var(--fs-title)', display: 'flex', alignItems: 'center', gap: 8 }}><Pencil size={17} /> Edit Transaction</h2>
           <button className="modal-x" aria-label="Close" onClick={onClose}>✕</button>
         </div>
         <form onSubmit={submit} style={{ display: 'grid', gap: 12 }}>
@@ -89,7 +89,7 @@ export default function EditTransactionModal({ tx, onClose, onSaved }: {
           )}
           <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Description</span>
             <input type="text" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} style={inp} /></label>
-          {err && <div style={{ fontSize: 13, color: 'var(--expense)', fontWeight: 600 }}>{err}</div>}
+          {err && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--expense)', fontWeight: 600 }}>{err}</div>}
           <button className="btn btn-primary" type="submit" disabled={saving} style={{ justifyContent: 'center' }}>
             {saving ? 'Saving…' : 'Save Changes'}
           </button>

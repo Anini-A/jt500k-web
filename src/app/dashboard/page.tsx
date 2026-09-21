@@ -210,6 +210,7 @@ export default function Dashboard() {
                 <button key={t.key} ref={tab === t.key ? activeTabRef : null} onClick={() => selectTab(t.key)}
                   className={`tab ${tab === t.key ? 'tab-active' : ''}`}>
                   <Icon size={16} />{t.label}
+                  {/* 9px: a superscript adornment, not body text — 11px crowds the tab it hangs off */}
                   {t.soon && <span style={{ fontSize: 9, opacity: 0.65, marginLeft: 2 }}>soon</span>}
                 </button>
               )
@@ -360,7 +361,7 @@ function HeroRow({ stats }: { stats: Stat[] }) {
         {rest.length > 0 && (
           <div className="hero-aside" style={{ display: 'grid', gap: 4, whiteSpace: 'nowrap' }}>
             {rest.map((s) => (
-              <div key={s.label} style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+              <div key={s.label} style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)' }}>
                 {s.label} <b style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>{s.value}</b>{s.sub ? ` · ${s.sub}` : ''}
               </div>
             ))}
@@ -414,7 +415,7 @@ function RecentList({ title, txns, emptyLabel, maxHeight }: { title: string; txn
                   <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 2 }}>{t.date} · {t.category}</div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-                  <span className={`stat-value ${t.type}`} style={{ fontSize: 16, fontWeight: 700 }}>
+                  <span className={`stat-value ${t.type}`} style={{ fontSize: 'var(--fs-lg)', fontWeight: 700 }}>
                     {t.type === 'income' ? '+' : t.type === 'expense' ? '−' : ''}{money2(t.amount)}
                   </span>
                   <div className="row-actions">

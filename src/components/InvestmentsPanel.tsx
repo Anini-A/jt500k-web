@@ -28,12 +28,12 @@ const OWNER_COLOR: Record<string, { fg: string; bg: string }> = {
 }
 function OwnerPill({ owner }: { owner: string }) {
   const c = OWNER_COLOR[owner] || { fg: 'var(--text-secondary)', bg: 'var(--kpi-bg)' }
-  return <span style={{ background: c.bg, color: c.fg, padding: '2px 9px', borderRadius: 999, fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap' }}>{owner}</span>
+  return <span style={{ background: c.bg, color: c.fg, padding: '2px 9px', borderRadius: 999, fontSize: 'var(--fs-2xs)', fontWeight: 600, whiteSpace: 'nowrap' }}>{owner}</span>
 }
 
 const inp: React.CSSProperties = {
   height: 40, padding: '0 10px', borderRadius: 10, border: '1px solid var(--border)',
-  background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 14, width: '100%',
+  background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 'var(--fs-base)', width: '100%',
   fontFamily: 'inherit', boxSizing: 'border-box',
 }
 
@@ -196,11 +196,11 @@ export default function InvestmentsPanel() {
       {/* Hero — AUM + gain + owner split */}
       <div className="card glass" style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, minHeight: 20 }}>
-          <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Portfolio value{person !== 'Household' ? ` · ${person}` : ''}</span>
-          {data?.asOf && <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>As of {data.asOf}</span>}
+          <span style={{ fontSize: 'var(--fs-2xs)', fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Portfolio value{person !== 'Household' ? ` · ${person}` : ''}</span>
+          {data?.asOf && <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)' }}>As of {data.asOf}</span>}
         </div>
         <div style={{ fontWeight: 700, fontSize: 'var(--fs-hero)', color: 'var(--text-primary)', margin: '6px 0 4px', letterSpacing: '-0.03em' }}>{money(value)}</div>
-        <div style={{ fontSize: 13, color: gain >= 0 ? 'var(--income)' : 'var(--expense)' }}>
+        <div style={{ fontSize: 'var(--fs-sm)', color: gain >= 0 ? 'var(--income)' : 'var(--expense)' }}>
           {gain >= 0 ? '↑' : '↓'} {money2(Math.abs(gain))} ({gain >= 0 ? '+' : ''}{gainPct.toFixed(1)}%) <span style={{ color: 'var(--text-muted)' }}>· cost {money(cost)}</span>
         </div>
         {person === 'Household' && owners.length > 1 && (
@@ -209,8 +209,8 @@ export default function InvestmentsPanel() {
               const c = OWNER_COLOR[o] || { fg: 'var(--text-secondary)', bg: 'var(--kpi-bg)' }
               return (
                 <button key={o} onClick={() => setPerson(o)} style={{ textAlign: 'left', cursor: 'pointer', background: 'transparent', border: 'none', borderLeft: `2px solid ${c.fg}`, borderRadius: 0, padding: '2px 0 2px 10px' }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: c.fg }}>{o}</div>
-                  <div style={{ fontWeight: 600, fontSize: 16, marginTop: 3 }}>{money(data?.ownerTotals?.[o] || 0)}</div>
+                  <div style={{ fontSize: 'var(--fs-xs)', fontWeight: 600, color: c.fg }}>{o}</div>
+                  <div style={{ fontWeight: 600, fontSize: 'var(--fs-lg)', marginTop: 3 }}>{money(data?.ownerTotals?.[o] || 0)}</div>
                 </button>
               )
             })}
@@ -229,12 +229,12 @@ export default function InvestmentsPanel() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
                   <span style={{ width: 7, height: 7, borderRadius: '50%', background: c?.fg || 'var(--text-muted)', flexShrink: 0 }} />
-                  <span style={{ fontWeight: 600, fontSize: 15 }}>{a.label}</span>
+                  <span style={{ fontWeight: 600, fontSize: 'var(--fs-md)' }}>{a.label}</span>
                   {person === 'Household' && <OwnerPill owner={a.owner} />}
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontWeight: 700, fontSize: 16 }}>{money(a.value)}</div>
-                  <div style={{ fontSize: 12, color: g >= 0 ? 'var(--income)' : 'var(--expense)' }}>{g >= 0 ? '+' : ''}{money(g)} ({gp.toFixed(1)}%)</div>
+                  <div style={{ fontWeight: 700, fontSize: 'var(--fs-lg)' }}>{money(a.value)}</div>
+                  <div style={{ fontSize: 'var(--fs-xs)', color: g >= 0 ? 'var(--income)' : 'var(--expense)' }}>{g >= 0 ? '+' : ''}{money(g)} ({gp.toFixed(1)}%)</div>
                 </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 2, paddingLeft: 16 }}>
@@ -244,11 +244,11 @@ export default function InvestmentsPanel() {
                     <div key={h.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '9px 0', borderTop: i ? '1px solid var(--border)' : 'none' }}>
                       <div style={{ minWidth: 0 }}>
                         <div style={{ fontWeight: 600 }}>{h.symbol}</div>
-                        <div style={{ fontSize: 13, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{h.quantity.toLocaleString(undefined, { maximumFractionDigits: 4 })} sh{h.name ? ` · ${h.name}` : ''}</div>
+                        <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{h.quantity.toLocaleString(undefined, { maximumFractionDigits: 4 })} sh{h.name ? ` · ${h.name}` : ''}</div>
                       </div>
                       <div style={{ textAlign: 'right', flexShrink: 0 }}>
                         <div style={{ fontWeight: 600 }}>{money2(h.market_value_cad)}</div>
-                        <div style={{ fontSize: 13, color: hg >= 0 ? 'var(--income)' : 'var(--expense)' }}>{hg >= 0 ? '+' : ''}{money2(hg)}</div>
+                        <div style={{ fontSize: 'var(--fs-sm)', color: hg >= 0 ? 'var(--income)' : 'var(--expense)' }}>{hg >= 0 ? '+' : ''}{money2(hg)}</div>
                       </div>
                     </div>
                   )
@@ -261,7 +261,7 @@ export default function InvestmentsPanel() {
 
       {/* Allocation donut */}
       <div className="card glass" style={{ marginBottom: 16 }}>
-        <h3 style={{ marginTop: 0, marginBottom: 4, fontSize: 15 }}>Allocation by account</h3>
+        <h3 style={{ marginTop: 0, marginBottom: 4, fontSize: 'var(--fs-md)' }}>Allocation by account</h3>
         <Donut data={donut} />
       </div>
 
@@ -291,7 +291,7 @@ function OtherAssets({ assets, showOwner, onChange, defaultOwner }: {
     <div className="card glass" style={{ marginTop: 16 }}>
       {confirmNode}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 8 }}>
-        <h3 style={{ margin: 0, fontSize: 15 }}>Other Assets <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>· cash, options, etc.</span></h3>
+        <h3 style={{ margin: 0, fontSize: 'var(--fs-md)' }}>Other Assets <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>· cash, options, etc.</span></h3>
         <button className="btn btn-secondary" onClick={() => { setAdding((v) => !v); setEditing(null) }}><Plus size={15} /> {adding ? 'Cancel' : 'Add'}</button>
       </div>
       {adding && <AssetForm defaultOwner={defaultOwner} onDone={async (p) => { await onChange('POST', p); setAdding(false) }} onCancel={() => setAdding(false)} />}
@@ -400,13 +400,13 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-card glass" onClick={(e) => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <h2 style={{ margin: 0, fontSize: 18, display: 'flex', alignItems: 'center', gap: 8 }}><Upload size={18} /> Import Holdings</h2>
+          <h2 style={{ margin: 0, fontSize: 'var(--fs-title)', display: 'flex', alignItems: 'center', gap: 8 }}><Upload size={18} /> Import Holdings</h2>
           <button className="modal-x" aria-label="Close" onClick={onClose}>✕</button>
         </div>
         <div style={{ display: 'grid', gap: 12 }}>
           <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Whose account is this?</span>
             <select value={uploader} onChange={(e) => setUploader(e.target.value)}
-              style={{ height: 44, padding: '0 12px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 14, fontFamily: 'inherit' }}>
+              style={{ height: 44, padding: '0 12px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 'var(--fs-base)', fontFamily: 'inherit' }}>
               <option value="Jean">Jean (you)</option>
               <option value="Henriette">Henriette</option>
             </select>
@@ -414,10 +414,10 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
           </label>
           <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Wealthsimple holdings CSV</span>
             <input type="file" accept=".csv,text/csv" onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
-              style={{ fontSize: 14 }} /></label>
+              style={{ fontSize: 'var(--fs-base)' }} /></label>
           <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Valued as of</span>
             <input type="date" value={asOf} max={today()} onChange={(e) => setAsOf(e.target.value)}
-              style={{ height: 44, padding: '0 12px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 14, fontFamily: 'inherit' }} />
+              style={{ height: 44, padding: '0 12px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 'var(--fs-base)', fontFamily: 'inherit' }} />
             <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>Records a real net-worth point for this date — upload a past statement to backfill history.</span>
           </label>
           {rows && (
@@ -428,7 +428,7 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
               </div>
             </div>
           )}
-          {err && <div style={{ fontSize: 13, color: 'var(--expense)', fontWeight: 600 }}>{err}</div>}
+          {err && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--expense)', fontWeight: 600 }}>{err}</div>}
           {savedMonth ? (
             <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, textAlign: 'center', color: 'var(--income)', fontWeight: 600, padding: '10px 0' }}>
               ✓ Imported · recorded a net-worth point for {monthLabel(savedMonth)}

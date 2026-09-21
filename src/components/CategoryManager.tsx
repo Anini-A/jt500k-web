@@ -17,7 +17,7 @@ const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', curr
 
 const inp: React.CSSProperties = {
   height: 44, padding: '0 11px', borderRadius: 10, border: '1px solid var(--border)',
-  background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 14,
+  background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 'var(--fs-base)',
   fontFamily: 'inherit', boxSizing: 'border-box',
 }
 

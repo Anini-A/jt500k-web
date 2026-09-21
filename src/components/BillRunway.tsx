@@ -25,7 +25,7 @@ const RED = 'var(--danger)'
 const RED_SOFT = 'var(--danger-soft)'
 const inp: React.CSSProperties = {
   padding: '9px 11px', borderRadius: 10, border: '1px solid var(--border)',
-  background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 16, width: '100%',
+  background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 'var(--fs-lg)', width: '100%',
   fontFamily: 'inherit', boxSizing: 'border-box',
 }
 
@@ -91,8 +91,8 @@ export default function BillRunway() {
   // and it also flashed while the accounts were still loading.)
   if (!accounts.length) return (
     <div className="card glass" style={{ padding: '32px 20px', textAlign: 'center' }}>
-      <div style={{ fontSize: 15.5, fontWeight: 650, marginBottom: 5 }}>No bill account yet</div>
-      <div style={{ fontSize: 13.5, color: 'var(--text-muted)', lineHeight: 1.5, maxWidth: 340, margin: '0 auto 16px' }}>
+      <div style={{ fontSize: 'var(--fs-md)', fontWeight: 650, marginBottom: 5 }}>No bill account yet</div>
+      <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text-muted)', lineHeight: 1.5, maxWidth: 340, margin: '0 auto 16px' }}>
         Add the account your bills come out of, with its balance, and this page shows how far that balance carries you.
       </div>
       <button className="btn btn-primary" onClick={() => setNewAccount(true)}><Plus size={16} /> Add bill account</button>
@@ -147,40 +147,40 @@ export default function BillRunway() {
         </div>
 
         {proj.timeline.length === 0 ? (
-          <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Nothing scheduled — add bills below.</div>
+          <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)' }}>Nothing scheduled — add bills below.</div>
         ) : (
           <div style={{ display: 'grid', gap: 8 }}>
             {/* covers line — the window this balance actually gets you through */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 10, background: 'var(--income-soft)' }}>
               <span style={{ minWidth: 0 }}>
-                <span style={{ display: 'block', fontSize: 13, color: 'var(--text-secondary)' }}>Covers {proj.coveredCount} bill{proj.coveredCount === 1 ? '' : 's'}</span>
-                {through && <span style={{ display: 'block', fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>{fmtRange(projFrom, through)}</span>}
+                <span style={{ display: 'block', fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)' }}>Covers {proj.coveredCount} bill{proj.coveredCount === 1 ? '' : 's'}</span>
+                {through && <span style={{ display: 'block', fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)', marginTop: 2 }}>{fmtRange(projFrom, through)}</span>}
               </span>
-              <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--income)' }}>{money2(proj.startBalance)}</span>
+              <span style={{ fontWeight: 700, fontSize: 'var(--fs-md)', color: 'var(--income)' }}>{money2(proj.startBalance)}</span>
             </div>
             {/* shortfall line — URGENT (red) only when a bill THIS month is short or the next one is within a week;
                 otherwise a calm heads-up so being covered for the month reads as good news.
                 Both spell out the window the $ spans, since it runs to the end of NEXT month. */}
             {!proj.firstShort ? (
-              <div style={{ fontSize: 13, color: 'var(--income)', fontWeight: 600, padding: '2px 2px' }}>Every upcoming bill covered through {fmtDay(proj.horizonISO)}.</div>
+              <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--income)', fontWeight: 600, padding: '2px 2px' }}>Every upcoming bill covered through {fmtDay(proj.horizonISO)}.</div>
             ) : (!coveredMonth || topUpSoon) ? (
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 10, background: RED_SOFT }}>
                 <span style={{ minWidth: 0 }}>
-                  <span style={{ display: 'block', fontSize: 13, color: 'var(--text-secondary)' }}>Short for <b style={{ color: 'var(--text-primary)' }}>{proj.firstShort.name}</b>{proj.remainingCount > 1 ? ` +${proj.remainingCount - 1} more` : ''}</span>
-                  <span style={{ display: 'block', fontSize: 11.5, color: RED, marginTop: 2 }}>{fmtRange(proj.firstShort.iso, proj.horizonISO)}</span>
+                  <span style={{ display: 'block', fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)' }}>Short for <b style={{ color: 'var(--text-primary)' }}>{proj.firstShort.name}</b>{proj.remainingCount > 1 ? ` +${proj.remainingCount - 1} more` : ''}</span>
+                  <span style={{ display: 'block', fontSize: 'var(--fs-2xs)', color: RED, marginTop: 2 }}>{fmtRange(proj.firstShort.iso, proj.horizonISO)}</span>
                 </span>
-                <span style={{ fontWeight: 700, fontSize: 15, color: RED, whiteSpace: 'nowrap' }}>{money2(proj.remainingTotal)}</span>
+                <span style={{ fontWeight: 700, fontSize: 'var(--fs-md)', color: RED, whiteSpace: 'nowrap' }}>{money2(proj.remainingTotal)}</span>
               </div>
             ) : (
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 10, background: 'var(--kpi-bg)', border: '1px solid var(--border)' }}>
                 <span style={{ minWidth: 0 }}>
-                  <span style={{ display: 'block', fontSize: 13, color: 'var(--text-muted)' }}>Next month: short for <b style={{ color: 'var(--text-secondary)' }}>{proj.firstShort.name}</b>{proj.remainingCount > 1 ? ` +${proj.remainingCount - 1} more` : ''}</span>
-                  <span style={{ display: 'block', fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>{fmtRange(proj.firstShort.iso, proj.horizonISO)}</span>
+                  <span style={{ display: 'block', fontSize: 'var(--fs-sm)', color: 'var(--text-muted)' }}>Next month: short for <b style={{ color: 'var(--text-secondary)' }}>{proj.firstShort.name}</b>{proj.remainingCount > 1 ? ` +${proj.remainingCount - 1} more` : ''}</span>
+                  <span style={{ display: 'block', fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)', marginTop: 2 }}>{fmtRange(proj.firstShort.iso, proj.horizonISO)}</span>
                 </span>
-                <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{money2(proj.remainingTotal)}</span>
+                <span style={{ fontWeight: 700, fontSize: 'var(--fs-md)', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{money2(proj.remainingTotal)}</span>
               </div>
             )}
-            {stale && <div style={{ fontSize: 12, color: RED }}>Based on your {fmtDay(asOf)} balance.</div>}
+            {stale && <div style={{ fontSize: 'var(--fs-xs)', color: RED }}>Based on your {fmtDay(asOf)} balance.</div>}
           </div>
         )}
       </div>
@@ -190,19 +190,19 @@ export default function BillRunway() {
         <div className="card glass">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+              <div style={{ fontSize: 'var(--fs-2xs)', fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
                 {active.name} · as of {fmtDay(asOf)}
               </div>
-              <div style={{ fontWeight: 700, fontSize: 28, letterSpacing: '-0.03em', marginTop: 4 }}>{money2(settings.current_balance)}</div>
+              <div style={{ fontWeight: 700, fontSize: 'var(--fs-hero-inline)', letterSpacing: '-0.03em', marginTop: 4 }}>{money2(settings.current_balance)}</div>
             </div>
             {!stale && <button className="chip btn-accent" onClick={() => setEditBalance(true)}>Update balance</button>}
           </div>
           {stale && (
             <div style={{ marginTop: 12, padding: '12px 14px', background: RED_SOFT, borderRadius: 12, display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center', color: RED, fontSize: 13, fontWeight: 600, minWidth: 0, flex: 1 }}>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', color: RED, fontSize: 'var(--fs-sm)', fontWeight: 600, minWidth: 0, flex: 1 }}>
                 <TriangleAlert size={15} style={{ flexShrink: 0 }} /> Last updated {fmtDay(asOf)} · {staleDays} day{staleDays === 1 ? '' : 's'} ago — update your balance so the forecast stays accurate.
               </div>
-              <button className="btn-warn-red" style={{ flexShrink: 0, padding: '7px 16px', borderRadius: 999, fontSize: 13, fontWeight: 600, background: 'transparent', border: `1px solid ${RED}`, cursor: 'pointer' }} onClick={() => setEditBalance(true)}>Update balance</button>
+              <button className="btn-warn-red" style={{ flexShrink: 0, padding: '7px 16px', borderRadius: 999, fontSize: 'var(--fs-sm)', fontWeight: 600, background: 'transparent', border: `1px solid ${RED}`, cursor: 'pointer' }} onClick={() => setEditBalance(true)}>Update balance</button>
             </div>
           )}
           <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
@@ -218,7 +218,7 @@ export default function BillRunway() {
 
         {/* Same footer control as Debt Management and Budget: count, add, reveal */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 18 }}>
-          <span style={{ fontSize: 13, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {acctBills.length > 0 ? `${acctBills.length} ${acctBills.length === 1 ? 'bill' : 'bills'} · ${money(monthlyTotal)}/mo` : 'No bills yet'}
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
@@ -236,17 +236,17 @@ export default function BillRunway() {
         {!billsCollapsed && (<>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 4px 8px', borderBottom: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-            <span style={{ width: 34, textAlign: 'center', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', flexShrink: 0 }}>Day</span>
-            <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Description</span>
+            <span style={{ width: 34, textAlign: 'center', fontSize: 'var(--fs-2xs)', fontWeight: 600, color: 'var(--text-muted)', flexShrink: 0 }}>Day</span>
+            <span style={{ fontSize: 'var(--fs-2xs)', fontWeight: 600, color: 'var(--text-muted)' }}>Description</span>
           </div>
-          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Amount</span>
+          <span style={{ fontSize: 'var(--fs-2xs)', fontWeight: 600, color: 'var(--text-muted)' }}>Amount</span>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr)', gap: 2 }}>
           {[...acctBills].sort((a, b) => a.day - b.day).map((b, i) => (
             <div key={b.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', padding: '10px 4px', borderTop: i ? '1px solid var(--border)' : 'none' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
                 <span style={{ width: 34, height: 34, borderRadius: 9, background: 'var(--kpi-bg)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0, lineHeight: 1 }}>
-                  <span style={{ fontWeight: 800, fontSize: 14 }}>{b.day}</span>
+                  <span style={{ fontWeight: 800, fontSize: 'var(--fs-base)' }}>{b.day}</span>
                 </span>
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{b.name}</div>
@@ -254,7 +254,7 @@ export default function BillRunway() {
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                <span style={{ fontWeight: 700, fontSize: 15 }}>{money2(b.amount)}</span>
+                <span style={{ fontWeight: 700, fontSize: 'var(--fs-md)' }}>{money2(b.amount)}</span>
                 <button onClick={() => setEditBill(b)} aria-label="Edit" style={iconBtn}><Pencil size={15} /></button>
               </div>
             </div>
@@ -278,7 +278,7 @@ function MiniStat({ label, value, accent }: { label: string; value: string; acce
   return (
     <div>
       <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{label}</div>
-      <div style={{ fontWeight: 700, fontSize: 16, color: accent ? 'var(--accent)' : 'var(--text-primary)' }}>{value}</div>
+      <div style={{ fontWeight: 700, fontSize: 'var(--fs-lg)', color: accent ? 'var(--accent)' : 'var(--text-primary)' }}>{value}</div>
     </div>
   )
 }
@@ -289,7 +289,7 @@ function CoverageTimeline({ proj, asOf, urgent }: { proj: Projection; asOf: stri
   return (
     <>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
-        <h3 style={{ margin: 0, fontSize: 15, display: 'flex', alignItems: 'center', gap: 8 }}><CalendarClock size={16} /> Coverage timeline</h3>
+        <h3 style={{ margin: 0, fontSize: 'var(--fs-md)', display: 'flex', alignItems: 'center', gap: 8 }}><CalendarClock size={16} /> Coverage timeline</h3>
         <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>
           {proj.coveredThroughISO ? <>covers up to <b style={{ color: 'var(--text-primary)' }}>{fmtDay(proj.coveredThroughISO)}</b></> : 'what your balance covers'}
           {proj.firstShort ? <> · <span style={{ color: urgent ? RED : 'var(--text-muted)', fontWeight: 600 }}>{proj.remainingCount} short {fmtRange(proj.firstShort.iso, proj.horizonISO)} · {money2(proj.remainingTotal)}</span></> : proj.timeline.length ? <> · <span style={{ color: 'var(--income)', fontWeight: 600 }}>all covered to {fmtDay(proj.horizonISO)}</span></> : null}
@@ -303,8 +303,8 @@ function CoverageTimeline({ proj, asOf, urgent }: { proj: Projection; asOf: stri
           {/* start tile */}
           <div style={{ flex: '0 0 auto', width: 116, scrollSnapAlign: 'start', borderRadius: 12, padding: '11px 12px', background: 'var(--kpi-bg)', borderTop: '3px solid var(--text-muted)' }}>
             <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>Now · {fmtDay(asOf)}</div>
-            <div style={{ fontWeight: 600, fontSize: 13, marginTop: 6, color: 'var(--text-secondary)' }}>Balance</div>
-            <div style={{ fontWeight: 700, fontSize: 15, marginTop: 2 }}>{money2(proj.startBalance)}</div>
+            <div style={{ fontWeight: 600, fontSize: 'var(--fs-sm)', marginTop: 6, color: 'var(--text-secondary)' }}>Balance</div>
+            <div style={{ fontWeight: 700, fontSize: 'var(--fs-md)', marginTop: 2 }}>{money2(proj.startBalance)}</div>
           </div>
 
           {proj.timeline.map((e, i) => {
@@ -320,9 +320,9 @@ function CoverageTimeline({ proj, asOf, urgent }: { proj: Projection; asOf: stri
                 )}
                 <div style={{ flex: '0 0 auto', width: 132, scrollSnapAlign: 'start', borderRadius: 12, padding: '11px 12px', background: e.covered ? 'var(--kpi-bg)' : RED_SOFT, borderTop: `3px solid ${tone}` }}>
                   <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{fmtDay(e.iso)}</div>
-                  <div style={{ fontWeight: 600, fontSize: 13, marginTop: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={e.name}>{e.name}</div>
-                  <div style={{ fontWeight: 700, fontSize: 15, marginTop: 4 }}>−{money2(e.amount)}</div>
-                  <div style={{ fontSize: 12, marginTop: 3, color: e.covered ? 'var(--text-muted)' : RED }}>→ {money2(e.balanceAfter)}</div>
+                  <div style={{ fontWeight: 600, fontSize: 'var(--fs-sm)', marginTop: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={e.name}>{e.name}</div>
+                  <div style={{ fontWeight: 700, fontSize: 'var(--fs-md)', marginTop: 4 }}>−{money2(e.amount)}</div>
+                  <div style={{ fontSize: 'var(--fs-xs)', marginTop: 3, color: e.covered ? 'var(--text-muted)' : RED }}>→ {money2(e.balanceAfter)}</div>
                 </div>
               </Fragment>
             )
@@ -343,7 +343,7 @@ function Shell({ title, children, onClose }: { title: string; children: React.Re
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, zIndex: 100 }}>
       <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: 16, padding: 20, width: '100%', maxWidth: 380, boxShadow: '0 20px 60px rgba(0,0,0,0.4)' }}>
-        <h3 style={{ margin: '0 0 16px', fontSize: 17 }}>{title}</h3>
+        <h3 style={{ margin: '0 0 16px', fontSize: 'var(--fs-lg)' }}>{title}</h3>
         {children}
       </div>
     </div>
@@ -391,7 +391,7 @@ function AccountModal({ account, canDelete, onClose, onSaved }: { account: Accou
       <Field label="Current balance"><input style={inp} inputMode="decimal" value={bal} onChange={(e) => setBal(e.target.value)} placeholder="0.00" autoFocus={!isNew} /></Field>
       <Field label="As of date"><input style={inp} type="date" value={asOf} onChange={(e) => setAsOf(e.target.value)} /></Field>
       <Field label="Safety buffer (keep at least this much)"><input style={inp} inputMode="decimal" value={buffer} onChange={(e) => setBuffer(e.target.value)} placeholder="0.00" /></Field>
-      {err && <div style={{ fontSize: 13, color: 'var(--expense)', fontWeight: 600 }}>{err}</div>}
+      {err && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--expense)', fontWeight: 600 }}>{err}</div>}
       <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
         {!isNew && canDelete && <button className="btn btn-secondary" style={{ color: 'var(--expense)', borderColor: 'var(--expense)' }} onClick={del} aria-label="Delete account"><Trash2 size={15} /></button>}
         <button className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }} onClick={onClose}>Cancel</button>
@@ -434,11 +434,11 @@ function BillModal({ bill, accountId, onClose, onSaved }: { bill: Bill | null; a
         <div style={{ flex: 1 }}><Field label="Day of month"><input style={inp} inputMode="numeric" value={day} onChange={(e) => setDay(e.target.value)} placeholder="15" /></Field></div>
         <div style={{ flex: 1 }}><Field label="Amount"><input style={inp} inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" /></Field></div>
       </div>
-      <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, fontSize: 14, cursor: 'pointer' }}>
+      <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, fontSize: 'var(--fs-base)', cursor: 'pointer' }}>
         <input type="checkbox" checked={quarterly} onChange={(e) => setQuarterly(e.target.checked)} /> Quarterly (not every month)
       </label>
       {quarterly && <Field label="Next due date"><input style={inp} type="date" value={nextDue} onChange={(e) => setNextDue(e.target.value)} /></Field>}
-      {err && <div style={{ fontSize: 13, color: 'var(--expense)', fontWeight: 600 }}>{err}</div>}
+      {err && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--expense)', fontWeight: 600 }}>{err}</div>}
       <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
         {bill && <button className="btn btn-secondary" onClick={del} style={{ color: 'var(--expense)', borderColor: 'var(--expense)' }} aria-label="Delete"><Trash2 size={15} /></button>}
         <button className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }} onClick={onClose}>Cancel</button>

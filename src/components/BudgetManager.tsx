@@ -17,7 +17,7 @@ const money2 = (n: number) => n.toLocaleString('en-CA', { style: 'currency', cur
 
 const inp: React.CSSProperties = {
   height: 44, padding: '0 12px', borderRadius: 10, border: '1px solid var(--border)',
-  background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 14, width: '100%',
+  background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 'var(--fs-base)', width: '100%',
   fontFamily: 'inherit', boxSizing: 'border-box',
 }
 
@@ -195,7 +195,7 @@ export default function BudgetManager() {
 
         {/* Does the plan fund itself? Caught before the month runs, not after. */}
         {income.budgeted > 0 && isCurrentMonth && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 11px', borderRadius: 11, fontSize: 12.5, lineHeight: 1.4,
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 11px', borderRadius: 11, fontSize: 'var(--fs-xs)', lineHeight: 1.4,
             background: unallocated < 0 ? 'var(--expense-soft)' : 'var(--income-soft)' }}>
             <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, background: unallocated < 0 ? 'var(--expense)' : 'var(--income)' }} />
             <span>
@@ -218,7 +218,7 @@ export default function BudgetManager() {
       {/* Summary and items are one card, collapsed from the bottom-right — the same
           shape as Debt Management, so the two tabs read as siblings. */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 18 }}>
-        <span style={{ fontSize: 13, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {envelopes.length > 0
             ? `${envelopes.length} ${envelopes.length === 1 ? 'envelope' : 'envelopes'} · ${itemCount} ${itemCount === 1 ? 'item' : 'items'}`
             : ''}
@@ -268,7 +268,7 @@ export default function BudgetManager() {
                 {/* Coloured group label — only needed in the 'All' view to separate groups */}
                 {groupFilter === 'all' && (
                   <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
-                    <span style={{ background: g.soft, color: g.color, padding: '3px 11px', borderRadius: 999, fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}><g.icon size={13} /> {g.label}</span>
+                    <span style={{ background: g.soft, color: g.color, padding: '3px 11px', borderRadius: 999, fontSize: 'var(--fs-xs)', fontWeight: 700, whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}><g.icon size={13} /> {g.label}</span>
                     <span className="stat-label" style={{ flexShrink: 0 }}>{money(g.actual)} / {money(g.budgeted)}</span>
                   </div>
                 )}
@@ -278,9 +278,9 @@ export default function BudgetManager() {
               return (
                 <div key={e.category} style={{ padding: '12px 0', borderBottom: '1px solid var(--border)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                    <span style={{ fontSize: 16, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{e.category}</span>
+                    <span style={{ fontSize: 'var(--fs-lg)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{e.category}</span>
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <div style={{ fontSize: 16, fontWeight: 600 }}>{money(e.spent)}{' '}
+                      <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 600 }}>{money(e.spent)}{' '}
                         {e.category === 'Debt Repayment' ? (
                           editBudget === e.category ? (
                             <input autoFocus inputMode="decimal" value={budgetDraft} disabled={busy}
@@ -288,7 +288,7 @@ export default function BudgetManager() {
                               onBlur={() => saveBudget(e.category)}
                               onKeyDown={(ev) => { if (ev.key === 'Enter') ev.currentTarget.blur(); if (ev.key === 'Escape') setEditBudget(null) }}
                               aria-label="Budgeted amount" placeholder="sum of lines"
-                              style={{ ...inp, height: 28, width: 108, display: 'inline-block', textAlign: 'right', fontSize: 15, fontWeight: 600, padding: '0 8px', fontVariantNumeric: 'tabular-nums' }} />
+                              style={{ ...inp, height: 28, width: 108, display: 'inline-block', textAlign: 'right', fontSize: 'var(--fs-md)', fontWeight: 600, padding: '0 8px', fontVariantNumeric: 'tabular-nums' }} />
                           ) : (
                             <button onClick={() => { setBudgetDraft(e.budgetSet ? String(e.budgeted) : ''); setEditBudget(e.category) }}
                               title="Edit the budgeted amount"
@@ -307,14 +307,14 @@ export default function BudgetManager() {
 
                   {/* Line items — hidden until asked for, so a long budget scans in one pass. */}
                   <button onClick={() => toggleEnv(e.category)} aria-expanded={openEnv.has(e.category)}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 9, padding: '3px 7px 3px 0', background: 'none', border: 'none', font: 'inherit', fontSize: 12, fontWeight: 500, color: 'var(--text-muted)', cursor: 'pointer' }}>
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 9, padding: '3px 7px 3px 0', background: 'none', border: 'none', font: 'inherit', fontSize: 'var(--fs-xs)', fontWeight: 500, color: 'var(--text-muted)', cursor: 'pointer' }}>
                     <ChevronDown size={12} style={{ transition: 'transform .18s ease', transform: openEnv.has(e.category) ? 'none' : 'rotate(-90deg)', opacity: 0.7 }} />
                     {e.category === 'Debt Repayment' && debtSummary
                       ? `paid to ${debtSummary.rows.length} debt${debtSummary.rows.length !== 1 ? 's' : ''}`
                       : `${e.items.length} item${e.items.length !== 1 ? 's' : ''}`}
                   </button>
                   {e.budgetSet && e.lineTotal != null && Math.abs(e.lineTotal - e.budgeted) >= 0.01 && (
-                    <span style={{ fontSize: 11.5, color: 'var(--text-muted)', marginLeft: 8 }}>
+                    <span style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)', marginLeft: 8 }}>
                       lines total {money(e.lineTotal)}
                     </span>
                   )}
@@ -329,10 +329,10 @@ export default function BudgetManager() {
                           edited on the total above, so these rows carry no plan amount and open
                           no editor — they're a read-only breakdown of where the money went. */}
                       {debtSummary.rows.map((d) => (
-                        <div key={d.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '5px 0', fontSize: 13, color: 'var(--text-secondary)' }}>
+                        <div key={d.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '5px 0', fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)' }}>
                           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
                             {d.name}
-                            {d.done && <span style={{ marginLeft: 7, fontSize: 10.5, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--income)' }}>paid off</span>}
+                            {d.done && <span style={{ marginLeft: 7, fontSize: 'var(--fs-2xs)', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--income)' }}>paid off</span>}
                           </span>
                           <span style={{ flexShrink: 0, fontVariantNumeric: 'tabular-nums', fontWeight: d.paid > 0 ? 600 : 400, color: d.paid > 0 ? 'var(--text-primary)' : 'var(--text-muted)' }}>
                             {d.paid > 0 ? money2(d.paid) : '—'}
@@ -340,13 +340,13 @@ export default function BudgetManager() {
                         </div>
                       ))}
                       {debtSummary.unassigned > 0 && (
-                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, padding: '5px 0', fontSize: 13, color: 'var(--text-secondary)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, padding: '5px 0', fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)' }}>
                           <span>Unassigned <span style={{ color: 'var(--text-muted)' }}>— paid against no debt</span></span>
                           <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>{money2(debtSummary.unassigned)}</span>
                         </div>
                       )}
                       {debtSummary.unlinkedPlanned > 0 && (
-                        <div style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--expense)', marginTop: 6 }}>
+                        <div style={{ fontSize: 'var(--fs-2xs)', fontWeight: 600, color: 'var(--expense)', marginTop: 6 }}>
                           {money(debtSummary.unlinkedPlanned)}/mo of this budget isn&rsquo;t pointed at a debt yet — link it in Add ▸ Recurring.
                         </div>
                       )}
@@ -421,9 +421,9 @@ function GroupBar({ icon: Icon, label, color, budgeted, actual, goodUp, pace }: 
   return (
     <div style={{ opacity: !budgeted && !actual ? 0.55 : 1 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, marginBottom: 7 }}>
-        <span style={{ fontSize: 15, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 7 }}><Icon size={16} style={{ color }} /> {label}</span>
+        <span style={{ fontSize: 'var(--fs-md)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 7 }}><Icon size={16} style={{ color }} /> {label}</span>
         <span style={{ flexShrink: 0 }}>
-          <span style={{ fontSize: 16, fontWeight: 600 }}>{money(actual)}</span>
+          <span style={{ fontSize: 'var(--fs-lg)', fontWeight: 600 }}>{money(actual)}</span>
           <span style={{ color: 'var(--text-muted)' }}> / {budgeted ? money(budgeted) : '—'}</span>
         </span>
       </div>

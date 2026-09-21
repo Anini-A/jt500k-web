@@ -26,7 +26,7 @@ export const shortMonth = (m: string) => {
 function Tip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null
   return (
-    <div style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: 10, padding: '8px 12px', fontSize: 13, boxShadow: '0 4px 16px rgba(0,0,0,.15)' }}>
+    <div style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: 10, padding: '8px 12px', fontSize: 'var(--fs-sm)', boxShadow: '0 4px 16px rgba(0,0,0,.15)' }}>
       {label != null && <div style={{ fontWeight: 600, marginBottom: 4 }}>{typeof label === 'string' && /^\d{4}-\d{2}/.test(label) ? shortMonth(label) : label}</div>}
       {payload.map((p: any) => (
         <div key={p.name} style={{ color: p.color || p.fill }}>{p.name}: {money(p.value)}</div>
@@ -35,7 +35,7 @@ function Tip({ active, payload, label }: any) {
   )
 }
 
-const axisStyle = { fontSize: 11, fill: 'var(--text-muted)' }
+const axisStyle = { fontSize: 'var(--fs-2xs)', fill: 'var(--text-muted)' }
 
 export function MonthlyArea({ data, series, height = 260 }: {
   data: any[]
@@ -57,7 +57,7 @@ export function MonthlyArea({ data, series, height = 260 }: {
         <XAxis dataKey="month" tickFormatter={shortMonth} tick={axisStyle} tickLine={false} axisLine={false} minTickGap={24} />
         <YAxis tickFormatter={(v) => '$' + (v / 1000) + 'k'} tick={axisStyle} tickLine={false} axisLine={false} width={44} />
         <Tooltip content={<Tip />} />
-        {series.length > 1 && <Legend wrapperStyle={{ fontSize: 12 }} />}
+        {series.length > 1 && <Legend wrapperStyle={{ fontSize: 'var(--fs-xs)' }} />}
         {series.map((s) => (
           <Area key={s.key} type="monotone" dataKey={s.key} name={s.name} stroke={s.color} fill={`url(#ga-${s.key})`} strokeWidth={2} />
         ))}
@@ -92,7 +92,7 @@ export function Donut({ data, height = 260 }: { data: { name: string; total: num
           {data.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
         </Pie>
         <Tooltip content={<Tip />} />
-        <Legend wrapperStyle={{ fontSize: 12 }} />
+        <Legend wrapperStyle={{ fontSize: 'var(--fs-xs)' }} />
       </PieChart>
     </ResponsiveContainer>
   )

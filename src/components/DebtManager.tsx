@@ -26,7 +26,7 @@ const money2 = (n: number) => n.toLocaleString('en-CA', { style: 'currency', cur
 
 const inp: React.CSSProperties = {
   height: 44, padding: '0 12px', borderRadius: 10, border: '1px solid var(--border)',
-  background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 14, width: '100%',
+  background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 'var(--fs-base)', width: '100%',
   fontFamily: 'inherit', boxSizing: 'border-box',
 }
 
@@ -127,9 +127,9 @@ export default function DebtManager() {
           <div style={{ marginTop: 10, background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 14, padding: '4px 12px' }}>
             {d.history.map((p) => (
               <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '9px 0', borderBottom: '1px solid var(--border)' }}>
-                <span style={{ fontSize: 13.5, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>{fmtDate(p.date)}</span>
+                <span style={{ fontSize: 'var(--fs-base)', color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>{fmtDate(p.date)}</span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                  <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--income)', fontVariantNumeric: 'tabular-nums' }}>{money2(p.amount)}</span>
+                  <span style={{ fontSize: 'var(--fs-base)', fontWeight: 600, color: 'var(--income)', fontVariantNumeric: 'tabular-nums' }}>{money2(p.amount)}</span>
                   <button onClick={() => setEditTx(p)} aria-label="Edit payment" title="Edit payment"
                     style={{ display: 'inline-flex', padding: 5, borderRadius: 7, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}><Pencil size={13} /></button>
                   <button onClick={() => confirm({ title: 'Delete this payment?', message: 'Removes the transaction; the debt total updates.', run: async () => { const res = await fetch(`/api/transactions?id=${p.id}`, { method: 'DELETE' }); if (res.ok) { window.dispatchEvent(new CustomEvent('transaction-added')); load() } else toast('Could not delete.') } })}
@@ -138,7 +138,7 @@ export default function DebtManager() {
                 </div>
               </div>
             ))}
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0 5px', fontSize: 12, color: 'var(--text-muted)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0 5px', fontSize: 'var(--fs-xs)', color: 'var(--text-muted)' }}>
               <span>{d.payments} payment{d.payments !== 1 ? 's' : ''}</span>
               <span><b style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>{money2(d.paid)}</b> paid toward this debt</span>
             </div>
@@ -185,7 +185,7 @@ export default function DebtManager() {
 
       {/* bottom-right collapse toggle — same design as the money-flow card */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 4 }}>
-        <span style={{ fontSize: 13, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {debts.length > 0 ? `${debts.length} ${debts.length === 1 ? 'debt' : 'debts'}${paidDebts.length ? ` · ${paidDebts.length} paid` : ''}` : ''}
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
@@ -225,7 +225,7 @@ export default function DebtManager() {
           {paidDebts.length > 0 && (
             <>
               <button onClick={() => setShowPaid((v) => !v)} aria-expanded={showPaid}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', justifyContent: 'center', marginTop: 4, padding: '10px 0', background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 600 }}>
+                style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%', justifyContent: 'center', marginTop: 4, padding: '10px 0', background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'var(--fs-sm)', fontWeight: 600 }}>
                 <CheckCircle2 size={14} color="var(--income)" />
                 {showPaid ? 'Hide paid off' : `Show ${paidDebts.length} paid off`}
                 <ChevronDown size={14} style={{ transform: showPaid ? 'rotate(180deg)' : 'none', transition: 'transform .2s ease' }} />

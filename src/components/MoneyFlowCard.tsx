@@ -75,7 +75,7 @@ export default function MoneyFlowCard() {
               <div style={{ fontWeight: 700, fontSize: 'var(--fs-stat)', letterSpacing: '-0.02em', marginTop: 3 }}>{money(g.value)}</div>
               {/* arrow = direction vs last month; color = better/worse (green good, red bad) */}
               {g.delta !== null && Math.abs(g.delta) >= 1 && (
-                <div style={{ marginTop: 3, fontSize: 11, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: (g.goodUp ? g.delta >= 0 : g.delta < 0) ? 'var(--income)' : 'var(--expense)' }}>
+                <div style={{ marginTop: 3, fontSize: 'var(--fs-2xs)', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: (g.goodUp ? g.delta >= 0 : g.delta < 0) ? 'var(--income)' : 'var(--expense)' }}>
                   {g.delta >= 0 ? '▲' : '▼'} {money(Math.abs(g.delta))}
                 </div>
               )}
@@ -97,7 +97,7 @@ export default function MoneyFlowCard() {
 
       {/* one thin line + the collapse toggle (same design as the net-worth card) */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 16 }}>
-        <span style={{ fontSize: 13, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {cur ? <>{curLabel}{savedRate !== null ? <> · <b style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>{savedRate}%</b> saved</> : ''}</> : ''}
         </span>
         <button onClick={() => setOpen((v) => !v)} aria-expanded={open} aria-label={open ? 'Hide trend' : 'Show trend'} title={open ? 'Hide trend' : 'Show income / expense trend'}
@@ -115,7 +115,7 @@ export default function MoneyFlowCard() {
               const on = range === r.key
               return (
                 <button key={r.key} onClick={() => setRange(r.key)}
-                  style={{ padding: on ? '6px 15px' : '6px 8px', borderRadius: 999, border: 'none', cursor: 'pointer', fontSize: 12.5, fontWeight: on ? 700 : 600, fontFamily: 'inherit', background: on ? 'var(--surface-1)' : 'transparent', color: on ? 'var(--text-primary)' : 'var(--text-muted)', boxShadow: on ? '0 1px 4px rgba(20,20,25,0.08)' : 'none', transition: 'background .15s, color .15s, box-shadow .15s' }}>{r.label}</button>
+                  style={{ padding: on ? '6px 15px' : '6px 8px', borderRadius: 999, border: 'none', cursor: 'pointer', fontSize: 'var(--fs-xs)', fontWeight: on ? 700 : 600, fontFamily: 'inherit', background: on ? 'var(--surface-1)' : 'transparent', color: on ? 'var(--text-primary)' : 'var(--text-muted)', boxShadow: on ? '0 1px 4px rgba(20,20,25,0.08)' : 'none', transition: 'background .15s, color .15s, box-shadow .15s' }}>{r.label}</button>
               )
             })}
           </div>

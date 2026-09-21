@@ -47,6 +47,7 @@
   --fs-card: clamp(20px, 5.5vw, 30px);          /* a section total, or one of a trio */
   --fs-stat: clamp(15px, 4.6vw, 19px);          /* an inline stat in a group */
 
+  --fs-title: 18px;                             /* a sheet or modal heading (every <h2> in a panel) */
   --fs-lg: 16px;                                /* a prominent row, a card heading */
   --fs-md: 15px;                                /* a row title */
   --fs-base: 14px;                              /* controls, form fields */
@@ -219,7 +220,7 @@
 .mode-seg {
   display: inline-flex; align-items: center; gap: 6px; padding: 7px 15px;
   border: none; border-radius: 999px; cursor: pointer; font: inherit;
-  font-size: 13px; font-weight: 600; color: var(--text-muted); background: transparent;
+  font-size: var(--fs-sm); font-weight: 600; color: var(--text-muted); background: transparent;
   transition: color .18s ease, background .18s ease, box-shadow .18s ease;
 }
 .mode-seg:disabled { opacity: .45; cursor: not-allowed; }
@@ -317,11 +318,11 @@
 .voice-body.is-listening .voice-viz > span:nth-child(3){ transform: scaleY(calc(.45 + var(--vlevel) * 2.4)); }
 
 .voice-status {
-  font-size: 12px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase;
+  font-size: var(--fs-xs); font-weight: 700; letter-spacing: .16em; text-transform: uppercase;
 }
 /* transcript / answer in a glass card (like the mockup) */
 .voice-caption {
-  font-size: 16.5px; line-height: 1.5; font-weight: 500; letter-spacing: -.01em;
+  font-size: var(--fs-lg); line-height: 1.5; font-weight: 500; letter-spacing: -.01em;
   color: var(--text-primary); max-width: 440px; width: 100%;
   background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px;
   padding: 14px 16px; box-sizing: border-box;
@@ -522,7 +523,7 @@ header.top > :last-child { margin-right: 3px; } /* web: pull in to the card edge
   background: transparent;
   color: var(--text-muted);
   font-weight: 600;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   cursor: pointer;
   white-space: nowrap;
   font-family: inherit;
@@ -548,7 +549,7 @@ header.top > :last-child { margin-right: 3px; } /* web: pull in to the card edge
   background: var(--kpi-bg);
   border: 1px solid var(--border);
 }
-.page-current { font-weight: 700; font-size: 14px; letter-spacing: -0.01em; white-space: nowrap; }
+.page-current { font-weight: 700; font-size: var(--fs-base); letter-spacing: -0.01em; white-space: nowrap; }
 .page-edge {
   width: 16px; height: 16px; padding: 0; border: none; background: transparent; cursor: pointer;
   display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
@@ -580,7 +581,7 @@ header.top .brand {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 17px;
+  font-size: var(--fs-lg);
   font-weight: 600;
   text-decoration: none;
   color: inherit;
@@ -590,7 +591,7 @@ header.top .brand {
 header.top .brand svg { width: 38px; height: 38px; }
 
 header.top h1 {
-  font-size: 18px;
+  font-size: var(--fs-title);
   font-weight: 600;
   margin: 0;
 }
@@ -602,7 +603,7 @@ header.top h1 {
   background: linear-gradient(135deg, var(--accent), #1e63b8);
   color: #fff;
   font-weight: 600;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   padding: 8px 16px;
   border-radius: 999px;
   text-decoration: none;
@@ -677,7 +678,7 @@ header.top h1 {
    transform made the whole page feel jumpy) */
 
 .section {
-  font-size: 16px;
+  font-size: var(--fs-lg);
   font-weight: 600;
   margin: 0 0 12px;
   color: var(--text-primary);
@@ -689,7 +690,7 @@ header.top h1 {
 
 .block h2 {
   margin: 0 0 12px;
-  font-size: 16px;
+  font-size: var(--fs-lg);
   font-weight: 600;
 }
 
@@ -702,7 +703,7 @@ header.top h1 {
 }
 
 .hero p.lead {
-  font-size: 16px;
+  font-size: var(--fs-lg);
   color: var(--text-secondary);
   margin: 0 0 20px;
   line-height: 1.6;
@@ -714,7 +715,7 @@ header.top h1 {
   color: var(--income);
   padding: 6px 12px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 600;
   margin-bottom: 12px;
 }
@@ -732,7 +733,7 @@ header.top h1 {
   padding: 10px 20px;
   border-radius: 999px;
   font-weight: 600;
-  font-size: 14px;
+  font-size: var(--fs-base);
   text-decoration: none;
   cursor: pointer;
   border: 1px solid transparent;
@@ -881,7 +882,7 @@ header.top h1 {
   background: transparent;
   outline: none;
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: var(--fs-base);
   transition: width 0.3s ease, opacity 0.2s ease, margin-left 0.2s ease;
 }
 
@@ -928,7 +929,7 @@ header.top h1 {
   background: transparent;
   color: var(--text-secondary);
   font-weight: 600;
-  font-size: 14px;
+  font-size: var(--fs-base);
   cursor: pointer;
   white-space: nowrap;
   display: inline-flex;
@@ -1069,7 +1070,7 @@ header.top h1 {
   border-radius: 12px;
   cursor: pointer;
   border: 1px solid transparent;
-  font-size: 14px;
+  font-size: var(--fs-base);
   font-weight: 600;
   font-family: inherit;
   transition: filter 0.15s ease, transform 0.1s ease;
@@ -1086,7 +1087,7 @@ header.top h1 {
   background: color-mix(in srgb, currentColor 18%, transparent);
   padding: 1px 9px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 700;
 }
 
@@ -1107,7 +1108,7 @@ header.top h1 {
   border: none;
   background: transparent;
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: var(--fs-base);
   font-family: inherit;
   cursor: pointer;
   text-align: left;
@@ -1191,7 +1192,7 @@ header.top h1 {
 }
 .dash-menu button {
   display: inline-flex; align-items: center; gap: 8px; padding: 11px 12px;
-  border: none; border-radius: 12px; cursor: pointer; font: inherit; font-size: 14px; font-weight: 600;
+  border: none; border-radius: 12px; cursor: pointer; font: inherit; font-size: var(--fs-base); font-weight: 600;
   color: var(--text-primary); background: var(--kpi-bg); text-align: left;
 }
 .dash-menu button:active { transform: scale(0.97); }
@@ -1205,7 +1206,7 @@ header.top h1 {
 .card.hero-row { display: flex; flex-direction: row; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: nowrap; }
 .hero-row > * { min-width: 0; }
 .hero-aside { text-align: right; flex-shrink: 1; }
-@media (max-width: 560px) { .hero-aside { font-size: 12px; } }
+@media (max-width: 560px) { .hero-aside { font-size: var(--fs-xs); } }
 
 /* Filter chips (glass) */
 .seg-group { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
@@ -1223,7 +1224,7 @@ header.top h1 {
 .chip {
   padding: 7px 16px;
   border-radius: 999px;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 600;
   cursor: pointer;
   color: var(--text-secondary);
@@ -1256,7 +1257,7 @@ header.top h1 {
   border: 1px solid var(--border);
   background: var(--kpi-bg);
   color: var(--text-primary);
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 /* Floating action orbs — aurora gradient, glassy, glow on hover. Shared by the
@@ -1430,7 +1431,7 @@ header.top h1 {
   border: 1px solid var(--expense);
   background: var(--expense-soft);
   color: var(--expense);
-  font-size: 15px;
+  font-size: var(--fs-md);
   cursor: pointer;
   line-height: 1;
   transition: background 0.15s ease, color 0.15s ease;
@@ -1456,7 +1457,7 @@ header.top h1 {
   background: var(--accent-soft);
   color: var(--accent);
   font-family: inherit;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 600;
   cursor: pointer;
   line-height: 1;
@@ -1491,7 +1492,7 @@ header.top h1 {
 }
 
 .stat-value {
-  font-size: 28px;
+  font-size: var(--fs-card);
   font-weight: 700;
 }
 
@@ -1523,7 +1524,7 @@ header.top h1 {
   background: var(--accent-soft);
   border-radius: 14px;
   text-align: center;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 500;
   color: var(--text-primary);
 }
@@ -1546,7 +1547,7 @@ header.top h1 {
 }
 
 .pricing-name {
-  font-size: 14px;
+  font-size: var(--fs-base);
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -1558,13 +1559,13 @@ header.top h1 {
 }
 
 .pricing-unit {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--text-muted);
   font-weight: 500;
 }
 
 .pricing-blurb {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--text-secondary);
   margin: 0;
 }
@@ -1605,7 +1606,7 @@ header.top h1 {
   header.top > :last-child { margin-right: -7px; }
 
   header.top .brand {
-    font-size: 15px;
+    font-size: var(--fs-md);
   }
 
   header.top .long {
@@ -1640,12 +1641,7 @@ header.top h1 {
 
   .block h2,
   header.top h1 {
-    font-size: 15px;
-  }
-
-  /* Dial back the big figures so long dollar amounts stay inside the card */
-  .stat-value {
-    font-size: 21px;
+    font-size: var(--fs-md);
   }
 
   .hero h1 {
@@ -1757,7 +1753,7 @@ header.top h1 {
     background: var(--kpi-bg);
     color: var(--text-primary);
     font: inherit;
-    font-size: 14px;
+    font-size: var(--fs-base);
     width: 100%;
     box-sizing: border-box;
     display: flex;
@@ -1816,7 +1812,7 @@ header.top h1 {
     content: attr(label);
     display: block;
     padding: 8px 10px 4px;
-    font-size: 11px;
+    font-size: var(--fs-2xs);
     font-weight: 700;
     letter-spacing: .04em;
     text-transform: uppercase;
@@ -1829,7 +1825,7 @@ header.top h1 {
     gap: 9px;
     padding: 9px 10px;
     border-radius: 9px;
-    font-size: 14.5px;
+    font-size: var(--fs-base);
     color: var(--text-primary);
   }
   select.base-select option:hover,
