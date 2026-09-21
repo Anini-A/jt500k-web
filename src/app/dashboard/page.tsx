@@ -352,9 +352,11 @@ function HeroRow({ stats }: { stats: Stat[] }) {
     <section className="block">
       <div className="card glass">
         <span className="hdr-label">{primary.label}</span>
-        <div className={`stat-value ${primary.cls || ''}`} style={{ letterSpacing: '-0.03em', marginTop: 4, whiteSpace: 'nowrap' }}>{primary.value}</div>
+        {/* the label anchors the card at the left; the figure and what qualifies it
+            are centred together, so they read as one block rather than a stack */}
+        <div className={`stat-value ${primary.cls || ''}`} style={{ letterSpacing: '-0.03em', marginTop: 4, whiteSpace: 'nowrap', textAlign: 'center' }}>{primary.value}</div>
         {rest.map((s) => (
-          <div key={s.label} style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginTop: 6 }}>
+          <div key={s.label} style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginTop: 6, textAlign: 'center' }}>
             <b style={{ color: 'var(--text-secondary)', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{s.value}</b>
             {` ${s.label.toLowerCase()}`}{s.sub ? ` · ${s.sub}` : ''}
           </div>
