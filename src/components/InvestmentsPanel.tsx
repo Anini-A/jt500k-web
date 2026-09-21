@@ -23,11 +23,11 @@ const OWNERS = ['Jean', 'Henriette', 'Joint', 'Noah']
 
 function OwnerPill({ owner }: { owner: string }) {
   const c = ownerTint(owner)
-  return <span style={{ background: c.bg, color: c.fg, padding: '2px 9px', borderRadius: 999, fontSize: 'var(--fs-2xs)', fontWeight: 600, whiteSpace: 'nowrap' }}>{owner}</span>
+  return <span style={{ background: c.bg, color: c.fg, padding: '2px 9px', borderRadius: 'var(--radius-pill)', fontSize: 'var(--fs-2xs)', fontWeight: 600, whiteSpace: 'nowrap' }}>{owner}</span>
 }
 
 const inp: React.CSSProperties = {
-  height: 40, padding: '0 10px', borderRadius: 10, border: '1px solid var(--border)',
+  height: 40, padding: '0 10px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)',
   background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 'var(--fs-base)', width: '100%',
   fontFamily: 'inherit', boxSizing: 'border-box',
 }
@@ -270,7 +270,7 @@ export default function InvestmentsPanel() {
 }
 
 const iconBtn: React.CSSProperties = {
-  display: 'inline-flex', padding: 6, borderRadius: 8, border: '1px solid var(--border)',
+  display: 'inline-flex', padding: 6, borderRadius: 'var(--radius-xs)', border: '1px solid var(--border)',
   background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer',
 }
 
@@ -401,7 +401,7 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
         <div style={{ display: 'grid', gap: 12 }}>
           <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Whose account is this?</span>
             <select value={uploader} onChange={(e) => setUploader(e.target.value)}
-              style={{ height: 44, padding: '0 12px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 'var(--fs-base)', fontFamily: 'inherit' }}>
+              style={{ height: 44, padding: '0 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 'var(--fs-base)', fontFamily: 'inherit' }}>
               <option value="Jean">Jean (you)</option>
               <option value="Henriette">Henriette</option>
             </select>
@@ -412,7 +412,7 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
               style={{ fontSize: 'var(--fs-base)' }} /></label>
           <label style={{ display: 'grid', gap: 4 }}><span className="stat-label">Valued as of</span>
             <input type="date" value={asOf} max={today()} onChange={(e) => setAsOf(e.target.value)}
-              style={{ height: 44, padding: '0 12px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 'var(--fs-base)', fontFamily: 'inherit' }} />
+              style={{ height: 44, padding: '0 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 'var(--fs-base)', fontFamily: 'inherit' }} />
             <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>Records a real net-worth point for this date — upload a past statement to backfill history.</span>
           </label>
           {rows && (

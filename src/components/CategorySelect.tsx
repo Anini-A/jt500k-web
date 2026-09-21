@@ -45,7 +45,7 @@ export default function CategorySelect({ value, onChange, cats, placeholder = 'â
     <select value={value} onChange={(e) => onChange(e.target.value)}
       className={rich ? `base-select${value ? '' : ' is-placeholder'}` : undefined}
       style={rich ? undefined : {
-        height: 44, padding: '0 12px', borderRadius: 10, border: '1px solid var(--border)',
+        height: 44, padding: '0 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)',
         background: 'var(--kpi-bg)', color: value ? 'var(--text-primary)' : 'var(--text-muted)',
         fontSize: 'var(--fs-base)', width: '100%', fontFamily: 'inherit', boxSizing: 'border-box',
       }}>

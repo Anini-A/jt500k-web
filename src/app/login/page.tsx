@@ -43,7 +43,7 @@ export default function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Password"
-              style={{ padding: '12px 14px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 'var(--fs-lg)', textAlign: 'center' }}
+              style={{ padding: '12px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 'var(--fs-lg)', textAlign: 'center' }}
             />
             {error && <div style={{ color: 'var(--expense)', fontSize: 'var(--fs-base)' }}>{error}</div>}
             <button className="btn btn-primary" type="submit" disabled={busy} style={{ justifyContent: 'center' }}>

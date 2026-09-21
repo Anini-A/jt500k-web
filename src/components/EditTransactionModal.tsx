@@ -16,7 +16,7 @@ interface Txn {
 }
 
 const inp: React.CSSProperties = {
-  height: 44, padding: '0 12px', borderRadius: 10, border: '1px solid var(--border)',
+  height: 44, padding: '0 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)',
   background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 'var(--fs-base)', width: '100%',
   fontFamily: 'inherit', boxSizing: 'border-box',
 }

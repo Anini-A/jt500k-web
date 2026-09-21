@@ -17,7 +17,7 @@ const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', curr
 const money2 = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })
 
 const inp: React.CSSProperties = {
-  height: 44, padding: '0 12px', borderRadius: 10, border: '1px solid var(--border)',
+  height: 44, padding: '0 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)',
   background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 'var(--fs-base)', width: '100%',
   fontFamily: 'inherit', boxSizing: 'border-box',
 }
@@ -198,7 +198,7 @@ export default function BudgetManager() {
 
         {/* Does the plan fund itself? Caught before the month runs, not after. */}
         {income.budgeted > 0 && isCurrentMonth && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 11px', borderRadius: 11, fontSize: 'var(--fs-xs)', lineHeight: 1.4,
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 11px', borderRadius: 'var(--radius-sm)', fontSize: 'var(--fs-xs)', lineHeight: 1.4,
             background: unallocated < 0 ? 'var(--expense-soft)' : 'var(--income-soft)' }}>
             <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, background: unallocated < 0 ? 'var(--expense)' : 'var(--income)' }} />
             <span>
@@ -228,11 +228,11 @@ export default function BudgetManager() {
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
           <button onClick={() => { setAdding((v) => !v); setEditing(null) }} aria-label={adding ? 'Cancel add item' : 'Add budget item'} title={adding ? 'Cancel' : 'Add budget item'}
-            style={{ width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-muted)', cursor: 'pointer' }}>
+            style={{ width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-muted)', cursor: 'pointer' }}>
             <Plus size={16} style={{ transform: adding ? 'rotate(45deg)' : 'none', transition: 'transform .2s ease' }} />
           </button>
           <button onClick={() => setCollapsed((v) => !v)} aria-expanded={!collapsed} aria-label={collapsed ? 'Show budget items' : 'Hide budget items'} title={collapsed ? 'Show budget items' : 'Hide budget items'}
-            style={{ width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-muted)', cursor: 'pointer' }}>
+            style={{ width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-muted)', cursor: 'pointer' }}>
             <ChevronDown size={16} style={{ transform: collapsed ? 'none' : 'rotate(180deg)', transition: 'transform .2s ease' }} />
           </button>
         </div>
@@ -271,7 +271,7 @@ export default function BudgetManager() {
                 {/* Coloured group label — only needed in the 'All' view to separate groups */}
                 {groupFilter === 'all' && (
                   <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
-                    <span style={{ background: g.bg, color: g.fg, padding: '3px 11px', borderRadius: 999, fontSize: 'var(--fs-xs)', fontWeight: 700, whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}><g.icon size={13} /> {g.label}</span>
+                    <span style={{ background: g.bg, color: g.fg, padding: '3px 11px', borderRadius: 'var(--radius-pill)', fontSize: 'var(--fs-xs)', fontWeight: 700, whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}><g.icon size={13} /> {g.label}</span>
                     <span className="stat-label" style={{ flexShrink: 0 }}>{money(g.actual)} / {money(g.budgeted)}</span>
                   </div>
                 )}
@@ -363,7 +363,7 @@ export default function BudgetManager() {
                         onCancel={() => setEditing(null)} />
                     ) : (
                       <button key={it.id} onClick={() => { setEditing(it.id); setAdding(false) }} title="Edit"
-                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '4px 6px', margin: '0 -6px', borderRadius: 7, background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', width: 'calc(100% + 12px)', textAlign: 'left', font: 'inherit' }}>
+                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '4px 6px', margin: '0 -6px', borderRadius: 'var(--radius-xs)', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', width: 'calc(100% + 12px)', textAlign: 'left', font: 'inherit' }}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 7, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
                           <Pencil size={12} style={{ opacity: 0.4, flexShrink: 0 }} /> {it.name}
                         </span>
@@ -392,8 +392,8 @@ export default function BudgetManager() {
 // point of the month we've reached, so fill past the tick = ahead of pace.
 function Bar({ pct, pace, fill, height }: { pct: number; pace: number | null; fill: string; height: number }) {
   return (
-    <div style={{ position: 'relative', height, borderRadius: 999, background: 'var(--kpi-bg)', border: '1px solid var(--border)', overflow: 'hidden' }}>
-      <div style={{ width: `${pct}%`, height: '100%', borderRadius: 999, background: fill, transition: 'width .6s ease' }} />
+    <div style={{ position: 'relative', height, borderRadius: 'var(--radius-pill)', background: 'var(--kpi-bg)', border: '1px solid var(--border)', overflow: 'hidden' }}>
+      <div style={{ width: `${pct}%`, height: '100%', borderRadius: 'var(--radius-pill)', background: fill, transition: 'width .6s ease' }} />
       {pace != null && pace > 0 && pace < 100 && (
         <div title={`Today — ${pace}% through the month`}
           style={{ position: 'absolute', top: -1, bottom: -1, left: `${pace}%`, width: 2, background: 'var(--text-primary)', opacity: 0.4 }} />

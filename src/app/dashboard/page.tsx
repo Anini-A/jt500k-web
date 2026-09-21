@@ -373,7 +373,7 @@ function ChartHead({ title }: { title: string; sub?: string }) {
 
 // ---- Recent transactions list (edit + delete inline) ----
 const iconBtn: React.CSSProperties = {
-  display: 'inline-flex', padding: 6, borderRadius: 8, border: '1px solid var(--border)',
+  display: 'inline-flex', padding: 6, borderRadius: 'var(--radius-xs)', border: '1px solid var(--border)',
   background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer',
 }
 

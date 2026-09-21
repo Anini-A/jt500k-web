@@ -18,6 +18,20 @@
   /* Lane INK: the readable text tone for a pill sitting on that lane's -soft fill.
      A lane colour on its own soft background lands around 2.3–2.6:1, so these
      darker tones carry the label instead. Fills stay -soft, text takes -ink. */
+  /* ── Radius ───────────────────────────────────────────────────────────────
+     Sixteen distinct corner values were in use, most of them within a pixel or
+     two of each other and none of them meaning anything different. These seven
+     absorb them; nothing moves by more than 2px. Values below 8px (a progress
+     bar's inner fill, a sparkline cap) stay literal — they are geometry, not
+     surface styling. */
+  --radius-xs: 8px;      /* small chips, inline controls  (was 6, 7, 8, 9) */
+  --radius-sm: 10px;     /* form fields                   (was 10, 11)     */
+  --radius-md: 12px;     /* buttons, list rows            (was 12)         */
+  --radius-lg: 14px;     /* inset panels                  (was 14)         */
+  --radius-xl: 16px;     /* sheets, large panels          (was 16, 18)     */
+  --radius-2xl: 22px;    /* cards                         (was 20, 22)     */
+  --radius-pill: 999px;  /* pills, avatars, bars                           */
+
   /* ── Chart series ─────────────────────────────────────────────────────────
      Eight categorical slots, assigned in this fixed order and never cycled.
      Each set was picked against its own surface rather than flipped from the
@@ -227,7 +241,7 @@
 
 /* controls */
 .voice-ctrl {
-  width: 54px; height: 54px; border-radius: 999px; cursor: pointer;
+  width: 54px; height: 54px; border-radius: var(--radius-pill); cursor: pointer;
   display: inline-flex; align-items: center; justify-content: center;
   border: 1px solid var(--glass-border); background: var(--glass-bg);
   -webkit-backdrop-filter: blur(12px) saturate(150%); backdrop-filter: blur(12px) saturate(150%);
@@ -235,7 +249,7 @@
 }
 .voice-ctrl:hover { transform: translateY(-1px); }
 .voice-mic {
-  width: 76px; height: 76px; border-radius: 999px; border: none; cursor: pointer; color: #fff;
+  width: 76px; height: 76px; border-radius: var(--radius-pill); border: none; cursor: pointer; color: #fff;
   display: inline-flex; align-items: center; justify-content: center;
   background: linear-gradient(140deg, var(--accent), var(--savings) 52%, var(--income));
   box-shadow: 0 10px 30px color-mix(in srgb, var(--accent) 42%, transparent), var(--glass-sheen);
@@ -256,12 +270,12 @@
 /* ── Chat/Voice mode pill (header center) ── */
 .mode-pill {
   display: inline-flex; align-items: center; gap: 2px; padding: 3px;
-  border-radius: 999px; border: 1px solid var(--border); background: var(--kpi-bg);
+  border-radius: var(--radius-pill); border: 1px solid var(--border); background: var(--kpi-bg);
   box-shadow: var(--glass-sheen);
 }
 .mode-seg {
   display: inline-flex; align-items: center; gap: 6px; padding: 7px 15px;
-  border: none; border-radius: 999px; cursor: pointer; font: inherit;
+  border: none; border-radius: var(--radius-pill); cursor: pointer; font: inherit;
   font-size: var(--fs-sm); font-weight: 600; color: var(--text-muted); background: transparent;
   transition: color .18s ease, background .18s ease, box-shadow .18s ease;
 }
@@ -329,7 +343,7 @@
   border: none; background: transparent; cursor: pointer;
 }
 .voice-viz > span {
-  display: block; width: 12px; height: 34px; border-radius: 999px;
+  display: block; width: 12px; height: 34px; border-radius: var(--radius-pill);
   background: linear-gradient(180deg, rgba(var(--accent-rgb), 1), rgba(var(--accent-rgb), .62));
   box-shadow: 0 4px 14px rgba(var(--accent-rgb), .4), var(--glass-sheen);
   transform-origin: center; transform: scaleY(.45);
@@ -366,7 +380,7 @@
 .voice-caption {
   font-size: var(--fs-lg); line-height: 1.5; font-weight: 500; letter-spacing: -.01em;
   color: var(--text-primary); max-width: 440px; width: 100%;
-  background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px;
+  background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl);
   padding: 14px 16px; box-sizing: border-box;
   -webkit-backdrop-filter: blur(14px) saturate(150%); backdrop-filter: blur(14px) saturate(150%);
   box-shadow: var(--glass-sheen), var(--glass-rim);
@@ -427,7 +441,7 @@ input, textarea, select, [contenteditable="true"] {
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
 }
 button:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
 
@@ -441,7 +455,7 @@ button:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
 /* Loading skeleton — a soft shimmering placeholder for values still loading. */
 .skeleton {
   display: inline-block;
-  border-radius: 8px;
+  border-radius: var(--radius-xs);
   background: linear-gradient(100deg, var(--kpi-bg) 30%, var(--surface-1) 50%, var(--kpi-bg) 70%);
   background-size: 200% 100%;
   animation: shimmer 1.4s ease-in-out infinite;
@@ -553,14 +567,14 @@ header.top > :last-child { margin-right: 3px; } /* web: pull in to the card edge
   box-sizing: border-box;
   gap: 2px;
   padding: 4px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--kpi-bg);
   border: 1px solid var(--border);
 }
 .page-seg {
   flex-shrink: 0;
   padding: 6px 16px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: none;
   background: transparent;
   color: var(--text-muted);
@@ -587,7 +601,7 @@ header.top > :last-child { margin-right: 3px; } /* web: pull in to the card edge
   box-sizing: border-box;
   gap: 8px;
   padding: 0 16px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--kpi-bg);
   border: 1px solid var(--border);
 }
@@ -647,7 +661,7 @@ header.top h1 {
   font-weight: 600;
   font-size: var(--fs-sm);
   padding: 8px 16px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   text-decoration: none;
   white-space: nowrap;
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -706,7 +720,7 @@ header.top h1 {
 }
 
 .card {
-  border-radius: 22px;
+  border-radius: var(--radius-2xl);
   padding: 20px;
   display: flex;
   flex-direction: column;
@@ -756,7 +770,7 @@ header.top h1 {
   background: var(--income-soft);
   color: var(--income-ink);
   padding: 6px 12px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: var(--fs-xs);
   font-weight: 600;
   margin-bottom: 12px;
@@ -773,7 +787,7 @@ header.top h1 {
   align-items: center;
   gap: 8px;
   padding: 10px 20px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-weight: 600;
   font-size: var(--fs-base);
   text-decoration: none;
@@ -817,7 +831,7 @@ header.top h1 {
   justify-content: center;
   height: 40px;
   padding: 0 10px; /* 10 + 20px icon + 10 = 40×40 circle, matching the alert bell */
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   color: var(--text-primary);
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
@@ -900,7 +914,7 @@ header.top h1 {
   align-items: center;
   height: 46px;
   padding: 0 13px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   color: var(--text-primary);
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
@@ -943,7 +957,7 @@ header.top h1 {
   justify-content: center;
   gap: 4px;
   padding: 6px;
-  border-radius: 18px;
+  border-radius: var(--radius-xl);
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
@@ -966,7 +980,7 @@ header.top h1 {
   position: relative;
   flex-shrink: 0; /* never collapse (esp. the active tab, whose overflow:hidden would let it shrink to a circle); the row scrolls instead */
   padding: 9px 18px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: none;
   background: transparent;
   color: var(--text-secondary);
@@ -1018,7 +1032,7 @@ header.top h1 {
 .modal-card {
   position: relative;
   width: min(600px, 100%);
-  border-radius: 22px;
+  border-radius: var(--radius-2xl);
   padding: 24px;
   max-height: 90vh;
   overflow-y: auto;
@@ -1062,7 +1076,7 @@ header.top h1 {
 }
 .modal-card.glass::before {
   content: ''; position: absolute; top: 0; left: 0; right: 0; height: 120px;
-  border-radius: 22px 22px 0 0; background: var(--glass-specular); opacity: 0.7; pointer-events: none;
+  border-radius: var(--radius-2xl) 22px 0 0; background: var(--glass-specular); opacity: 0.7; pointer-events: none;
 }
 
 /* ── Mobile: modals become native-style bottom sheets that slide up ── */
@@ -1071,7 +1085,7 @@ header.top h1 {
   .modal-card {
     width: 100% !important;
     max-width: 100%;
-    border-radius: 22px 22px 0 0;
+    border-radius: var(--radius-2xl) 22px 0 0;
     max-height: calc(92dvh - 38px);
     /* The sheet ends AT the screen bottom — hanging it any lower just clips the action
        button off the edge. What's left under the button is the home-indicator safe area,
@@ -1080,13 +1094,13 @@ header.top h1 {
     padding: 22px 16px max(12px, calc(env(safe-area-inset-bottom, 0px) - 14px));
     animation: sheetIn 0.3s cubic-bezier(0.2, 0.9, 0.3, 1);
   }
-  .modal-card.glass::before { border-radius: 22px 22px 0 0; }
+  .modal-card.glass::before { border-radius: var(--radius-2xl) 22px 0 0; }
   /* a "tall" sheet fills to the top (like Settings) even when its content is short */
   .modal-card.modal-tall { height: calc(92dvh - 38px); display: flex; flex-direction: column; }
   /* grab handle at the top of the sheet */
   .modal-card::after {
     content: ''; position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
-    width: 38px; height: 4px; border-radius: 999px; background: var(--border); pointer-events: none;
+    width: 38px; height: 4px; border-radius: var(--radius-pill); background: var(--border); pointer-events: none;
   }
 }
 @keyframes sheetIn { from { transform: translateY(100%); } to { transform: translateY(0); } }
@@ -1109,7 +1123,7 @@ header.top h1 {
   gap: 10px;
   width: 100%;
   padding: 11px 14px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   cursor: pointer;
   border: 1px solid transparent;
   font-size: var(--fs-base);
@@ -1128,7 +1142,7 @@ header.top h1 {
 .type-pill .type-count {
   background: color-mix(in srgb, currentColor 18%, transparent);
   padding: 1px 9px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: var(--fs-xs);
   font-weight: 700;
 }
@@ -1146,7 +1160,7 @@ header.top h1 {
   gap: 8px;
   width: 100%;
   padding: 9px 10px;
-  border-radius: 9px;
+  border-radius: var(--radius-xs);
   border: none;
   background: transparent;
   color: var(--text-primary);
@@ -1196,12 +1210,12 @@ header.top h1 {
 .nav-pill {
   display: flex; align-items: center; gap: 6px;
   padding: 4px 10px;
-  border-radius: 999px;  /* full capsule */
+  border-radius: var(--radius-pill);  /* full capsule */
 }
 .nav-pill button {
   width: 54px; height: 40px; display: inline-flex; align-items: center; justify-content: center;
   border: none; background: transparent; cursor: pointer; color: var(--text-secondary);
-  border-radius: 999px; transition: color .15s ease, background .18s ease, box-shadow .2s ease, transform .1s ease;
+  border-radius: var(--radius-pill); transition: color .15s ease, background .18s ease, box-shadow .2s ease, transform .1s ease;
 }
 /* active = a raised liquid-glass chip (specular + sheen + inner rim), not a solid colour */
 .nav-pill button.active {
@@ -1224,7 +1238,7 @@ header.top h1 {
   bottom: calc(64px + env(safe-area-inset-bottom, 0px));
   padding: 8px;
   display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
-  border-radius: 20px;
+  border-radius: var(--radius-2xl);
   background: var(--glass-specular), var(--glass-bg);
   -webkit-backdrop-filter: blur(30px) saturate(200%);
   backdrop-filter: blur(30px) saturate(200%);
@@ -1234,7 +1248,7 @@ header.top h1 {
 }
 .dash-menu button {
   display: inline-flex; align-items: center; gap: 8px; padding: 11px 12px;
-  border: none; border-radius: 12px; cursor: pointer; font: inherit; font-size: var(--fs-base); font-weight: 600;
+  border: none; border-radius: var(--radius-md); cursor: pointer; font: inherit; font-size: var(--fs-base); font-weight: 600;
   color: var(--text-primary); background: var(--kpi-bg); text-align: left;
 }
 .dash-menu button:active { transform: scale(0.97); }
@@ -1260,7 +1274,7 @@ header.top h1 {
 
 .chip {
   padding: 7px 16px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: var(--fs-sm);
   font-weight: 600;
   cursor: pointer;
@@ -1290,7 +1304,7 @@ header.top h1 {
   box-sizing: border-box;
   font-family: inherit;
   padding: 0 10px;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background: var(--kpi-bg);
   color: var(--text-primary);
@@ -1464,7 +1478,7 @@ header.top h1 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: 1px solid var(--expense);
   background: var(--expense-soft);
   color: var(--expense-ink);
@@ -1489,7 +1503,7 @@ header.top h1 {
   align-items: center;
   justify-content: center;
   gap: 5px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: 1px solid var(--accent);
   background: var(--accent-soft);
   color: var(--accent-ink);
@@ -1559,7 +1573,7 @@ header.top h1 {
   gap: 8px;
   padding: 14px;
   background: var(--accent-soft);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   text-align: center;
   font-size: var(--fs-sm);
   font-weight: 500;
@@ -1665,7 +1679,7 @@ header.top h1 {
   /* Cards: less padding, a touch less rounding — more room for content */
   .card {
     padding: 15px;
-    border-radius: 18px;
+    border-radius: var(--radius-xl);
   }
 
   .card.hero {
@@ -1713,7 +1727,7 @@ header.top h1 {
 /* Chat message actions — icon buttons that appear on a tapped bubble */
 .msg-act {
   width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center;
-  border-radius: 999px; border: 1px solid var(--border); background: var(--kpi-bg);
+  border-radius: var(--radius-pill); border: 1px solid var(--border); background: var(--kpi-bg);
   color: var(--text-muted); cursor: pointer; transition: color .15s ease, background .15s ease;
 }
 .msg-act:hover { color: var(--text-primary); background: var(--surface-1); }
@@ -1728,7 +1742,7 @@ header.top h1 {
    space the real content will take, so nothing jumps when the numbers land. */
 .skel {
   position: relative; overflow: hidden;
-  background: var(--kpi-bg); border-radius: 10px;
+  background: var(--kpi-bg); border-radius: var(--radius-sm);
 }
 .skel::after {
   content: ''; position: absolute; inset: 0;
@@ -1785,7 +1799,7 @@ header.top h1 {
   select.base-select {
     height: 44px;
     padding: 0 12px;
-    border-radius: 10px;
+    border-radius: var(--radius-sm);
     border: 1px solid var(--border);
     background: var(--kpi-bg);
     color: var(--text-primary);
@@ -1822,7 +1836,7 @@ header.top h1 {
   /* the dropdown itself — matched to the sheet it opens inside */
   select.base-select::picker(select) {
     border: 1px solid var(--glass-border);
-    border-radius: 14px;
+    border-radius: var(--radius-lg);
     background: var(--glass-bg-strong);
     box-shadow: var(--glass-shadow);
     padding: 6px;
@@ -1861,7 +1875,7 @@ header.top h1 {
     align-items: center;
     gap: 9px;
     padding: 9px 10px;
-    border-radius: 9px;
+    border-radius: var(--radius-xs);
     font-size: var(--fs-base);
     color: var(--text-primary);
   }
@@ -1889,7 +1903,7 @@ header.top h1 {
 .cat-swatch {
   width: 9px;
   height: 9px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: currentColor;
   flex-shrink: 0;
 }

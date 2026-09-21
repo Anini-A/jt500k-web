@@ -44,10 +44,10 @@ export default function NotificationBell() {
   return (
     <>
       <button onClick={() => { setTab(actions.length ? 'action' : 'info'); setOpen(true) }} aria-label={total ? `${total} alerts` : 'Alerts'} title="Alerts"
-        style={{ position: 'relative', width: 40, height: 40, borderRadius: 999, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--glass-border)', background: 'var(--glass-bg)', color: 'var(--text-secondary)', cursor: 'pointer', overflow: 'visible', WebkitBackdropFilter: 'blur(12px)', backdropFilter: 'blur(12px)' }}>
+        style={{ position: 'relative', width: 40, height: 40, borderRadius: 'var(--radius-pill)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--glass-border)', background: 'var(--glass-bg)', color: 'var(--text-secondary)', cursor: 'pointer', overflow: 'visible', WebkitBackdropFilter: 'blur(12px)', backdropFilter: 'blur(12px)' }}>
         <Bell size={18} />
         {total > 0 && (
-          <span style={{ position: 'absolute', top: -5, right: -5, height: 19, minWidth: 19, boxSizing: 'border-box', padding: '0 5px', borderRadius: 999, fontSize: 'var(--fs-2xs)', fontWeight: 700, lineHeight: '15px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', background: urgent ? 'var(--expense)' : 'var(--accent)', border: '2px solid var(--page-plane)' }}>{total > 99 ? '99+' : total}</span>
+          <span style={{ position: 'absolute', top: -5, right: -5, height: 19, minWidth: 19, boxSizing: 'border-box', padding: '0 5px', borderRadius: 'var(--radius-pill)', fontSize: 'var(--fs-2xs)', fontWeight: 700, lineHeight: '15px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', background: urgent ? 'var(--expense)' : 'var(--accent)', border: '2px solid var(--page-plane)' }}>{total > 99 ? '99+' : total}</span>
         )}
       </button>
 
@@ -70,7 +70,7 @@ export default function NotificationBell() {
             ) : (
               <>
                 {/* segmented toggle — Needs action / Good to know */}
-                <div style={{ flexShrink: 0, display: 'flex', gap: 3, background: 'var(--kpi-bg)', borderRadius: 999, padding: 3, marginBottom: 14 }}>
+                <div style={{ flexShrink: 0, display: 'flex', gap: 3, background: 'var(--kpi-bg)', borderRadius: 'var(--radius-pill)', padding: 3, marginBottom: 14 }}>
                   <TabPill active={tab === 'action'} onClick={() => setTab('action')} label="Needs action" count={actions.length} hot={actions.some((n) => n.severity === 'warn')} />
                   <TabPill active={tab === 'info'} onClick={() => setTab('info')} label="Good to know" count={infos.length} />
                 </div>
@@ -102,9 +102,9 @@ export default function NotificationBell() {
 
 function TabPill({ active, onClick, label, count, hot }: { active: boolean; onClick: () => void; label: string; count: number; hot?: boolean }) {
   return (
-    <button onClick={onClick} style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '8px 10px', borderRadius: 999, border: 'none', cursor: 'pointer', fontSize: 'var(--fs-sm)', fontWeight: 600, fontFamily: 'inherit', background: active ? 'var(--surface-1)' : 'transparent', color: active ? 'var(--text-primary)' : 'var(--text-muted)', boxShadow: active ? '0 1px 3px rgba(0,0,0,0.12)' : 'none' }}>
+    <button onClick={onClick} style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '8px 10px', borderRadius: 'var(--radius-pill)', border: 'none', cursor: 'pointer', fontSize: 'var(--fs-sm)', fontWeight: 600, fontFamily: 'inherit', background: active ? 'var(--surface-1)' : 'transparent', color: active ? 'var(--text-primary)' : 'var(--text-muted)', boxShadow: active ? '0 1px 3px rgba(0,0,0,0.12)' : 'none' }}>
       {label}
-      {count > 0 && <span style={{ minWidth: 18, height: 18, padding: '0 5px', borderRadius: 999, fontSize: 'var(--fs-2xs)', fontWeight: 700, lineHeight: '18px', textAlign: 'center', color: '#fff', background: hot ? 'var(--expense)' : active ? 'var(--accent)' : 'var(--text-muted)' }}>{count}</span>}
+      {count > 0 && <span style={{ minWidth: 18, height: 18, padding: '0 5px', borderRadius: 'var(--radius-pill)', fontSize: 'var(--fs-2xs)', fontWeight: 700, lineHeight: '18px', textAlign: 'center', color: '#fff', background: hot ? 'var(--expense)' : active ? 'var(--accent)' : 'var(--text-muted)' }}>{count}</span>}
     </button>
   )
 }
@@ -117,7 +117,7 @@ function Item({ n, onDismiss, skip }: { n: Notif; onDismiss?: () => void; skip?:
   const urgent = n.severity === 'warn'
   const dot = urgent ? 'var(--expense)' : n.kind === 'action' ? 'var(--accent)' : 'var(--text-muted)'
   return (
-    <div style={{ display: 'flex', gap: 11, alignItems: 'flex-start', padding: '13px 14px', borderRadius: 14, background: 'var(--surface-1)', border: '1px solid var(--border)' }}>
+    <div style={{ display: 'flex', gap: 11, alignItems: 'flex-start', padding: '13px 14px', borderRadius: 'var(--radius-lg)', background: 'var(--surface-1)', border: '1px solid var(--border)' }}>
       <span style={{ width: 7, height: 7, borderRadius: '50%', background: dot, flexShrink: 0, marginTop: 6 }} />
       <div style={{ minWidth: 0, flex: 1 }}>
         <div style={{ fontWeight: 600, fontSize: 'var(--fs-base)' }}>{n.title}</div>

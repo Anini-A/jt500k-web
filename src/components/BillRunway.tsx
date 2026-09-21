@@ -24,7 +24,7 @@ const todayISO = today // local date, not UTC
 const RED = 'var(--danger)'
 const RED_SOFT = 'var(--danger-soft)'
 const inp: React.CSSProperties = {
-  padding: '9px 11px', borderRadius: 10, border: '1px solid var(--border)',
+  padding: '9px 11px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)',
   background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 'var(--fs-lg)', width: '100%',
   fontFamily: 'inherit', boxSizing: 'border-box',
 }
@@ -151,7 +151,7 @@ export default function BillRunway() {
         ) : (
           <div style={{ display: 'grid', gap: 8 }}>
             {/* covers line — the window this balance actually gets you through */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 10, background: 'var(--income-soft)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 'var(--radius-sm)', background: 'var(--income-soft)' }}>
               <span style={{ minWidth: 0 }}>
                 <span style={{ display: 'block', fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)' }}>Covers {proj.coveredCount} bill{proj.coveredCount === 1 ? '' : 's'}</span>
                 {through && <span style={{ display: 'block', fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)', marginTop: 2 }}>{fmtRange(projFrom, through)}</span>}
@@ -164,7 +164,7 @@ export default function BillRunway() {
             {!proj.firstShort ? (
               <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--income)', fontWeight: 600, padding: '2px 2px' }}>Every upcoming bill covered through {fmtDay(proj.horizonISO)}.</div>
             ) : (!coveredMonth || topUpSoon) ? (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 10, background: RED_SOFT }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 'var(--radius-sm)', background: RED_SOFT }}>
                 <span style={{ minWidth: 0 }}>
                   <span style={{ display: 'block', fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)' }}>Short for <b style={{ color: 'var(--text-primary)' }}>{proj.firstShort.name}</b>{proj.remainingCount > 1 ? ` +${proj.remainingCount - 1} more` : ''}</span>
                   <span style={{ display: 'block', fontSize: 'var(--fs-2xs)', color: RED, marginTop: 2 }}>{fmtRange(proj.firstShort.iso, proj.horizonISO)}</span>
@@ -172,7 +172,7 @@ export default function BillRunway() {
                 <span style={{ fontWeight: 700, fontSize: 'var(--fs-md)', color: RED, whiteSpace: 'nowrap' }}>{money2(proj.remainingTotal)}</span>
               </div>
             ) : (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 10, background: 'var(--kpi-bg)', border: '1px solid var(--border)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 'var(--radius-sm)', background: 'var(--kpi-bg)', border: '1px solid var(--border)' }}>
                 <span style={{ minWidth: 0 }}>
                   <span style={{ display: 'block', fontSize: 'var(--fs-sm)', color: 'var(--text-muted)' }}>Next month: short for <b style={{ color: 'var(--text-secondary)' }}>{proj.firstShort.name}</b>{proj.remainingCount > 1 ? ` +${proj.remainingCount - 1} more` : ''}</span>
                   <span style={{ display: 'block', fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)', marginTop: 2 }}>{fmtRange(proj.firstShort.iso, proj.horizonISO)}</span>
@@ -198,11 +198,11 @@ export default function BillRunway() {
             {!stale && <button className="chip btn-accent" onClick={() => setEditBalance(true)}>Update balance</button>}
           </div>
           {stale && (
-            <div style={{ marginTop: 12, padding: '12px 14px', background: RED_SOFT, borderRadius: 12, display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+            <div style={{ marginTop: 12, padding: '12px 14px', background: RED_SOFT, borderRadius: 'var(--radius-md)', display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', color: RED, fontSize: 'var(--fs-sm)', fontWeight: 600, minWidth: 0, flex: 1 }}>
                 <TriangleAlert size={15} style={{ flexShrink: 0 }} /> Last updated {fmtDay(asOf)} · {staleDays} day{staleDays === 1 ? '' : 's'} ago — update your balance so the forecast stays accurate.
               </div>
-              <button className="btn-warn-red" style={{ flexShrink: 0, padding: '7px 16px', borderRadius: 999, fontSize: 'var(--fs-sm)', fontWeight: 600, background: 'transparent', border: `1px solid ${RED}`, cursor: 'pointer' }} onClick={() => setEditBalance(true)}>Update balance</button>
+              <button className="btn-warn-red" style={{ flexShrink: 0, padding: '7px 16px', borderRadius: 'var(--radius-pill)', fontSize: 'var(--fs-sm)', fontWeight: 600, background: 'transparent', border: `1px solid ${RED}`, cursor: 'pointer' }} onClick={() => setEditBalance(true)}>Update balance</button>
             </div>
           )}
           <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
@@ -223,11 +223,11 @@ export default function BillRunway() {
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
             <button onClick={() => setEditBill('new')} aria-label="Add bill" title="Add bill"
-              style={{ width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-muted)', cursor: 'pointer' }}>
+              style={{ width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-muted)', cursor: 'pointer' }}>
               <Plus size={16} />
             </button>
             <button onClick={() => setBillsCollapsed((v) => !v)} aria-expanded={!billsCollapsed} aria-label={billsCollapsed ? 'Show bill schedule' : 'Hide bill schedule'} title={billsCollapsed ? 'Show bill schedule' : 'Hide bill schedule'}
-              style={{ width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-muted)', cursor: 'pointer' }}>
+              style={{ width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-muted)', cursor: 'pointer' }}>
               <ChevronDown size={16} style={{ transform: billsCollapsed ? 'none' : 'rotate(180deg)', transition: 'transform .2s ease' }} />
             </button>
           </div>
@@ -245,7 +245,7 @@ export default function BillRunway() {
           {[...acctBills].sort((a, b) => a.day - b.day).map((b, i) => (
             <div key={b.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', padding: '10px 4px', borderTop: i ? '1px solid var(--border)' : 'none' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-                <span style={{ width: 34, height: 34, borderRadius: 9, background: 'var(--kpi-bg)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0, lineHeight: 1 }}>
+                <span style={{ width: 34, height: 34, borderRadius: 'var(--radius-xs)', background: 'var(--kpi-bg)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0, lineHeight: 1 }}>
                   <span style={{ fontWeight: 800, fontSize: 'var(--fs-base)' }}>{b.day}</span>
                 </span>
                 <div style={{ minWidth: 0 }}>
@@ -301,7 +301,7 @@ function CoverageTimeline({ proj, asOf, urgent }: { proj: Projection; asOf: stri
       ) : (
         <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8, scrollSnapType: 'x proximity' }}>
           {/* start tile */}
-          <div style={{ flex: '0 0 auto', width: 116, scrollSnapAlign: 'start', borderRadius: 12, padding: '11px 12px', background: 'var(--kpi-bg)', borderTop: '3px solid var(--text-muted)' }}>
+          <div style={{ flex: '0 0 auto', width: 116, scrollSnapAlign: 'start', borderRadius: 'var(--radius-md)', padding: '11px 12px', background: 'var(--kpi-bg)', borderTop: '3px solid var(--text-muted)' }}>
             <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>Now · {fmtDay(asOf)}</div>
             <div style={{ fontWeight: 600, fontSize: 'var(--fs-sm)', marginTop: 6, color: 'var(--text-secondary)' }}>Balance</div>
             <div style={{ fontWeight: 700, fontSize: 'var(--fs-md)', marginTop: 2 }}>{money2(proj.startBalance)}</div>
@@ -318,7 +318,7 @@ function CoverageTimeline({ proj, asOf, urgent }: { proj: Projection; asOf: stri
                     <div style={{ width: 2, flex: 1, minHeight: 40, background: RED, opacity: 0.5, borderRadius: 2 }} />
                   </div>
                 )}
-                <div style={{ flex: '0 0 auto', width: 132, scrollSnapAlign: 'start', borderRadius: 12, padding: '11px 12px', background: e.covered ? 'var(--kpi-bg)' : RED_SOFT, borderTop: `3px solid ${tone}` }}>
+                <div style={{ flex: '0 0 auto', width: 132, scrollSnapAlign: 'start', borderRadius: 'var(--radius-md)', padding: '11px 12px', background: e.covered ? 'var(--kpi-bg)' : RED_SOFT, borderTop: `3px solid ${tone}` }}>
                   <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{fmtDay(e.iso)}</div>
                   <div style={{ fontWeight: 600, fontSize: 'var(--fs-sm)', marginTop: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={e.name}>{e.name}</div>
                   <div style={{ fontWeight: 700, fontSize: 'var(--fs-md)', marginTop: 4 }}>−{money2(e.amount)}</div>
@@ -333,7 +333,7 @@ function CoverageTimeline({ proj, asOf, urgent }: { proj: Projection; asOf: stri
   )
 }
 
-const iconBtn: React.CSSProperties = { display: 'inline-flex', padding: 6, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }
+const iconBtn: React.CSSProperties = { display: 'inline-flex', padding: 6, borderRadius: 'var(--radius-xs)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }
 const fmtDay = (iso: string) => { const d = new Date(iso + 'T00:00:00'); return d.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' }) }
 // "Sep 15 → Oct 31" — always name both ends so a total is never read as a single-day amount
 const fmtRange = (fromISO: string, toISO: string) => (fromISO === toISO ? fmtDay(fromISO) : `${fmtDay(fromISO)} → ${fmtDay(toISO)}`)
@@ -342,7 +342,7 @@ const fmtRange = (fromISO: string, toISO: string) => (fromISO === toISO ? fmtDay
 function Shell({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, zIndex: 100 }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: 16, padding: 20, width: '100%', maxWidth: 380, boxShadow: '0 20px 60px rgba(0,0,0,0.4)' }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: 'var(--radius-xl)', padding: 20, width: '100%', maxWidth: 380, boxShadow: '0 20px 60px rgba(0,0,0,0.4)' }}>
         <h3 style={{ margin: '0 0 16px', fontSize: 'var(--fs-lg)' }}>{title}</h3>
         {children}
       </div>

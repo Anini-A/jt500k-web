@@ -19,13 +19,13 @@ interface Row { date: string; description: string; category: string; type: strin
 interface Draft { id: string; name: string | null; rows: Row[]; updated_at: string }
 
 const inp: React.CSSProperties = {
-  height: 44, padding: '0 12px', borderRadius: 10, border: '1px solid var(--border)',
+  height: 44, padding: '0 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)',
   background: 'var(--surface-1)', color: 'var(--text-primary)', fontSize: 'var(--fs-base)', width: '100%',
   fontFamily: 'inherit', boxSizing: 'border-box',
 }
 const cell: React.CSSProperties = { ...inp, height: 38, padding: '0 8px', fontSize: 'var(--fs-sm)', minWidth: 0 }
 // bare in-row editable field (recurring): looks like text until focused/hovered
-const recInline: React.CSSProperties = { border: '1px solid transparent', borderRadius: 7, background: 'transparent', color: 'var(--text-primary)', fontFamily: 'inherit', padding: '2px 5px', outline: 'none', minWidth: 0, WebkitAppearance: 'none', appearance: 'none' }
+const recInline: React.CSSProperties = { border: '1px solid transparent', borderRadius: 'var(--radius-xs)', background: 'transparent', color: 'var(--text-primary)', fontFamily: 'inherit', padding: '2px 5px', outline: 'none', minWidth: 0, WebkitAppearance: 'none', appearance: 'none' }
 
 // Old sheet names → current category names (user still copies from the old sheet)
 const ALIASES: Record<string, string> = {
@@ -426,16 +426,16 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   // in the empty-state card browser, where the card is already chosen by which tile was opened.
   const intakeBox = (
     <div style={{ display: 'grid', gap: 10 }}>
-      <div style={{ border: '1.5px dashed var(--border-strong, var(--border))', borderRadius: 16, background: 'var(--surface-1)', padding: '14px 14px 12px' }}>
+      <div style={{ border: '1.5px dashed var(--border-strong, var(--border))', borderRadius: 'var(--radius-xl)', background: 'var(--surface-1)', padding: '14px 14px 12px' }}>
         <textarea value={raw} onChange={(e) => setRaw(e.target.value)} onPaste={onPasteInput} rows={2}
           placeholder={'Paste text or an image from your bank or card — the AI cleans it up.'}
           style={{ width: '100%', border: 'none', background: 'transparent', resize: 'vertical', minHeight: 44, fontFamily: 'inherit', fontSize: 'var(--fs-base)', lineHeight: 1.5, color: 'var(--text-primary)', outline: 'none' }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, paddingTop: 12, borderTop: '1px dashed var(--border)' }}>
           <button type="button" disabled={(!raw.trim() && images.length === 0) || parsing} onClick={formatWithAI}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 999, cursor: (!raw.trim() && images.length === 0) || parsing ? 'default' : 'pointer', fontSize: 'var(--fs-sm)', fontWeight: 700, fontFamily: 'inherit', border: 'none', background: (!raw.trim() && images.length === 0) ? 'var(--surface-1)' : 'var(--accent)', color: (!raw.trim() && images.length === 0) ? 'var(--text-muted)' : '#fff' }}>
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 'var(--radius-pill)', cursor: (!raw.trim() && images.length === 0) || parsing ? 'default' : 'pointer', fontSize: 'var(--fs-sm)', fontWeight: 700, fontFamily: 'inherit', border: 'none', background: (!raw.trim() && images.length === 0) ? 'var(--surface-1)' : 'var(--accent)', color: (!raw.trim() && images.length === 0) ? 'var(--text-muted)' : '#fff' }}>
             {parsing ? 'Reading…' : `✨ Format with AI${images.length ? ` · ${images.length}` : ''}`}
           </button>
-          <label aria-label="Add screenshot" title="Add a screenshot" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 999, cursor: 'pointer', border: '1px solid var(--border)', background: 'var(--surface-1)', color: 'var(--text-secondary)' }}>
+          <label aria-label="Add screenshot" title="Add a screenshot" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 'var(--radius-pill)', cursor: 'pointer', border: '1px solid var(--border)', background: 'var(--surface-1)', color: 'var(--text-secondary)' }}>
             <ImagePlus size={16} />
             <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={(e) => { if (e.target.files) addImageFiles(e.target.files); e.target.value = '' }} />
           </label>
@@ -445,9 +445,9 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
           {images.map((im) => (
             <div key={im.id} style={{ position: 'relative' }}>
-              <img src={im.preview} alt="screenshot" style={{ height: 68, width: 'auto', maxWidth: 120, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--border)' }} />
+              <img src={im.preview} alt="screenshot" style={{ height: 68, width: 'auto', maxWidth: 120, objectFit: 'cover', borderRadius: 'var(--radius-xs)', border: '1px solid var(--border)' }} />
               <button type="button" onClick={() => setImages((prev) => prev.filter((x) => x.id !== im.id))} aria-label="Remove"
-                style={{ position: 'absolute', top: -7, right: -7, width: 20, height: 20, borderRadius: 999, border: 'none', background: 'var(--expense)', color: '#fff', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--fs-xs)', lineHeight: 1 }}>✕</button>
+                style={{ position: 'absolute', top: -7, right: -7, width: 20, height: 20, borderRadius: 'var(--radius-pill)', border: 'none', background: 'var(--expense)', color: '#fff', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--fs-xs)', lineHeight: 1 }}>✕</button>
             </div>
           ))}
         </div>
@@ -477,24 +477,24 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span className="stat-label">Cards</span>
         <button type="button" onClick={() => setManageCardsOpen((v) => !v)} title="Add or remove cards"
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 999, cursor: 'pointer', fontSize: 'var(--fs-sm)', fontWeight: 600, fontFamily: 'inherit', border: `1px solid ${manageCardsOpen ? 'var(--accent)' : 'var(--border)'}`, background: manageCardsOpen ? 'var(--accent-soft)' : 'transparent', color: 'var(--accent-ink)' }}>
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 'var(--radius-pill)', cursor: 'pointer', fontSize: 'var(--fs-sm)', fontWeight: 600, fontFamily: 'inherit', border: `1px solid ${manageCardsOpen ? 'var(--accent)' : 'var(--border)'}`, background: manageCardsOpen ? 'var(--accent-soft)' : 'transparent', color: 'var(--accent-ink)' }}>
           <Settings2 size={14} /> Manage
         </button>
       </div>
       {manageCardsOpen && (
-        <div style={{ display: 'grid', gap: 6, padding: 12, borderRadius: 12, border: '1px solid var(--border)', background: 'var(--surface-1)' }}>
+        <div style={{ display: 'grid', gap: 6, padding: 12, borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', background: 'var(--surface-1)' }}>
           <span className="stat-label">Manage cards</span>
           {cards.map((c) => (
             <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '7px 4px', borderBottom: '1px solid var(--border)' }}>
               <span style={{ fontWeight: 600 }}>{c.name}</span>
               <button type="button" onClick={() => setConfirmDel({ kind: 'card', id: c.id, name: c.name })} aria-label={`Delete ${c.name}`} title="Delete card"
-                style={{ display: 'inline-flex', padding: 6, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--expense)', cursor: 'pointer' }}><Trash2 size={15} /></button>
+                style={{ display: 'inline-flex', padding: 6, borderRadius: 'var(--radius-xs)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--expense)', cursor: 'pointer' }}><Trash2 size={15} /></button>
             </div>
           ))}
           <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
             <input value={newCard} onChange={(e) => setNewCard(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCardInline() } }}
               placeholder="New card name (e.g. WS Visa)" style={{ ...cell, flex: 1, height: 38 }} />
-            <button type="button" onClick={addCardInline} disabled={!newCard.trim()} style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 5, padding: '0 14px', height: 38, borderRadius: 999, cursor: 'pointer', fontSize: 'var(--fs-sm)', fontWeight: 600, border: '1px solid var(--accent)', background: 'var(--accent)', color: '#fff', fontFamily: 'inherit' }}>
+            <button type="button" onClick={addCardInline} disabled={!newCard.trim()} style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 5, padding: '0 14px', height: 38, borderRadius: 'var(--radius-pill)', cursor: 'pointer', fontSize: 'var(--fs-sm)', fontWeight: 600, border: '1px solid var(--accent)', background: 'var(--accent)', color: '#fff', fontFamily: 'inherit' }}>
               <Plus size={14} /> Add
             </button>
           </div>
@@ -506,7 +506,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
           const isOpen = expandedCard === c.name
           const draft = drafts.find((d) => (d.rows || []).some((r) => r.card === c.name))
           return (
-            <div key={c.id} style={{ border: `1px solid ${isOpen ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 14, background: 'var(--surface-1)', overflow: 'hidden' }}>
+            <div key={c.id} style={{ border: `1px solid ${isOpen ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 'var(--radius-lg)', background: 'var(--surface-1)', overflow: 'hidden' }}>
               <div style={{ display: 'flex', alignItems: 'center' }}>
                 <button type="button" onClick={() => {
                   if (draft) { openDraft(draft); setSelectedCard(c.name); return }
@@ -521,7 +521,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                 </button>
                 {draft && (
                   <button type="button" onClick={() => deleteDraft(draft.id)} aria-label={`Delete ${c.name} draft`} title="Delete draft"
-                    style={{ flexShrink: 0, width: 32, height: 32, marginRight: 10, borderRadius: 9, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><Trash2 size={14} /></button>
+                    style={{ flexShrink: 0, width: 32, height: 32, marginRight: 10, borderRadius: 'var(--radius-xs)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><Trash2 size={14} /></button>
                 )}
               </div>
               {isOpen && <div style={{ padding: '0 14px 14px' }}>{intakeBox}</div>}
@@ -583,7 +583,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   {(
                     <button type="button" onClick={resetAll} title="Reset this card" aria-label="Reset"
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 34, padding: '0 14px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface-1)', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 'var(--fs-sm)', fontWeight: 600, fontFamily: 'inherit' }}>
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 34, padding: '0 14px', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border)', background: 'var(--surface-1)', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 'var(--fs-sm)', fontWeight: 600, fontFamily: 'inherit' }}>
                       <RotateCcw size={14} /> Reset
                     </button>
                   )}
@@ -612,7 +612,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                 return (
                   <div style={{ display: 'grid', gap: 18, justifyItems: 'center', textAlign: 'center', padding: '18px 0 6px' }}>
                     {/* the glyph is sized to its fixed 56px circle, not to the type scale */}
-                    <div style={{ width: 56, height: 56, borderRadius: 999, background: 'var(--income-soft)', color: 'var(--income-ink)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, fontWeight: 700 }}>✓</div>
+                    <div style={{ width: 56, height: 56, borderRadius: 'var(--radius-pill)', background: 'var(--income-soft)', color: 'var(--income-ink)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, fontWeight: 700 }}>✓</div>
                     <div>
                       <div style={{ fontWeight: 700, fontSize: 'var(--fs-md)', color: 'var(--text-secondary)' }}>Saved</div>
                       <div style={{ fontWeight: 800, fontSize: 'var(--fs-hero)', letterSpacing: '-0.03em', marginTop: 4, color: sc }}>{money(saved.amount)}</div>
@@ -638,13 +638,13 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                   </div>
 
                   {/* type toggle */}
-                  <div style={{ display: 'flex', gap: 3, background: 'var(--kpi-bg)', borderRadius: 999, padding: 3 }}>
+                  <div style={{ display: 'flex', gap: 3, background: 'var(--kpi-bg)', borderRadius: 'var(--radius-pill)', padding: 3 }}>
                     {TYPES.map((t) => {
                       const on = form.type === t.k
                       const c = t.k === 'income' ? 'var(--income)' : t.k === 'savings' ? 'var(--savings)' : 'var(--expense)'
                       return (
                         <button key={t.k} type="button" onClick={() => setForm({ ...form, type: t.k, category: '' })}
-                          style={{ flex: 1, padding: '9px 0', borderRadius: 999, border: 'none', cursor: 'pointer', fontSize: 'var(--fs-base)', fontWeight: 700, fontFamily: 'inherit', background: on ? 'var(--surface-1)' : 'transparent', color: on ? c : 'var(--text-muted)', boxShadow: on ? '0 1px 3px rgba(0,0,0,0.12)' : 'none' }}>{t.label}</button>
+                          style={{ flex: 1, padding: '9px 0', borderRadius: 'var(--radius-pill)', border: 'none', cursor: 'pointer', fontSize: 'var(--fs-base)', fontWeight: 700, fontFamily: 'inherit', background: on ? 'var(--surface-1)' : 'transparent', color: on ? c : 'var(--text-muted)', boxShadow: on ? '0 1px 3px rgba(0,0,0,0.12)' : 'none' }}>{t.label}</button>
                       )
                     })}
                   </div>
@@ -678,7 +678,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                         style={{ ...inp, width: 'auto', height: 38, WebkitAppearance: 'none', appearance: 'none' }} />
                     ) : (
                       <button type="button" onClick={() => setDateOpen(true)}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 34, padding: '0 14px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface-1)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: 'var(--fs-sm)', fontWeight: 600, fontFamily: 'inherit' }}>{dateLabel} ▾</button>
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 34, padding: '0 14px', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border)', background: 'var(--surface-1)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: 'var(--fs-sm)', fontWeight: 600, fontFamily: 'inherit' }}>{dateLabel} ▾</button>
                     )}
                     {savedFlash && <span style={{ marginLeft: 'auto', color: 'var(--income)', fontWeight: 600, fontSize: 'var(--fs-sm)' }}>✓ Saved</span>}
                   </div>
@@ -709,18 +709,18 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', rowGap: 8 }}>
                       {(drafts.length > 0 || draftId) && (
                         <button type="button" onClick={backToDrafts} disabled={savingDraft}
-                          style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 4, padding: '6px 13px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface-1)', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 'var(--fs-sm)', fontWeight: 600, fontFamily: 'inherit' }}>
+                          style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 4, padding: '6px 13px', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border)', background: 'var(--surface-1)', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 'var(--fs-sm)', fontWeight: 600, fontFamily: 'inherit' }}>
                           <ChevronDown size={14} style={{ transform: 'rotate(90deg)' }} /> {savingDraft ? 'Saving…' : 'All drafts'}
                         </button>
                       )}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto', minWidth: 0 }}>
-                        <span style={{ minWidth: 0, display: 'inline-flex', alignItems: 'baseline', padding: '6px 13px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface-1)', fontSize: 'var(--fs-base)', color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <span style={{ minWidth: 0, display: 'inline-flex', alignItems: 'baseline', padding: '6px 13px', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border)', background: 'var(--surface-1)', fontSize: 'var(--fs-base)', color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {rows.length} item{rows.length !== 1 ? 's' : ''} · <b style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{' ' + money(validTotal)}</b>
                           {cardTotals.map(([card]) => <span key={card} style={{ color: 'var(--text-secondary)', fontSize: 'var(--fs-sm)' }}>{`  ·  ${card}`}</span>)}
                           {invalidCount > 0 && <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-sm)' }}>{`  ·  ${invalidCount} to fix`}</span>}
                         </span>
                         <button type="button" onClick={() => setAddOpen((v) => !v)} aria-label={addOpen ? 'Collapse add more' : 'Add more'} title={addOpen ? 'Collapse add more' : 'Add more'}
-                          style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 999, border: '1px solid var(--accent)', background: 'var(--accent-soft)', color: 'var(--accent-ink)', cursor: 'pointer' }}>
+                          style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 'var(--radius-pill)', border: '1px solid var(--accent)', background: 'var(--accent-soft)', color: 'var(--accent-ink)', cursor: 'pointer' }}>
                           <ChevronDown size={17} style={{ transform: addOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s ease' }} />
                         </button>
                       </div>
@@ -748,7 +748,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                         // one object rather than a band spliced into the list.
                         return (
                           <div key={i} style={{
-                            borderRadius: 16,
+                            borderRadius: 'var(--radius-xl)',
                             background: rowOpen ? 'var(--surface-1)' : 'transparent',
                             border: `1px solid ${rowOpen ? 'var(--border)' : 'transparent'}`,
                             boxShadow: rowOpen ? '0 8px 24px rgba(20, 20, 25, 0.10)' : 'none',
@@ -795,7 +795,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                                     {r.card && !cards.some((c) => c.name === r.card) && <option value={r.card}>{r.card}</option>}
                                   </select>
                                   <button type="button" onClick={() => { setRows((prev) => prev.filter((_, idx) => idx !== i)); setExpandedRow(null) }} aria-label="Delete row" title="Delete row"
-                                    style={{ flexShrink: 0, width: 40, height: 40, borderRadius: 10, border: '1px solid var(--border)', background: 'transparent', color: 'var(--expense)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><Trash2 size={16} /></button>
+                                    style={{ flexShrink: 0, width: 40, height: 40, borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--expense)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><Trash2 size={16} /></button>
                                 </div>
                               </div>
                             )}
@@ -884,7 +884,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
                       <button type="button" className="modal-add" onClick={startNewRec} title="New recurring item">New</button>
                       <input type="date" value={recDate} onChange={(e) => setRecDate(e.target.value)} aria-label="Log for date"
-                        style={{ flexShrink: 0, height: 34, padding: '0 14px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--surface-1)', color: 'var(--text-primary)', fontSize: 'var(--fs-sm)', fontWeight: 600, fontFamily: 'inherit', WebkitAppearance: 'none', appearance: 'none', outline: 'none' }} />
+                        style={{ flexShrink: 0, height: 34, padding: '0 14px', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border)', background: 'var(--surface-1)', color: 'var(--text-primary)', fontSize: 'var(--fs-sm)', fontWeight: 600, fontFamily: 'inherit', WebkitAppearance: 'none', appearance: 'none', outline: 'none' }} />
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 14, flex: '1 1 auto', minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
                       {recGroupsPresent.map((g) => {
@@ -894,7 +894,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                         return (
                         <div key={g.key}>
                           <button type="button" onClick={() => toggleFold(g.key)} aria-expanded={!folded}
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: g.bg, color: g.fg, padding: '3px 9px 3px 11px', borderRadius: 999, fontSize: 'var(--fs-xs)', fontWeight: 700, marginBottom: 6, border: 'none', fontFamily: 'inherit', cursor: 'pointer' }}>
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: g.bg, color: g.fg, padding: '3px 9px 3px 11px', borderRadius: 'var(--radius-pill)', fontSize: 'var(--fs-xs)', fontWeight: 700, marginBottom: 6, border: 'none', fontFamily: 'inherit', cursor: 'pointer' }}>
                             {g.label}
                             <span style={{ opacity: 0.75, fontWeight: 600 }}>{pickedHere > 0 ? `${pickedHere}/${groupRows.length}` : groupRows.length}</span>
                             <ChevronDown size={13} style={{ transform: folded ? 'rotate(-90deg)' : 'none', transition: 'transform .18s ease' }} />
@@ -908,7 +908,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                               // fields edit in place: name (text), category (select → also sets type), amount (number)
                               const rolled = String(r.id).startsWith('debt:')
                               if (rolled) return (
-                                <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px', borderRadius: 12, background: on ? 'var(--accent-soft)' : 'transparent', transition: 'background .16s ease' }}>
+                                <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px', borderRadius: 'var(--radius-md)', background: on ? 'var(--accent-soft)' : 'transparent', transition: 'background .16s ease' }}>
                                   <input type="checkbox" checked={on} onChange={toggle} aria-label={`Select ${r.name}`} style={{ flexShrink: 0 }} />
                                   <div style={{ flex: 1, minWidth: 0 }}>
                                     <div style={{ fontWeight: 600, fontSize: 'var(--fs-md)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</div>
@@ -927,7 +927,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                                 </div>
                               )
                               return (
-                                <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px', borderRadius: 12, background: on ? 'var(--accent-soft)' : 'transparent', transition: 'background .16s ease' }}>
+                                <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px', borderRadius: 'var(--radius-md)', background: on ? 'var(--accent-soft)' : 'transparent', transition: 'background .16s ease' }}>
                                   <input type="checkbox" checked={on} onChange={toggle} aria-label={`Select ${r.name}`} style={{ flexShrink: 0 }} />
                                   <div style={{ flex: 1, minWidth: 0, display: 'grid', gap: 1 }}>
                                     <input value={r.name} aria-label="Name" className="rec-inline"
@@ -964,7 +964,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                                       style={{ ...recInline, ...amountWidth(recOver[r.id]?.amount ?? r.amount), minWidth: 0, maxWidth: 96, textAlign: 'right', fontWeight: 700, fontSize: 'var(--fs-md)', fontVariantNumeric: 'tabular-nums' }} />
                                   </div>
                                   <button type="button" aria-label={`Delete ${r.name}`} title="Delete" onClick={() => setConfirmDel({ kind: 'rec', id: r.id, name: r.name })}
-                                    style={{ flexShrink: 0, display: 'inline-flex', padding: 5, borderRadius: 8, border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}><Trash2 size={15} /></button>
+                                    style={{ flexShrink: 0, display: 'inline-flex', padding: 5, borderRadius: 'var(--radius-xs)', border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}><Trash2 size={15} /></button>
                                 </div>
                               )
                             })}
@@ -997,7 +997,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                 before it becomes real transactions. */}
             {confirmLog && (
               <div onClick={() => setConfirmLog(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', borderRadius: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, zIndex: 10 }}>
-                <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: 18, padding: 18, width: '100%', maxWidth: 380, maxHeight: '100%', display: 'flex', flexDirection: 'column', gap: 12, boxShadow: '0 12px 34px rgba(0,0,0,0.35)' }}>
+                <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: 'var(--radius-xl)', padding: 18, width: '100%', maxWidth: 380, maxHeight: '100%', display: 'flex', flexDirection: 'column', gap: 12, boxShadow: '0 12px 34px rgba(0,0,0,0.35)' }}>
                   <div>
                     <div style={{ fontWeight: 700, fontSize: 'var(--fs-lg)' }}>Log {pickedRows.length} item{pickedRows.length !== 1 ? 's' : ''}?</div>
                     <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginTop: 2 }}>
@@ -1006,7 +1006,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                   </div>
                   <div style={{ flex: '1 1 auto', minHeight: 0, overflowY: 'auto', display: 'grid', gap: 6 }}>
                     {pickedRows.map((r) => (
-                      <div key={r.id} style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '9px 11px', borderRadius: 12, background: 'var(--kpi-bg)' }}>
+                      <div key={r.id} style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '9px 11px', borderRadius: 'var(--radius-md)', background: 'var(--kpi-bg)' }}>
                         <span style={{ flex: 1, minWidth: 0, fontWeight: 600, fontSize: 'var(--fs-base)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {r.name}
                           <span style={{ display: 'block', fontSize: 'var(--fs-xs)', fontWeight: 400, color: 'var(--text-muted)' }}>{r.category}</span>
@@ -1031,7 +1031,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
             {/* inline confirm (replaces window.confirm) */}
             {confirmDel && (
               <div onClick={() => setConfirmDel(null)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', borderRadius: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, zIndex: 10 }}>
-                <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: 16, padding: 18, width: '100%', maxWidth: 320, boxShadow: '0 12px 34px rgba(0,0,0,0.35)' }}>
+                <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: 'var(--radius-xl)', padding: 18, width: '100%', maxWidth: 320, boxShadow: '0 12px 34px rgba(0,0,0,0.35)' }}>
                   <div style={{ fontWeight: 700, marginBottom: 6 }}>Delete {confirmDel.name || 'this'}?</div>
                   <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 14 }}>This can’t be undone.</div>
                   <div style={{ display: 'flex', gap: 8 }}>
@@ -1044,7 +1044,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
 
             {/* inline success toast (replaces alert) */}
             {flash && (
-              <div style={{ position: 'absolute', left: '50%', bottom: 18, transform: 'translateX(-50%)', background: 'var(--text-primary)', color: 'var(--surface-1)', padding: '9px 18px', borderRadius: 999, fontSize: 'var(--fs-sm)', fontWeight: 600, boxShadow: '0 6px 18px rgba(0,0,0,0.28)', zIndex: 11, whiteSpace: 'nowrap' }}>✓ {flash}</div>
+              <div style={{ position: 'absolute', left: '50%', bottom: 18, transform: 'translateX(-50%)', background: 'var(--text-primary)', color: 'var(--surface-1)', padding: '9px 18px', borderRadius: 'var(--radius-pill)', fontSize: 'var(--fs-sm)', fontWeight: 600, boxShadow: '0 6px 18px rgba(0,0,0,0.28)', zIndex: 11, whiteSpace: 'nowrap' }}>✓ {flash}</div>
             )}
           </div>
         </div>,

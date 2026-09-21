@@ -186,7 +186,7 @@ export default function Transactions() {
                 <option value="all">All categories</option>
                 {categories.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
-              <label style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 8, height: 44, padding: '0 14px', borderRadius: 999, background: 'var(--glass-bg)', border: `1px solid ${searchFocus ? 'var(--accent)' : 'var(--glass-border)'}`, boxShadow: 'var(--glass-sheen)', transition: 'border-color .18s ease' }}>
+              <label style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 8, height: 44, padding: '0 14px', borderRadius: 'var(--radius-pill)', background: 'var(--glass-bg)', border: `1px solid ${searchFocus ? 'var(--accent)' : 'var(--glass-border)'}`, boxShadow: 'var(--glass-sheen)', transition: 'border-color .18s ease' }}>
                 <Search style={{ width: 18, height: 18, flexShrink: 0, color: 'var(--text-secondary)' }} />
                 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search transactions…"
                   onFocus={() => setSearchFocus(true)} onBlur={() => setSearchFocus(false)}
@@ -236,7 +236,7 @@ export default function Transactions() {
                           <div style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.description || t.category}</div>
                           {/* only show the category pill when it isn't already the title */}
                           {t.description && t.category && (
-                            <span style={{ display: 'inline-block', marginTop: 4, fontSize: 'var(--fs-2xs)', fontWeight: 600, color: 'var(--text-secondary)', background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 999, padding: '1px 9px' }}>{t.category}</span>
+                            <span style={{ display: 'inline-block', marginTop: 4, fontSize: 'var(--fs-2xs)', fontWeight: 600, color: 'var(--text-secondary)', background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 'var(--radius-pill)', padding: '1px 9px' }}>{t.category}</span>
                           )}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
@@ -245,11 +245,11 @@ export default function Transactions() {
                           </span>
                           <div className="row-actions">
                             <button onClick={(e) => { e.stopPropagation(); setEditTx(t) }} aria-label="Edit" title="Edit"
-                              style={{ display: 'inline-flex', padding: 6, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                              style={{ display: 'inline-flex', padding: 6, borderRadius: 'var(--radius-xs)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}>
                               <Pencil size={16} />
                             </button>
                             <button onClick={(e) => { e.stopPropagation(); del(t.id) }} aria-label="Delete" title="Delete"
-                              style={{ display: 'inline-flex', padding: 6, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                              style={{ display: 'inline-flex', padding: 6, borderRadius: 'var(--radius-xs)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}>
                               <Trash2 size={16} />
                             </button>
                           </div>

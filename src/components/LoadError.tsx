@@ -9,7 +9,7 @@ export default function LoadError({ onRetry, label = "Couldn't load", compact }:
     <div role="alert" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, padding: compact ? '14px 8px' : '22px 8px', color: 'var(--text-muted)', fontSize: 'var(--fs-base)' }}>
       <span>{label}</span>
       <button onClick={onRetry}
-        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-secondary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'var(--fs-sm)', fontWeight: 600 }}>
+        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-secondary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'var(--fs-sm)', fontWeight: 600 }}>
         <RotateCw size={14} /> Retry
       </button>
     </div>

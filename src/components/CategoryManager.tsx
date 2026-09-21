@@ -16,7 +16,7 @@ const DEFAULT_COLOR: Record<string, string> = { income: '#1baf7a', expense: '#eb
 const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })
 
 const inp: React.CSSProperties = {
-  height: 44, padding: '0 11px', borderRadius: 10, border: '1px solid var(--border)',
+  height: 44, padding: '0 11px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)',
   background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 'var(--fs-base)',
   fontFamily: 'inherit', boxSizing: 'border-box',
 }
@@ -94,7 +94,7 @@ export default function CategoryManager() {
                         onDelete={(reassignTo) => act({ action: 'delete', id: c.id, reassignTo }).then((ok) => ok && setEditing(null))}
                         onCancel={() => setEditing(null)} />
                     ) : (
-                      <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 6px', borderRadius: 8, borderBottom: '1px solid var(--border)' }}>
+                      <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 6px', borderRadius: 'var(--radius-xs)', borderBottom: '1px solid var(--border)' }}>
                         <span style={{ width: 11, height: 11, borderRadius: 3, background: c.color || DEFAULT_COLOR[type], flexShrink: 0 }} />
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontWeight: 600 }}>{c.name}</div>

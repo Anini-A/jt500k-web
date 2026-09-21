@@ -25,7 +25,7 @@ const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', curr
 const money2 = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })
 
 const inp: React.CSSProperties = {
-  height: 44, padding: '0 12px', borderRadius: 10, border: '1px solid var(--border)',
+  height: 44, padding: '0 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)',
   background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 'var(--fs-base)', width: '100%',
   fontFamily: 'inherit', boxSizing: 'border-box',
 }
@@ -105,14 +105,14 @@ export default function DebtManager() {
               {done ? 'Paid off' : `${money2(d.remaining)} left`}
             </span>
             <button onClick={() => { setEditing(d.id); setAdding(false) }} aria-label="Edit debt" title="Edit debt"
-              style={{ display: 'inline-flex', padding: 6, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}>
+              style={{ display: 'inline-flex', padding: 6, borderRadius: 'var(--radius-xs)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}>
               <Pencil size={15} />
             </button>
           </div>
         </div>
         {!done && (
-          <div style={{ height: 10, borderRadius: 999, background: 'var(--kpi-bg)', border: '1px solid var(--border)', overflow: 'hidden', marginBottom: 6 }}>
-            <div style={{ width: `${pct}%`, height: '100%', borderRadius: 999, transition: 'width .6s ease', background: 'linear-gradient(90deg, var(--savings), var(--income))' }} />
+          <div style={{ height: 10, borderRadius: 'var(--radius-pill)', background: 'var(--kpi-bg)', border: '1px solid var(--border)', overflow: 'hidden', marginBottom: 6 }}>
+            <div style={{ width: `${pct}%`, height: '100%', borderRadius: 'var(--radius-pill)', transition: 'width .6s ease', background: 'linear-gradient(90deg, var(--savings), var(--income))' }} />
           </div>
         )}
         <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>
@@ -124,17 +124,17 @@ export default function DebtManager() {
 
         {/* expandable payment history */}
         {open && hasHistory && (
-          <div style={{ marginTop: 10, background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 14, padding: '4px 12px' }}>
+          <div style={{ marginTop: 10, background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '4px 12px' }}>
             {d.history.map((p) => (
               <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '9px 0', borderBottom: '1px solid var(--border)' }}>
                 <span style={{ fontSize: 'var(--fs-base)', color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>{fmtDate(p.date)}</span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                   <span style={{ fontSize: 'var(--fs-base)', fontWeight: 600, color: 'var(--income)', fontVariantNumeric: 'tabular-nums' }}>{money2(p.amount)}</span>
                   <button onClick={() => setEditTx(p)} aria-label="Edit payment" title="Edit payment"
-                    style={{ display: 'inline-flex', padding: 5, borderRadius: 7, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}><Pencil size={13} /></button>
+                    style={{ display: 'inline-flex', padding: 5, borderRadius: 'var(--radius-xs)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}><Pencil size={13} /></button>
                   <button onClick={() => confirm({ title: 'Delete this payment?', message: 'Removes the transaction; the debt total updates.', run: async () => { const res = await fetch(`/api/transactions?id=${p.id}`, { method: 'DELETE' }); if (res.ok) { window.dispatchEvent(new CustomEvent('transaction-added')); load() } else toast('Could not delete.') } })}
                     aria-label="Delete payment" title="Delete payment"
-                    style={{ display: 'inline-flex', padding: 5, borderRadius: 7, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}><Trash2 size={13} /></button>
+                    style={{ display: 'inline-flex', padding: 5, borderRadius: 'var(--radius-xs)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}><Trash2 size={13} /></button>
                 </div>
               </div>
             ))}
@@ -174,8 +174,8 @@ export default function DebtManager() {
       {/* Overall progress */}
       {debts.length > 0 && (
         <div style={{ marginBottom: 20 }}>
-          <div style={{ height: 12, borderRadius: 999, background: 'var(--kpi-bg)', border: '1px solid var(--border)', overflow: 'hidden' }}>
-            <div style={{ width: `${overallPct}%`, height: '100%', borderRadius: 999, background: 'linear-gradient(90deg, var(--expense), var(--income))', transition: 'width .6s ease' }} />
+          <div style={{ height: 12, borderRadius: 'var(--radius-pill)', background: 'var(--kpi-bg)', border: '1px solid var(--border)', overflow: 'hidden' }}>
+            <div style={{ width: `${overallPct}%`, height: '100%', borderRadius: 'var(--radius-pill)', background: 'linear-gradient(90deg, var(--expense), var(--income))', transition: 'width .6s ease' }} />
           </div>
           {/* what the bar has covered, against the total it is measured out of */}
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10, marginTop: 6 }}>
@@ -200,11 +200,11 @@ export default function DebtManager() {
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
           <button onClick={() => { setAdding((v) => !v); setEditing(null) }} aria-label={adding ? 'Cancel add debt' : 'Add debt'} title={adding ? 'Cancel' : 'Add debt'}
-            style={{ width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-muted)', cursor: 'pointer' }}>
+            style={{ width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-muted)', cursor: 'pointer' }}>
             <Plus size={16} style={{ transform: adding ? 'rotate(45deg)' : 'none', transition: 'transform .2s ease' }} />
           </button>
           <button onClick={() => setCollapsed((v) => !v)} aria-expanded={!collapsed} aria-label={collapsed ? 'Show debts' : 'Hide debts'} title={collapsed ? 'Show debts' : 'Hide debts'}
-            style={{ width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-muted)', cursor: 'pointer' }}>
+            style={{ width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-muted)', cursor: 'pointer' }}>
             <ChevronDown size={16} style={{ transform: collapsed ? 'none' : 'rotate(180deg)', transition: 'transform .2s ease' }} />
           </button>
         </div>

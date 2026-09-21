@@ -13,7 +13,7 @@ interface Section { id: string; icon: string; title: string; items: Item[] }
 interface Profile { sections: Section[]; links: { label: string; url: string }[] }
 
 const inp: React.CSSProperties = {
-  padding: '9px 11px', borderRadius: 10, border: '1px solid var(--border)',
+  padding: '9px 11px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)',
   background: 'var(--kpi-bg)', color: 'var(--text-primary)', fontSize: 'var(--fs-base)', width: '100%',
   fontFamily: 'inherit', boxSizing: 'border-box',
 }
@@ -68,11 +68,11 @@ const detectHorizon = (label: string) => { const t = label.toLowerCase(); return
 
 function StatusChip({ status }: { status: Status }) {
   const meta = { todo: { l: '⚠ To do', ...tint('expense') }, doing: { l: '◔ In progress', ...tint('accent') }, done: { l: '✓ Done', ...tint('income') } }[status]
-  return <span style={{ background: meta.bg, color: meta.fg, padding: '2px 9px', borderRadius: 999, fontSize: 'var(--fs-2xs)', fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0 }}>{meta.l}</span>
+  return <span style={{ background: meta.bg, color: meta.fg, padding: '2px 9px', borderRadius: 'var(--radius-pill)', fontSize: 'var(--fs-2xs)', fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0 }}>{meta.l}</span>
 }
 function Summary({ big, label }: { big: string; label: string }) {
   return (
-    <div style={{ marginBottom: 12, padding: '12px 14px', background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 12 }}>
+    <div style={{ marginBottom: 12, padding: '12px 14px', background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
       <div style={{ fontWeight: 800, fontSize: 'var(--fs-card)', letterSpacing: '-0.02em' }}>{big}</div>
       <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginTop: 2 }}>{label}</div>
     </div>
@@ -82,13 +82,13 @@ function ReadinessMeter({ done, total }: { done: number; total: number }) {
   const pct = total ? Math.round((done / total) * 100) : 0
   const allDone = done === total && total > 0
   return (
-    <div style={{ marginBottom: 12, padding: '12px 14px', background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 12 }}>
+    <div style={{ marginBottom: 12, padding: '12px 14px', background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, marginBottom: 8 }}>
         <span style={{ fontWeight: 700, fontSize: 'var(--fs-md)' }}>Estate readiness</span>
         <span style={{ fontWeight: 700, color: allDone ? 'var(--income)' : 'var(--text-secondary)' }}>{allDone ? '✓ ' : ''}{done} of {total} in place</span>
       </div>
-      <div style={{ height: 10, borderRadius: 999, background: 'var(--surface-1)', border: '1px solid var(--border)', overflow: 'hidden' }}>
-        <div style={{ width: `${pct}%`, height: '100%', borderRadius: 999, background: allDone ? 'var(--income)' : 'linear-gradient(90deg, var(--savings), var(--income))', transition: 'width .6s ease' }} />
+      <div style={{ height: 10, borderRadius: 'var(--radius-pill)', background: 'var(--surface-1)', border: '1px solid var(--border)', overflow: 'hidden' }}>
+        <div style={{ width: `${pct}%`, height: '100%', borderRadius: 'var(--radius-pill)', background: allDone ? 'var(--income)' : 'linear-gradient(90deg, var(--savings), var(--income))', transition: 'width .6s ease' }} />
       </div>
     </div>
   )
@@ -122,7 +122,7 @@ function PersonCard({ item }: { item: Item }) {
   const owner = detectOwner(item.label) || detectOwner(itemText(item)) || 'Joint'
   const meta = ownerTint(owner)
   return (
-    <div style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderLeft: `3px solid ${meta.fg}`, borderRadius: 12, padding: '12px 14px' }}>
+    <div style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderLeft: `3px solid ${meta.fg}`, borderRadius: 'var(--radius-md)', padding: '12px 14px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
         <Avatar owner={owner} />
         <span style={{ fontWeight: 700, fontSize: 'var(--fs-md)' }}>{item.label}</span>
@@ -140,7 +140,7 @@ function MembersView({ items }: { items: Item[] }) {
     <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 10 }}>
       {people.map((p, i) => <PersonCard key={i} item={p} />)}
       {facts.length > 0 && (
-        <div style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 14px' }}>
+        <div style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '12px 14px' }}>
           <FieldRows rows={facts} />
         </div>
       )}
@@ -158,7 +158,7 @@ function InsuranceByProvider({ items }: { items: Item[] }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 10 }}>
       {[...groups.entries()].map(([name, g]) => (
-        <div key={name} style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 14px' }}>
+        <div key={name} style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '12px 14px' }}>
           <div style={{ fontWeight: 700, fontSize: 'var(--fs-base)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 7 }}><g.Icon size={15} /> {name}</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 12 }}>
             {g.items.map((it, i) => {
@@ -189,9 +189,9 @@ function GoalsView({ items }: { items: Item[] }) {
         const h = detectHorizon(it.label)
         const hz = h ? HORIZONS[h] : null
         return (
-          <div key={i} style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderLeft: hz ? `3px solid ${hz.fg}` : '1px solid var(--border)', borderRadius: 12, padding: '11px 12px' }}>
+          <div key={i} style={{ background: 'var(--kpi-bg)', border: '1px solid var(--border)', borderLeft: hz ? `3px solid ${hz.fg}` : '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '11px 12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              {hz ? <span style={{ background: hz.bg, color: hz.fg, padding: '2px 10px', borderRadius: 999, fontSize: 'var(--fs-2xs)', fontWeight: 700 }}>{it.label}</span>
+              {hz ? <span style={{ background: hz.bg, color: hz.fg, padding: '2px 10px', borderRadius: 'var(--radius-pill)', fontSize: 'var(--fs-2xs)', fontWeight: 700 }}>{it.label}</span>
                 : <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{it.label}</span>}
               {it.status && <StatusChip status={it.status} />}
             </div>
@@ -275,7 +275,7 @@ export default function ProfilePanel() {
                 {(() => { const meta = SECTION_META[shown.id]; return meta ? <meta.Icon size={20} /> : <span>{shown.icon}</span> })()} {shown.title}
               </h2>
               <button aria-label="Edit section" title="Edit" onClick={startEdit}
-                style={{ flexShrink: 0, padding: 7, borderRadius: 9, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', display: 'inline-flex' }}>
+                style={{ flexShrink: 0, padding: 7, borderRadius: 'var(--radius-xs)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', display: 'inline-flex' }}>
                 <Pencil size={15} />
               </button>
             </>
@@ -319,7 +319,7 @@ function ItemsEditor({ section, upd }: { section: Section; upd: (fn: (d: Section
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 10 }}>
       {section.items.map((it, ii) => (
-        <div key={ii} style={{ display: 'grid', gap: 8, padding: 10, border: '1px solid var(--border)', borderRadius: 12, background: 'var(--surface-1)' }}>
+        <div key={ii} style={{ display: 'grid', gap: 8, padding: 10, border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', background: 'var(--surface-1)' }}>
           <input style={{ ...inp, fontWeight: 700 }} value={it.label} placeholder="Name / label" onChange={(e) => upd((d) => { d.items[ii].label = e.target.value })} />
 
           {it.fields && it.fields.length ? (
@@ -328,7 +328,7 @@ function ItemsEditor({ section, upd }: { section: Section; upd: (fn: (d: Section
                 <div key={fi} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                   <input style={{ ...inp, flex: '0 0 38%' }} value={f.label} placeholder="Field" onChange={(e) => upd((d) => { d.items[ii].fields![fi].label = e.target.value })} />
                   <input style={{ ...inp, flex: 1 }} value={f.value} placeholder="Value" onChange={(e) => upd((d) => { d.items[ii].fields![fi].value = e.target.value })} />
-                  <button aria-label="Remove field" onClick={() => upd((d) => { d.items[ii].fields!.splice(fi, 1) })} style={{ flexShrink: 0, padding: 8, borderRadius: 9, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}><Trash2 size={13} /></button>
+                  <button aria-label="Remove field" onClick={() => upd((d) => { d.items[ii].fields!.splice(fi, 1) })} style={{ flexShrink: 0, padding: 8, borderRadius: 'var(--radius-xs)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}><Trash2 size={13} /></button>
                 </div>
               ))}
               <button className="btn btn-secondary" style={{ justifySelf: 'start' }} onClick={() => upd((d) => { (d.items[ii].fields ||= []).push({ label: '', value: '' }) })}><Plus size={13} /> Add field</button>

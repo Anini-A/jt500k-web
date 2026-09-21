@@ -99,9 +99,9 @@ export default function JourneyCard() {
     <div style={{ padding: '2px 0 0' }} aria-busy="true" aria-label="Loading net worth">
       <div className="journey-edge" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
         <span className="skeleton" style={{ width: 220, height: 'var(--fs-hero)' }} />
-        <span className="skeleton" style={{ width: 96, height: 34, borderRadius: 999 }} />
+        <span className="skeleton" style={{ width: 96, height: 34, borderRadius: 'var(--radius-pill)' }} />
       </div>
-      <span className="skeleton" style={{ display: 'block', width: '100%', height: 'clamp(120px, 34vw, 168px)', marginTop: 14, borderRadius: 14 }} />
+      <span className="skeleton" style={{ display: 'block', width: '100%', height: 'clamp(120px, 34vw, 168px)', marginTop: 14, borderRadius: 'var(--radius-lg)' }} />
     </div>
   )
 
@@ -150,7 +150,7 @@ export default function JourneyCard() {
         <div style={{ fontWeight: 700, fontSize: 'var(--fs-hero)', letterSpacing: '-0.035em', whiteSpace: 'nowrap', minWidth: 0 }}>{money(nw)}</div>
         {/* the pill IS the planner toggle — tap to open the goal planner */}
         <button onClick={toggleDetails} aria-expanded={detailsOpen} aria-label={detailsOpen ? 'Hide goal planner' : 'Open goal planner'}
-          style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'baseline', gap: 5, padding: '7px 13px', borderRadius: 999, background: detailsOpen ? 'color-mix(in srgb, var(--accent) 12%, var(--kpi-bg))' : 'var(--kpi-bg)', border: `1px solid ${detailsOpen ? 'var(--accent)' : 'var(--border)'}`, whiteSpace: 'nowrap', cursor: 'pointer', fontFamily: 'inherit', transition: 'background .15s, border-color .15s' }}>
+          style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'baseline', gap: 5, padding: '7px 13px', borderRadius: 'var(--radius-pill)', background: detailsOpen ? 'color-mix(in srgb, var(--accent) 12%, var(--kpi-bg))' : 'var(--kpi-bg)', border: `1px solid ${detailsOpen ? 'var(--accent)' : 'var(--border)'}`, whiteSpace: 'nowrap', cursor: 'pointer', fontFamily: 'inherit', transition: 'background .15s, border-color .15s' }}>
           <span style={{ fontWeight: 700, fontSize: 'var(--fs-base)', color: 'var(--accent)', letterSpacing: '-0.01em' }}>{pct.toFixed(0)}%</span>
           <span style={{ fontSize: 'var(--fs-base)', color: 'var(--text-muted)' }}>of {short(goal)}</span>
         </button>
@@ -185,7 +185,7 @@ export default function JourneyCard() {
             const on = range === r
             return (
               <button key={r} onClick={() => setRange(r)}
-                style={{ padding: on ? '6px 15px' : '6px 8px', borderRadius: 999, border: 'none', cursor: 'pointer', fontSize: 'var(--fs-xs)', fontWeight: on ? 700 : 600, fontFamily: 'inherit', background: on ? 'var(--surface-1)' : 'transparent', color: on ? 'var(--text-primary)' : 'var(--text-muted)', boxShadow: on ? '0 1px 4px rgba(20,20,25,0.08)' : 'none', transition: 'background .15s, color .15s, box-shadow .15s' }}>{r}</button>
+                style={{ padding: on ? '6px 15px' : '6px 8px', borderRadius: 'var(--radius-pill)', border: 'none', cursor: 'pointer', fontSize: 'var(--fs-xs)', fontWeight: on ? 700 : 600, fontFamily: 'inherit', background: on ? 'var(--surface-1)' : 'transparent', color: on ? 'var(--text-primary)' : 'var(--text-muted)', boxShadow: on ? '0 1px 4px rgba(20,20,25,0.08)' : 'none', transition: 'background .15s, color .15s, box-shadow .15s' }}>{r}</button>
             )
           })}
         </div>
@@ -217,7 +217,7 @@ export default function JourneyCard() {
               {/* growth rate */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
                 <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)' }}>Yearly growth</span>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 2, background: 'var(--kpi-bg)', borderRadius: 999, padding: 3 }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 2, background: 'var(--kpi-bg)', borderRadius: 'var(--radius-pill)', padding: 3 }}>
                   <Seg active={rateKey === 'c'} onClick={() => setRateKey('c')}>5%</Seg>
                   <Seg active={rateKey === 'm'} onClick={() => setRateKey('m')}>7%</Seg>
                   <Seg active={rateKey === 'o'} onClick={() => setRateKey('o')}>10%</Seg>
@@ -352,7 +352,7 @@ function Spark({ real, proj, nowM, goal, anchor }: { real: { month: string; net:
         const tx = hover.left > 80 ? 'calc(-100% + 10px)' : hover.left < 20 ? '-10px' : '-50%'
         const ty = hover.top < 26 ? '18%' : '-115%'
         return (
-          <div style={{ position: 'absolute', left: `${hover.left}%`, top: `${hover.top}%`, transform: `translate(${tx}, ${ty})`, pointerEvents: 'none', background: 'var(--text-primary)', color: 'var(--surface-1)', borderRadius: 9, padding: '6px 9px', fontSize: 'var(--fs-xs)', lineHeight: 1.3, whiteSpace: 'nowrap', boxShadow: '0 6px 18px rgba(0,0,0,0.22)' }}>
+          <div style={{ position: 'absolute', left: `${hover.left}%`, top: `${hover.top}%`, transform: `translate(${tx}, ${ty})`, pointerEvents: 'none', background: 'var(--text-primary)', color: 'var(--surface-1)', borderRadius: 'var(--radius-xs)', padding: '6px 9px', fontSize: 'var(--fs-xs)', lineHeight: 1.3, whiteSpace: 'nowrap', boxShadow: '0 6px 18px rgba(0,0,0,0.22)' }}>
             <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>{fmtMonth(hover.month)}{hover.proj ? ' · proj.' : hover.est ? ' · est.' : ''}</span>&nbsp; <b style={{ fontWeight: 700 }}>{money(hover.net)}</b>
           </div>
         )
@@ -368,6 +368,6 @@ function Dot({ left, top }: { left: number; top: number }) {
 
 function Seg({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button onClick={onClick} style={{ padding: '4px 10px', borderRadius: 999, border: 'none', cursor: 'pointer', fontSize: 'var(--fs-xs)', fontWeight: 600, fontFamily: 'inherit', background: active ? 'var(--surface-1)' : 'transparent', color: active ? 'var(--text-primary)' : 'var(--text-muted)', boxShadow: active ? '0 1px 3px rgba(0,0,0,0.12)' : 'none' }}>{children}</button>
+    <button onClick={onClick} style={{ padding: '4px 10px', borderRadius: 'var(--radius-pill)', border: 'none', cursor: 'pointer', fontSize: 'var(--fs-xs)', fontWeight: 600, fontFamily: 'inherit', background: active ? 'var(--surface-1)' : 'transparent', color: active ? 'var(--text-primary)' : 'var(--text-muted)', boxShadow: active ? '0 1px 3px rgba(0,0,0,0.12)' : 'none' }}>{children}</button>
   )
 }

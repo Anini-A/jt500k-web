@@ -32,7 +32,7 @@ export const shortMonth = (m: string) => {
 function Tip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null
   return (
-    <div style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: 10, padding: '8px 12px', fontSize: 'var(--fs-sm)', boxShadow: '0 4px 16px rgba(0,0,0,.15)' }}>
+    <div style={{ background: 'var(--surface-1)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 12px', fontSize: 'var(--fs-sm)', boxShadow: '0 4px 16px rgba(0,0,0,.15)' }}>
       {label != null && <div style={{ fontWeight: 600, marginBottom: 4 }}>{typeof label === 'string' && /^\d{4}-\d{2}/.test(label) ? shortMonth(label) : label}</div>}
       {payload.map((p: any) => (
         <div key={p.name} style={{ color: p.color || p.fill }}>{p.name}: {money(p.value)}</div>

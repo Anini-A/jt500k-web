@@ -105,7 +105,7 @@ export default function UpcomingBills() {
   const accountPill = tabs.length > 1 && activeTab && (
     <span style={{ position: 'relative', display: 'inline-flex', minWidth: 0 }}>
       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, minWidth: 0, padding: '3px 7px 3px 8px',
-        borderRadius: 999, border: '1px solid var(--border)', background: 'var(--kpi-bg)',
+        borderRadius: 'var(--radius-pill)', border: '1px solid var(--border)', background: 'var(--kpi-bg)',
         fontSize: 'var(--fs-2xs)', fontWeight: 600, color: 'var(--text-secondary)' }}>
         <span style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: dotFor(activeTab) }} />
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{activeTab.name}</span>
@@ -145,7 +145,7 @@ export default function UpcomingBills() {
           account pill's dot and in the green/red dates on the rows below. */}
       {cycle && (
         <a href="/dashboard" onClick={() => goBills(activeId)}
-          style={{ display: 'flex', alignItems: 'flex-start', gap: 7, marginTop: 10, padding: '8px 11px', borderRadius: 10, fontSize: 'var(--fs-xs)', fontWeight: 600, lineHeight: 1.45, textDecoration: 'none',
+          style={{ display: 'flex', alignItems: 'flex-start', gap: 7, marginTop: 10, padding: '8px 11px', borderRadius: 'var(--radius-sm)', fontSize: 'var(--fs-xs)', fontWeight: 600, lineHeight: 1.45, textDecoration: 'none',
             color: 'var(--text-secondary)', background: 'var(--kpi-bg)', border: '1px solid var(--border)' }}>
           <CalendarClock size={13} style={{ flexShrink: 0, marginTop: 2, opacity: 0.7 }} />
           {/* Leads with the account name so the card states what it's describing rather than
