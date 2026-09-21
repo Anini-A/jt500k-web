@@ -155,19 +155,23 @@ export default function DebtManager() {
         <span className="hdr-label">Debt Management</span>
       </div>
 
-      {/* Summary — three equal stats spread across the full width */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 14 }}>
+      {/* Summary — three equal stats spread across the full width.
+          minmax(0, …), not 1fr alone: a bare 1fr track refuses to shrink below its
+          content, so three long figures used to shove the third one off the card
+          rather than fitting. The figures use --fs-stat, the same token as the
+          money-flow trio — a 3-up stat group, not a card headline. */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 12, marginBottom: 14 }}>
         <div style={{ textAlign: 'left' }}>
           <div className="stat-label">Remaining</div>
-          <div style={{ fontSize: 'var(--fs-card)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', color: totalRemaining > 0 ? 'var(--expense)' : 'var(--income)' }}>{money(totalRemaining)}</div>
+          <div style={{ fontSize: 'var(--fs-stat)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', color: totalRemaining > 0 ? 'var(--expense)' : 'var(--income)' }}>{money(totalRemaining)}</div>
         </div>
         <div style={{ textAlign: 'center' }}>
           <div className="stat-label">Paid Off</div>
-          <div style={{ fontSize: 'var(--fs-card)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', color: 'var(--income)' }}>{money(totalPaid)}</div>
+          <div style={{ fontSize: 'var(--fs-stat)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', color: 'var(--income)' }}>{money(totalPaid)}</div>
         </div>
         <div style={{ textAlign: 'right' }}>
           <div className="stat-label">Original</div>
-          <div style={{ fontSize: 'var(--fs-card)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>{money(totalDebt)}</div>
+          <div style={{ fontSize: 'var(--fs-stat)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>{money(totalDebt)}</div>
         </div>
       </div>
 
