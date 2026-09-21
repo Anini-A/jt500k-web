@@ -60,7 +60,7 @@ export default function MoneyFlowCard() {
   const savedRate = cur && cur.income > 0 ? Math.round((cur.savings / cur.income) * 100) : null
 
   return (
-    <div className="card glass">
+    <div className="card">
       <span className="hdr-label">Money flow</span>
 
       {/* this-month glance — always visible */}

@@ -681,7 +681,10 @@ header.top h1 {
   backdrop-filter: blur(30px) saturate(190%);
   -webkit-backdrop-filter: blur(30px) saturate(190%);
   border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow), var(--glass-sheen), var(--glass-rim);
+  /* the drop shadow only. The sheen and the inner rim drew the same top edge the
+     border and the specular band already draw — four light edges saying one thing.
+     Both tokens stay for the controls that use them on their own. */
+  box-shadow: var(--glass-shadow);
 }
 
 /* Liquid-glass specular — a capped top highlight band so tall cards never wash out.
@@ -724,6 +727,19 @@ header.top h1 {
   padding: 20px;
   display: flex;
   flex-direction: column;
+}
+
+/* Two weights of card, so a screen can say which one matters.
+   Plain is the default: a solid surface with a hairline boundary, no blur and no
+   shadow. `.glass` is the raised one, and a screen should have at most one — when
+   every card is raised, none of them is. Restricting the blur is also the point
+   where this stops being cosmetic: backdrop-filter is the most expensive thing on
+   the page, and four of them used to composite on every scroll frame.
+   :not(.glass) rather than ordering, so .card and .glass cannot fight over which
+   was declared last. */
+.card:not(.glass) {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
 }
 
 .card.hero {
