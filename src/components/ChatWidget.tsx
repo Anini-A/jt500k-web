@@ -1056,7 +1056,7 @@ export default function ChatWidget({ onClose, initialPrompt, initialInput }: { o
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center', padding: '9px 14px', gap: 6 }} disabled={busy} onClick={confirmAction}><Check size={15} /> Confirm</button>
-              <button className="btn" style={{ background: 'var(--expense-soft)', color: 'var(--expense)', border: '1px solid var(--expense)', padding: '9px 14px', gap: 6 }} disabled={busy} onClick={cancelAction}><X size={15} /> Cancel</button>
+              <button className="btn" style={{ background: 'var(--expense-soft)', color: 'var(--expense-ink)', border: '1px solid var(--expense)', padding: '9px 14px', gap: 6 }} disabled={busy} onClick={cancelAction}><X size={15} /> Cancel</button>
             </div>
           </div>
         )}

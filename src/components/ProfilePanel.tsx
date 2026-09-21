@@ -31,10 +31,10 @@ const SECTION_META: Record<string, { Icon: LucideIcon; short: string }> = {
 
 // owner colour system (shared with Investments)
 const OWNER_COLOR: Record<string, { fg: string; bg: string; initials: string }> = {
-  Jean: { fg: 'var(--accent)', bg: 'var(--accent-soft)', initials: 'JA' },
-  Henriette: { fg: 'var(--savings)', bg: 'var(--savings-soft)', initials: 'HF' },
-  Noah: { fg: 'var(--income)', bg: 'var(--income-soft)', initials: 'NN' },
-  Joint: { fg: 'var(--warning)', bg: 'var(--warning-soft)', initials: 'JT' },
+  Jean: { fg: 'var(--accent-ink)', bg: 'var(--accent-soft)', initials: 'JA' },
+  Henriette: { fg: 'var(--savings-ink)', bg: 'var(--savings-soft)', initials: 'HF' },
+  Noah: { fg: 'var(--income-ink)', bg: 'var(--income-soft)', initials: 'NN' },
+  Joint: { fg: 'var(--warning-ink)', bg: 'var(--warning-soft)', initials: 'JT' },
 }
 function detectOwner(text: string): string | null {
   const t = ` ${text.toLowerCase()} `
@@ -70,9 +70,9 @@ const moneyShort = (n: number) => n >= 1e6 ? '$' + +(n / 1e6).toFixed(2) + 'M' :
 const isPerson = (it: Item) => !!(it.fields && it.fields.length) && /^(jean|henriette|noah|nono|dependent)\b/i.test(it.label)
 
 const HORIZON: Record<string, { fg: string; bg: string }> = {
-  short: { fg: 'var(--income)', bg: 'var(--income-soft)' },
-  medium: { fg: 'var(--warning)', bg: 'var(--warning-soft)' },
-  long: { fg: 'var(--savings)', bg: 'var(--savings-soft)' },
+  short: { fg: 'var(--income-ink)', bg: 'var(--income-soft)' },
+  medium: { fg: 'var(--warning-ink)', bg: 'var(--warning-soft)' },
+  long: { fg: 'var(--savings-ink)', bg: 'var(--savings-soft)' },
 }
 const detectHorizon = (label: string) => { const t = label.toLowerCase(); return /short/.test(t) ? 'short' : /medium|mid/.test(t) ? 'medium' : /long/.test(t) ? 'long' : null }
 
@@ -351,7 +351,7 @@ function ItemsEditor({ section, upd }: { section: Section; upd: (fn: (d: Section
             {statusSel(it.status, (v) => upd((d) => { if (v) d.items[ii].status = v; else delete d.items[ii].status }))}
             <div style={{ display: 'flex', gap: 8 }}>
               {!it.fields && <button className="btn btn-secondary" onClick={() => upd((d) => { d.items[ii].fields = [{ label: '', value: '' }] })}><Plus size={13} /> Fields</button>}
-              <button className="btn" style={{ background: 'var(--expense-soft)', color: 'var(--expense)', border: '1px solid var(--expense)' }} onClick={() => upd((d) => { d.items.splice(ii, 1) })}><Trash2 size={14} /></button>
+              <button className="btn" style={{ background: 'var(--expense-soft)', color: 'var(--expense-ink)', border: '1px solid var(--expense)' }} onClick={() => upd((d) => { d.items.splice(ii, 1) })}><Trash2 size={14} /></button>
             </div>
           </div>
         </div>

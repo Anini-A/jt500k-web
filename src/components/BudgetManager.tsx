@@ -115,14 +115,17 @@ export default function BudgetManager() {
   // four independent groups instead of one blended cushion.
   const isSetAside = (e: Envelope) => e.type === 'savings' || e.category === 'Debt Repayment'
   const sum = (arr: Envelope[], k: 'budgeted' | 'spent') => arr.reduce((s, e) => s + e[k], 0)
+  // One lane each, text on the lane's -ink tone: Spending sat on var(--savings),
+  // so it and Saving came out the same indigo, and a lane colour is too light to
+  // read on its own -soft fill.
   const groups = [
-    { key: 'income', icon: Wallet as LucideIcon, label: 'Income', color: 'var(--income)', soft: 'var(--income-soft)', goodUp: true, paced: true,
+    { key: 'income', icon: Wallet as LucideIcon, label: 'Income', color: 'var(--income-ink)', soft: 'var(--income-soft)', goodUp: true, paced: true,
       envs: envelopes.filter((e) => e.type === 'income') },
-    { key: 'spending', icon: CreditCard as LucideIcon, label: 'Spending', color: 'var(--savings)', soft: 'var(--savings-soft)', goodUp: false, paced: true,
+    { key: 'spending', icon: CreditCard as LucideIcon, label: 'Spending', color: 'var(--expense-ink)', soft: 'var(--expense-soft)', goodUp: false, paced: true,
       envs: envelopes.filter((e) => e.type === 'expense' && e.category !== 'Debt Repayment') },
-    { key: 'saving', icon: PiggyBank as LucideIcon, label: 'Saving', color: 'var(--savings)', soft: 'var(--savings-soft)', goodUp: true, paced: false,
+    { key: 'saving', icon: PiggyBank as LucideIcon, label: 'Saving', color: 'var(--savings-ink)', soft: 'var(--savings-soft)', goodUp: true, paced: false,
       envs: envelopes.filter((e) => e.type === 'savings') },
-    { key: 'debt', icon: Banknote as LucideIcon, label: 'Debt Repayment', color: 'var(--warning)', soft: 'var(--warning-soft)', goodUp: true, paced: false,
+    { key: 'debt', icon: Banknote as LucideIcon, label: 'Debt Repayment', color: 'var(--warning-ink)', soft: 'var(--warning-soft)', goodUp: true, paced: false,
       envs: envelopes.filter((e) => e.category === 'Debt Repayment') },
   ].map((g) => ({ ...g, budgeted: sum(g.envs, 'budgeted'), actual: sum(g.envs, 'spent') }))
 

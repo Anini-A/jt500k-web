@@ -476,7 +476,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span className="stat-label">Cards</span>
         <button type="button" onClick={() => setManageCardsOpen((v) => !v)} title="Add or remove cards"
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 999, cursor: 'pointer', fontSize: 'var(--fs-sm)', fontWeight: 600, fontFamily: 'inherit', border: `1px solid ${manageCardsOpen ? 'var(--accent)' : 'var(--border)'}`, background: manageCardsOpen ? 'var(--accent-soft)' : 'transparent', color: 'var(--accent)' }}>
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 999, cursor: 'pointer', fontSize: 'var(--fs-sm)', fontWeight: 600, fontFamily: 'inherit', border: `1px solid ${manageCardsOpen ? 'var(--accent)' : 'var(--border)'}`, background: manageCardsOpen ? 'var(--accent-soft)' : 'transparent', color: 'var(--accent-ink)' }}>
           <Settings2 size={14} /> Manage
         </button>
       </div>
@@ -619,7 +619,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                 return (
                   <div style={{ display: 'grid', gap: 18, justifyItems: 'center', textAlign: 'center', padding: '18px 0 6px' }}>
                     {/* the glyph is sized to its fixed 56px circle, not to the type scale */}
-                    <div style={{ width: 56, height: 56, borderRadius: 999, background: 'var(--income-soft)', color: 'var(--income)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, fontWeight: 700 }}>✓</div>
+                    <div style={{ width: 56, height: 56, borderRadius: 999, background: 'var(--income-soft)', color: 'var(--income-ink)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, fontWeight: 700 }}>✓</div>
                     <div>
                       <div style={{ fontWeight: 700, fontSize: 'var(--fs-md)', color: 'var(--text-secondary)' }}>Saved</div>
                       <div style={{ fontWeight: 800, fontSize: 'var(--fs-hero)', letterSpacing: '-0.03em', marginTop: 4, color: sc }}>{money(saved.amount)}</div>
@@ -727,7 +727,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                           {invalidCount > 0 && <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-sm)' }}>{`  ·  ${invalidCount} to fix`}</span>}
                         </span>
                         <button type="button" onClick={() => setAddOpen((v) => !v)} aria-label={addOpen ? 'Collapse add more' : 'Add more'} title={addOpen ? 'Collapse add more' : 'Add more'}
-                          style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 999, border: '1px solid var(--accent)', background: 'var(--accent-soft)', color: 'var(--accent)', cursor: 'pointer' }}>
+                          style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 999, border: '1px solid var(--accent)', background: 'var(--accent-soft)', color: 'var(--accent-ink)', cursor: 'pointer' }}>
                           <ChevronDown size={17} style={{ transform: addOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s ease' }} />
                         </button>
                       </div>

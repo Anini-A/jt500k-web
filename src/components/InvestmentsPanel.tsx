@@ -21,10 +21,10 @@ const OWNER_ORDER = ['Jean', 'Henriette', 'Joint', 'Noah']
 const OWNERS = ['Jean', 'Henriette', 'Joint', 'Noah']
 
 const OWNER_COLOR: Record<string, { fg: string; bg: string }> = {
-  Jean: { fg: 'var(--accent)', bg: 'var(--accent-soft)' },
-  Henriette: { fg: 'var(--savings)', bg: 'var(--savings-soft)' },
-  Noah: { fg: 'var(--income)', bg: 'var(--income-soft)' },
-  Joint: { fg: 'var(--warning)', bg: 'var(--warning-soft)' },
+  Jean: { fg: 'var(--accent-ink)', bg: 'var(--accent-soft)' },
+  Henriette: { fg: 'var(--savings-ink)', bg: 'var(--savings-soft)' },
+  Noah: { fg: 'var(--income-ink)', bg: 'var(--income-soft)' },
+  Joint: { fg: 'var(--warning-ink)', bg: 'var(--warning-soft)' },
 }
 function OwnerPill({ owner }: { owner: string }) {
   const c = OWNER_COLOR[owner] || { fg: 'var(--text-secondary)', bg: 'var(--kpi-bg)' }

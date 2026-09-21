@@ -18,6 +18,7 @@
   /* Lane INK: the readable text tone for a pill sitting on that lane's -soft fill.
      A lane colour on its own soft background lands around 2.3–2.6:1, so these
      darker tones carry the label instead. Fills stay -soft, text takes -ink. */
+  --accent-ink: #1a5da8;
   --income-ink: #0e6b49;
   --expense-ink: #9c3c14;
   --savings-ink: #3d40b0;
@@ -82,6 +83,7 @@
     --expense-soft: #4a2c1c;
     --savings: #818cf8;
     --savings-soft: #312e81;
+    --accent-ink: #8bbdf3;
     --income-ink: #6fd9b0;
     --expense-ink: #ff9a72;
     --savings-ink: #a5adf5;
@@ -725,7 +727,7 @@ header.top h1 {
 .offer-badge {
   display: inline-block;
   background: var(--income-soft);
-  color: var(--income);
+  color: var(--income-ink);
   padding: 6px 12px;
   border-radius: 999px;
   font-size: var(--fs-xs);
@@ -1438,7 +1440,7 @@ header.top h1 {
   border-radius: 999px;
   border: 1px solid var(--expense);
   background: var(--expense-soft);
-  color: var(--expense);
+  color: var(--expense-ink);
   font-size: var(--fs-md);
   cursor: pointer;
   line-height: 1;
@@ -1463,7 +1465,7 @@ header.top h1 {
   border-radius: 999px;
   border: 1px solid var(--accent);
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-ink);
   font-family: inherit;
   font-size: var(--fs-sm);
   font-weight: 600;
