@@ -227,7 +227,7 @@ export default function Dashboard() {
             <HeroRow stats={[
               { label: 'Total Income', value: money(agg.income), cls: 'income' },
               { label: 'Top Source', value: topIncome ? money(topIncome.total) : '—', sub: topIncome?.name },
-              { label: 'Per month', value: money(agg.income / monthsSpan), sub: `${monthsSpan} month${monthsSpan > 1 ? 's' : ''}` },
+              { label: 'Per month', value: money(agg.income / monthsSpan) },
             ]} />
             <section className="block">
               <div className="grid-2">
@@ -250,7 +250,7 @@ export default function Dashboard() {
             <HeroRow stats={[
               { label: 'Total Expenses', value: money(agg.expense), cls: 'expense' },
               { label: 'Top Category', value: topExpense ? money(topExpense.total) : '—', sub: topExpense?.name },
-              { label: 'Per month', value: money(agg.expense / monthsSpan), sub: `${monthsSpan} month${monthsSpan > 1 ? 's' : ''}` },
+              { label: 'Per month', value: money(agg.expense / monthsSpan) },
             ]} />
             <section className="block">
               <div className="grid-2">
@@ -357,21 +357,22 @@ function HeroRow({ stats }: { stats: Stat[] }) {
   const [primary, ...rest] = stats
   return (
     <section className="block">
-      {/* the panel sits opposite the headline. Its two stats stack INSIDE it: side by
-          side they would need ~360px next to the hero, more than a phone's card has.
-          flexWrap is the safety net — the panel drops beneath rather than squeezing
-          the figure it supports. */}
+      {/* the panel sits opposite the headline, its stats abreast inside it. That
+          leaves each stat ~85px on a phone, so the figures are --fs-base: at
+          --fs-stat a value like $8,719.27 needs ~96px and the panel would push
+          past the card. flexWrap is the safety net — on anything narrower the
+          panel drops beneath rather than squeezing the figure it supports. */}
       <div className="card glass" style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <div style={{ minWidth: 0 }}>
           <span className="hdr-label">{primary.label}</span>
           <div className={`stat-value ${primary.cls || ''}`} style={{ letterSpacing: '-0.03em', marginTop: 4, whiteSpace: 'nowrap' }}>{primary.value}</div>
         </div>
         {rest.length > 0 && (
-          <div style={{ display: 'grid', gap: 10, padding: '12px 14px', borderRadius: 14, background: 'var(--kpi-bg)', border: '1px solid var(--border)', flexShrink: 0 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${rest.length}, minmax(0, 1fr))`, gap: 14, padding: '10px 14px', borderRadius: 14, background: 'var(--kpi-bg)', border: '1px solid var(--border)' }}>
             {rest.map((s) => (
               <div key={s.label} style={{ minWidth: 0 }}>
                 <div className="stat-label">{s.label}</div>
-                <div style={{ fontSize: 'var(--fs-stat)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', marginTop: 2 }}>{s.value}</div>
+                <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', marginTop: 2, whiteSpace: 'nowrap' }}>{s.value}</div>
                 {s.sub && (
                   <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.sub}</div>
                 )}
