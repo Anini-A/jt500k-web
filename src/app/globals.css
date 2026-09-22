@@ -26,8 +26,19 @@
      Radius carries the material: at 18px the cards stopped reading as glass and
      started reading as flat translucent panels, so the surface blur is back up.
      Cost goes roughly with radius, and this is where it buys something. */
-  --blur-surface: blur(30px) saturate(210%) brightness(1.12);
-  --blur-bar: blur(18px) saturate(175%) brightness(1.04);
+  /* brightness stayed low here on purpose: 1.12/1.04 was washing whatever colour the
+     blur picked up toward flat white, which is what made the nav read as a plain
+     translucent panel instead of tinted glass. Saturate carries the richness instead. */
+  --blur-surface: blur(30px) saturate(240%) brightness(1.02);
+  --blur-bar: blur(18px) saturate(200%) brightness(1.0);
+  /* Guaranteed colour for the floating glass shell, independent of whatever happens to
+     scroll behind it — the page background alone can't be relied on for this (it has to
+     stay faint where it sits directly under body text). Seeded from the app's own
+     accent/savings/income hues so it reads as "this app's glass," not a random rainbow. */
+  --glass-tint: linear-gradient(135deg,
+    color-mix(in srgb, var(--accent) 22%, transparent) 0%,
+    color-mix(in srgb, var(--savings) 16%, transparent) 50%,
+    color-mix(in srgb, var(--income) 16%, transparent) 100%);
 
   /* ── Radius ───────────────────────────────────────────────────────────────
      Sixteen distinct corner values were in use, most of them within a pixel or
@@ -154,6 +165,10 @@
     --lip-bottom: 0.22;
     --lip-side: 0.14;
     --glass-underlight: rgba(0, 0, 0, 0.35);
+    --glass-tint: linear-gradient(135deg,
+      color-mix(in srgb, var(--accent) 26%, transparent) 0%,
+      color-mix(in srgb, var(--savings) 22%, transparent) 50%,
+      color-mix(in srgb, var(--income) 20%, transparent) 100%);
     --glass-bg: rgba(28, 30, 33, 0.42);
     --glass-bg-strong: rgba(24, 26, 29, 0.9); /* modal shell — more opaque for content contrast */
     --glass-border: rgba(255, 255, 255, 0.2);
@@ -262,7 +277,7 @@
 .voice-ctrl {
   width: 54px; height: 54px; border-radius: var(--radius-pill); cursor: pointer;
   display: inline-flex; align-items: center; justify-content: center;
-  border: 1px solid var(--glass-border); background: var(--glass-bg);
+  border: 1px solid var(--glass-border); background: var(--glass-tint), var(--glass-bg); background-repeat: no-repeat;
   -webkit-backdrop-filter: var(--blur-bar); backdrop-filter: var(--blur-bar);
   box-shadow: var(--glass-rim); transition: transform .15s ease;
 }
@@ -597,7 +612,7 @@ header.top > :last-child { margin-right: 3px; } /* web: pull in to the card edge
   gap: 2px;
   padding: 4px;
   border-radius: var(--radius-pill);
-  background: var(--glass-specular), var(--glass-bg);
+  background: var(--glass-specular), var(--glass-tint), var(--glass-bg);
   background-repeat: no-repeat;
   -webkit-backdrop-filter: var(--blur-surface);
   backdrop-filter: var(--blur-surface);
@@ -621,7 +636,7 @@ header.top > :last-child { margin-right: 3px; } /* web: pull in to the card edge
 .page-seg:hover { color: var(--text-primary); }
 /* active = a raised liquid-glass chip, same recipe as the bottom nav's active tab */
 .page-seg.active {
-  background: var(--glass-specular), color-mix(in srgb, var(--surface-1) 80%, transparent);
+  background: var(--glass-specular), var(--glass-tint), color-mix(in srgb, var(--surface-1) 80%, transparent);
   background-repeat: no-repeat;
   color: var(--text-primary);
   font-weight: 700;
@@ -638,7 +653,7 @@ header.top > :last-child { margin-right: 3px; } /* web: pull in to the card edge
   gap: 8px;
   padding: 0 16px;
   border-radius: var(--radius-pill);
-  background: var(--glass-specular), var(--glass-bg);
+  background: var(--glass-specular), var(--glass-tint), var(--glass-bg);
   background-repeat: no-repeat;
   -webkit-backdrop-filter: var(--blur-surface);
   backdrop-filter: var(--blur-surface);
@@ -913,7 +928,8 @@ header.top h1 {
   padding: 0 10px; /* 10 + 20px icon + 10 = 40×40 circle, matching the alert bell */
   border-radius: var(--radius-pill);
   color: var(--text-primary);
-  background: var(--glass-bg);
+  background: var(--glass-tint), var(--glass-bg);
+  background-repeat: no-repeat;
   border: 1px solid var(--glass-border);
   -webkit-backdrop-filter: var(--blur-surface);
   backdrop-filter: var(--blur-surface);
@@ -1038,7 +1054,8 @@ header.top h1 {
   gap: 4px;
   padding: 6px;
   border-radius: var(--radius-xl);
-  background: var(--glass-bg);
+  background: var(--glass-tint), var(--glass-bg);
+  background-repeat: no-repeat;
   border: 1px solid var(--glass-border);
   -webkit-backdrop-filter: var(--blur-surface);
   backdrop-filter: var(--blur-surface);
@@ -1283,7 +1300,7 @@ header.top h1 {
    unlike a card they always have real content behind them to bend — this is where
    the material earns its keep. Same lit bevel as .glass, with a deeper lift. */
 .nav-pill, .nav-fab {
-  background: var(--glass-specular), var(--glass-bg);
+  background: var(--glass-specular), var(--glass-tint), var(--glass-bg);
   background-repeat: no-repeat;
   -webkit-backdrop-filter: var(--blur-surface);
   backdrop-filter: var(--blur-surface);
@@ -1311,7 +1328,8 @@ header.top h1 {
 /* active = a raised liquid-glass chip (specular + sheen + inner rim), not a solid colour */
 .nav-pill button.active {
   color: var(--accent);
-  background: var(--glass-specular), color-mix(in srgb, var(--surface-1) 80%, transparent);
+  background: var(--glass-specular), var(--glass-tint), color-mix(in srgb, var(--surface-1) 80%, transparent);
+  background-repeat: no-repeat;
   box-shadow: 0 4px 14px rgba(20, 20, 25, 0.16), var(--glass-sheen), var(--glass-rim), inset 0 1px 0 rgba(255, 255, 255, 0.55);
 }
 /* 48px = the pill's own height (40px button + 4px padding each side), so they line up */
@@ -1330,7 +1348,8 @@ header.top h1 {
   padding: 8px;
   display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
   border-radius: var(--radius-2xl);
-  background: var(--glass-specular), var(--glass-bg);
+  background: var(--glass-specular), var(--glass-tint), var(--glass-bg);
+  background-repeat: no-repeat;
   -webkit-backdrop-filter: var(--blur-surface);
   backdrop-filter: var(--blur-surface);
   border: 1px solid var(--glass-border);
