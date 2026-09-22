@@ -86,12 +86,7 @@
   --kpi-bg: rgba(255, 255, 255, 0.4);
   --header-bg: rgba(244, 244, 243, 0.95);
   /* Liquid-glass polish: specular top highlight + inner light rim */
-  /* Two corner pools rather than one straight band across the top: real curved glass
-     catches light at its corners first, so the highlight should hug the rounded rim
-     instead of reading as a horizontal bar laid over a rectangle. */
-  --glass-specular:
-    radial-gradient(120px 90px at 6% -6%, rgba(255, 255, 255, 0.9), transparent 68%),
-    radial-gradient(90px 70px at 96% -4%, rgba(255, 255, 255, 0.5), transparent 66%);
+  --glass-specular: linear-gradient(176deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.34) 12%, rgba(255, 255, 255, 0.06) 34%, rgba(255, 255, 255, 0) 60%);
   --glass-rim: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
 
   /* ── Type scale ───────────────────────────────────────────────────────────
@@ -166,9 +161,7 @@
     --glass-sheen: inset 0 1px 0 rgba(255, 255, 255, 0.12);
     --kpi-bg: rgba(255, 255, 255, 0.07);
     --header-bg: rgba(14, 15, 16, 0.95);
-    --glass-specular:
-      radial-gradient(120px 90px at 6% -6%, rgba(255, 255, 255, 0.4), transparent 68%),
-      radial-gradient(90px 70px at 96% -4%, rgba(255, 255, 255, 0.2), transparent 66%);
+    --glass-specular: linear-gradient(176deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.12) 12%, rgba(255, 255, 255, 0.03) 34%, rgba(255, 255, 255, 0) 60%);
     --glass-rim: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
   }
 }
@@ -740,26 +733,12 @@ header.top h1 {
     inset 0 -22px 26px -22px var(--glass-underlight);
 }
 
-/* Liquid-glass specular — two corner pools, each sized/positioned by the gradient
-   itself, so background-size just needs to cover the box once.
+/* Liquid-glass specular — a capped top highlight band so tall cards never wash out.
    Applied as a BACKGROUND layer (below content), so text/numbers stay fully crisp. */
 .glass {
   background-image: var(--glass-specular);
   background-repeat: no-repeat;
-  background-size: 100% 100%;
-}
-
-/* Real refraction: the background actually bends and magnifies through the SVG
-   displacement map defined once in <GlassFilters/> (globals-level, id #glass-distort).
-   Gated behind @supports — Chromium accepts an SVG filter reference inside
-   backdrop-filter and renders the warp; Safari/Firefox treat that whole value as
-   invalid and the @supports probe below correctly reports false, so they fall back
-   to the plain blur() from --blur-surface above rather than losing the blur entirely. */
-@supports (backdrop-filter: blur(1px) url(#glass-distort)) {
-  .glass {
-    backdrop-filter: url(#glass-distort) var(--blur-surface);
-    -webkit-backdrop-filter: url(#glass-distort) var(--blur-surface);
-  }
+  background-size: 100% 96px;
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
