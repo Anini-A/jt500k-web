@@ -78,7 +78,7 @@
   --lip-bottom: 0.5;
   --lip-side: 0.3;
   --glass-underlight: rgba(120, 132, 156, 0.22);
-  --glass-bg: rgba(255, 255, 255, 0.18);
+  --glass-bg: rgba(255, 255, 255, 0.32);
   --glass-bg-strong: rgba(240, 240, 242, 0.9); /* modal shell — more opaque so content reads with full contrast */
   --glass-border: rgba(255, 255, 255, 0.8);
   --glass-shadow: 0 8px 32px rgba(24, 26, 30, 0.1);
@@ -154,7 +154,7 @@
     --lip-bottom: 0.22;
     --lip-side: 0.14;
     --glass-underlight: rgba(0, 0, 0, 0.35);
-    --glass-bg: rgba(28, 30, 33, 0.28);
+    --glass-bg: rgba(28, 30, 33, 0.42);
     --glass-bg-strong: rgba(24, 26, 29, 0.9); /* modal shell — more opaque for content contrast */
     --glass-border: rgba(255, 255, 255, 0.2);
     --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
@@ -521,13 +521,17 @@ a:hover {
   pointer-events: none;
   background:
     /* Horizon: one soft light, high and off-frame to the left, with a cooler second tone
-       top right. Wide ellipses read as light rather than as blobs, and both die out well
-       above the fold — the lower half stays pure --page-plane, which is what keeps sheets,
-       canvas and the strip under the home indicator all landing on one colour. It runs
-       edge to edge under the status bar; the tints are light enough that the dark glyphs
-       still read against them. */
+       top right, plus two lower-corner tints (income green, savings violet) so the glass
+       has more than one hue to refract — a single blue-grey wash reads as plain frosted
+       plastic rather than liquid glass. Wide ellipses read as light rather than as blobs,
+       and all die out well above/below the fold — the mid-page stays close to
+       --page-plane, which is what keeps sheets, canvas and the strip under the home
+       indicator all landing on one colour. It runs edge to edge under the status bar;
+       the tints are light enough that the dark glyphs still read against them. */
     radial-gradient(1200px 620px at 22% -8%, rgba(72, 80, 94, 0.15), transparent 70%),
-    radial-gradient(760px 420px at 92% 2%, rgba(42, 120, 214, 0.11), transparent 66%);
+    radial-gradient(760px 420px at 92% 2%, rgba(42, 120, 214, 0.22), transparent 66%),
+    radial-gradient(700px 520px at 8% 92%, rgba(27, 175, 122, 0.16), transparent 62%),
+    radial-gradient(680px 500px at 96% 96%, rgba(99, 102, 241, 0.16), transparent 62%);
   background-color: var(--page-plane);
 }
 
@@ -538,7 +542,9 @@ a:hover {
   .bg-aurora::before {
     background:
       radial-gradient(1200px 620px at 22% -8%, rgba(122, 134, 152, 0.18), transparent 70%),
-      radial-gradient(760px 420px at 92% 2%, rgba(57, 135, 229, 0.13), transparent 66%);
+      radial-gradient(760px 420px at 92% 2%, rgba(57, 135, 229, 0.24), transparent 66%),
+      radial-gradient(700px 520px at 8% 92%, rgba(25, 158, 112, 0.18), transparent 62%),
+      radial-gradient(680px 500px at 96% 96%, rgba(129, 140, 248, 0.18), transparent 62%);
     background-color: var(--page-plane);
   }
 }
