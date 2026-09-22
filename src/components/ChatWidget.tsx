@@ -896,7 +896,7 @@ export default function ChatWidget({ onClose, initialPrompt, initialInput }: { o
   return createPortal(
     <div className="modal-backdrop" onClick={onClose} style={{ paddingBottom: kb || undefined }}>
       {confirmNode}
-      <div className="modal-card chat-sheet" onClick={(e) => { e.stopPropagation(); setRecentOpen(false) }}
+      <div className="modal-card chat-sheet glass" onClick={(e) => { e.stopPropagation(); setRecentOpen(false) }}
         style={{ ['--kb' as string]: `${kb}px`, width: 'min(720px, 100%)', padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'var(--surface-1)', position: 'relative' }}>
 
         {/* Header — close on the left; new chat and everything else on the right. Mode,

@@ -65,7 +65,7 @@ export default function EditTransactionModal({ tx, onClose, onSaved }: {
 
   return createPortal(
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-card glass" onClick={(e) => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, gap: 12 }}>
           <h2 style={{ margin: 0, fontSize: 'var(--fs-title)', display: 'flex', alignItems: 'center', gap: 8 }}><Pencil size={17} /> Edit Transaction</h2>
           <button className="modal-x" aria-label="Close" onClick={onClose}>✕</button>

@@ -393,7 +393,7 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
 
   return createPortal(
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-card glass" onClick={(e) => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <h2 style={{ margin: 0, fontSize: 'var(--fs-title)', display: 'flex', alignItems: 'center', gap: 8 }}><Upload size={18} /> Import Holdings</h2>
           <button className="modal-x" aria-label="Close" onClick={onClose}>✕</button>

@@ -585,7 +585,11 @@ header.top > :last-child { margin-right: 3px; } /* web: pull in to the card edge
    Desktop → full clickable segmented control. Mobile → current label + dots + swipe. */
 .page-pill { justify-self: center; min-width: 0; }
 
+/* This is a navigation control — the same functional layer as the bottom nav bar,
+   not content — so it takes the real floating glass shell (blur + specular + lip),
+   not the flat --kpi-bg fill a content-layer pill would use. */
 .page-segs {
+  position: relative;
   display: inline-flex;
   align-items: center;
   min-height: 42px;
@@ -593,8 +597,12 @@ header.top > :last-child { margin-right: 3px; } /* web: pull in to the card edge
   gap: 2px;
   padding: 4px;
   border-radius: var(--radius-pill);
-  background: var(--kpi-bg);
-  border: 1px solid var(--border);
+  background: var(--glass-specular), var(--glass-bg);
+  background-repeat: no-repeat;
+  -webkit-backdrop-filter: var(--blur-surface);
+  backdrop-filter: var(--blur-surface);
+  border: none;
+  box-shadow: var(--glass-sheen), var(--glass-rim);
 }
 .page-seg {
   flex-shrink: 0;
@@ -608,17 +616,20 @@ header.top > :last-child { margin-right: 3px; } /* web: pull in to the card edge
   cursor: pointer;
   white-space: nowrap;
   font-family: inherit;
-  transition: background .2s ease, color .2s ease;
+  transition: background .2s ease, color .2s ease, box-shadow .2s ease;
 }
 .page-seg:hover { color: var(--text-primary); }
+/* active = a raised liquid-glass chip, same recipe as the bottom nav's active tab */
 .page-seg.active {
-  background: var(--surface-1);
+  background: var(--glass-specular), color-mix(in srgb, var(--surface-1) 80%, transparent);
+  background-repeat: no-repeat;
   color: var(--text-primary);
   font-weight: 700;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 14px rgba(20, 20, 25, 0.16), var(--glass-sheen), var(--glass-rim), inset 0 1px 0 rgba(255, 255, 255, 0.55);
 }
 
-/* mobile pill: · Label · */
+/* mobile pill: · Label · (currently unreachable — .page-pill is hidden below 640px in
+   favour of the bottom nav bar — kept glass-consistent in case that changes) */
 .page-compact {
   display: none;
   align-items: center;
@@ -627,8 +638,12 @@ header.top > :last-child { margin-right: 3px; } /* web: pull in to the card edge
   gap: 8px;
   padding: 0 16px;
   border-radius: var(--radius-pill);
-  background: var(--kpi-bg);
-  border: 1px solid var(--border);
+  background: var(--glass-specular), var(--glass-bg);
+  background-repeat: no-repeat;
+  -webkit-backdrop-filter: var(--blur-surface);
+  backdrop-filter: var(--blur-surface);
+  border: none;
+  box-shadow: var(--glass-sheen), var(--glass-rim);
 }
 .page-current { font-weight: 700; font-size: var(--fs-base); letter-spacing: -0.01em; white-space: nowrap; }
 .page-edge {
