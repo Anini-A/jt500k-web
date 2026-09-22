@@ -198,8 +198,9 @@ export default function Dashboard() {
       <div className="wrap">
         <DashHeader />
 
-        {/* Section pills — primary nav, on top (scrolls; active tab kept in view) */}
-        <section className="block" style={{ display: 'flex', justifyContent: 'center' }}>
+        {/* Section pills — pinned while the tab's content scrolls beneath it, so
+            switching Budget/Bills/Debts/... never needs scrolling back up first */}
+        <section className="block dash-tabs-bar" style={{ display: 'flex', justifyContent: 'center' }}>
           <div className="tabs tabs-scroll">
             {TABS.map((t) => {
               const Icon = t.Icon

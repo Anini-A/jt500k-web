@@ -1045,6 +1045,18 @@ header.top h1 {
   -ms-overflow-style: none;
 }
 .tabs::-webkit-scrollbar { display: none; }
+
+/* Dashboard section pills — pinned near the top of the viewport once the page
+   scrolls past them, so the row of cards underneath scrolls behind a fixed switcher
+   instead of carrying it away. Clear of the iOS status bar/notch via safe-area-inset,
+   and above ordinary page content but well under modals (200) and the bottom nav (90
+   is already past it once scrolled, but this only needs to clear cards at z-index auto). */
+.dash-tabs-bar {
+  position: sticky;
+  top: max(10px, env(safe-area-inset-top, 0px));
+  z-index: 30;
+  padding-bottom: 2px; /* keeps the pill's own drop-shadow from reading as clipped once stuck */
+}
 /* Centred when the tabs fit, left-aligned once they overflow — plain `center` would push
    the first tab off the scrollable edge and make it unreachable. `safe` picks per-case;
    flex-start is the fallback for engines that don't parse it. */
@@ -1276,30 +1288,12 @@ header.top h1 {
   z-index: 90; gap: 10px; align-items: center; justify-content: space-between;
   pointer-events: none;   /* the gap between the pieces isn't a target */
 }
-/* Real colour for the pills to blur, anchored to the viewport rather than the page —
-   this is the Apple Music trick: the tab bar itself is nearly colourless, it's the
-   album art sitting behind it that the blur reveals. We have no album art, so this
-   paints a single soft glow directly behind the bar's own fixed position, independent
-   of scroll or page content — content the glass genuinely blurs, not colour drawn onto
-   the glass itself. One hue only (the app's own accent), matching the single-glow
-   aurora above rather than the multi-colour version retired alongside it. Sits below
-   the pills in THIS stacking context, but the context itself (z-index 90) is already
-   above the page, so it never shows through cards or scrolled content. */
-.bottom-nav::before {
-  content: '';
-  position: fixed;
-  left: 0; right: 0;
-  bottom: 0;
-  height: 200px;
-  z-index: -1;
-  pointer-events: none;
-  background: radial-gradient(65% 100% at 50% 100%, rgba(42, 120, 214, 0.4), transparent 68%);
-}
-@media (prefers-color-scheme: dark) {
-  .bottom-nav::before {
-    background: radial-gradient(65% 100% at 50% 100%, rgba(57, 135, 229, 0.45), transparent 68%);
-  }
-}
+/* A dedicated "guaranteed colour" glow used to sit here, anchored behind the bar at
+   0.4 alpha — that's the blue wash/halo the bar was showing above and around itself.
+   Retired: it fought the clear-glass goal (colour painted where the glass merely
+   passes it through) and doubled up with the single aurora glow above. The bar now
+   stays genuinely clear — its blur picks up whatever's actually scrolling beneath it
+   (cards, page background), same as every other glass surface in the app. */
 .nav-pill, .nav-fab { pointer-events: auto; }
 /* Shared glass shell for both pieces. These float over the scrolling page, so
    unlike a card they always have real content behind them to bend — this is where
