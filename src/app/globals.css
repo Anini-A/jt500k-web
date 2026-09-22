@@ -721,39 +721,6 @@ header.top h1 {
   text-decoration: none;
 }
 
-/* Chromatic rim — the prismatic edge real glass throws (light splitting into its
-   spectrum at a curved boundary), the single most recognisable "this is glass, not a
-   blurred panel" cue. A conic-gradient ring, masked down to just the 1.25px border so
-   it reads as a hairline of dispersed colour rather than a rainbow fill. Reserved for
-   the ELEVATED pieces — the active tab, the primary FAB — the same way real light
-   only visibly splits at the elements actually catching it, not every glass surface. */
-.chroma-rim,
-.nav-pill button.active,
-.page-seg.active,
-.nav-fab { position: relative; }
-.chroma-rim::after,
-.nav-pill button.active::after,
-.page-seg.active::after,
-.nav-fab::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1.25px;
-  background: conic-gradient(from 200deg at 50% 50%,
-    rgba(255, 140, 120, 0.65) 0deg,
-    rgba(255, 205, 120, 0.5) 55deg,
-    rgba(150, 255, 190, 0.45) 120deg,
-    rgba(120, 190, 255, 0.55) 200deg,
-    rgba(200, 150, 255, 0.6) 270deg,
-    rgba(255, 140, 120, 0.65) 360deg);
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-}
-@media (prefers-reduced-transparency: reduce) { .chroma-rim::after { display: none; } }
-
 /* Liquid glass material.
    The difference from frosted glass is where the material lives. Frosted glass is
    a milky fill with a blur behind it: the BODY is the material. Here the body is
@@ -1120,13 +1087,18 @@ header.top h1 {
   background: rgba(255, 255, 255, 0.14);
 }
 
+/* Clear glass, not a solid fill — same recipe as the nav's own active chip
+   (.nav-pill button.active / .page-seg.active). Apple Music's selected "New" tab is
+   still see-through glass; only the label picks up colour. A solid accent-gradient
+   fill was the biggest thing on the page reading as "flat UI" instead of glass. */
 .tab-active,
 .tab-active:hover {
   position: relative;
   overflow: hidden;
-  background: var(--glass-specular), linear-gradient(135deg, var(--accent), #1e63b8);
-  color: #fff;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), var(--glass-rim);
+  background: var(--glass-specular), color-mix(in srgb, var(--surface-1) 80%, transparent);
+  background-repeat: no-repeat;
+  color: var(--accent);
+  box-shadow: 0 4px 14px rgba(20, 20, 25, 0.12), var(--glass-sheen), var(--glass-rim), inset 0 1px 0 rgba(255, 255, 255, 0.55);
 }
 /* icon + label ride above the specular/sheen layers */
 .tab > * { position: relative; z-index: 1; }
@@ -1455,11 +1427,15 @@ header.top h1 {
   color: var(--text-primary);
 }
 
+/* Same clear-glass recipe as .tab-active — the label carries the accent colour,
+   the pill stays see-through glass rather than a solid fill. */
 .chip-active {
-  background: var(--glass-specular), linear-gradient(135deg, var(--accent), #1e63b8);
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), var(--glass-rim);
+  background: var(--glass-specular), color-mix(in srgb, var(--surface-1) 80%, transparent);
+  background-repeat: no-repeat;
+  color: var(--accent);
+  font-weight: 700;
+  border-color: var(--glass-border);
+  box-shadow: 0 4px 14px rgba(20, 20, 25, 0.12), var(--glass-sheen), var(--glass-rim), inset 0 1px 0 rgba(255, 255, 255, 0.55);
 }
 
 .date-input {
