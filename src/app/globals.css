@@ -519,6 +519,11 @@ a:hover {
   min-height: 100dvh;
 }
 
+/* One soft light source, nothing else. The four-hue version (blue/green/violet borrowed
+   from another site's aurora, plus a grey horizon) was retired — it read as decoration,
+   not depth, and fought the clear-glass material for attention. This is the app's own
+   accent colour only, off-centre and high, fading out well before the mid-page — most
+   of the canvas stays flat --page-plane so glass has a calm field to sit on. */
 .bg-aurora::before {
   content: "";
   position: fixed;
@@ -526,31 +531,14 @@ a:hover {
   z-index: -1;
   pointer-events: none;
   background:
-    /* Horizon: one soft light, high and off-frame to the left, with a cooler second tone
-       top right, plus two lower-corner tints (income green, savings violet) so the glass
-       has more than one hue to refract — a single blue-grey wash reads as plain frosted
-       plastic rather than liquid glass. Wide ellipses read as light rather than as blobs,
-       and all die out well above/below the fold — the mid-page stays close to
-       --page-plane, which is what keeps sheets, canvas and the strip under the home
-       indicator all landing on one colour. It runs edge to edge under the status bar;
-       the tints are light enough that the dark glyphs still read against them. */
-    radial-gradient(1200px 620px at 22% -8%, rgba(72, 80, 94, 0.15), transparent 70%),
-    radial-gradient(760px 420px at 92% 2%, rgba(42, 120, 214, 0.22), transparent 66%),
-    radial-gradient(700px 520px at 8% 92%, rgba(27, 175, 122, 0.16), transparent 62%),
-    radial-gradient(680px 500px at 96% 96%, rgba(99, 102, 241, 0.16), transparent 62%);
+    radial-gradient(1100px 680px at 20% -10%, rgba(42, 120, 214, 0.16), transparent 68%);
   background-color: var(--page-plane);
 }
 
-/* Dark mode: the aurora must also go dark, or the translucent dark cards sit
-   on a light plane and everything subtle washes out. Deeper, glowier tints on
-   a near-black plane read as a proper dark liquid-glass backdrop. */
 @media (prefers-color-scheme: dark) {
   .bg-aurora::before {
     background:
-      radial-gradient(1200px 620px at 22% -8%, rgba(122, 134, 152, 0.18), transparent 70%),
-      radial-gradient(760px 420px at 92% 2%, rgba(57, 135, 229, 0.24), transparent 66%),
-      radial-gradient(700px 520px at 8% 92%, rgba(25, 158, 112, 0.18), transparent 62%),
-      radial-gradient(680px 500px at 96% 96%, rgba(129, 140, 248, 0.18), transparent 62%);
+      radial-gradient(1100px 680px at 20% -10%, rgba(57, 135, 229, 0.22), transparent 68%);
     background-color: var(--page-plane);
   }
 }
@@ -1145,26 +1133,23 @@ header.top h1 {
    layout viewport in the installed iOS PWA is already the sheet's colour, so no white
    band can appear under it. The specular sheen and rim still carry the glass look. */
 .modal-card.glass { background-color: var(--page-plane); box-shadow: var(--glass-shadow), var(--glass-sheen), var(--glass-rim); }
-/* …and carries the aurora's own top tints, so a sheet reads as the site's surface rather
-   than a flat panel. Only the TOP two radials, at softer alpha than the page (content in
-   here is dense) and sized to die out well above the sheet's bottom edge — that edge has
-   to stay pure --page-plane, because it's what meets the canvas in the strip below the
-   layout viewport. Put the bottom radials back and the white band returns as a colour
-   mismatch down there. */
+/* …and echoes the aurora's own top glow, so a sheet reads as the site's surface rather
+   than a flat panel. Softer alpha than the page (content in here is dense) and sized to
+   die out well above the sheet's bottom edge — that edge has to stay pure --page-plane,
+   because it's what meets the canvas in the strip below the layout viewport. Put a
+   bottom glow back and the white band returns as a colour mismatch down there. */
 .modal-card.glass {
   background-image:
     var(--glass-specular),
-    radial-gradient(1200px 560px at 22% -6%, rgba(72, 80, 94, 0.13), transparent 70%),
-    radial-gradient(700px 380px at 92% 2%, rgba(42, 120, 214, 0.09), transparent 66%);
+    radial-gradient(1200px 560px at 22% -6%, rgba(42, 120, 214, 0.1), transparent 70%);
   background-repeat: no-repeat;
-  background-size: 100% 96px, auto, auto;
+  background-size: 100% 96px, auto;
 }
 @media (prefers-color-scheme: dark) {
   .modal-card.glass {
     background-image:
       var(--glass-specular),
-      radial-gradient(1200px 560px at 22% -6%, rgba(122, 134, 152, 0.16), transparent 70%),
-      radial-gradient(700px 380px at 92% 2%, rgba(57, 135, 229, 0.11), transparent 66%);
+      radial-gradient(1200px 560px at 22% -6%, rgba(57, 135, 229, 0.13), transparent 70%);
   }
 }
 .modal-card.glass::before {
@@ -1294,11 +1279,12 @@ header.top h1 {
 /* Real colour for the pills to blur, anchored to the viewport rather than the page —
    this is the Apple Music trick: the tab bar itself is nearly colourless, it's the
    album art sitting behind it that the blur reveals. We have no album art, so this
-   paints saturated blobs directly behind the bar's own fixed position, independent of
-   scroll or page content — content the glass genuinely blurs, not colour drawn onto
-   the glass itself (that was tried and looked like tinted plastic). Sits below the
-   pills in THIS stacking context, but the context itself (z-index 90) is already above
-   the page, so it never shows through cards or scrolled content. */
+   paints a single soft glow directly behind the bar's own fixed position, independent
+   of scroll or page content — content the glass genuinely blurs, not colour drawn onto
+   the glass itself. One hue only (the app's own accent), matching the single-glow
+   aurora above rather than the multi-colour version retired alongside it. Sits below
+   the pills in THIS stacking context, but the context itself (z-index 90) is already
+   above the page, so it never shows through cards or scrolled content. */
 .bottom-nav::before {
   content: '';
   position: fixed;
@@ -1307,17 +1293,11 @@ header.top h1 {
   height: 200px;
   z-index: -1;
   pointer-events: none;
-  background:
-    radial-gradient(70% 100% at 22% 100%, rgba(42, 120, 214, 0.45), transparent 68%),
-    radial-gradient(60% 90% at 60% 100%, rgba(27, 175, 122, 0.38), transparent 66%),
-    radial-gradient(55% 85% at 92% 90%, rgba(99, 102, 241, 0.4), transparent 64%);
+  background: radial-gradient(65% 100% at 50% 100%, rgba(42, 120, 214, 0.4), transparent 68%);
 }
 @media (prefers-color-scheme: dark) {
   .bottom-nav::before {
-    background:
-      radial-gradient(70% 100% at 22% 100%, rgba(57, 135, 229, 0.5), transparent 68%),
-      radial-gradient(60% 90% at 60% 100%, rgba(25, 158, 112, 0.42), transparent 66%),
-      radial-gradient(55% 85% at 92% 90%, rgba(129, 140, 248, 0.44), transparent 64%);
+    background: radial-gradient(65% 100% at 50% 100%, rgba(57, 135, 229, 0.45), transparent 68%);
   }
 }
 .nav-pill, .nav-fab { pointer-events: auto; }
