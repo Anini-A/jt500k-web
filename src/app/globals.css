@@ -1046,16 +1046,37 @@ header.top h1 {
 }
 .tabs::-webkit-scrollbar { display: none; }
 
-/* Dashboard section pills — pinned near the top of the viewport once the page
-   scrolls past them, so the row of cards underneath scrolls behind a fixed switcher
-   instead of carrying it away. Clear of the iOS status bar/notch via safe-area-inset,
-   and above ordinary page content but well under modals (200) and the bottom nav (90
-   is already past it once scrolled, but this only needs to clear cards at z-index auto). */
-.dash-tabs-bar {
-  position: sticky;
-  top: max(10px, env(safe-area-inset-top, 0px));
+/* Dashboard section pills — a TRUE fixed position, not sticky. Sticky scrolls
+   normally with the page until it would pass its offset, then locks — that
+   "moves, then catches" transition read as not-actually-fixed. This pins the pill
+   at a constant screen position from the very first frame (same on-screen spot the
+   header naturally leaves clear beneath it), so it never moves at all; the header
+   above it is the thing that scrolls away over time, same as an iOS collapsing-title
+   navigation bar. .dash-tabs-spacer is just a flow placeholder reserving the pill's
+   own height so content below doesn't jump up when the real pill leaves the flow. */
+.dash-tabs-spacer {
+  height: 50px;
+}
+.dash-tabs-fixed {
+  position: fixed;
+  top: calc(112px + env(safe-area-inset-top, 0px));
+  /* Mirrors .wrap's own max-width(1200px)/margin:auto/padding(32px) box model, so the
+     pinned pill's edges land exactly where the cards beneath it start and end.
+     width:auto overrides .tabs' own width:100% — with left AND right AND width all
+     set on a fixed element, width wins and right gets silently recomputed away, which
+     would ignore this centred inset entirely. */
+  left: max(32px, calc(50vw - 568px));
+  right: max(32px, calc(50vw - 568px));
+  width: auto;
   z-index: 30;
-  padding-bottom: 2px; /* keeps the pill's own drop-shadow from reading as clipped once stuck */
+}
+@media (max-width: 640px) {
+  .dash-tabs-spacer { height: 46px; }
+  .dash-tabs-fixed {
+    top: calc(78px + env(safe-area-inset-top, 0px));
+    left: calc(12px + env(safe-area-inset-left, 0px));
+    right: calc(12px + env(safe-area-inset-right, 0px));
+  }
 }
 /* Centred when the tabs fit, left-aligned once they overflow — plain `center` would push
    the first tab off the scrollable edge and make it unreachable. `safe` picks per-case;

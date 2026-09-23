@@ -198,10 +198,12 @@ export default function Dashboard() {
       <div className="wrap">
         <DashHeader />
 
-        {/* Section pills — pinned while the tab's content scrolls beneath it, so
-            switching Budget/Bills/Debts/... never needs scrolling back up first */}
-        <section className="block dash-tabs-bar" style={{ display: 'flex', justifyContent: 'center' }}>
-          <div className="tabs tabs-scroll">
+        {/* Section pills — truly fixed (not sticky) at a constant screen position, so
+            there's no scroll-tied motion before it locks. The section here is just a
+            spacer reserving its height in the flow; dash-tabs-fixed is the actual pill,
+            pinned to the viewport, so content scrolls behind it from the very top. */}
+        <section className="block dash-tabs-spacer">
+          <div className="tabs tabs-scroll dash-tabs-fixed">
             {TABS.map((t) => {
               const Icon = t.Icon
               return (
