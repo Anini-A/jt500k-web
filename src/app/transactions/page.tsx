@@ -222,7 +222,7 @@ export default function Transactions() {
                       const lbl = dayLabel(g.date)
                       const rel = lbl === 'Today' || lbl === 'Yesterday'
                       return (
-                        <div style={{ position: 'sticky', top: 0, zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, margin: '10px 0 6px', padding: '9px 12px', borderRadius: 'var(--radius-md)', background: 'var(--glass-specular), var(--glass-bg)', backgroundRepeat: 'no-repeat', backdropFilter: 'var(--blur-bar)', WebkitBackdropFilter: 'var(--blur-bar)', border: '1px solid var(--glass-border)', boxShadow: 'var(--glass-sheen)' }}>
+                        <div style={{ position: 'sticky', top: 0, zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, margin: '10px 0 6px', padding: '9px 12px', borderRadius: 'var(--radius-md)', background: 'var(--glass-specular), var(--glass-bg-strong)', backgroundRepeat: 'no-repeat', backdropFilter: 'var(--blur-bar)', WebkitBackdropFilter: 'var(--blur-bar)', border: '1px solid var(--glass-border)', boxShadow: 'var(--glass-sheen)' }}>
                           <span style={{ fontSize: 'var(--fs-sm)', fontWeight: 800, letterSpacing: '-0.01em', color: 'var(--text-primary)' }}>{lbl}</span>
                           {rel && <span style={{ fontSize: 'var(--fs-2xs)', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{new Date(g.date + 'T12:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })}</span>}
                         </div>
