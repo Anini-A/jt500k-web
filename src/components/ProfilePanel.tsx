@@ -205,7 +205,15 @@ function GoalsView({ items }: { items: Item[] }) {
 
 export default function ProfilePanel() {
   const [profile, setProfile] = useState<Profile | null>(null)
-  const [filter, setFilter] = useState('')
+  // The dashboard's Household dropdown hands off which section to land on the same
+  // way BillRunway's account handoff works — read once, then cleared.
+  const [filter, setFilter] = useState(() => {
+    try {
+      const v = localStorage.getItem('jt-household-section')
+      if (v) { localStorage.removeItem('jt-household-section'); return v }
+    } catch { /* ignore */ }
+    return ''
+  })
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState<Section | null>(null)
   const [saving, setSaving] = useState(false)
@@ -248,19 +256,9 @@ export default function ProfilePanel() {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 14 }}>
       {toastNode}
-      {/* Section menu — dashboard tab style */}
-      <section style={{ display: 'flex', justifyContent: 'center' }}>
-        <div className="tabs">
-          {profile.sections.map((s) => {
-            const meta = SECTION_META[s.id]
-            return (
-              <button key={s.id} className={`tab ${filter === s.id ? 'tab-active' : ''}`} onClick={() => { setFilter(s.id); cancel() }}>
-                {meta ? <meta.Icon size={16} /> : <span>{s.icon}</span>} {meta?.short || s.title}
-              </button>
-            )
-          })}
-        </div>
-      </section>
+      {/* Section switching now lives one level up — the dashboard's Household tab
+         opens a dropdown of these same sections (see HOUSEHOLD_ITEMS/SECTION_META)
+         and hands off the pick via the jt-household-section key read above. */}
 
       <div className="card">
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, justifyContent: 'space-between' }}>

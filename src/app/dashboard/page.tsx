@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
-import { Wallet, CreditCard, PiggyBank, LineChart, Banknote, Target, Users, Receipt, Pencil, Trash2, type LucideIcon } from 'lucide-react'
+import { createPortal } from 'react-dom'
+import { Wallet, CreditCard, PiggyBank, LineChart, Banknote, Target, Users, Receipt, Pencil, Trash2, ChevronDown, Home as HomeIcon, Shield, ScrollText, Flag, Plus, type LucideIcon } from 'lucide-react'
 import HeaderNav from '@/components/HeaderNav'
 import PagePill from '@/components/PagePill'
 import NotificationBell from '@/components/NotificationCenter'
@@ -26,6 +27,17 @@ const TABS: { key: Tab; label: string; Icon: LucideIcon; soon?: boolean }[] = [
   { key: 'savings', label: 'Savings', Icon: PiggyBank },
   { key: 'investments', label: 'Investments', Icon: LineChart },
   { key: 'household', label: 'Household', Icon: Users },
+]
+
+// Mirrors ProfilePanel's SECTION_META ids/labels exactly — the dropdown below the
+// Household tab jumps straight to one of these instead of landing on the panel's
+// own default section every time.
+const HOUSEHOLD_ITEMS: { id: string; label: string; Icon: LucideIcon }[] = [
+  { id: 'members', label: 'Members', Icon: Users },
+  { id: 'home', label: 'Mortgage', Icon: HomeIcon },
+  { id: 'insurance', label: 'Insurance', Icon: Shield },
+  { id: 'estate', label: 'Estate', Icon: ScrollText },
+  { id: 'goals', label: 'Goals', Icon: Flag },
 ]
 
 interface Txn {
@@ -79,6 +91,30 @@ export default function Dashboard() {
     return () => window.removeEventListener('dash-tab', onJump)
   }, [])
   const selectTab = useCallback((t: Tab) => { setTab(t); localStorage.setItem('jt-dash-tab', t) }, [])
+
+  // Household/Bills open a dropdown of their sub-sections instead of jumping straight
+  // in — picking one both switches the tab AND hands the target section/account to
+  // the panel via the same localStorage handoff BillRunway already used for the Home
+  // page's shortfall link (consumed once, on that panel's next load).
+  const [dropdown, setDropdown] = useState<{ key: 'household' | 'bills'; rect: DOMRect } | null>(null)
+  const [billAccounts, setBillAccounts] = useState<{ id: string; name: string }[]>(
+    () => cachedValue<{ accounts: { id: string; name: string }[] }>('/api/bills')?.accounts ?? []
+  )
+  useEffect(() => {
+    getJSON('/api/bills').then((d) => { if (d && !d.error) setBillAccounts((d.accounts || []).map((a: any) => ({ id: a.id, name: a.name }))) }).catch(() => {})
+  }, [])
+  const pickHousehold = (id: string) => {
+    try { localStorage.setItem('jt-household-section', id) } catch { /* ignore */ }
+    selectTab('household'); setDropdown(null)
+  }
+  const pickBillAccount = (id: string) => {
+    try { localStorage.setItem('jt-bill-account', id) } catch { /* ignore */ }
+    selectTab('bills'); setDropdown(null)
+  }
+  const pickAddBillAccount = () => {
+    try { localStorage.setItem('jt-bill-account', '__add__') } catch { /* ignore */ }
+    selectTab('bills'); setDropdown(null)
+  }
 
   const load = useCallback(async () => {
     const data = await getJSON('/api/data').catch(() => [])
@@ -198,18 +234,22 @@ export default function Dashboard() {
       <div className="wrap">
         <DashHeader />
 
-        {/* Section pills — truly fixed (not sticky) at a constant screen position, so
-            there's no scroll-tied motion before it locks. The section here is just a
-            spacer reserving its height in the flow; dash-tabs-fixed is the actual pill,
-            pinned to the viewport, so content scrolls behind it from the very top. */}
-        <section className="block dash-tabs-spacer">
-          <div className="tabs tabs-scroll dash-tabs-fixed">
+        {/* Section pills — normal flow, scrolls away with the page like everything
+            else. Household/Bills open a dropdown of their sub-sections on tap instead
+            of jumping straight to the panel's own default view. */}
+        <section className="block" style={{ display: 'flex', justifyContent: 'center' }}>
+          <div className="tabs tabs-scroll">
             {TABS.map((t) => {
               const Icon = t.Icon
+              const hasDropdown = t.key === 'household' || t.key === 'bills'
               return (
-                <button key={t.key} ref={tab === t.key ? activeTabRef : null} onClick={() => selectTab(t.key)}
+                <button key={t.key} ref={tab === t.key ? activeTabRef : null}
+                  onClick={(e) => hasDropdown
+                    ? setDropdown({ key: t.key as 'household' | 'bills', rect: e.currentTarget.getBoundingClientRect() })
+                    : selectTab(t.key)}
                   className={`tab ${tab === t.key ? 'tab-active' : ''}`}>
                   <Icon size={16} />{t.label}
+                  {hasDropdown && <ChevronDown size={13} style={{ opacity: 0.6, marginLeft: -2 }} />}
                   {/* 9px: a superscript adornment, not body text — 11px crowds the tab it hangs off */}
                   {t.soon && <span style={{ fontSize: 9, opacity: 0.65, marginLeft: 2 }}>soon</span>}
                 </button>
@@ -217,6 +257,18 @@ export default function Dashboard() {
             })}
           </div>
         </section>
+
+        {dropdown && createPortal(
+          <TabDropdown
+            dropdown={dropdown}
+            onClose={() => setDropdown(null)}
+            billAccounts={billAccounts}
+            onPickHousehold={pickHousehold}
+            onPickBillAccount={pickBillAccount}
+            onPickAddBillAccount={pickAddBillAccount}
+          />,
+          document.body
+        )}
 
         {/* Time-range filter — top of data tabs (on Debts it sits above Recent instead) */}
         {(tab === 'income' || tab === 'expenses' || tab === 'savings') && filterBar}
@@ -328,6 +380,48 @@ export default function Dashboard() {
           />
         )}
       </div>
+    </div>
+  )
+}
+
+// Glass menu anchored below the tab button that opened it (portalled to <body> so
+// .tabs' own overflow-x:auto never clips it). Household lists its fixed sections;
+// Bills lists the real accounts (fetched by the parent) plus "Add account".
+function TabDropdown({ dropdown, onClose, billAccounts, onPickHousehold, onPickBillAccount, onPickAddBillAccount }: {
+  dropdown: { key: 'household' | 'bills'; rect: DOMRect }
+  onClose: () => void
+  billAccounts: { id: string; name: string }[]
+  onPickHousehold: (id: string) => void
+  onPickBillAccount: (id: string) => void
+  onPickAddBillAccount: () => void
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const onDown = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) onClose() }
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey) }
+  }, [onClose])
+
+  const { rect, key } = dropdown
+  const width = 210
+  const left = Math.min(Math.max(8, rect.left), window.innerWidth - width - 8)
+  const top = rect.bottom + 8
+
+  return (
+    <div className="dash-menu dash-menu--drop" ref={ref}
+      style={{ top, left, width, right: 'auto', bottom: 'auto' }}>
+      {key === 'household' && HOUSEHOLD_ITEMS.map((it) => {
+        const Icon = it.Icon
+        return <button key={it.id} onClick={() => onPickHousehold(it.id)}><Icon size={17} /> {it.label}</button>
+      })}
+      {key === 'bills' && billAccounts.map((a) => (
+        <button key={a.id} onClick={() => onPickBillAccount(a.id)}>{a.name}</button>
+      ))}
+      {key === 'bills' && (
+        <button onClick={onPickAddBillAccount}><Plus size={17} /> Add account</button>
+      )}
     </div>
   )
 }

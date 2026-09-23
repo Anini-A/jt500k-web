@@ -1382,6 +1382,16 @@ header.top h1 {
   color: var(--text-primary); background: var(--kpi-bg); text-align: left;
 }
 .dash-menu button:active { transform: scale(0.97); }
+
+/* Household/Bills tab dropdown — same glass menu, anchored below its tab button
+   instead of pinned above the bottom bar, so it needs its own single-column layout
+   and an entrance that drops down rather than slides up from off-screen. */
+.dash-menu.dash-menu--drop {
+  grid-template-columns: 1fr;
+  animation: dropdownIn 0.16s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+@keyframes dropdownIn { from { opacity: 0; transform: translateY(-6px) scale(0.98); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .dash-menu.dash-menu--drop { animation: none; } }
 @media (max-width: 640px) {
   .bottom-nav { display: flex; }
   .ask-ai-desktop { display: none; }      /* Ask AI moves to the bottom bar on mobile */

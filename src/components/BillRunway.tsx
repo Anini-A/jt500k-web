@@ -50,13 +50,19 @@ export default function BillRunway() {
         balance_as_of: a.balance_as_of || null, buffer: Number(a.buffer) || 0,
       }))
       setAccounts(accs)
-      // Home hands off the account it was showing, so tapping a shortfall there lands on
-      // that account here rather than whichever happens to be first. Consumed once.
+      // Home's shortfall link and the dashboard's Bills dropdown both hand off which
+      // account to land on this way, so tapping either lands here rather than on
+      // whichever account happens to be first. Consumed once. '__add__' is the
+      // dropdown's "Add account" entry — same handoff key, opens the modal instead.
       let want = ''
       try {
         want = localStorage.getItem('jt-bill-account') || ''
         if (want) localStorage.removeItem('jt-bill-account')
       } catch { /* ignore */ }
+      if (want === '__add__') {
+        setNewAccount(true)
+        want = ''
+      }
       setActiveId((cur) => {
         if (want && accs.some((a) => a.id === want)) return want
         return (cur && accs.some((a) => a.id === cur)) ? cur : (accs[0]?.id || '')
@@ -77,8 +83,6 @@ export default function BillRunway() {
   }, [])
   // covered for the rest of this month = the first bill we can't cover (if any) falls in a LATER month
   const coveredThisMonthOf = useCallback((p: Projection) => !p.firstShort || p.firstShort.iso > endOfMonthISO, [endOfMonthISO])
-  // per-account coverage for the pill status dots — green when this month is funded
-  const coverageOf = useCallback((a: Account) => coveredThisMonthOf(project(bills.filter((b) => b.account_id === a.id), a)), [bills, coveredThisMonthOf])
 
   if (loading) return (
     <div className="card">
@@ -115,21 +119,9 @@ export default function BillRunway() {
 
   return (
     <div style={{ marginBottom: 64 }}>
-      {/* ACCOUNT SWITCHER */}
-      <section className="block" style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-        <div className="tabs">
-          {accounts.map((a) => {
-            const ok = coverageOf(a)
-            return (
-              <button key={a.id} onClick={() => setActiveId(a.id)} className={`tab ${a.id === activeId ? 'tab-active' : ''}`}>
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: ok ? 'var(--income)' : RED, flexShrink: 0 }} />
-                {a.name}
-              </button>
-            )
-          })}
-          <button onClick={() => setNewAccount(true)} className="tab" title="Add account"><Plus size={15} /></button>
-        </div>
-      </section>
+      {/* Account switching now lives one level up — the dashboard's Bills tab opens a
+         dropdown of these same accounts (plus Add account) and hands off the pick via
+         the jt-bill-account key read above, same as Home's shortfall link always did. */}
 
       {/* VERDICT + BALANCE — side by side */}
       <div className="grid-2" style={{ marginBottom: 16 }}>
