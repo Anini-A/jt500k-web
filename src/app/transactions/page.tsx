@@ -222,16 +222,16 @@ export default function Transactions() {
                       const lbl = dayLabel(g.date)
                       const rel = lbl === 'Today' || lbl === 'Yesterday'
                       return (
-                        <div style={{ position: 'sticky', top: 0, zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, padding: '8px 4px 6px', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', background: 'color-mix(in srgb, var(--surface-1) 66%, transparent)' }}>
-                          <span style={{ fontSize: 'var(--fs-xs)', fontWeight: 700, color: 'var(--text-secondary)' }}>{lbl}</span>
-                          {rel && <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{new Date(g.date + 'T12:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })}</span>}
+                        <div style={{ position: 'sticky', top: 0, zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, margin: '10px 0 6px', padding: '9px 12px', borderRadius: 'var(--radius-md)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', background: 'color-mix(in srgb, var(--page-plane) 92%, transparent)' }}>
+                          <span style={{ fontSize: 'var(--fs-sm)', fontWeight: 800, letterSpacing: '-0.01em', color: 'var(--text-primary)' }}>{lbl}</span>
+                          {rel && <span style={{ fontSize: 'var(--fs-2xs)', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{new Date(g.date + 'T12:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })}</span>}
                         </div>
                       )
                     })()}
                     {g.items.map((t) => (
                       <div key={t.id} className={`list-row ${openId === t.id ? 'open' : ''}`}
                         onClick={() => setOpenId((id) => (id === t.id ? null : t.id))}
-                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '10px 4px', borderBottom: '1px solid var(--border)' }}>
+                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '12px 4px' }}>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.description || t.category}</div>
                           {/* only show the category pill when it isn't already the title */}
