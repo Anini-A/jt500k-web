@@ -96,10 +96,7 @@ export default function Dashboard() {
   // in — picking one both switches the tab AND hands the target section/account to
   // the panel via the same localStorage handoff BillRunway already used for the Home
   // page's shortfall link (consumed once, on that panel's next load).
-  // 'section' lists all 8 tabs (the compact mobile header pill's menu); picking
-  // Household/Bills within it drills into their own sub-menu rather than navigating
-  // straight there, by swapping this same state to that key at the same anchor rect.
-  const [dropdown, setDropdown] = useState<{ key: 'section' | 'household' | 'bills'; rect: DOMRect } | null>(null)
+  const [dropdown, setDropdown] = useState<{ key: 'household' | 'bills'; rect: DOMRect } | null>(null)
   const [billAccounts, setBillAccounts] = useState<{ id: string; name: string }[]>(
     () => cachedValue<{ accounts: { id: string; name: string }[] }>('/api/bills')?.accounts ?? []
   )
@@ -231,13 +228,13 @@ export default function Dashboard() {
   )
   const filterBar = renderFilterBar(preset, setPreset, customFrom, setCustomFrom, customTo, setCustomTo, { from, to }, filtered.length)
 
-  const openSectionMenu = (rect: DOMRect) => setDropdown({ key: 'section', rect })
+  const openSub = (key: 'household' | 'bills', rect: DOMRect) => setDropdown({ key, rect })
 
   if (loading) {
     return (
       <div className="bg-aurora">
         <div className="wrap">
-          <DashHeader tab={tab} onOpenSectionMenu={openSectionMenu} />
+          <DashHeader tab={tab} onSelectTab={selectTab} onOpenSub={openSub} />
           <div className="card" style={{ padding: 40, textAlign: 'center' }}>Loading your analytics…</div>
         </div>
       </div>
@@ -247,14 +244,13 @@ export default function Dashboard() {
   return (
     <div className="bg-aurora">
       <div className="wrap">
-        <DashHeader tab={tab} onOpenSectionMenu={openSectionMenu} />
+        <DashHeader tab={tab} onSelectTab={selectTab} onOpenSub={openSub} />
 
-        {/* Section pills — desktop only now (dash-tabs-row). On mobile the compact
-            pill in the header (between the bell and gear, where PagePill already
-            centres itself but hides below 640px) opens the same list as a dropdown
-            instead — see .section-pill in DashHeader. Household/Bills still open a
-            dropdown of their sub-sections on tap rather than jumping straight to the
-            panel's own default view. */}
+        {/* Section pills — desktop only now (dash-tabs-row). On mobile, the header's
+            SectionCarousel (between the bell and gear, where PagePill already centres
+            itself but hides below 640px) replaces this: swipe or tap a peeking
+            neighbour to change section, tap the centred/active one to drill into
+            Household/Bills' own sub-list. */}
         <section className="block dash-tabs-row" style={{ display: 'flex', justifyContent: 'center' }}>
           <div className="tabs tabs-scroll">
             {TABS.map((t) => {
@@ -284,8 +280,6 @@ export default function Dashboard() {
             onPickHousehold={pickHousehold}
             onPickBillAccount={pickBillAccount}
             onPickAddBillAccount={pickAddBillAccount}
-            onPickTab={(k) => { selectTab(k); setDropdown(null) }}
-            onOpenSub={(k, rect) => setDropdown({ key: k, rect })}
           />,
           document.body
         )}
@@ -411,15 +405,13 @@ export default function Dashboard() {
 // closing, so it reads as drilling in one level, not two separate menus. Household
 // lists its fixed sections; Bills lists the real accounts (fetched by the parent)
 // plus "Add account".
-function TabDropdown({ dropdown, onClose, billAccounts, onPickHousehold, onPickBillAccount, onPickAddBillAccount, onPickTab, onOpenSub }: {
-  dropdown: { key: 'section' | 'household' | 'bills'; rect: DOMRect }
+function TabDropdown({ dropdown, onClose, billAccounts, onPickHousehold, onPickBillAccount, onPickAddBillAccount }: {
+  dropdown: { key: 'household' | 'bills'; rect: DOMRect }
   onClose: () => void
   billAccounts: { id: string; name: string }[]
   onPickHousehold: (id: string) => void
   onPickBillAccount: (id: string) => void
   onPickAddBillAccount: () => void
-  onPickTab: (key: Tab) => void
-  onOpenSub: (key: 'household' | 'bills', rect: DOMRect) => void
 }) {
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -431,23 +423,13 @@ function TabDropdown({ dropdown, onClose, billAccounts, onPickHousehold, onPickB
   }, [onClose])
 
   const { rect, key } = dropdown
-  const width = key === 'section' ? 280 : 210
+  const width = 210
   const left = Math.min(Math.max(8, rect.left), window.innerWidth - width - 8)
   const top = rect.bottom + 8
 
   return (
-    <div className={`dash-menu dash-menu--drop${key !== 'section' ? ' dash-menu--single' : ''}`} ref={ref}
+    <div className="dash-menu dash-menu--drop dash-menu--single" ref={ref}
       style={{ top, left, width, right: 'auto', bottom: 'auto' }}>
-      {key === 'section' && TABS.map((t) => {
-        const Icon = t.Icon
-        const hasSub = t.key === 'household' || t.key === 'bills'
-        return (
-          <button key={t.key} onClick={(e) => hasSub ? onOpenSub(t.key as 'household' | 'bills', dropdown.rect) : onPickTab(t.key)}>
-            <Icon size={17} /> {t.label}
-            {hasSub && <ChevronDown size={13} style={{ marginLeft: 'auto', opacity: 0.6 }} />}
-          </button>
-        )
-      })}
       {key === 'household' && HOUSEHOLD_ITEMS.map((it) => {
         const Icon = it.Icon
         return <button key={it.id} onClick={() => onPickHousehold(it.id)}><Icon size={17} /> {it.label}</button>
@@ -462,21 +444,95 @@ function TabDropdown({ dropdown, onClose, billAccounts, onPickHousehold, onPickB
   )
 }
 
-function DashHeader({ tab, onOpenSectionMenu }: { tab: Tab; onOpenSectionMenu: (rect: DOMRect) => void }) {
-  const current = TABS.find((t) => t.key === tab) || TABS[0]
-  const CurrentIcon = current.Icon
+// Swipeable, centred section switcher — mobile only, replacing the header's dead
+// space where PagePill hides itself (below 640px it defers to the bottom nav).
+// Native scroll-snap does the drag/swipe physics; a mask-image on the wrapper fades
+// the peeking neighbours at the edges, matching the "hint of what's next" look.
+// Tapping a peeking neighbour scrolls it to centre; tapping the ALREADY-centred item
+// opens its sub-list when that item is Household or Bills.
+function SectionCarousel({ tab, onSelectTab, onOpenSub }: {
+  tab: Tab
+  onSelectTab: (key: Tab) => void
+  onOpenSub: (key: 'household' | 'bills', rect: DOMRect) => void
+}) {
+  const trackRef = useRef<HTMLDivElement>(null)
+  const itemRefs = useRef<(HTMLButtonElement | null)[]>([])
+  const [centerIdx, setCenterIdx] = useState(() => Math.max(0, TABS.findIndex((t) => t.key === tab)))
+  const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Set right before WE call onSelectTab from a settled scroll, so the sync effect
+  // below (which fires on every tab change, external or our own) skips the smooth-
+  // scroll animation for a position the drag has already put us at.
+  const ownChange = useRef(false)
+
+  useEffect(() => {
+    const idx = TABS.findIndex((t) => t.key === tab)
+    if (idx < 0) return
+    setCenterIdx(idx)
+    itemRefs.current[idx]?.scrollIntoView({ behavior: ownChange.current ? 'auto' : 'smooth', inline: 'center', block: 'nearest' })
+    ownChange.current = false
+  }, [tab])
+
+  const handleScroll = () => {
+    if (settleTimer.current) clearTimeout(settleTimer.current)
+    // Debounced rather than scrollend: broader support (older Safari/iOS PWA included)
+    // and settle-detection is all this needs — nothing reads scroll position mid-drag.
+    settleTimer.current = setTimeout(() => {
+      const el = trackRef.current
+      if (!el) return
+      const mid = el.scrollLeft + el.clientWidth / 2
+      let best = 0, bestDist = Infinity
+      itemRefs.current.forEach((btn, i) => {
+        if (!btn) return
+        const center = btn.offsetLeft + btn.offsetWidth / 2
+        const d = Math.abs(center - mid)
+        if (d < bestDist) { bestDist = d; best = i }
+      })
+      setCenterIdx(best)
+      if (TABS[best].key !== tab) { ownChange.current = true; onSelectTab(TABS[best].key) }
+    }, 120)
+  }
+
+  const handleTap = (i: number, e: React.MouseEvent<HTMLButtonElement>) => {
+    if (i === centerIdx) {
+      const key = TABS[i].key
+      if (key === 'household' || key === 'bills') onOpenSub(key, e.currentTarget.getBoundingClientRect())
+      return
+    }
+    itemRefs.current[i]?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+  }
+
+  return (
+    <div className="section-carousel-wrap">
+      <div className="section-carousel" ref={trackRef} onScroll={handleScroll}>
+        <div className="section-carousel-spacer" aria-hidden="true" />
+        {TABS.map((t, i) => {
+          const Icon = t.Icon
+          const active = i === centerIdx
+          return (
+            <button key={t.key} ref={(el) => { itemRefs.current[i] = el }}
+              className={`section-carousel-item ${active ? 'active' : ''}`}
+              aria-current={active} onClick={(e) => handleTap(i, e)}>
+              <Icon size={active ? 15 : 13} />{t.label}
+            </button>
+          )
+        })}
+        <div className="section-carousel-spacer" aria-hidden="true" />
+      </div>
+    </div>
+  )
+}
+
+function DashHeader({ tab, onSelectTab, onOpenSub }: { tab: Tab; onSelectTab: (key: Tab) => void; onOpenSub: (key: 'household' | 'bills', rect: DOMRect) => void }) {
   return (
     <header className="top">
       <NotificationBell />
       {/* Both occupy the same header slot — PagePill hides itself below 640px (mobile
-         navigates via the bottom nav), which is exactly where .section-pill shows
-         instead: the compact "current dashboard section" trigger, replacing the long
-         tabs row on mobile with something that fits between the bell and the gear. */}
+         navigates via the bottom nav), which is exactly where SectionCarousel shows
+         instead: swipe/tap to change section, replacing the long tabs row on mobile
+         with something that fits between the bell and the gear. */}
       <div className="dash-header-center">
         <PagePill current="dashboard" />
-        <button className="section-pill" onClick={(e) => onOpenSectionMenu(e.currentTarget.getBoundingClientRect())}>
-          <CurrentIcon size={15} />{current.label}<ChevronDown size={13} />
-        </button>
+        <SectionCarousel tab={tab} onSelectTab={onSelectTab} onOpenSub={onOpenSub} />
       </div>
       <HeaderNav current="dashboard" />
     </header>

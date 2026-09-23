@@ -585,42 +585,68 @@ header.top > :last-child { margin-right: 3px; } /* web: pull in to the card edge
    for a 4th slot. */
 .dash-header-center { justify-self: center; min-width: 0; display: flex; align-items: center; }
 
-/* Compact "current dashboard section" trigger. Mobile only — it replaces the long
-   Budget/Bills/Debts/... row in the one spot that's otherwise empty there (PagePill
-   hides below 640px in favour of the bottom nav), so switching sections no longer
-   needs its own full-width row. Same clear-glass "active chip" recipe as
-   .tab-active/.chip-active: a solid-reading glass pill with the accent colour
-   carried by the label, the same segmented-control-selected look used everywhere
-   else a single choice needs to read as chosen without a solid fill. */
-.section-pill {
+/* Swipeable "current dashboard section" switcher — like a camera app's mode strip.
+   Mobile only, replacing the long Budget/Bills/Debts/... row in the one spot that's
+   otherwise empty there (PagePill hides below 640px in favour of the bottom nav).
+   Native scroll-snap supplies the drag physics; the mask-image fades the peeking
+   neighbours toward each edge instead of cutting them off hard — the "hint of what's
+   next" look. The active item is plain text turned accent-coloured and bold, the
+   same segmented-control-selected cue used everywhere else in the app (.tab-active,
+   .chip-active, .page-seg.active), just without a chip fill since there's no room
+   for one here without crowding the neighbours out. */
+.section-carousel-wrap {
   display: none;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 12px 7px 14px;
+  position: relative;
+  width: 210px;
+  height: 34px;
+  overflow: hidden;
   border-radius: var(--radius-pill);
-  border: none;
-  cursor: pointer;
-  font: inherit;
-  font-size: var(--fs-sm);
-  font-weight: 700;
-  color: var(--accent);
-  background: var(--glass-specular), color-mix(in srgb, var(--surface-1) 86%, transparent);
+  background: var(--glass-specular), var(--glass-bg);
   background-repeat: no-repeat;
   -webkit-backdrop-filter: var(--blur-bar);
   backdrop-filter: var(--blur-bar);
-  box-shadow: 0 4px 14px rgba(20, 20, 25, 0.14), var(--glass-sheen), var(--glass-rim), inset 0 1px 0 rgba(255, 255, 255, 0.55);
-  max-width: 100%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  transition: transform 0.12s ease;
+  box-shadow: var(--glass-sheen), var(--glass-rim);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 26%, black 74%, transparent);
+  mask-image: linear-gradient(to right, transparent, black 26%, black 74%, transparent);
 }
-.section-pill svg:last-child { opacity: 0.65; flex-shrink: 0; } /* the chevron, muted next to the section icon */
-.section-pill:active { transform: scale(0.96); }
+.section-carousel {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.section-carousel::-webkit-scrollbar { display: none; }
+.section-carousel-spacer { flex: 0 0 70px; } /* lets the first/last item reach centre, same as any edge item */
+.section-carousel-item {
+  flex: 0 0 auto;
+  scroll-snap-align: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 10px;
+  height: 100%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+  transition: color 0.15s ease, font-size 0.15s ease, font-weight 0.15s ease;
+}
+.section-carousel-item.active {
+  color: var(--accent);
+  font-size: var(--fs-sm);
+  font-weight: 800;
+}
 
 @media (max-width: 640px) {
-  .section-pill { display: inline-flex; }
-  /* The long tabs row is now desktop-only — .section-pill in the header covers
+  .section-carousel-wrap { display: block; }
+  /* The long tabs row is now desktop-only — SectionCarousel in the header covers
      mobile, so this doesn't double up as two ways to do the same thing. */
   .dash-tabs-row { display: none; }
 }
