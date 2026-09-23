@@ -1902,7 +1902,7 @@ header.top h1 {
   /* Dashboard's header is wider — NotificationBell + the section carousel's own
      glass slot + HeaderNav — so the same outward nudge that's right on Home/
      Transactions pushes the gear here past the edge. Pull it back in instead. */
-  header.top.dash-header > :last-child { margin-right: 4px; }
+  header.top.dash-header > :last-child { margin-right: 1px; }
 
   header.top .brand {
     font-size: var(--fs-md);
