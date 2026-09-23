@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { today } from '@/lib/date'
+import { hapticTap } from '@/lib/haptics'
 
 // Pull down from the top of the page to refresh live prices + reload all data.
 // (Native pull-to-refresh is disabled by overscroll-behavior:none, so this is custom.)
@@ -48,6 +49,7 @@ export default function PullToRefresh() {
       if (startY.current === null) return
       startY.current = null
       if (pullRef.current < THRESHOLD) { setP(0); return }
+      hapticTap()
       setRefreshing(true); setP(0)
       try {
         await fetch('/api/holdings/refresh', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ today: today() }) })

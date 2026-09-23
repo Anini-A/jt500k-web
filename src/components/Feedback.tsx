@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
+import { hapticWarning } from '@/lib/haptics'
 
 // Inline confirm — replaces window.confirm across the app.
 export function useConfirm() {
@@ -14,7 +15,7 @@ export function useConfirm() {
         {p.message && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginBottom: 14 }}>{p.message}</div>}
         <div style={{ display: 'flex', gap: 8, marginTop: p.message ? 0 : 14 }}>
           <button className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setP(null)}>Cancel</button>
-          <button className="btn" style={{ flex: 1, justifyContent: 'center', background: 'var(--expense)', color: '#fff', border: 'none' }} onClick={() => { p.run(); setP(null) }}>{p.confirmLabel || 'Delete'}</button>
+          <button className="btn" style={{ flex: 1, justifyContent: 'center', background: 'var(--expense)', color: '#fff', border: 'none' }} onClick={() => { hapticWarning(); p.run(); setP(null) }}>{p.confirmLabel || 'Delete'}</button>
         </div>
       </div>
     </div>, document.body) : null

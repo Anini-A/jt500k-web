@@ -5,6 +5,7 @@ import { getJSON, cachedValue } from '@/lib/fresh'
 import { today } from '@/lib/date'
 import { RotateCw } from 'lucide-react'
 import LoadError from './LoadError'
+import { useCountUp } from '@/lib/useCountUp'
 
 interface NW {
   netWorth: number; holdingsValue: number; cashValue: number; debts: number
@@ -43,6 +44,10 @@ export default function JourneyCard() {
   const [refreshedAt, setRefreshedAt] = useState<number | null>(null) // last investments refresh (device-local)
   const [refreshing, setRefreshing] = useState(false)
   const seeded = useRef(false)
+  // Called unconditionally, before the loading/error early returns below (hooks can't
+  // follow a conditional return) — falls back to 0 while `d` hasn't arrived yet, which
+  // only actually animates from zero on a cold load with no cache to paint from first.
+  const nwAnimated = useCountUp(d?.netWorth ?? 0)
 
   useEffect(() => { try { const v = localStorage.getItem('jt-holdings-refreshed'); if (v) setRefreshedAt(Number(v)) } catch { /* ignore */ } }, [])
 
@@ -147,7 +152,7 @@ export default function JourneyCard() {
       {/* big amount on the left, progress pill facing it on the right — inset to
           line up with the header actions (e.g. Settings) above */}
       <div className="journey-edge" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-        <div style={{ fontWeight: 700, fontSize: 'var(--fs-hero)', letterSpacing: '-0.035em', whiteSpace: 'nowrap', minWidth: 0 }}>{money(nw)}</div>
+        <div style={{ fontWeight: 700, fontSize: 'var(--fs-hero)', letterSpacing: '-0.035em', whiteSpace: 'nowrap', minWidth: 0 }}>{money(nwAnimated)}</div>
         {/* the pill IS the planner toggle — tap to open the goal planner */}
         <button onClick={toggleDetails} aria-expanded={detailsOpen} aria-label={detailsOpen ? 'Hide goal planner' : 'Open goal planner'}
           style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'baseline', gap: 5, padding: '7px 13px', borderRadius: 'var(--radius-pill)', background: detailsOpen ? 'color-mix(in srgb, var(--accent) 12%, var(--kpi-bg))' : 'var(--kpi-bg)', border: `1px solid ${detailsOpen ? 'var(--accent)' : 'var(--border)'}`, whiteSpace: 'nowrap', cursor: 'pointer', fontFamily: 'inherit', transition: 'background .15s, border-color .15s' }}>

@@ -9,6 +9,7 @@ import MoneyFlowCard from '@/components/MoneyFlowCard'
 import UpcomingBills from '@/components/UpcomingBills'
 import { getJSON, cachedValue } from '@/lib/fresh'
 import { signedRowAmount } from '@/lib/draftTotals'
+import { useCountUp } from '@/lib/useCountUp'
 import LoadError from '@/components/LoadError'
 
 interface Stats { currentBalance: number; savingsRate: number; transactionCount: number; asOf: string; totalSavings: number; monthChange: number }
@@ -53,6 +54,7 @@ export default function Home() {
   }
 
   const bal = stats?.currentBalance ?? 0
+  const balAnimated = useCountUp(bal)
   const today = new Date().toLocaleDateString('en-CA', { year: 'numeric', month: 'short', day: 'numeric' })
 
   return (
@@ -77,7 +79,7 @@ export default function Home() {
                 <LoadError onRetry={retryStats} label="Couldn't load balance" />
               ) : (<>
               <div style={{ fontWeight: 700, fontSize: 'var(--fs-hero)', letterSpacing: '-0.03em', marginTop: 4, color: bal >= 0 ? 'var(--text-primary)' : 'var(--expense)' }}>
-                {stats ? money(bal) : <span className="skeleton" style={{ width: 170, height: '0.9em', verticalAlign: -2 }} />}
+                {stats ? money(balAnimated) : <span className="skeleton" style={{ width: 170, height: '0.9em', verticalAlign: -2 }} />}
               </div>
               <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', marginTop: 8 }}>
                 {stats ? <>Chequing · as of {today}</> : <span className="skeleton" style={{ width: 150, height: 12 }} />}

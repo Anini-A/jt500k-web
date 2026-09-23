@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { nav, PAGES, type PageKey } from '@/lib/nav'
+import { hapticSelect } from '@/lib/haptics'
 
 // Top-center switcher: shows ONLY the current section; tap a chevron to move.
 export default function PagePill({ current }: { current: PageKey }) {
@@ -10,6 +11,7 @@ export default function PagePill({ current }: { current: PageKey }) {
 
   const go = (next: number) => {
     if (next < 0 || next >= PAGES.length || next === idx) return
+    hapticSelect()
     nav.dir = next > idx ? 1 : -1 // remember the slide direction for the transition
     router.push(PAGES[next].href)
   }

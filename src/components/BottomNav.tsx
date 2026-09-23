@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { Home, Receipt, LayoutDashboard, Sparkles, Target, Wallet, CreditCard, PiggyBank, Banknote, LineChart, Users, type LucideIcon } from 'lucide-react'
 import { nav } from '@/lib/nav'
 import { getJSON } from '@/lib/fresh'
+import { hapticSelect, hapticTap } from '@/lib/haptics'
 import ChatWidget from './ChatWidget'
 
 // Floating, glass bottom bar — mobile only. Section switching + the AI chat.
@@ -48,6 +49,7 @@ export default function BottomNav() {
 
   const go = (key: string, href: string) => {
     if (key === current) return
+    hapticSelect()
     nav.dir = (PAGE_POS[key] ?? 0) > (PAGE_POS[current] ?? 0) ? 1 : -1
     router.push(href)
   }
@@ -57,6 +59,7 @@ export default function BottomNav() {
   const cancelPress = () => { if (pressTimer.current) clearTimeout(pressTimer.current) }
 
   const pickTab = (key: string) => {
+    hapticSelect()
     setDashMenu(false)
     try { localStorage.setItem('jt-dash-tab', key) } catch { /* ignore */ }
     if (pathname.startsWith('/dashboard')) window.dispatchEvent(new CustomEvent('dash-tab', { detail: key }))
@@ -86,8 +89,8 @@ export default function BottomNav() {
         {ITEMS.map((it) => {
           const Icon = it.Icon
           const active = it.key === current
-          const longAction = it.key === 'dashboard' ? () => setDashMenu(true)
-            : it.key === 'transactions' ? () => window.dispatchEvent(new CustomEvent('open-add-transaction'))
+          const longAction = it.key === 'dashboard' ? () => { hapticTap(); setDashMenu(true) }
+            : it.key === 'transactions' ? () => { hapticTap(); window.dispatchEvent(new CustomEvent('open-add-transaction')) }
               : undefined
           return (
             <button key={it.key}

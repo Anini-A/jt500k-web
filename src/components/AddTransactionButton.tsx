@@ -10,6 +10,7 @@ import { useConfirm } from './Feedback'
 import { getJSON, cachedValue } from '@/lib/fresh'
 import { useCssSupports } from '@/lib/useCssSupports'
 import { LANES, laneOf } from '@/lib/lanes'
+import { hapticSuccess } from '@/lib/haptics'
 import { signedRowAmount } from '@/lib/draftTotals'
 import { ymd, today } from '@/lib/date'
 
@@ -274,6 +275,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
         body: JSON.stringify({ ...form, amount: amt }),
       })
       if (!res.ok) { setSingleErr((await res.json()).error || 'Could not save.'); return }
+      hapticSuccess()
       window.dispatchEvent(new CustomEvent('transaction-added'))
       if (again) {
         // rapid path: keep type + date, clear the rest, flash a confirmation, stay on the form
@@ -304,6 +306,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
         }))),
       })
       if (!res.ok) { setImportErr((await res.json()).error || 'Could not save.'); return }
+      hapticSuccess()
       window.dispatchEvent(new CustomEvent('transaction-added'))
       if (invalid.length) {
         // keep the unfinished rows — persist them to the draft (never silently discard on "skip")

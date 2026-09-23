@@ -7,6 +7,7 @@ import CategorySelect from './CategorySelect'
 import { today } from '@/lib/date'
 import { getJSON, cachedValue } from '@/lib/fresh'
 import { useConfirm, useToast } from './Feedback'
+import { useCountUp } from '@/lib/useCountUp'
 
 interface Item { id: string; name: string; amount: number; debt_name?: string | null }
 interface Envelope { category: string; type: string; budgeted: number; spent: number; items: Item[]; lineTotal?: number; budgetSet?: boolean }
@@ -150,6 +151,9 @@ export default function BudgetManager() {
   const received = data?.monthActuals?.income ?? income.actual
   const outflow = data?.monthActuals?.outflow ?? groups.filter((g) => g.key !== 'income').reduce((s2, g) => s2 + g.actual, 0)
   const leftToSpend = received - outflow
+  const receivedAnimated = useCountUp(received)
+  const outflowAnimated = useCountUp(outflow)
+  const leftToSpendAnimated = useCountUp(leftToSpend)
   // Does the plan balance? Budgeted income against every dollar allocated to a job.
   const allocated = groups.filter((g) => g.key !== 'income').reduce((s2, g) => s2 + g.budgeted, 0)
   const unallocated = income.budgeted - allocated
@@ -184,15 +188,15 @@ export default function BudgetManager() {
               what that leaves. */}
           <div style={{ textAlign: 'left', minWidth: 0 }}>
             <div className="stat-label">Received</div>
-            <div style={{ fontSize: 'var(--fs-card)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', color: 'var(--income)' }}>{money(received)}</div>
+            <div style={{ fontSize: 'var(--fs-card)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', color: 'var(--income)' }}>{money(receivedAnimated)}</div>
           </div>
           <div style={{ textAlign: 'center', minWidth: 0 }}>
             <div className="stat-label">{isCurrentMonth ? 'Out so far' : 'Out'}</div>
-            <div style={{ fontSize: 'var(--fs-card)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>{money(outflow)}</div>
+            <div style={{ fontSize: 'var(--fs-card)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>{money(outflowAnimated)}</div>
           </div>
           <div style={{ textAlign: 'right', minWidth: 0 }}>
             <div className="stat-label">{isCurrentMonth ? 'Unspent so far' : leftToSpend < 0 ? 'Overspent by' : 'Left over'}</div>
-            <div style={{ fontSize: 'var(--fs-card)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', color: leftToSpend < 0 ? 'var(--expense)' : 'var(--text-primary)' }}>{money(leftToSpend)}</div>
+            <div style={{ fontSize: 'var(--fs-card)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', color: leftToSpend < 0 ? 'var(--expense)' : 'var(--text-primary)' }}>{money(leftToSpendAnimated)}</div>
           </div>
         </div>
 

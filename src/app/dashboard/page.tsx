@@ -16,6 +16,8 @@ import { useConfirm, useToast } from '@/components/Feedback'
 import { getJSON, cachedValue } from '@/lib/fresh'
 import { ymd, today } from '@/lib/date'
 import { useHorizontalSwipe } from '@/lib/useHorizontalSwipe'
+import { hapticSelect } from '@/lib/haptics'
+import { useCountUp } from '@/lib/useCountUp'
 import { MonthlyArea, HBar, COLORS } from '@/components/DashCharts'
 
 type Tab = 'income' | 'expenses' | 'savings' | 'debts' | 'investments' | 'budget' | 'bills' | 'household'
@@ -91,7 +93,9 @@ export default function Dashboard() {
     window.addEventListener('dash-tab', onJump)
     return () => window.removeEventListener('dash-tab', onJump)
   }, [])
-  const selectTab = useCallback((t: Tab) => { setTab(t); localStorage.setItem('jt-dash-tab', t) }, [])
+  // One call site for every way a tab changes — tap, dropdown pick, swipe commit — so
+  // the haptic click lands consistently regardless of which of those triggered it.
+  const selectTab = useCallback((t: Tab) => { hapticSelect(); setTab(t); localStorage.setItem('jt-dash-tab', t) }, [])
 
   // Swipe anywhere on the dashboard's content — not just the header carousel — to
   // move between Budget/Bills/Debts/Income/.../Household, same order as that
@@ -197,6 +201,12 @@ export default function Dashboard() {
       monthly, incomeCat: toArr(incomeCat), expenseCat: toArr(expenseCat), savingsCat: toArr(savingsCat),
     }
   }, [filtered])
+
+  // HeroRow's headline figures — animate when the filtered range (or the underlying
+  // data) changes, instead of snapping to the new total.
+  const incomeAnimated = useCountUp(agg.income)
+  const expenseAnimated = useCountUp(agg.expense)
+  const savingsAnimated = useCountUp(agg.savings)
 
 
   const tabType: 'income' | 'expense' | 'savings' | null =
@@ -304,7 +314,7 @@ export default function Dashboard() {
         {tab === 'income' && (
           <>
             <HeroRow stats={[
-              { label: 'Total Income', value: money(agg.income), cls: 'income' },
+              { label: 'Total Income', value: money(incomeAnimated), cls: 'income' },
               { label: 'Avg per month', value: money(agg.income / monthsSpan), sub: `over ${monthsSpan} month${monthsSpan > 1 ? 's' : ''}` },
             ]} />
             <section className="block">
@@ -326,7 +336,7 @@ export default function Dashboard() {
         {tab === 'expenses' && (
           <>
             <HeroRow stats={[
-              { label: 'Total Expenses', value: money(agg.expense), cls: 'expense' },
+              { label: 'Total Expenses', value: money(expenseAnimated), cls: 'expense' },
               { label: 'Avg per month', value: money(agg.expense / monthsSpan), sub: `over ${monthsSpan} month${monthsSpan > 1 ? 's' : ''}` },
             ]} />
             <section className="block">
@@ -348,7 +358,7 @@ export default function Dashboard() {
         {tab === 'savings' && (
           <>
             <HeroRow stats={[
-              { label: 'Total Savings', value: money(agg.savings), cls: 'savings' },
+              { label: 'Total Savings', value: money(savingsAnimated), cls: 'savings' },
               { label: 'Savings Rate', value: `${savingsRate}%`, sub: 'of income' },
             ]} />
             <section className="block">
