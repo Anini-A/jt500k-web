@@ -96,23 +96,36 @@ export default function Dashboard() {
   // in — picking one both switches the tab AND hands the target section/account to
   // the panel via the same localStorage handoff BillRunway already used for the Home
   // page's shortfall link (consumed once, on that panel's next load).
-  const [dropdown, setDropdown] = useState<{ key: 'household' | 'bills'; rect: DOMRect } | null>(null)
+  // 'section' lists all 8 tabs (the compact mobile header pill's menu); picking
+  // Household/Bills within it drills into their own sub-menu rather than navigating
+  // straight there, by swapping this same state to that key at the same anchor rect.
+  const [dropdown, setDropdown] = useState<{ key: 'section' | 'household' | 'bills'; rect: DOMRect } | null>(null)
   const [billAccounts, setBillAccounts] = useState<{ id: string; name: string }[]>(
     () => cachedValue<{ accounts: { id: string; name: string }[] }>('/api/bills')?.accounts ?? []
   )
   useEffect(() => {
     getJSON('/api/bills').then((d) => { if (d && !d.error) setBillAccounts((d.accounts || []).map((a: any) => ({ id: a.id, name: a.name }))) }).catch(() => {})
   }, [])
+  // localStorage handoff alone only takes effect on the NEXT mount of the target
+  // panel — fine when switching tabs into it, but a no-op if you're already on that
+  // tab (selectTab('bills') from 'bills' doesn't remount BillRunway, so the write
+  // just sits there unread until something else remounts it, e.g. a refresh). The
+  // matching CustomEvent covers that case: the panel, if already mounted, updates
+  // immediately; if not yet mounted, no listener is attached and the localStorage
+  // handoff (read on mount) is what actually applies it.
   const pickHousehold = (id: string) => {
     try { localStorage.setItem('jt-household-section', id) } catch { /* ignore */ }
+    window.dispatchEvent(new CustomEvent('household-section', { detail: id }))
     selectTab('household'); setDropdown(null)
   }
   const pickBillAccount = (id: string) => {
     try { localStorage.setItem('jt-bill-account', id) } catch { /* ignore */ }
+    window.dispatchEvent(new CustomEvent('bill-account', { detail: id }))
     selectTab('bills'); setDropdown(null)
   }
   const pickAddBillAccount = () => {
     try { localStorage.setItem('jt-bill-account', '__add__') } catch { /* ignore */ }
+    window.dispatchEvent(new CustomEvent('bill-add-account'))
     selectTab('bills'); setDropdown(null)
   }
 
@@ -218,11 +231,13 @@ export default function Dashboard() {
   )
   const filterBar = renderFilterBar(preset, setPreset, customFrom, setCustomFrom, customTo, setCustomTo, { from, to }, filtered.length)
 
+  const openSectionMenu = (rect: DOMRect) => setDropdown({ key: 'section', rect })
+
   if (loading) {
     return (
       <div className="bg-aurora">
         <div className="wrap">
-          <DashHeader />
+          <DashHeader tab={tab} onOpenSectionMenu={openSectionMenu} />
           <div className="card" style={{ padding: 40, textAlign: 'center' }}>Loading your analytics…</div>
         </div>
       </div>
@@ -232,12 +247,15 @@ export default function Dashboard() {
   return (
     <div className="bg-aurora">
       <div className="wrap">
-        <DashHeader />
+        <DashHeader tab={tab} onOpenSectionMenu={openSectionMenu} />
 
-        {/* Section pills — normal flow, scrolls away with the page like everything
-            else. Household/Bills open a dropdown of their sub-sections on tap instead
-            of jumping straight to the panel's own default view. */}
-        <section className="block" style={{ display: 'flex', justifyContent: 'center' }}>
+        {/* Section pills — desktop only now (dash-tabs-row). On mobile the compact
+            pill in the header (between the bell and gear, where PagePill already
+            centres itself but hides below 640px) opens the same list as a dropdown
+            instead — see .section-pill in DashHeader. Household/Bills still open a
+            dropdown of their sub-sections on tap rather than jumping straight to the
+            panel's own default view. */}
+        <section className="block dash-tabs-row" style={{ display: 'flex', justifyContent: 'center' }}>
           <div className="tabs tabs-scroll">
             {TABS.map((t) => {
               const Icon = t.Icon
@@ -266,6 +284,8 @@ export default function Dashboard() {
             onPickHousehold={pickHousehold}
             onPickBillAccount={pickBillAccount}
             onPickAddBillAccount={pickAddBillAccount}
+            onPickTab={(k) => { selectTab(k); setDropdown(null) }}
+            onOpenSub={(k, rect) => setDropdown({ key: k, rect })}
           />,
           document.body
         )}
@@ -384,16 +404,22 @@ export default function Dashboard() {
   )
 }
 
-// Glass menu anchored below the tab button that opened it (portalled to <body> so
-// .tabs' own overflow-x:auto never clips it). Household lists its fixed sections;
-// Bills lists the real accounts (fetched by the parent) plus "Add account".
-function TabDropdown({ dropdown, onClose, billAccounts, onPickHousehold, onPickBillAccount, onPickAddBillAccount }: {
-  dropdown: { key: 'household' | 'bills'; rect: DOMRect }
+// Glass menu anchored below whatever opened it (portalled to <body> so .tabs' own
+// overflow-x:auto, or the header's own bounds, never clips it). 'section' — the
+// compact mobile header pill's menu — lists all 8 tabs, 2-up; picking Household or
+// Bills there swaps this same panel to their own sub-list (onOpenSub) rather than
+// closing, so it reads as drilling in one level, not two separate menus. Household
+// lists its fixed sections; Bills lists the real accounts (fetched by the parent)
+// plus "Add account".
+function TabDropdown({ dropdown, onClose, billAccounts, onPickHousehold, onPickBillAccount, onPickAddBillAccount, onPickTab, onOpenSub }: {
+  dropdown: { key: 'section' | 'household' | 'bills'; rect: DOMRect }
   onClose: () => void
   billAccounts: { id: string; name: string }[]
   onPickHousehold: (id: string) => void
   onPickBillAccount: (id: string) => void
   onPickAddBillAccount: () => void
+  onPickTab: (key: Tab) => void
+  onOpenSub: (key: 'household' | 'bills', rect: DOMRect) => void
 }) {
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -405,13 +431,23 @@ function TabDropdown({ dropdown, onClose, billAccounts, onPickHousehold, onPickB
   }, [onClose])
 
   const { rect, key } = dropdown
-  const width = 210
+  const width = key === 'section' ? 280 : 210
   const left = Math.min(Math.max(8, rect.left), window.innerWidth - width - 8)
   const top = rect.bottom + 8
 
   return (
-    <div className="dash-menu dash-menu--drop" ref={ref}
+    <div className={`dash-menu dash-menu--drop${key !== 'section' ? ' dash-menu--single' : ''}`} ref={ref}
       style={{ top, left, width, right: 'auto', bottom: 'auto' }}>
+      {key === 'section' && TABS.map((t) => {
+        const Icon = t.Icon
+        const hasSub = t.key === 'household' || t.key === 'bills'
+        return (
+          <button key={t.key} onClick={(e) => hasSub ? onOpenSub(t.key as 'household' | 'bills', dropdown.rect) : onPickTab(t.key)}>
+            <Icon size={17} /> {t.label}
+            {hasSub && <ChevronDown size={13} style={{ marginLeft: 'auto', opacity: 0.6 }} />}
+          </button>
+        )
+      })}
       {key === 'household' && HOUSEHOLD_ITEMS.map((it) => {
         const Icon = it.Icon
         return <button key={it.id} onClick={() => onPickHousehold(it.id)}><Icon size={17} /> {it.label}</button>
@@ -426,11 +462,22 @@ function TabDropdown({ dropdown, onClose, billAccounts, onPickHousehold, onPickB
   )
 }
 
-function DashHeader() {
+function DashHeader({ tab, onOpenSectionMenu }: { tab: Tab; onOpenSectionMenu: (rect: DOMRect) => void }) {
+  const current = TABS.find((t) => t.key === tab) || TABS[0]
+  const CurrentIcon = current.Icon
   return (
     <header className="top">
       <NotificationBell />
-      <PagePill current="dashboard" />
+      {/* Both occupy the same header slot — PagePill hides itself below 640px (mobile
+         navigates via the bottom nav), which is exactly where .section-pill shows
+         instead: the compact "current dashboard section" trigger, replacing the long
+         tabs row on mobile with something that fits between the bell and the gear. */}
+      <div className="dash-header-center">
+        <PagePill current="dashboard" />
+        <button className="section-pill" onClick={(e) => onOpenSectionMenu(e.currentTarget.getBoundingClientRect())}>
+          <CurrentIcon size={15} />{current.label}<ChevronDown size={13} />
+        </button>
+      </div>
       <HeaderNav current="dashboard" />
     </header>
   )

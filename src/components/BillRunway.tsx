@@ -71,6 +71,17 @@ export default function BillRunway() {
     setLoading(false)
   }, [])
   useEffect(() => { load() }, [load])
+  // Catches a re-pick from the dashboard's Bills dropdown while this panel is already
+  // mounted — the localStorage handoff above only applies on the NEXT mount, so
+  // picking a different account (or "Add account") while already on Bills did
+  // nothing until something else remounted the panel (e.g. a page refresh).
+  useEffect(() => {
+    const onAccount = (e: Event) => { const id = (e as CustomEvent).detail as string; setActiveId((cur) => accounts.some((a) => a.id === id) ? id : cur) }
+    const onAdd = () => setNewAccount(true)
+    window.addEventListener('bill-account', onAccount)
+    window.addEventListener('bill-add-account', onAdd)
+    return () => { window.removeEventListener('bill-account', onAccount); window.removeEventListener('bill-add-account', onAdd) }
+  }, [accounts])
 
   const active = accounts.find((a) => a.id === activeId) || null
   const acctBills = useMemo(() => bills.filter((b) => b.account_id === activeId), [bills, activeId])

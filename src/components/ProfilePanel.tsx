@@ -226,6 +226,13 @@ export default function ProfilePanel() {
     }).catch(() => setProfile({ sections: [], links: [] }))
   }, [])
   useEffect(() => { load() }, [load])
+  // Catches a re-pick from the dashboard's Household dropdown while this panel is
+  // already mounted — the localStorage handoff above only applies on the NEXT mount.
+  useEffect(() => {
+    const onPick = (e: Event) => { setFilter((e as CustomEvent).detail as string); setEditing(false); setDraft(null) }
+    window.addEventListener('household-section', onPick)
+    return () => window.removeEventListener('household-section', onPick)
+  }, [])
 
   if (!profile) return <div className="card" style={{ padding: 40, textAlign: 'center' }}>Loading household profile…</div>
   if (profile.sections.length === 0) return <div className="card" style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>No profile yet.</div>

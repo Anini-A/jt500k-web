@@ -579,6 +579,52 @@ header.top > :last-child { margin-right: 3px; } /* web: pull in to the card edge
    Desktop → full clickable segmented control. Mobile → current label + dots + swipe. */
 .page-pill { justify-self: center; min-width: 0; }
 
+/* Dashboard header's middle slot — holds PagePill (desktop) and .section-pill
+   (mobile); only one is ever visible at a time (see their own display rules), so
+   they share this one grid cell rather than fighting header.top's 3-column grid
+   for a 4th slot. */
+.dash-header-center { justify-self: center; min-width: 0; display: flex; align-items: center; }
+
+/* Compact "current dashboard section" trigger. Mobile only — it replaces the long
+   Budget/Bills/Debts/... row in the one spot that's otherwise empty there (PagePill
+   hides below 640px in favour of the bottom nav), so switching sections no longer
+   needs its own full-width row. Same clear-glass "active chip" recipe as
+   .tab-active/.chip-active: a solid-reading glass pill with the accent colour
+   carried by the label, the same segmented-control-selected look used everywhere
+   else a single choice needs to read as chosen without a solid fill. */
+.section-pill {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px 7px 14px;
+  border-radius: var(--radius-pill);
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--glass-specular), color-mix(in srgb, var(--surface-1) 86%, transparent);
+  background-repeat: no-repeat;
+  -webkit-backdrop-filter: var(--blur-bar);
+  backdrop-filter: var(--blur-bar);
+  box-shadow: 0 4px 14px rgba(20, 20, 25, 0.14), var(--glass-sheen), var(--glass-rim), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: transform 0.12s ease;
+}
+.section-pill svg:last-child { opacity: 0.65; flex-shrink: 0; } /* the chevron, muted next to the section icon */
+.section-pill:active { transform: scale(0.96); }
+
+@media (max-width: 640px) {
+  .section-pill { display: inline-flex; }
+  /* The long tabs row is now desktop-only — .section-pill in the header covers
+     mobile, so this doesn't double up as two ways to do the same thing. */
+  .dash-tabs-row { display: none; }
+}
+
 /* This is a navigation control — the same functional layer as the bottom nav bar,
    not content — so it takes the real floating glass shell (blur + specular + lip),
    not the flat --kpi-bg fill a content-layer pill would use. */
@@ -1383,12 +1429,17 @@ header.top h1 {
 }
 .dash-menu button:active { transform: scale(0.97); }
 
-/* Household/Bills tab dropdown — same glass menu, anchored below its tab button
-   instead of pinned above the bottom bar, so it needs its own single-column layout
-   and an entrance that drops down rather than slides up from off-screen. */
+/* Household/Bills/section tab dropdown — same glass menu, anchored below whatever
+   button opened it instead of pinned above the bottom bar, so it needs its own
+   entrance that drops down rather than slides up from off-screen. --single is the
+   sub-lists (few items, longer labels read better in one column); the top-level
+   'section' menu keeps the base two-column grid, same as the bottom nav's
+   long-press version of this same list. */
 .dash-menu.dash-menu--drop {
-  grid-template-columns: 1fr;
   animation: dropdownIn 0.16s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+.dash-menu.dash-menu--single {
+  grid-template-columns: 1fr;
 }
 @keyframes dropdownIn { from { opacity: 0; transform: translateY(-6px) scale(0.98); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .dash-menu.dash-menu--drop { animation: none; } }
