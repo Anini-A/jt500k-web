@@ -547,7 +547,7 @@ function SectionCarousel({ tab, onSelectTab, onOpenSub }: {
 
 function DashHeader({ tab, onSelectTab, onOpenSub }: { tab: Tab; onSelectTab: (key: Tab) => void; onOpenSub: (key: 'household' | 'bills', rect: DOMRect) => void }) {
   return (
-    <header className="top">
+    <header className="top dash-header">
       <NotificationBell />
       {/* Both occupy the same header slot — PagePill hides itself below 640px (mobile
          navigates via the bottom nav), which is exactly where SectionCarousel shows
