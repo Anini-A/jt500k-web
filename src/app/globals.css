@@ -619,7 +619,12 @@ header.top > :last-child { margin-right: 3px; } /* web: pull in to the card edge
   -ms-overflow-style: none;
 }
 .section-carousel::-webkit-scrollbar { display: none; }
-.section-carousel-spacer { flex: 0 0 70px; } /* lets the first/last item reach centre, same as any edge item */
+/* Half the wrap's own width (220px / 2) — the actual minimum needed to let ANY item,
+   including the very first/last, scroll all the way to true centre regardless of its
+   own width. 70px undershot this: there wasn't enough scroll range to pull a short
+   label like "Budget" (nothing before it) fully to centre, so it clamped short and
+   sat visibly left of the wrap's true middle instead. */
+.section-carousel-spacer { flex: 0 0 110px; }
 .section-carousel-item {
   flex: 0 0 auto;
   scroll-snap-align: center;
