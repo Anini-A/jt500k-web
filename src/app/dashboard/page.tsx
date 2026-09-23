@@ -512,7 +512,7 @@ function SectionCarousel({ tab, onSelectTab, onOpenSub }: {
             <button key={t.key} ref={(el) => { itemRefs.current[i] = el }}
               className={`section-carousel-item ${active ? 'active' : ''}`}
               aria-current={active} onClick={(e) => handleTap(i, e)}>
-              <Icon size={active ? 15 : 13} />{t.label}
+              <Icon size={active ? 17 : 14} />{t.label}
             </button>
           )
         })}
