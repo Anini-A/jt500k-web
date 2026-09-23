@@ -598,7 +598,7 @@ header.top > :last-child { margin-right: 3px; } /* web: pull in to the card edge
   display: none;
   position: relative;
   width: 210px;
-  height: 34px;
+  height: 40px; /* matches the bell/gear icon-pills flanking it */
   overflow: hidden;
   border-radius: var(--radius-pill);
   background: var(--glass-specular), var(--glass-bg);
@@ -627,8 +627,9 @@ header.top > :last-child { margin-right: 3px; } /* web: pull in to the card edge
   align-items: center;
   gap: 4px;
   padding: 0 10px;
-  height: 100%;
+  height: 28px; /* inset within the 40px track, same relationship as .nav-pill's own active chip */
   border: none;
+  border-radius: var(--radius-pill);
   background: transparent;
   cursor: pointer;
   font: inherit;
@@ -636,12 +637,19 @@ header.top > :last-child { margin-right: 3px; } /* web: pull in to the card edge
   font-weight: 600;
   color: var(--text-muted);
   white-space: nowrap;
-  transition: color 0.15s ease, font-size 0.15s ease, font-weight 0.15s ease;
+  transition: color 0.15s ease, font-size 0.15s ease, font-weight 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
 }
+/* Same two-layer pattern as the bottom nav: an outer glass track (.section-carousel-
+   wrap) holding an inner glass CHIP for whichever item is active — .nav-pill's own
+   button.active recipe, reused so the active state reads as a pill, not just text. */
 .section-carousel-item.active {
+  padding: 0 13px;
   color: var(--accent);
   font-size: var(--fs-sm);
   font-weight: 800;
+  background: var(--glass-specular), color-mix(in srgb, var(--surface-1) 82%, transparent);
+  background-repeat: no-repeat;
+  box-shadow: 0 3px 10px rgba(20, 20, 25, 0.16), var(--glass-sheen), var(--glass-rim), inset 0 1px 0 rgba(255, 255, 255, 0.55);
 }
 
 @media (max-width: 640px) {
