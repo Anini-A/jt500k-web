@@ -652,6 +652,13 @@ header.top > :last-child { margin-right: 3px; } /* web: pull in to the card edge
   box-shadow: 0 3px 10px rgba(20, 20, 25, 0.16), var(--glass-sheen), var(--glass-rim), inset 0 1px 0 rgba(255, 255, 255, 0.55);
 }
 
+/* display:flex lived as an inline style on this element before — inline styles beat
+   ANY stylesheet rule, including the display:none below, so the mobile media query
+   was never actually able to hide it regardless of viewport width. Moved here so
+   both rules are in the same cascade layer and the later, more specific media query
+   wins normally. */
+.dash-tabs-row { display: flex; justify-content: center; }
+
 @media (max-width: 640px) {
   .section-carousel-wrap { display: block; }
   /* The long tabs row is now desktop-only — SectionCarousel in the header covers

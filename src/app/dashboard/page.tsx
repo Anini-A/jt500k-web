@@ -251,7 +251,7 @@ export default function Dashboard() {
             itself but hides below 640px) replaces this: swipe or tap a peeking
             neighbour to change section, tap the centred/active one to drill into
             Household/Bills' own sub-list. */}
-        <section className="block dash-tabs-row" style={{ display: 'flex', justifyContent: 'center' }}>
+        <section className="block dash-tabs-row">
           <div className="tabs tabs-scroll">
             {TABS.map((t) => {
               const Icon = t.Icon
