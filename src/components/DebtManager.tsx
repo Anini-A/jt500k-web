@@ -40,7 +40,7 @@ export default function DebtManager() {
   const { toast, toastNode } = useToast()
   const [busy, setBusy] = useState(false)
   const [collapsed, setCollapsed] = useState(false) // visible by default — collapse on request, not the other way round
-  const [showPaid, setShowPaid] = useState(true)
+  const [showPaid, setShowPaid] = useState(false) // paid-off debts stay tucked away behind "Show N paid off"
   const [expanded, setExpanded] = useState<string | null>(null) // which debt's payment history is open
   const [editTx, setEditTx] = useState<Payment | null>(null)     // a payment being edited
 
