@@ -625,33 +625,41 @@ header.top > :last-child { margin-right: 3px; } /* web: pull in to the card edge
    label like "Budget" (nothing before it) fully to centre, so it clamped short and
    sat visibly left of the wrap's true middle instead. */
 .section-carousel-spacer { flex: 0 0 110px; }
+/* padding/font-size/icon size are the SAME active or not — deliberately. They used to
+   grow on .active (bigger font, more padding), which changes the button's actual
+   offsetWidth the instant it becomes active. Centering (both the native scroll-snap
+   and the sync effect's scrollIntoView) computes its target from that width, so the
+   moment an item grew mid-scroll, the position it had just centered on went stale —
+   that's what was landing the "active" pill visibly off-centre. The size difference
+   is now transform: scale() below, which is paint-only and never touches layout, so
+   offsetWidth — and therefore centering — stays exact regardless of active state. */
 .section-carousel-item {
   flex: 0 0 auto;
   scroll-snap-align: center;
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 0 10px;
+  padding: 0 15px;
   height: 34px; /* inset within the 46px track, same relationship as .nav-pill's own active chip */
   border: none;
   border-radius: var(--radius-pill);
   background: transparent;
   cursor: pointer;
   font: inherit;
-  font-size: var(--fs-xs);
+  font-size: var(--fs-base);
   font-weight: 600;
   color: var(--text-muted);
   white-space: nowrap;
-  transition: color 0.15s ease, font-size 0.15s ease, font-weight 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  transform: scale(0.82);
+  transition: color 0.15s ease, transform 0.15s ease, font-weight 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
 }
 /* Same two-layer pattern as the bottom nav: an outer glass track (.section-carousel-
    wrap) holding an inner glass CHIP for whichever item is active — .nav-pill's own
    button.active recipe, reused so the active state reads as a pill, not just text. */
 .section-carousel-item.active {
-  padding: 0 15px;
   color: var(--accent);
-  font-size: var(--fs-base);
   font-weight: 800;
+  transform: none; /* full size — same padding/font-size as inactive, see above */
   background: var(--glass-specular), color-mix(in srgb, var(--surface-1) 82%, transparent);
   background-repeat: no-repeat;
   border: 1px solid var(--glass-border);

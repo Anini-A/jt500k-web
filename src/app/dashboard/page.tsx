@@ -535,7 +535,10 @@ function SectionCarousel({ tab, onSelectTab, onOpenSub }: {
             <button key={t.key} ref={(el) => { itemRefs.current[i] = el }}
               className={`section-carousel-item ${active ? 'active' : ''}`}
               aria-current={active} onClick={(e) => handleTap(i, e)}>
-              <Icon size={active ? 17 : 14} />{t.label}
+              {/* constant icon size — the active/inactive difference is transform:
+                  scale() in CSS, not a real size change, so offsetWidth (and
+                  therefore centering) never shifts when the active item changes */}
+              <Icon size={16} />{t.label}
             </button>
           )
         })}
