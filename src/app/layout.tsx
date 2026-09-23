@@ -5,6 +5,7 @@ import BottomNav from '@/components/BottomNav'
 import PullToRefresh from '@/components/PullToRefresh'
 import AddTransactionButton from '@/components/AddTransactionButton'
 import CapacitorInit from '@/components/CapacitorInit'
+import SwipePageNav from '@/components/SwipePageNav'
 import './globals.css'
 
 // Geometric grotesque in the same family of shapes as the Wealthsimple brand sans,
@@ -44,6 +45,7 @@ export default function RootLayout({
     <html lang="en" className={manrope.variable}>
       <body>
         <PullToRefresh />
+        <SwipePageNav />
         {children}
         {/* headless — receives app-wide open events (Home 'to log' card, long-press Settings) */}
         <AddTransactionButton trigger={false} />

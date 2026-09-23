@@ -1,18 +1,10 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { nav } from '@/lib/nav'
-
-type Key = 'transactions' | 'home' | 'dashboard'
-// left → right order (matches the bottom bar).
-const PAGES: { key: Key; label: string; href: string }[] = [
-  { key: 'home', label: 'Home', href: '/' },
-  { key: 'dashboard', label: 'Dashboard', href: '/dashboard' },
-  { key: 'transactions', label: 'Transactions', href: '/transactions' },
-]
+import { nav, PAGES, type PageKey } from '@/lib/nav'
 
 // Top-center switcher: shows ONLY the current section; tap a chevron to move.
-export default function PagePill({ current }: { current: Key }) {
+export default function PagePill({ current }: { current: PageKey }) {
   const router = useRouter()
   const idx = PAGES.findIndex((p) => p.key === current)
 
