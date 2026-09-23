@@ -1897,8 +1897,10 @@ header.top h1 {
     padding-right: 0;
   }
 
-  /* Mobile needs a larger outward nudge to sit the gear on the card edge */
-  header.top > :last-child { margin-right: -7px; }
+  /* Mobile needs a larger outward nudge to sit the gear on the card edge — -7px
+     was still leaving a visibly wider gap on the gear's side than the card's own
+     edge below it. */
+  header.top > :last-child { margin-right: -12px; }
 
   header.top .brand {
     font-size: var(--fs-md);
