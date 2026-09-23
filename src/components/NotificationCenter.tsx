@@ -45,7 +45,7 @@ export default function NotificationBell() {
     <>
       <button onClick={() => { setTab(actions.length ? 'action' : 'info'); setOpen(true) }} aria-label={total ? `${total} alerts` : 'Alerts'} title="Alerts"
         style={{ position: 'relative', width: 40, height: 40, borderRadius: 'var(--radius-pill)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--glass-border)', background: 'var(--glass-bg)', color: 'var(--text-secondary)', cursor: 'pointer', overflow: 'visible', WebkitBackdropFilter: 'var(--blur-bar)', backdropFilter: 'var(--blur-bar)' }}>
-        <Bell size={18} />
+        <Bell size={18} style={{ position: 'relative', zIndex: 1 }} />
         {total > 0 && (
           <span style={{ position: 'absolute', top: -5, right: -5, height: 19, minWidth: 19, boxSizing: 'border-box', padding: '0 5px', borderRadius: 'var(--radius-pill)', fontSize: 'var(--fs-2xs)', fontWeight: 700, lineHeight: '15px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', background: urgent ? 'var(--expense)' : 'var(--accent)', border: '2px solid var(--page-plane)' }}>{total > 99 ? '99+' : total}</span>
         )}

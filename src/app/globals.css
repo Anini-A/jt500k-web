@@ -997,13 +997,21 @@ header.top h1 {
   background: var(--glass-bg);
   background-repeat: no-repeat;
   border: 1px solid var(--glass-border);
-  -webkit-backdrop-filter: var(--blur-surface);
-  backdrop-filter: var(--blur-surface);
+  /* --blur-surface's 30px was disproportionate on a 40px circle — a blur radius
+     three-quarters of the element's own size, which is what was making the icon
+     glyph look soft/smeared at its edges rather than crisp. The alert bell (same
+     size) already used --blur-bar for this reason; icon-pill just hadn't matched it. */
+  -webkit-backdrop-filter: var(--blur-bar);
+  backdrop-filter: var(--blur-bar);
   box-shadow: var(--glass-sheen), var(--glass-rim);
   cursor: pointer;
   text-decoration: none;
   transition: transform 0.18s ease, box-shadow 0.24s ease;
 }
+/* Guarantees the icon composites on its own paint layer above the blurred backdrop —
+   defensive against the WebKit compositing quirk where backdrop-filter can bleed
+   softness onto foreground content sharing the same layer as the blurred element. */
+.icon-pill svg { position: relative; z-index: 1; }
 
 /* Specular top-edge highlight — the liquid-glass signature.
    On icon-only pills it's a ::before (icons ride above via z-index); the tab bar
