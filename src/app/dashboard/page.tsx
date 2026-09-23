@@ -15,6 +15,7 @@ import EditTransactionModal from '@/components/EditTransactionModal'
 import { useConfirm, useToast } from '@/components/Feedback'
 import { getJSON, cachedValue } from '@/lib/fresh'
 import { ymd, today } from '@/lib/date'
+import { useHorizontalSwipe } from '@/lib/useHorizontalSwipe'
 import { MonthlyArea, HBar, COLORS } from '@/components/DashCharts'
 
 type Tab = 'income' | 'expenses' | 'savings' | 'debts' | 'investments' | 'budget' | 'bills' | 'household'
@@ -91,6 +92,18 @@ export default function Dashboard() {
     return () => window.removeEventListener('dash-tab', onJump)
   }, [])
   const selectTab = useCallback((t: Tab) => { setTab(t); localStorage.setItem('jt-dash-tab', t) }, [])
+
+  // Swipe anywhere on the dashboard's content — not just the header carousel — to
+  // move between Budget/Bills/Debts/Income/.../Household, same order as that
+  // carousel (which stays in sync automatically: it already re-centres on whatever
+  // `tab` becomes, from ANY source). Excluded from anything that scrolls sideways on
+  // its own (the carousel, chip rows) and from the bottom nav, same as any swipe.
+  useHorizontalSwipe((dir) => {
+    const idx = TABS.findIndex((t) => t.key === tab)
+    const next = idx + dir
+    if (next < 0 || next >= TABS.length) return
+    selectTab(TABS[next].key)
+  }, { excludeSelector: '.section-carousel-wrap, .dash-tabs-row, .bottom-nav, .dash-menu' })
 
   // Household/Bills open a dropdown of their sub-sections instead of jumping straight
   // in — picking one both switches the tab AND hands the target section/account to
