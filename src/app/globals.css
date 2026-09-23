@@ -654,7 +654,12 @@ header.top > :last-child { margin-right: 3px; } /* web: pull in to the card edge
   font-weight: 800;
   background: var(--glass-specular), color-mix(in srgb, var(--surface-1) 82%, transparent);
   background-repeat: no-repeat;
-  box-shadow: var(--glass-sheen), var(--glass-rim), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  border: 1px solid var(--glass-border);
+  /* A hairline + a soft ACCENT-tinted glow, not the flat grey card-shadow this used
+     to carry — without either, the chip's translucent fill barely reads against a
+     light card. Colouring the glow (rather than a plain dark shadow) keeps it
+     reading as glass catching light, not a lifted panel. */
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--accent) 16%, transparent), var(--glass-sheen), var(--glass-rim), inset 0 1px 0 rgba(255, 255, 255, 0.55);
 }
 
 /* display:flex lived as an inline style on this element before — inline styles beat
@@ -711,7 +716,8 @@ header.top > :last-child { margin-right: 3px; } /* web: pull in to the card edge
   background-repeat: no-repeat;
   color: var(--text-primary);
   font-weight: 700;
-  box-shadow: var(--glass-sheen), var(--glass-rim), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--accent) 16%, transparent), var(--glass-sheen), var(--glass-rim), inset 0 1px 0 rgba(255, 255, 255, 0.55);
 }
 
 /* mobile pill: · Label · (currently unreachable — .page-pill is hidden below 640px in
@@ -1219,7 +1225,8 @@ header.top h1 {
   background: var(--glass-specular), color-mix(in srgb, var(--surface-1) 80%, transparent);
   background-repeat: no-repeat;
   color: var(--accent);
-  box-shadow: var(--glass-sheen), var(--glass-rim), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--accent) 16%, transparent), var(--glass-sheen), var(--glass-rim), inset 0 1px 0 rgba(255, 255, 255, 0.55);
 }
 /* icon + label ride above the specular/sheen layers */
 .tab > * { position: relative; z-index: 1; }
@@ -1450,7 +1457,8 @@ header.top h1 {
   color: var(--accent);
   background: var(--glass-specular), color-mix(in srgb, var(--surface-1) 80%, transparent);
   background-repeat: no-repeat;
-  box-shadow: var(--glass-sheen), var(--glass-rim), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--accent) 16%, transparent), var(--glass-sheen), var(--glass-rim), inset 0 1px 0 rgba(255, 255, 255, 0.55);
 }
 /* 48px = the pill's own height (40px button + 4px padding each side), so they line up */
 .nav-fab {
@@ -1545,7 +1553,7 @@ header.top h1 {
   color: var(--accent);
   font-weight: 700;
   border-color: var(--glass-border);
-  box-shadow: var(--glass-sheen), var(--glass-rim), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--accent) 16%, transparent), var(--glass-sheen), var(--glass-rim), inset 0 1px 0 rgba(255, 255, 255, 0.55);
 }
 
 .date-input {
