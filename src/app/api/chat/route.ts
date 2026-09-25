@@ -11,7 +11,8 @@ export const maxDuration = 30
 const GEMINI_KEY = process.env.GEMINI_API_KEY
 // Fuller Flash for better reasoning/understanding (still cents/month on paid tier);
 // falls back to lite/2.0 on overload. Override with GEMINI_MODEL.
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite'
+// gemini-2.5-flash(-lite) was sunset for new users — see the fallback list below.
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.8-flash-lite'
 const ANTHROPIC_KEY =
   process.env.ANTHROPIC_API_KEY || process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY
 
@@ -412,8 +413,11 @@ async function getMarketContext(): Promise<string> {
 
 // Call Gemini with the tool set. Retries once on transient overload, then falls
 // back through other free Flash models so a spike on one doesn't fail the request.
+// gemini-2.5-flash(-lite), the old fallback pair, was sunset for new users (Google's
+// own 404 names models/gemini-3.8-flash as the live replacement) — that's what was
+// making every request cascade through two dead models before failing outright.
 async function geminiGenerate({ system, contents, noTools }: { system: string; contents: any[]; noTools?: boolean }) {
-  const models = [GEMINI_MODEL, 'gemini-2.5-flash-lite', 'gemini-2.5-flash']
+  const models = [GEMINI_MODEL, 'gemini-3.8-flash']
     .filter((m, i, a) => m && a.indexOf(m) === i)
   let lastErr = ''
   for (const model of models) {

@@ -7,7 +7,13 @@ export const revalidate = 0
 export const maxDuration = 30
 
 const GEMINI_KEY = process.env.GEMINI_API_KEY
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite'
+// gemini-2.5-flash(-lite) was sunset for new users (404: "no longer available to
+// new users ... use models/gemini-3.8-flash"), which is why this whole chain used
+// to fall all the way through to a dead model and fail. 3.8-flash is what Google's
+// own error names as the live replacement; the -lite guess (tried first, for cost/
+// speed) follows the same naming convention every prior generation used, and falls
+// straight through to the confirmed name if it turns out not to exist.
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.8-flash-lite'
 
 // Turn a raw bank/credit-card paste into structured transactions mapped to the
 // user's own categories. Reuses the same Gemini key as the chat assistant.
@@ -68,7 +74,7 @@ export async function POST(req: NextRequest) {
       generationConfig: { responseMimeType: 'application/json', temperature: 0 },
     }
 
-    const models = [GEMINI_MODEL, 'gemini-2.5-flash-lite', 'gemini-2.5-flash']
+    const models = [GEMINI_MODEL, 'gemini-3.8-flash'].filter((m, i, a) => m && a.indexOf(m) === i)
     let out: any = null, lastErr = ''
     for (const model of models) {
       const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_KEY}`,
