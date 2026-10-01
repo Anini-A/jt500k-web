@@ -165,24 +165,26 @@ export default function BillRunway() {
             </div>
             {/* shortfall line — URGENT (red) only when a bill THIS month is short or the next one is within a week;
                 otherwise a calm heads-up so being covered for the month reads as good news.
-                Both spell out the window the $ spans, since it runs to the end of NEXT month. */}
+                Shows proj.short (cash to deposit), NOT remainingTotal (face value of the unpaid
+                bills): the leftover balance already goes toward the first short bill, so the two
+                differ, and Home shows proj.short. One number, one meaning, both screens. */}
             {!proj.firstShort ? (
               <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--income)', fontWeight: 600, padding: '2px 2px' }}>Every upcoming bill covered through {fmtDay(proj.horizonISO)}.</div>
             ) : (!coveredMonth || topUpSoon) ? (
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 'var(--radius-sm)', background: RED_SOFT }}>
                 <span style={{ minWidth: 0 }}>
-                  <span style={{ display: 'block', fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)' }}>Short for <b style={{ color: 'var(--text-primary)' }}>{proj.firstShort.name}</b>{proj.remainingCount > 1 ? ` +${proj.remainingCount - 1} more` : ''}</span>
+                  <span style={{ display: 'block', fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)' }}>Top up to cover <b style={{ color: 'var(--text-primary)' }}>{proj.firstShort.name}</b>{proj.remainingCount > 1 ? ` +${proj.remainingCount - 1} more` : ''}</span>
                   <span style={{ display: 'block', fontSize: 'var(--fs-2xs)', color: RED, marginTop: 2 }}>{fmtRange(proj.firstShort.iso, proj.horizonISO)}</span>
                 </span>
-                <span style={{ fontWeight: 700, fontSize: 'var(--fs-md)', color: RED, whiteSpace: 'nowrap' }}>{money2(proj.remainingTotal)}</span>
+                <span style={{ fontWeight: 700, fontSize: 'var(--fs-md)', color: RED, whiteSpace: 'nowrap' }}>{money2(proj.short)}</span>
               </div>
             ) : (
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 'var(--radius-sm)', background: 'var(--kpi-bg)', border: '1px solid var(--border)' }}>
                 <span style={{ minWidth: 0 }}>
-                  <span style={{ display: 'block', fontSize: 'var(--fs-sm)', color: 'var(--text-muted)' }}>Next month: short for <b style={{ color: 'var(--text-secondary)' }}>{proj.firstShort.name}</b>{proj.remainingCount > 1 ? ` +${proj.remainingCount - 1} more` : ''}</span>
+                  <span style={{ display: 'block', fontSize: 'var(--fs-sm)', color: 'var(--text-muted)' }}>Next month: top up to cover <b style={{ color: 'var(--text-secondary)' }}>{proj.firstShort.name}</b>{proj.remainingCount > 1 ? ` +${proj.remainingCount - 1} more` : ''}</span>
                   <span style={{ display: 'block', fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)', marginTop: 2 }}>{fmtRange(proj.firstShort.iso, proj.horizonISO)}</span>
                 </span>
-                <span style={{ fontWeight: 700, fontSize: 'var(--fs-md)', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{money2(proj.remainingTotal)}</span>
+                <span style={{ fontWeight: 700, fontSize: 'var(--fs-md)', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{money2(proj.short)}</span>
               </div>
             )}
             {stale && <div style={{ fontSize: 'var(--fs-xs)', color: RED }}>Based on your {fmtDay(asOf)} balance.</div>}
@@ -297,7 +299,7 @@ function CoverageTimeline({ proj, asOf, urgent }: { proj: Projection; asOf: stri
         <h3 style={{ margin: 0, fontSize: 'var(--fs-md)', display: 'flex', alignItems: 'center', gap: 8 }}><CalendarClock size={16} /> Coverage timeline</h3>
         <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>
           {proj.coveredThroughISO ? <>covers up to <b style={{ color: 'var(--text-primary)' }}>{fmtDay(proj.coveredThroughISO)}</b></> : 'what your balance covers'}
-          {proj.firstShort ? <> · <span style={{ color: urgent ? RED : 'var(--text-muted)', fontWeight: 600 }}>{proj.remainingCount} short {fmtRange(proj.firstShort.iso, proj.horizonISO)} · {money2(proj.remainingTotal)}</span></> : proj.timeline.length ? <> · <span style={{ color: 'var(--income)', fontWeight: 600 }}>all covered to {fmtDay(proj.horizonISO)}</span></> : null}
+          {proj.firstShort ? <> · <span style={{ color: urgent ? RED : 'var(--text-muted)', fontWeight: 600 }}>{proj.remainingCount} short {fmtRange(proj.firstShort.iso, proj.horizonISO)} · {money2(proj.short)} to top up</span></> : proj.timeline.length ? <> · <span style={{ color: 'var(--income)', fontWeight: 600 }}>all covered to {fmtDay(proj.horizonISO)}</span></> : null}
         </span>
       </div>
 
