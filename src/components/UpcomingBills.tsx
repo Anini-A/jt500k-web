@@ -76,10 +76,8 @@ export default function UpcomingBills() {
   )
   if (!bills.length) return null
 
-  // list == headline total == this account's whole cycle; scrolls rather than truncating
+  // the account's whole cycle; scrolls rather than truncating
   const rows = upcoming
-  const totalSoon = rows.reduce((s, u) => s + Number(u.b.amount), 0)
-  const horizonEnd = rows.length ? rows[rows.length - 1].date : from
   // open the Bills tab already showing the account that was tapped
   const goBills = (accountId?: string) => {
     try {
@@ -126,11 +124,6 @@ export default function UpcomingBills() {
         <span className="hdr-label" style={{ flexShrink: 0 }}>Bills</span>
         {accountPill}
       </span>
-      {rows.length > 0 && (
-        <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums', textAlign: 'right', flexShrink: 0 }}>
-          <b style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>{money(totalSoon)}</b> · {fmtDay(from)} → {fmtDay(horizonEnd)}
-        </span>
-      )}
     </div>
   )
 
@@ -148,11 +141,10 @@ export default function UpcomingBills() {
           style={{ display: 'flex', alignItems: 'flex-start', gap: 7, marginTop: 10, padding: '8px 11px', borderRadius: 'var(--radius-sm)', fontSize: 'var(--fs-xs)', fontWeight: 600, lineHeight: 1.45, textDecoration: 'none',
             color: 'var(--text-secondary)', background: 'var(--kpi-bg)', border: '1px solid var(--border)' }}>
           <CalendarClock size={13} style={{ flexShrink: 0, marginTop: 2, opacity: 0.7 }} />
-          {/* Leads with the account name so the card states what it's describing rather than
-              leaving it to the pill alone. Wraps rather than ellipsising — truncating would
-              drop the dollar amount at the end. */}
+          {/* The account name lives in the header pill, so this line just states the coverage.
+              Wraps rather than ellipsising — truncating would drop the dollar amount at the end. */}
           <span style={{ minWidth: 0 }}>
-            <b style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{activeTab?.name}</b>{' · '}{cycle.short > 0
+            {cycle.short > 0
               ? cutoff
                 ? <>covers {cycle.coveredCount} bill{cycle.coveredCount === 1 ? '' : 's'} to {fmtDay(new Date(cutoff + 'T00:00:00'))} · <b style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{money(cycle.short)}</b> short</>
                 : <>no bills covered · <b style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{money(cycle.short)}</b> short{cycle.firstShort ? <> from {fmtDay(new Date(cycle.firstShort.iso + 'T00:00:00'))}</> : null}</>
