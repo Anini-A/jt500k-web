@@ -5,7 +5,7 @@ import { useConfirm } from './Feedback'
 import { Pencil, Plus, Trash2, TriangleAlert, CheckCircle2, CalendarClock, ChevronDown } from 'lucide-react'
 import { getJSON, cachedValue } from '@/lib/fresh'
 import { ymd, today } from '@/lib/date'
-import { projectCycle, type Cycle } from '@/lib/billRunway'
+import { projectCycle, monthTotal, type Cycle } from '@/lib/billRunway'
 
 // The projection is shared with the Home card, the notification cron and chat —
 // see lib/billRunway.ts. This file only renders it.
@@ -116,7 +116,9 @@ export default function BillRunway() {
   )
   if (!active) return null
 
-  const monthlyTotal = acctBills.filter((b) => !b.quarterly).reduce((s, b) => s + b.amount, 0)
+  // Everything due in THIS calendar month, quarterly bills included — the same basis the
+  // runway and the shortfall use, so the page can't show two totals that disagree.
+  const monthlyTotal = monthTotal(acctBills)
   const coveredMonth = proj ? coveredThisMonthOf(proj) : true  // the rest of THIS month specifically
   // the first bill we can't cover — and how imminent it is (drives calm heads-up vs urgent alert)
   const daysToShort = proj?.firstShort ? Math.round((Date.parse(proj.firstShort.iso) - Date.parse(todayISO())) / 86400000) : Infinity
@@ -209,7 +211,7 @@ export default function BillRunway() {
             </div>
           )}
           <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
-            <MiniStat label="Monthly bills" value={money(monthlyTotal)} />
+            <MiniStat label="This month" value={money(monthlyTotal)} />
             <MiniStat label="Safety buffer" value={money(settings.buffer)} accent />
           </div>
         </div>
@@ -222,7 +224,7 @@ export default function BillRunway() {
         {/* Same footer control as Debt Management and Budget: count, add, reveal */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 18 }}>
           <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {acctBills.length > 0 ? `${acctBills.length} ${acctBills.length === 1 ? 'bill' : 'bills'} · ${money(monthlyTotal)}/mo` : 'No bills yet'}
+            {acctBills.length > 0 ? `${acctBills.length} ${acctBills.length === 1 ? 'bill' : 'bills'} · ${money(monthlyTotal)} this month` : 'No bills yet'}
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
             <button onClick={() => setEditBill('new')} aria-label="Add bill" title="Add bill"

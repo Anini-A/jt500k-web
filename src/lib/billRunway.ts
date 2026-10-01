@@ -99,3 +99,36 @@ export function projectCycle<T extends BillRow>(bills: T[], s: BillSettings): Cy
     horizonISO: ymd(timeline.length ? timeline[timeline.length - 1].date : from),
   }
 }
+
+// Every bill actually DUE in one calendar month — monthly bills plus any quarterly
+// (or other non-monthly) bill whose due date lands inside it.
+//
+// This is the "This month" stat on the Bills page. It deliberately counts a quarterly
+// bill at FULL face value in the month it falls, and not at all in the other two, because
+// that is what leaves the account. Amortising it (amount/3 every month) would read calmer
+// but would never match the balance, the runway, or the bank — and three numbers that
+// disagree is the thing this stat exists to stop.
+export function monthTotal<T extends BillRow>(bills: T[], ref: Date = new Date()): number {
+  const y = ref.getFullYear(), m = ref.getMonth()
+  const active = (bills || []).filter((b) => b.active !== false)
+  let total = 0
+  for (const b of active) {
+    if (b.quarterly) {
+      // walk this bill's own 3-month cadence and see if an occurrence lands in this month
+      if (!b.next_due) continue
+      let d = strip(new Date(b.next_due + 'T00:00:00'))
+      const start = new Date(y, m, 1)
+      let guard = 0
+      while (d < start && guard++ < 80) d = new Date(d.getFullYear(), d.getMonth() + 3, d.getDate())
+      while (d > start && guard++ < 80) {
+        const prev = new Date(d.getFullYear(), d.getMonth() - 3, d.getDate())
+        if (prev < start) break
+        d = prev
+      }
+      if (d.getFullYear() === y && d.getMonth() === m) total += Number(b.amount)
+      continue
+    }
+    total += Number(b.amount)
+  }
+  return Math.round(total * 100) / 100
+}
