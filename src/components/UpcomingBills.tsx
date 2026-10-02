@@ -108,16 +108,16 @@ export default function UpcomingBills() {
     </div>
   )
 
-  // Switcher centred, BILLS pinned top-right. The spacer is what keeps the switcher
-  // centred on the CARD rather than in the space the label leaves: both sides of the
-  // row flex equally, so the middle stays put whatever the label's width.
+  // BILLS on the left, switcher centred. The empty spacer opposite the label is what
+  // keeps the switcher centred on the CARD rather than in the space the label leaves:
+  // both sides of the row flex equally, so the middle stays put whatever the label's width.
   const header = accountSeg ? (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-      <span style={{ flex: 1, minWidth: 0 }} />
-      {accountSeg}
-      <span style={{ flex: 1, minWidth: 0, display: 'flex', justifyContent: 'flex-end' }}>
+      <span style={{ flex: 1, minWidth: 0 }}>
         <span className="hdr-label">Bills</span>
       </span>
+      {accountSeg}
+      <span style={{ flex: 1, minWidth: 0 }} />
     </div>
   ) : (
     // one account: no switcher to centre, so the label just leads the card as before
