@@ -53,19 +53,28 @@ export default function UpcomingBills() {
   // Items with no account (income, savings, spending not paid from a bill account) are
   // scheduled and loggable but have no balance to run short against — they belong to the
   // logging list, not the cash-flow forecast, so no tab.
-  const tabs: { id: string; name: string; shortFrom: string | null }[] = accounts
+  const tabs: { id: string; name: string; shortFrom: string | null; short: number }[] = accounts
     .filter((a) => bills.some((b) => b.account_id === a.id))
-    .map((a) => ({ id: a.id, name: a.name, shortFrom: cycles.get(a.id)?.firstShort?.iso ?? null }))
+    .map((a) => ({ id: a.id, name: a.name, shortFrom: cycles.get(a.id)?.firstShort?.iso ?? null, short: cycles.get(a.id)?.short ?? 0 }))
 
-  // Which tab to show: whatever was tapped, else the first account in the configured order
-  // (bill_accounts.sort, which /api/bills already orders by).
+  // Which tab to show: whatever was tapped, else the first account in the configured
+  // order (bill_accounts.sort) — UNLESS it's covered and another account isn't, in which
+  // case open on the account that needs the most money.
   //
-  // This used to open on whichever account ran short SOONEST. That sounds helpful but the
-  // card then flips between accounts as due dates pass — a small account with an early bill
-  // outranks the main one every time — so Home never settled on the account that matters.
-  // A stable default beats a clever one; the other account is one tap away and its pill dot
-  // still shows red when it's short.
-  const activeId = picked && tabs.some((t) => t.id === picked) ? picked : (tabs[0]?.id ?? '')
+  // Ranking by the SIZE of the shortfall, not by how soon it starts: "soonest" let Transpo
+  // ($248 short, first bill on the 1st) outrank Home & Utilities ($2,404 short from the
+  // 6th) every month, and the winner changed as due dates passed, so the card never
+  // settled. Size only re-ranks when the bigger problem genuinely moves.
+  //
+  // The default account still wins whenever it is itself short, so the common case is
+  // stable; this only redirects when it has nothing to report and another account does.
+  const fallbackId = (() => {
+    const first = tabs[0]
+    if (!first || first.short > 0) return first?.id ?? ''
+    const worst = tabs.filter((t) => t.short > 0).sort((x, y) => y.short - x.short)[0]
+    return worst?.id ?? first.id
+  })()
+  const activeId = picked && tabs.some((t) => t.id === picked) ? picked : fallbackId
 
   const activeBills = bills.filter((b) => b.account_id === activeId)
   const upcoming = nextOccurrences(activeBills, from)
