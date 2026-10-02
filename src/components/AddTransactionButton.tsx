@@ -611,8 +611,8 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   // "Oct 15" for a bill row, nothing for a budget line (those have no due day).
   // Dimmed once the day is past: that bill has most likely already left the account.
   // A bill the account's balance still reaches has most likely already come out — that's
-  // the one worth logging. Falls back to the calendar for accounts with no balance on
-  // record, where no projection exists.
+  // the one worth logging, and it reads green. Falls back to the calendar for accounts
+  // with no balance on record, where no projection exists.
   const isPaid = (r: any) => {
     if (r.src !== 'bill') return false
     if (r.covered !== undefined) return r.covered
@@ -624,7 +624,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
     const d = dueDateOf(r, new Date())
     if (!d) return null
     return (
-      <span style={{ flexShrink: 0, width: 46, fontSize: 'var(--fs-2xs)', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: isPaid(r) ? 'var(--income)' : 'var(--text-muted)' }}>
+      <span style={{ flexShrink: 0, width: 46, fontSize: 'var(--fs-2xs)', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: isPaid(r) ? 'var(--income)' : 'var(--expense)' }}>
         {d.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}
       </span>
     )
@@ -1007,10 +1007,11 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                                   <input type="checkbox" checked={on} onChange={toggle} aria-label={`Select ${r.name}`} style={{ flexShrink: 0 }} />
                                   {/* Due day, for bills only — the group is ordered by it, and without it
                                       you can't tell what has actually come out yet from what is still to
-                                      come, which is the whole question when ticking rows to log. Muted
-                                      once the day has passed (likely already paid), plain while upcoming. */}
+                                      come, which is the whole question when ticking rows to log. Green
+                                      where the balance reaches the bill, orange where it doesn't — the
+                                      same pairing the Coverage timeline uses for the same distinction. */}
                                   {dueBadge(r)}
-                                  <div style={{ flex: 1, minWidth: 0, display: 'grid', gap: 1, opacity: r.src === 'bill' && !isPaid(r) ? 0.45 : 1 }}>
+                                  <div style={{ flex: 1, minWidth: 0, display: 'grid', gap: 1 }}>
                                     <input value={r.name} aria-label="Name" className="rec-inline"
                                       onChange={(e) => setRecLocal(r.id, { name: e.target.value })}
                                       onBlur={(e) => e.target.value.trim() ? patchRec(r.id, { name: e.target.value.trim() }) : reloadRecs()}
