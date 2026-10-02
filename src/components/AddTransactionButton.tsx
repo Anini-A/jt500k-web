@@ -137,7 +137,11 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   // Collapsed recurring groups (by key). The list runs long once every regular is in it,
   // so each pill folds its own section away; selections inside a folded group are kept
   // and surfaced on the pill, never silently logged out of sight.
-  const [recFold, setRecFold] = useState<Set<string>>(new Set())
+  //
+  // All groups start folded: the sheet then opens as a short list of pills you can scan,
+  // and you expand the one you came to log. Seeded from the lane keys plus 'bills' rather
+  // than from REC_GROUPS, which is derived further down from data this runs before.
+  const [recFold, setRecFold] = useState<Set<string>>(() => new Set(['bills', ...LANES.map((l) => l.key)]))
   // Safari 27+ sizes these inputs to their content natively; below that we keep
   // measuring the value ourselves (see amountWidth).
   const autoSize = useCssSupports('field-sizing', 'content')

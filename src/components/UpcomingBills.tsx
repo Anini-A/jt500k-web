@@ -58,11 +58,15 @@ export default function UpcomingBills() {
     .filter((a) => bills.some((b) => b.account_id === a.id))
     .map((a) => ({ id: a.id, name: a.name, shortFrom: cycles.get(a.id)?.firstShort?.iso ?? null }))
 
-  // Which tab to show: whatever was tapped, else the account that runs short soonest so the
-  // card opens on the problem rather than waiting to be found. Derived rather than stored,
-  // so the first paint already has the right one and a new shortfall can claim the default.
-  const urgent = tabs.filter((t) => t.shortFrom).sort((x, y) => x.shortFrom!.localeCompare(y.shortFrom!))[0]
-  const activeId = picked && tabs.some((t) => t.id === picked) ? picked : (urgent?.id ?? tabs[0]?.id ?? '')
+  // Which tab to show: whatever was tapped, else the first account in the configured order
+  // (bill_accounts.sort, which /api/bills already orders by).
+  //
+  // This used to open on whichever account ran short SOONEST. That sounds helpful but the
+  // card then flips between accounts as due dates pass — a small account with an early bill
+  // outranks the main one every time — so Home never settled on the account that matters.
+  // A stable default beats a clever one; the other account is one tap away and its pill dot
+  // still shows red when it's short.
+  const activeId = picked && tabs.some((t) => t.id === picked) ? picked : (tabs[0]?.id ?? '')
 
   const activeBills = bills.filter((b) => b.account_id === activeId)
   const upcoming = nextOccurrences(activeBills, from)
