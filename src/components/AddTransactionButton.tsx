@@ -9,7 +9,7 @@ import IconPill from './IconPill'
 import { useConfirm } from './Feedback'
 import { getJSON, cachedValue } from '@/lib/fresh'
 import { useCssSupports } from '@/lib/useCssSupports'
-import { LANES, laneOf } from '@/lib/lanes'
+import { LANES, laneOf, tint } from '@/lib/lanes'
 import { hapticSuccess } from '@/lib/haptics'
 import { signedRowAmount } from '@/lib/draftTotals'
 import { ymd, today } from '@/lib/date'
@@ -561,8 +561,22 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
     const unlinked = visibleRecs.filter((r) => recGroup(r) === 'debt' && !r.debt_name)
     return [...rows.sort((a, b) => b.amount - a.amount || b.remaining - a.remaining), ...unlinked]
   })()
-  const rowsOfGroup = (key: string) => (key === 'debt' ? debtRows : visibleRecs.filter((r) => recGroup(r) === key))
-  const REC_GROUPS = LANES
+  // Bills get their own group rather than being scattered through Spending by category.
+  // They already arrive here from /api/bills tagged src:'bill' (loadRecs merges bills and
+  // Budget lines), so this is a regrouping, not a new data source — editing a bill's
+  // amount or adding one shows up with no sync step.
+  //
+  // Debt-repayment bills stay OUT: the Debt group lists the debts themselves and carries
+  // the balance, so a loan payment sitting in both groups could be logged twice.
+  const isBillRow = (r: any) => r.src === 'bill' && recGroup(r) !== 'debt'
+  const billRows = visibleRecs.filter(isBillRow).sort((a: any, b: any) => (a.day ?? 99) - (b.day ?? 99))
+  const rowsOfGroup = (key: string) =>
+    key === 'debt' ? debtRows
+      : key === 'bills' ? billRows
+        // every other lane drops the bills it would otherwise show — one row, one place
+        : visibleRecs.filter((r) => recGroup(r) === key && !isBillRow(r))
+  // Bills first: they have due dates, so they're what you're usually here to log.
+  const REC_GROUPS = [{ key: 'bills', label: 'Bills', token: 'accent', ...tint('accent') }, ...LANES]
   const recGroupsPresent = REC_GROUPS.filter((g) => rowsOfGroup(g.key).length > 0)
   const allRows = REC_GROUPS.flatMap((g) => rowsOfGroup(g.key))
   // a ticked row with no amount yet isn't loggable, so it doesn't count toward the button
