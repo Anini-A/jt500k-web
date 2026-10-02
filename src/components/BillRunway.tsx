@@ -140,17 +140,17 @@ export default function BillRunway() {
          (This was two tiles that both printed the balance — once as "balance" and once as
          "Covers N bills", where the figure was the balance, not what those bills cost.) */}
       <div className="card" style={{ marginBottom: 16, borderLeft: `4px solid ${!proj || proj.timeline.length === 0 ? 'var(--border)' : coveredMonth ? 'var(--income)' : RED}` }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
-          <div style={{ fontSize: 'var(--fs-2xs)', fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
-            {active.name} · as of {fmtDay(asOf)}
-          </div>
-          {!stale && <button className="chip btn-accent" onClick={() => setEditBalance(true)}>Update balance</button>}
+        <div style={{ fontSize: 'var(--fs-2xs)', fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 16 }}>
+          {active.name} · as of {fmtDay(asOf)}
         </div>
 
         {/* the pair: what you have, what you still need */}
         <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-          <div style={{ flex: '1 1 150px', padding: '13px 15px', borderRadius: 'var(--radius-md)', background: 'var(--income-soft)' }}>
-            <div style={{ fontSize: 'var(--fs-2xs)', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--income)' }}>You have</div>
+          <button onClick={() => setEditBalance(true)} aria-label="Update balance"
+            style={{ flex: '1 1 150px', padding: '13px 15px', borderRadius: 'var(--radius-md)', background: 'var(--income-soft)', border: 'none', font: 'inherit', color: 'inherit', textAlign: 'left', cursor: 'pointer' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 'var(--fs-2xs)', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--income)' }}>
+              You have <Pencil size={10} style={{ opacity: 0.75 }} />
+            </div>
             <div style={{ fontWeight: 700, fontSize: 'var(--fs-card)', letterSpacing: '-0.03em', lineHeight: 1.1, marginTop: 3 }}>{money2(settings.current_balance)}</div>
             <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-secondary)', marginTop: 4 }}>
               {!proj || proj.timeline.length === 0 ? 'no bills scheduled'
@@ -158,7 +158,7 @@ export default function BillRunway() {
                 : proj.coveredCount > 0 ? `covers ${proj.coveredCount} bill${proj.coveredCount === 1 ? '' : 's'} to ${fmtDay(through!)}`
                 : 'short from the first bill'}
             </div>
-          </div>
+          </button>
 
           {proj && proj.firstShort ? (
             <div style={{ flex: '1 1 150px', padding: '13px 15px', borderRadius: 'var(--radius-md)', background: (!coveredMonth || topUpSoon) ? RED_SOFT : 'var(--kpi-bg)', border: (!coveredMonth || topUpSoon) ? 'none' : '1px solid var(--border)' }}>
@@ -187,11 +187,6 @@ export default function BillRunway() {
             <button className="btn-warn-red" style={{ flexShrink: 0, padding: '7px 16px', borderRadius: 'var(--radius-pill)', fontSize: 'var(--fs-sm)', fontWeight: 600, background: 'transparent', border: `1px solid ${RED}`, cursor: 'pointer' }} onClick={() => setEditBalance(true)}>Update balance</button>
           </div>
         )}
-
-        <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', marginTop: 15, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
-          <MiniStat label="This month" value={money(monthlyTotal)} />
-          <MiniStat label="Safety buffer" value={money(settings.buffer)} accent />
-        </div>
       </div>
 
       {/* One card: what the balance covers, then the bills behind it */}
@@ -252,15 +247,6 @@ export default function BillRunway() {
       {editBalance && <AccountModal account={active} canDelete={accounts.length > 1} onClose={() => setEditBalance(false)} onSaved={(id) => { setEditBalance(false); if (id !== undefined) setActiveId(id); load() }} />}
       {newAccount && <AccountModal account={null} canDelete={false} onClose={() => setNewAccount(false)} onSaved={(id) => { setNewAccount(false); if (id) setActiveId(id); load() }} />}
       {editBill && <BillModal bill={editBill === 'new' ? null : editBill} accountId={activeId} onClose={() => setEditBill(null)} onSaved={() => { setEditBill(null); load() }} />}
-    </div>
-  )
-}
-
-function MiniStat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
-  return (
-    <div>
-      <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>{label}</div>
-      <div style={{ fontWeight: 700, fontSize: 'var(--fs-lg)', color: accent ? 'var(--accent)' : 'var(--text-primary)' }}>{value}</div>
     </div>
   )
 }
