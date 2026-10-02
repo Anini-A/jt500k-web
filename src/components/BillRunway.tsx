@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo, Fragment } from 'react'
 import { useConfirm } from './Feedback'
-import { Pencil, Plus, Trash2, TriangleAlert, CheckCircle2, CalendarClock, ChevronDown } from 'lucide-react'
+import { Pencil, Plus, Trash2, TriangleAlert, CalendarClock, ChevronDown } from 'lucide-react'
 import { getJSON, cachedValue } from '@/lib/fresh'
 import { ymd, today } from '@/lib/date'
 import { projectCycle, monthTotal, type Cycle } from '@/lib/billRunway'
@@ -127,7 +127,6 @@ export default function BillRunway() {
   const staleDays = Math.max(0, Math.round((Date.parse(todayISO()) - Date.parse(asOf)) / 86400000))
   const stale = staleDays >= 1
   const through = proj?.coveredThroughISO
-  const projFrom = asOf < todayISO() ? todayISO() : asOf // project() never looks into the past
   const settings = active // alias so the balance card / modal read the active account
 
   return (
@@ -136,86 +135,62 @@ export default function BillRunway() {
          dropdown of these same accounts (plus Add account) and hands off the pick via
          the jt-bill-account key read above, same as Home's shortfall link always did. */}
 
-      {/* VERDICT + BALANCE — side by side */}
-      <div className="grid-2" style={{ marginBottom: 16 }}>
-      {proj && (
-      <div className="card" style={{ borderLeft: `4px solid ${coveredMonth ? 'var(--income)' : RED}`, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: proj.timeline.length ? 12 : 0 }}>
-          {coveredMonth ? <CheckCircle2 size={24} color="var(--income)" style={{ flexShrink: 0 }} />
-            : <TriangleAlert size={24} color={RED} style={{ flexShrink: 0 }} />}
-          <div style={{ fontWeight: 700, fontSize: 'var(--fs-card)', letterSpacing: '-0.015em', minWidth: 0 }}>
-            {proj.timeline.length === 0 ? 'No upcoming bills'
-              : coveredMonth ? <>Covered for {new Date(todayISO() + 'T00:00:00').toLocaleDateString('en-CA', { month: 'long' })}</>
-              : proj.coveredCount > 0 ? <>Short this month — covered through {fmtDay(through!)}</>
-              : 'Top up needed'}
+      {/* BALANCE + COVERAGE — one card. The balance states what it covers and the top-up
+         states exactly what to deposit; neither number is repeated anywhere on the page.
+         (This was two tiles that both printed the balance — once as "balance" and once as
+         "Covers N bills", where the figure was the balance, not what those bills cost.) */}
+      <div className="card" style={{ marginBottom: 16, borderLeft: `4px solid ${!proj || proj.timeline.length === 0 ? 'var(--border)' : coveredMonth ? 'var(--income)' : RED}` }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
+          <div style={{ fontSize: 'var(--fs-2xs)', fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+            {active.name} · as of {fmtDay(asOf)}
           </div>
+          {!stale && <button className="chip btn-accent" onClick={() => setEditBalance(true)}>Update balance</button>}
         </div>
 
-        {proj.timeline.length === 0 ? (
-          <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)' }}>Nothing scheduled — add bills below.</div>
-        ) : (
-          <div style={{ display: 'grid', gap: 8 }}>
-            {/* covers line — the window this balance actually gets you through */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 'var(--radius-sm)', background: 'var(--income-soft)' }}>
-              <span style={{ minWidth: 0 }}>
-                <span style={{ display: 'block', fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)' }}>Covers {proj.coveredCount} bill{proj.coveredCount === 1 ? '' : 's'}</span>
-                {through && <span style={{ display: 'block', fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)', marginTop: 2 }}>{fmtRange(projFrom, through)}</span>}
-              </span>
-              <span style={{ fontWeight: 700, fontSize: 'var(--fs-md)', color: 'var(--income)' }}>{money2(proj.startBalance)}</span>
+        {/* the pair: what you have, what you still need */}
+        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+          <div style={{ flex: '1 1 150px', padding: '13px 15px', borderRadius: 'var(--radius-md)', background: 'var(--income-soft)' }}>
+            <div style={{ fontSize: 'var(--fs-2xs)', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--income)' }}>You have</div>
+            <div style={{ fontWeight: 700, fontSize: 'var(--fs-card)', letterSpacing: '-0.03em', lineHeight: 1.1, marginTop: 3 }}>{money2(settings.current_balance)}</div>
+            <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-secondary)', marginTop: 4 }}>
+              {!proj || proj.timeline.length === 0 ? 'no bills scheduled'
+                : !proj.firstShort ? `covers every bill to ${fmtDay(proj.horizonISO)}`
+                : proj.coveredCount > 0 ? `covers ${proj.coveredCount} bill${proj.coveredCount === 1 ? '' : 's'} to ${fmtDay(through!)}`
+                : 'short from the first bill'}
             </div>
-            {/* shortfall line — URGENT (red) only when a bill THIS month is short or the next one is within a week;
-                otherwise a calm heads-up so being covered for the month reads as good news.
-                Shows proj.short (cash to deposit), NOT remainingTotal (face value of the unpaid
-                bills): the leftover balance already goes toward the first short bill, so the two
-                differ, and Home shows proj.short. One number, one meaning, both screens. */}
-            {!proj.firstShort ? (
-              <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--income)', fontWeight: 600, padding: '2px 2px' }}>Every upcoming bill covered through {fmtDay(proj.horizonISO)}.</div>
-            ) : (!coveredMonth || topUpSoon) ? (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 'var(--radius-sm)', background: RED_SOFT }}>
-                <span style={{ minWidth: 0 }}>
-                  <span style={{ display: 'block', fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)' }}>Top up to cover <b style={{ color: 'var(--text-primary)' }}>{proj.firstShort.name}</b>{proj.remainingCount > 1 ? ` +${proj.remainingCount - 1} more` : ''}</span>
-                  <span style={{ display: 'block', fontSize: 'var(--fs-2xs)', color: RED, marginTop: 2 }}>{fmtRange(proj.firstShort.iso, proj.horizonISO)}</span>
-                </span>
-                <span style={{ fontWeight: 700, fontSize: 'var(--fs-md)', color: RED, whiteSpace: 'nowrap' }}>{money2(proj.short)}</span>
+          </div>
+
+          {proj && proj.firstShort ? (
+            <div style={{ flex: '1 1 150px', padding: '13px 15px', borderRadius: 'var(--radius-md)', background: (!coveredMonth || topUpSoon) ? RED_SOFT : 'var(--kpi-bg)', border: (!coveredMonth || topUpSoon) ? 'none' : '1px solid var(--border)' }}>
+              <div style={{ fontSize: 'var(--fs-2xs)', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: (!coveredMonth || topUpSoon) ? RED : 'var(--text-muted)' }}>
+                {(!coveredMonth || topUpSoon) ? 'Top up' : 'Top up next month'}
               </div>
-            ) : (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 'var(--radius-sm)', background: 'var(--kpi-bg)', border: '1px solid var(--border)' }}>
-                <span style={{ minWidth: 0 }}>
-                  <span style={{ display: 'block', fontSize: 'var(--fs-sm)', color: 'var(--text-muted)' }}>Next month: top up to cover <b style={{ color: 'var(--text-secondary)' }}>{proj.firstShort.name}</b>{proj.remainingCount > 1 ? ` +${proj.remainingCount - 1} more` : ''}</span>
-                  <span style={{ display: 'block', fontSize: 'var(--fs-2xs)', color: 'var(--text-muted)', marginTop: 2 }}>{fmtRange(proj.firstShort.iso, proj.horizonISO)}</span>
-                </span>
-                <span style={{ fontWeight: 700, fontSize: 'var(--fs-md)', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{money2(proj.short)}</span>
+              <div style={{ fontWeight: 700, fontSize: 'var(--fs-card)', letterSpacing: '-0.03em', lineHeight: 1.1, marginTop: 3, color: (!coveredMonth || topUpSoon) ? RED : 'var(--text-secondary)' }}>{money2(proj.short)}</div>
+              <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-secondary)', marginTop: 4 }}>
+                for {proj.remainingCount} bill{proj.remainingCount === 1 ? '' : 's'} to {fmtDay(proj.horizonISO)}
               </div>
-            )}
-            {stale && <div style={{ fontSize: 'var(--fs-xs)', color: RED }}>Based on your {fmtDay(asOf)} balance.</div>}
+            </div>
+          ) : proj && proj.timeline.length > 0 ? (
+            <div style={{ flex: '1 1 150px', padding: '13px 15px', borderRadius: 'var(--radius-md)', background: 'var(--kpi-bg)', border: '1px solid var(--border)' }}>
+              <div style={{ fontSize: 'var(--fs-2xs)', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--income)' }}>Top up</div>
+              <div style={{ fontWeight: 700, fontSize: 'var(--fs-card)', letterSpacing: '-0.03em', lineHeight: 1.1, marginTop: 3, color: 'var(--income)' }}>$0</div>
+              <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-secondary)', marginTop: 4 }}>every bill covered</div>
+            </div>
+          ) : null}
+        </div>
+
+        {stale && (
+          <div style={{ marginTop: 14, padding: '12px 14px', background: RED_SOFT, borderRadius: 'var(--radius-md)', display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', color: RED, fontSize: 'var(--fs-sm)', fontWeight: 600, minWidth: 0, flex: 1 }}>
+              <TriangleAlert size={15} style={{ flexShrink: 0 }} /> Last updated {fmtDay(asOf)} · {staleDays} day{staleDays === 1 ? '' : 's'} ago — update your balance so the forecast stays accurate.
+            </div>
+            <button className="btn-warn-red" style={{ flexShrink: 0, padding: '7px 16px', borderRadius: 'var(--radius-pill)', fontSize: 'var(--fs-sm)', fontWeight: 600, background: 'transparent', border: `1px solid ${RED}`, cursor: 'pointer' }} onClick={() => setEditBalance(true)}>Update balance</button>
           </div>
         )}
-      </div>
-      )}
 
-        {/* BALANCE — with stale nudge */}
-        <div className="card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 'var(--fs-2xs)', fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
-                {active.name} · as of {fmtDay(asOf)}
-              </div>
-              <div style={{ fontWeight: 700, fontSize: 'var(--fs-card)', letterSpacing: '-0.03em', marginTop: 4 }}>{money2(settings.current_balance)}</div>
-            </div>
-            {!stale && <button className="chip btn-accent" onClick={() => setEditBalance(true)}>Update balance</button>}
-          </div>
-          {stale && (
-            <div style={{ marginTop: 12, padding: '12px 14px', background: RED_SOFT, borderRadius: 'var(--radius-md)', display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center', color: RED, fontSize: 'var(--fs-sm)', fontWeight: 600, minWidth: 0, flex: 1 }}>
-                <TriangleAlert size={15} style={{ flexShrink: 0 }} /> Last updated {fmtDay(asOf)} · {staleDays} day{staleDays === 1 ? '' : 's'} ago — update your balance so the forecast stays accurate.
-              </div>
-              <button className="btn-warn-red" style={{ flexShrink: 0, padding: '7px 16px', borderRadius: 'var(--radius-pill)', fontSize: 'var(--fs-sm)', fontWeight: 600, background: 'transparent', border: `1px solid ${RED}`, cursor: 'pointer' }} onClick={() => setEditBalance(true)}>Update balance</button>
-            </div>
-          )}
-          <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
-            <MiniStat label="This month" value={money(monthlyTotal)} />
-            <MiniStat label="Safety buffer" value={money(settings.buffer)} accent />
-          </div>
+        <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', marginTop: 15, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
+          <MiniStat label="This month" value={money(monthlyTotal)} />
+          <MiniStat label="Safety buffer" value={money(settings.buffer)} accent />
         </div>
       </div>
 
