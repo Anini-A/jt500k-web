@@ -193,7 +193,7 @@ export default function BillRunway() {
 
       {/* One card: what the balance covers, then the bills behind it */}
       <div className="card">
-        {proj && <CoverageTimeline proj={proj} asOf={asOf} urgent={!coveredMonth || topUpSoon} />}
+        {proj && <CoverageTimeline proj={proj} asOf={asOf} />}
 
         {/* Same footer control as Debt Management and Budget: count, add, reveal */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 18 }}>
@@ -255,16 +255,14 @@ export default function BillRunway() {
 
 // Horizontal "runway" — bills laid out left→right in date order as scrollable tiles.
 // Green tiles are covered by the balance; an amber marker shows where it runs out.
-function CoverageTimeline({ proj, asOf, urgent }: { proj: Projection; asOf: string; urgent: boolean }) {
+function CoverageTimeline({ proj, asOf }: { proj: Projection; asOf: string }) {
   return (
     <>
-      {/* Same eyebrow as the balance card above it, so the page's two cards are titled alike. */}
-      <div style={{ fontSize: 'var(--fs-2xs)', fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 6 }}>
+      {/* Same eyebrow as the balance card above it, so the page's two cards are titled alike.
+          No summary line under it: the covered-through date and the top-up figure are both
+          in the tiles above, and the timeline itself shows where the balance runs out. */}
+      <div style={{ fontSize: 'var(--fs-2xs)', fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 12 }}>
         Coverage
-      </div>
-      <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginBottom: 12 }}>
-        {proj.coveredThroughISO ? <>covers up to <b style={{ color: 'var(--text-primary)' }}>{fmtDay(proj.coveredThroughISO)}</b></> : 'what your balance covers'}
-        {proj.firstShort ? <> · <span style={{ color: urgent ? RED : 'var(--text-muted)', fontWeight: 600 }}>{proj.remainingCount} short {fmtRange(proj.firstShort.iso, proj.horizonISO)} · {money2(proj.short)} to top up</span></> : proj.timeline.length ? <> · <span style={{ color: 'var(--income)', fontWeight: 600 }}>all covered to {fmtDay(proj.horizonISO)}</span></> : null}
       </div>
 
       {proj.timeline.length === 0 ? (
@@ -307,7 +305,6 @@ function CoverageTimeline({ proj, asOf, urgent }: { proj: Projection; asOf: stri
 const iconBtn: React.CSSProperties = { display: 'inline-flex', padding: 6, borderRadius: 'var(--radius-xs)', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }
 const fmtDay = (iso: string) => { const d = new Date(iso + 'T00:00:00'); return d.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' }) }
 // "Sep 15 → Oct 31" — always name both ends so a total is never read as a single-day amount
-const fmtRange = (fromISO: string, toISO: string) => (fromISO === toISO ? fmtDay(fromISO) : `${fmtDay(fromISO)} → ${fmtDay(toISO)}`)
 
 // ── Modals ──────────────────────────────────────────────────────────
 function Shell({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {

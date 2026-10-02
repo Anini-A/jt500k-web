@@ -76,11 +76,6 @@
   /* Debt: its own amber lane, so a repayment never reads as ordinary spending. */
   --warning: #c2892f;
   --warning-soft: color-mix(in srgb, #e0a12b 16%, transparent);
-  /* Destructive-action red. Money leaving an account is --expense, not this — see
-     BillRunway, which used to carry a second red of its own for shortfalls. */
-  --danger: #e5484d;
-  --danger-soft: color-mix(in srgb, #e5484d 14%, transparent);
-
   --lip-top: 0.95;
   --lip-bottom: 0.5;
   --lip-side: 0.3;
@@ -157,8 +152,6 @@
 
     --warning: #e0a12b;
     --warning-soft: color-mix(in srgb, #e0a12b 22%, transparent);
-    --danger: #ff6369;
-    --danger-soft: color-mix(in srgb, #ff6369 20%, transparent);
 
     --lip-top: 0.5;
     --lip-bottom: 0.22;
@@ -2247,14 +2240,19 @@ input[type="date"]::-webkit-datetime-edit {
 }
 @media (prefers-reduced-motion: reduce) { .acct-seg button { transition: none; } }
 
-/* Budget hero figures — sized off their own column, not the viewport.
+/* Card hero figures (Budget, Debt) — sized off their own column, not the viewport.
    --fs-card (5.5vw) overflowed a one-third column once a figure hit five digits:
    "$11,091.30" needs ~130px where the column gives ~99px, so the number wrapped to a
    second line or collided with its neighbour. 15cqi keeps ten characters inside the
    column; the clamp floor keeps it legible and the ceiling matches the old size so
-   wider screens are unchanged. */
-.budget-hero-fig {
-  font-size: clamp(12px, 15cqi, 30px);
+   wider screens are unchanged.
+
+   13cqi, not 15: the coefficient has to hold for the two-column Debt row as well, where
+   the column is twice as wide and the figure grows to match. 13 fits 12 characters
+   (up to $999,999.99) in either layout; 15 only fit 10, so a six-figure debt total
+   would have collided exactly as the budget hero did. */
+.hero-fig {
+  font-size: clamp(12px, 13cqi, 30px);
   font-weight: 700;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;

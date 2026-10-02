@@ -161,13 +161,13 @@ export default function DebtManager() {
           minmax(0, …), not a bare 1fr: a 1fr track will not shrink below its
           content, so anything too wide grows past the card instead of giving. */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12, marginBottom: 14 }}>
-        <div style={{ textAlign: 'left' }}>
+        <div style={{ textAlign: 'left', containerType: 'inline-size' }}>
           <div className="stat-label">Remaining</div>
-          <div style={{ fontSize: 'var(--fs-card)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', color: totalRemaining > 0 ? 'var(--expense)' : 'var(--income)' }}>{money(totalRemaining)}</div>
+          <div className="hero-fig" style={{ color: totalRemaining > 0 ? 'var(--expense)' : 'var(--income)' }}>{money(totalRemaining)}</div>
         </div>
-        <div style={{ textAlign: 'right' }}>
+        <div style={{ textAlign: 'right', containerType: 'inline-size' }}>
           <div className="stat-label">Paid Off</div>
-          <div style={{ fontSize: 'var(--fs-card)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', color: 'var(--income)' }}>{money(totalPaid)}</div>
+          <div className="hero-fig" style={{ color: 'var(--income)' }}>{money(totalPaid)}</div>
         </div>
       </div>
 

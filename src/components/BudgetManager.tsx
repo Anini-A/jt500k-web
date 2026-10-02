@@ -194,15 +194,15 @@ export default function BudgetManager() {
               what that leaves. */}
           <div style={{ textAlign: 'left', minWidth: 0, containerType: 'inline-size' }}>
             <div className="stat-label">Received</div>
-            <div className="budget-hero-fig" style={{ color: 'var(--income)' }}>{money(receivedAnimated)}</div>
+            <div className="hero-fig" style={{ color: 'var(--income)' }}>{money(receivedAnimated)}</div>
           </div>
           <div style={{ textAlign: 'center', minWidth: 0, containerType: 'inline-size' }}>
             <div className="stat-label">{isCurrentMonth ? 'Out so far' : 'Out'}</div>
-            <div className="budget-hero-fig">{money(outflowAnimated)}</div>
+            <div className="hero-fig">{money(outflowAnimated)}</div>
           </div>
           <div style={{ textAlign: 'right', minWidth: 0, containerType: 'inline-size' }}>
             <div className="stat-label">{isCurrentMonth ? 'Unspent so far' : leftToSpend < 0 ? 'Overspent by' : 'Left over'}</div>
-            <div className="budget-hero-fig" style={{ color: leftToSpend < 0 ? 'var(--expense)' : 'var(--text-primary)' }}>{money(leftToSpendAnimated)}</div>
+            <div className="hero-fig" style={{ color: leftToSpend < 0 ? 'var(--expense)' : 'var(--text-primary)' }}>{money(leftToSpendAnimated)}</div>
           </div>
         </div>
 
