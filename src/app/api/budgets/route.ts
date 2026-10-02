@@ -66,7 +66,27 @@ export async function GET(req: NextRequest) {
       budgetSet: set != null,  // true when this envelope carries its own budget
       spent: Math.round((spentByCat.get(e.category) || 0) * 100) / 100,
     }
-  }).sort((a, b) => b.budgeted - a.budgeted)
+  })
+  // Order: envelopes in trouble first, then the rest by size.
+  //
+  // Sorting purely by budgeted amount answered "which envelope is biggest" — which
+  // barely changes month to month and you already know. It buried the one thing that
+  // needed attention: Utilities at 146% of its budget rendered below Paycheck, Housing,
+  // Food and Debt Repayment simply because they carry larger figures.
+  //
+  // "Trouble" is overspending only where overspending is bad — the same rule envStatus
+  // paints red. Beating a savings or debt-repayment target is good news, and earning
+  // above an income forecast certainly is, so neither floats up as a problem.
+  const overBy = (e: { type: string; category: string; budgeted: number; spent: number }) => {
+    const goodToExceed = e.type === 'savings' || e.type === 'income' || e.category === 'Debt Repayment'
+    if (goodToExceed || e.budgeted <= 0 || e.spent <= e.budgeted) return 0
+    return e.spent / e.budgeted
+  }
+  envelopes.sort((a, b) => {
+    const oa = overBy(a), ob = overBy(b)
+    if (oa !== ob) return ob - oa          // worst overspend first
+    return b.budgeted - a.budgeted          // then the old order, unchanged
+  })
 
   // ── The month as it actually happened ──────────────────────────────────────
   // Envelopes only exist for categories that carry a budget line, so summing them misses
@@ -110,7 +130,8 @@ export async function GET(req: NextRequest) {
   // in this month, in which case dropping it would hide where the month's money actually
   // went and leave the rows summing to less than the envelope. Anything paid toward a
   // description that matches no debt is money that landed nowhere, so it is named.
-  const active = scored.filter((d) => d.remaining > 0).sort((a, b) => b.remaining - a.remaining)
+  // Snowball order, matching the Debt panel: nearest payoff first.
+  const active = scored.filter((d) => d.remaining > 0).sort((a, b) => a.remaining - b.remaining)
   const settledThisMonth = scored.filter((d) => d.remaining <= 0 && d.paid > 0).sort((a, b) => b.paid - a.paid)
   const namedThisMonth = scored.reduce((s2, d) => s2 + d.paid, 0)
   const debtSummary = {

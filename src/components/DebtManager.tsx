@@ -74,7 +74,10 @@ export default function DebtManager() {
   const totalPaid = debts.reduce((s, d) => s + Math.min(d.paid, d.amount), 0)
   const overallPct = totalDebt > 0 ? (totalPaid / totalDebt) * 100 : 0
 
-  const activeDebts = debts.filter((d) => d.remaining > 0).sort((a, b) => b.remaining - a.remaining)
+  // Snowball order — smallest balance first, so the next payoff leads the list. Sorting
+  // by size put the biggest debt on top, which buried the one closest to done: HF RBC at
+  // $1,353 left of $15,000 sat below three debts with no payments against them at all.
+  const activeDebts = debts.filter((d) => d.remaining > 0).sort((a, b) => a.remaining - b.remaining)
   const paidDebts = debts.filter((d) => d.remaining <= 0).sort((a, b) => a.name.localeCompare(b.name))
 
   // one debt row — shared by the active list and the (hidden) paid-off list
