@@ -183,20 +183,26 @@ export default function BudgetManager() {
 
         {/* The headline, on the same three-stat pattern as Debt Management — the figure
             leads, but at a size that sits inside the card rather than dominating it. */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 12 }}>
+        {/* Three equal columns, but --fs-card is 5.5vw: on a phone each column is ~99px
+            while "$11,091.30" wants ~130px, so five-figure months either wrapped onto a
+            second line or ran into the column beside them. The figures size off the
+            COLUMN (cqi) rather than the viewport, so they shrink to fit instead, with a
+            floor so they stay readable and a ceiling of the old value so wide screens
+            look unchanged. */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 12 }}>
           {/* Reads as the month's arithmetic, left to right: what came in, what went out,
               what that leaves. */}
-          <div style={{ textAlign: 'left', minWidth: 0 }}>
+          <div style={{ textAlign: 'left', minWidth: 0, containerType: 'inline-size' }}>
             <div className="stat-label">Received</div>
-            <div style={{ fontSize: 'var(--fs-card)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', color: 'var(--income)' }}>{money(receivedAnimated)}</div>
+            <div className="budget-hero-fig" style={{ color: 'var(--income)' }}>{money(receivedAnimated)}</div>
           </div>
-          <div style={{ textAlign: 'center', minWidth: 0 }}>
+          <div style={{ textAlign: 'center', minWidth: 0, containerType: 'inline-size' }}>
             <div className="stat-label">{isCurrentMonth ? 'Out so far' : 'Out'}</div>
-            <div style={{ fontSize: 'var(--fs-card)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>{money(outflowAnimated)}</div>
+            <div className="budget-hero-fig">{money(outflowAnimated)}</div>
           </div>
-          <div style={{ textAlign: 'right', minWidth: 0 }}>
+          <div style={{ textAlign: 'right', minWidth: 0, containerType: 'inline-size' }}>
             <div className="stat-label">{isCurrentMonth ? 'Unspent so far' : leftToSpend < 0 ? 'Overspent by' : 'Left over'}</div>
-            <div style={{ fontSize: 'var(--fs-card)', fontWeight: 700, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', color: leftToSpend < 0 ? 'var(--expense)' : 'var(--text-primary)' }}>{money(leftToSpendAnimated)}</div>
+            <div className="budget-hero-fig" style={{ color: leftToSpend < 0 ? 'var(--expense)' : 'var(--text-primary)' }}>{money(leftToSpendAnimated)}</div>
           </div>
         </div>
 
