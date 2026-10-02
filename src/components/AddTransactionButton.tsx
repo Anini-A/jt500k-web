@@ -574,6 +574,25 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   // the balance, so a loan payment sitting in both groups could be logged twice.
   const isBillRow = (r: any) => r.src === 'bill' && recGroup(r) !== 'debt'
   const billRows = visibleRecs.filter(isBillRow).sort((a: any, b: any) => (a.day ?? 99) - (b.day ?? 99))
+  // "Oct 15" for a bill row, nothing for a budget line (those have no due day).
+  // Dimmed once the day is past: that bill has most likely already left the account.
+  const dueBadge = (r: any) => {
+    if (r.src !== 'bill' || !r.day) return null
+    const now = new Date()
+    // A quarterly bill carries its own next_due; showing its day-of-month every month
+    // would imply it's due monthly. Show the real date, and grey it in the months it
+    // isn't due at all.
+    const d = r.quarterly && r.next_due
+      ? new Date(r.next_due + 'T00:00:00')
+      : new Date(now.getFullYear(), now.getMonth(), Math.min(r.day, new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()))
+    const thisMonth = d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
+    const past = thisMonth ? d.getDate() <= now.getDate() : d < now
+    return (
+      <span style={{ flexShrink: 0, width: 46, fontSize: 'var(--fs-2xs)', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: past ? 'var(--text-muted)' : 'var(--text-secondary)' }}>
+        {d.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}
+      </span>
+    )
+  }
   const rowsOfGroup = (key: string) =>
     key === 'debt' ? debtRows
       : key === 'bills' ? billRows
@@ -950,6 +969,11 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                               return (
                                 <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px', borderRadius: 'var(--radius-md)', background: on ? 'var(--accent-soft)' : 'transparent', transition: 'background .16s ease' }}>
                                   <input type="checkbox" checked={on} onChange={toggle} aria-label={`Select ${r.name}`} style={{ flexShrink: 0 }} />
+                                  {/* Due day, for bills only — the group is ordered by it, and without it
+                                      you can't tell what has actually come out yet from what is still to
+                                      come, which is the whole question when ticking rows to log. Muted
+                                      once the day has passed (likely already paid), plain while upcoming. */}
+                                  {dueBadge(r)}
                                   <div style={{ flex: 1, minWidth: 0, display: 'grid', gap: 1 }}>
                                     <input value={r.name} aria-label="Name" className="rec-inline"
                                       onChange={(e) => setRecLocal(r.id, { name: e.target.value })}
