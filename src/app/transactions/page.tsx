@@ -217,14 +217,15 @@ export default function Transactions() {
               <div style={{ maxHeight: 1140, overflowY: 'auto', overscrollBehavior: 'contain' }}>
                 {groups.map((g) => (
                   <div key={g.date}>
-                    {/* sticky day header — show the exact date only when the label is relative */}
+                    {/* sticky day header — a pill sized to its text, not a full-width bar.
+                        The exact date rides along only when the label is relative. */}
                     {(() => {
                       const lbl = dayLabel(g.date)
                       const rel = lbl === 'Today' || lbl === 'Yesterday'
                       return (
-                        <div style={{ position: 'sticky', top: 0, zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, margin: '10px 0 6px', padding: '9px 12px', borderRadius: 'var(--radius-md)', background: 'var(--glass-specular), var(--glass-bg-strong)', backgroundRepeat: 'no-repeat', backdropFilter: 'var(--blur-bar)', WebkitBackdropFilter: 'var(--blur-bar)', border: '1px solid var(--glass-border)', boxShadow: 'var(--glass-sheen)' }}>
-                          <span style={{ fontSize: 'var(--fs-sm)', fontWeight: 800, letterSpacing: '-0.01em', color: 'var(--text-primary)' }}>{lbl}</span>
-                          {rel && <span style={{ fontSize: 'var(--fs-2xs)', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{new Date(g.date + 'T12:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })}</span>}
+                        <div style={{ position: 'sticky', top: 0, zIndex: 1, display: 'inline-flex', width: 'fit-content', alignItems: 'baseline', gap: 8, margin: '10px 0 6px', padding: '5px 11px', borderRadius: 'var(--radius-pill)', background: 'var(--glass-specular), var(--glass-bg-strong)', backgroundRepeat: 'no-repeat', backdropFilter: 'var(--blur-bar)', WebkitBackdropFilter: 'var(--blur-bar)', border: '1px solid var(--glass-border)', boxShadow: 'var(--glass-sheen)' }}>
+                          <span style={{ fontSize: 'var(--fs-xs)', fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>{lbl}</span>
+                          {rel && <span style={{ fontSize: 'var(--fs-2xs)', fontWeight: 600, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{new Date(g.date + 'T12:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}</span>}
                         </div>
                       )
                     })()}
