@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo, Fragment } from 'react'
 import { useConfirm } from './Feedback'
-import { Pencil, Plus, Trash2, TriangleAlert, CalendarClock, ChevronDown } from 'lucide-react'
+import { Pencil, Plus, Trash2, TriangleAlert, ChevronDown } from 'lucide-react'
 import { getJSON, cachedValue } from '@/lib/fresh'
 import { ymd, today } from '@/lib/date'
 import { projectCycle, monthTotal, type Cycle } from '@/lib/billRunway'
@@ -256,12 +256,13 @@ export default function BillRunway() {
 function CoverageTimeline({ proj, asOf, urgent }: { proj: Projection; asOf: string; urgent: boolean }) {
   return (
     <>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
-        <h3 style={{ margin: 0, fontSize: 'var(--fs-md)', display: 'flex', alignItems: 'center', gap: 8 }}><CalendarClock size={16} /> Coverage timeline</h3>
-        <span className="stat-label" style={{ textTransform: 'none', letterSpacing: 0 }}>
-          {proj.coveredThroughISO ? <>covers up to <b style={{ color: 'var(--text-primary)' }}>{fmtDay(proj.coveredThroughISO)}</b></> : 'what your balance covers'}
-          {proj.firstShort ? <> · <span style={{ color: urgent ? RED : 'var(--text-muted)', fontWeight: 600 }}>{proj.remainingCount} short {fmtRange(proj.firstShort.iso, proj.horizonISO)} · {money2(proj.short)} to top up</span></> : proj.timeline.length ? <> · <span style={{ color: 'var(--income)', fontWeight: 600 }}>all covered to {fmtDay(proj.horizonISO)}</span></> : null}
-        </span>
+      {/* Same eyebrow as the balance card above it, so the page's two cards are titled alike. */}
+      <div style={{ fontSize: 'var(--fs-2xs)', fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 6 }}>
+        Coverage
+      </div>
+      <div className="stat-label" style={{ textTransform: 'none', letterSpacing: 0, marginBottom: 12 }}>
+        {proj.coveredThroughISO ? <>covers up to <b style={{ color: 'var(--text-primary)' }}>{fmtDay(proj.coveredThroughISO)}</b></> : 'what your balance covers'}
+        {proj.firstShort ? <> · <span style={{ color: urgent ? RED : 'var(--text-muted)', fontWeight: 600 }}>{proj.remainingCount} short {fmtRange(proj.firstShort.iso, proj.horizonISO)} · {money2(proj.short)} to top up</span></> : proj.timeline.length ? <> · <span style={{ color: 'var(--income)', fontWeight: 600 }}>all covered to {fmtDay(proj.horizonISO)}</span></> : null}
       </div>
 
       {proj.timeline.length === 0 ? (

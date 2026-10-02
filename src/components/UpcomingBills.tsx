@@ -2,9 +2,9 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { getJSON, cachedValue } from '@/lib/fresh'
-import { today, ymd } from '@/lib/date'
+import { today } from '@/lib/date'
 import { projectCycle, nextOccurrences } from '@/lib/billRunway'
-import { CalendarClock, ChevronDown } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 import LoadError from './LoadError'
 
 interface Bill { id: string; account_id: string | null; name: string; day: number; amount: number; quarterly?: boolean; next_due?: string | null }
@@ -13,7 +13,6 @@ interface BillsResp { bills: Bill[]; accounts: Account[] }
 
 const money = (n: number) => n.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })
 const strip = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate())
-const ROW_H = 38   // one bill row (9px padding x 2 + line + border) - 5 of them sets the scroll height
 const fmtDay = (d: Date) => d.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })
 
 // Compact "what's due next" list for Home — pulls from the same bills the Bills tab uses.
@@ -86,15 +85,7 @@ export default function UpcomingBills() {
     } catch { /* ignore */ }
   }
 
-  // Coverage is per BILL, not per date. Several bills can land on the same day and the
-  // balance can run out partway through them — on Sep 15 the water bill clears while the
-  // mortgage behind it doesn't. Comparing dates against coveredThroughISO marked that whole
-  // day covered, so read the flag the projection already worked out for each bill.
   const cutoff = cycle?.coveredThroughISO ?? null
-  const coveredById = new Map((cycle?.timeline ?? []).map((e) => [e.bill.id, e.covered]))
-  const coverageOf = (u: { b: Bill }): 'covered' | 'short' | 'unknown' =>
-    !cycle ? 'unknown' : coveredById.get(u.b.id) ? 'covered' : 'short'
-  const firstShortIdx = cycle ? rows.findIndex((u) => coverageOf(u) === 'short') : -1
 
   const activeTab = tabs.find((t) => t.id === activeId)
   const dotFor = (t: { id: string; shortFrom: string | null }) =>
@@ -132,54 +123,43 @@ export default function UpcomingBills() {
       {/* Header taps to Bills only when there's no coverage card to carry the tap */}
       {cycle || accountPill ? header : <a href="/dashboard" onClick={() => goBills(activeId)} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>{header}</a>}
 
-      {/* Coverage — a neutral summary line, clickable through to the Bills tab.
-          Reads as information, not an alarm: being short is the normal state between
-          paycheques, so a standing red warning is just noise. Status still shows in the
-          account pill's dot and in the green/red dates on the rows below. */}
-      {cycle && (
+      {/* The same two numbers the Bills tab shows, in the same words: what the balance
+         reaches, and what to deposit. Home states the position; the Bills tab has the
+         per-bill detail, so the list of bills you can't act on here isn't repeated. */}
+      {cycle ? (
         <a href="/dashboard" onClick={() => goBills(activeId)}
-          style={{ display: 'flex', alignItems: 'flex-start', gap: 7, marginTop: 10, padding: '8px 11px', borderRadius: 'var(--radius-sm)', fontSize: 'var(--fs-xs)', fontWeight: 600, lineHeight: 1.45, textDecoration: 'none',
-            color: 'var(--text-secondary)', background: 'var(--kpi-bg)', border: '1px solid var(--border)' }}>
-          <CalendarClock size={13} style={{ flexShrink: 0, marginTop: 2, opacity: 0.7 }} />
-          {/* The account name lives in the header pill, so this line just states the coverage.
-              Wraps rather than ellipsising — truncating would drop the dollar amount at the end. */}
-          <span style={{ minWidth: 0 }}>
-            {cycle.short > 0
-              ? cutoff
-                ? <>covers {cycle.coveredCount} bill{cycle.coveredCount === 1 ? '' : 's'} to {fmtDay(new Date(cutoff + 'T00:00:00'))} · <b style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{money(cycle.short)}</b> short</>
-                : <>no bills covered · <b style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{money(cycle.short)}</b> short{cycle.firstShort ? <> from {fmtDay(new Date(cycle.firstShort.iso + 'T00:00:00'))}</> : null}</>
-              : 'covers every upcoming bill'}</span>
-          <span style={{ marginLeft: 'auto', flexShrink: 0, opacity: 0.6, fontWeight: 700 }}>›</span>
+          style={{ display: 'flex', gap: 10, marginTop: 12, textDecoration: 'none', color: 'inherit' }}>
+          <div style={{ flex: 1, padding: '10px 12px', borderRadius: 'var(--radius-md)', background: 'var(--income-soft)' }}>
+            <div style={{ fontSize: 'var(--fs-2xs)', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--income)' }}>You have</div>
+            <div style={{ fontWeight: 700, fontSize: 'var(--fs-lg)', letterSpacing: '-0.02em', marginTop: 2 }}>{money(cycle.startBalance)}</div>
+            <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-secondary)', marginTop: 2 }}>
+              {!cycle.firstShort ? `covers every bill to ${fmtDay(new Date(cycle.horizonISO + 'T00:00:00'))}`
+                : cutoff ? `covers ${cycle.coveredCount} bill${cycle.coveredCount === 1 ? '' : 's'} to ${fmtDay(new Date(cutoff + 'T00:00:00'))}`
+                : 'short from the first bill'}
+            </div>
+          </div>
+          <div style={{ flex: 1, padding: '10px 12px', borderRadius: 'var(--radius-md)', background: cycle.firstShort ? 'var(--expense-soft)' : 'var(--kpi-bg)', border: cycle.firstShort ? 'none' : '1px solid var(--border)' }}>
+            <div style={{ fontSize: 'var(--fs-2xs)', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: cycle.firstShort ? 'var(--expense)' : 'var(--income)' }}>Top up</div>
+            <div style={{ fontWeight: 700, fontSize: 'var(--fs-lg)', letterSpacing: '-0.02em', marginTop: 2, color: cycle.firstShort ? 'var(--expense)' : 'var(--income)' }}>{money(cycle.short)}</div>
+            <div style={{ fontSize: 'var(--fs-2xs)', color: 'var(--text-secondary)', marginTop: 2 }}>
+              {cycle.firstShort ? `for ${cycle.remainingCount} bill${cycle.remainingCount === 1 ? '' : 's'} to ${fmtDay(new Date(cycle.horizonISO + 'T00:00:00'))}` : 'every bill covered'}
+            </div>
+          </div>
         </a>
+      ) : (
+        /* no balance on record for this account — nothing to project against, so just
+           say what's next rather than implying coverage we can't compute */
+        rows.length > 0 && (
+          <div style={{ marginTop: 12, fontSize: 'var(--fs-sm)', color: 'var(--text-muted)' }}>
+            Next: {rows[0].b.name} · {money(Number(rows[0].b.amount))} on {fmtDay(rows[0].date)}
+          </div>
+        )
       )}
 
-      {/* Dense one-line rows: date · name · amount. The date carries coverage — green while
-          the account funds it, red once the balance has run out. Scrolls past 5 rows so a
-          busy fortnight doesn't push the rest of Home down the page. */}
-      <div style={{ marginTop: 12, maxHeight: ROW_H * 5 + 8, overflowY: 'auto', overscrollBehavior: 'contain' }}>
-        {rows.map((u, i) => {
-          const cov = coverageOf(u)
-          const dateColor = cov === 'covered' ? 'var(--income)' : cov === 'short' ? 'var(--expense)' : 'var(--text-secondary)'
-          return (
-            <div key={`${u.b.id}-${ymd(u.date)}`}>
-              {/* where the balance runs out — only worth drawing if something above it is funded */}
-              {i === firstShortIdx && i > 0 && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 0 6px', borderTop: '1px solid var(--border)' }}>
-                  <span style={{ fontSize: 'var(--fs-2xs)', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--expense)', whiteSpace: 'nowrap' }}>Balance runs out</span>
-                  <span style={{ flex: 1, height: 1, background: 'var(--expense)', opacity: 0.3 }} />
-                </div>
-              )}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 0', borderTop: i > 0 && i !== firstShortIdx ? '1px solid var(--border)' : 'none' }}>
-                <span style={{ width: 52, flexShrink: 0, fontSize: 'var(--fs-xs)', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: dateColor }}>
-                  {u.date.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}
-                </span>
-                <span style={{ flex: 1, minWidth: 0, fontWeight: 600, fontSize: 'var(--fs-base)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.b.name}</span>
-                <span style={{ fontWeight: 700, fontSize: 'var(--fs-base)', fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{money(Number(u.b.amount))}</span>
-              </div>
-            </div>
-          )
-        })}
-      </div>
+      <a href="/dashboard" onClick={() => goBills(activeId)}
+        style={{ display: 'block', textAlign: 'center', marginTop: 11, fontSize: 'var(--fs-xs)', fontWeight: 700, color: 'var(--accent)', textDecoration: 'none' }}>
+        See all {rows.length} bill{rows.length === 1 ? '' : 's'} ›
+      </a>
     </div>
   )
 }
