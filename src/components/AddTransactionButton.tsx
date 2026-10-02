@@ -10,6 +10,7 @@ import { useConfirm } from './Feedback'
 import { getJSON, cachedValue } from '@/lib/fresh'
 import { useCssSupports } from '@/lib/useCssSupports'
 import { LANES, laneOf, tint } from '@/lib/lanes'
+import { projectCycle } from '@/lib/billRunway'
 import { hapticSuccess } from '@/lib/haptics'
 import { signedRowAmount } from '@/lib/draftTotals'
 import { ymd, today } from '@/lib/date'
@@ -213,7 +214,18 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
       getJSON('/api/budgets').catch(() => null),
     ])
     const bills = Array.isArray(billsRes?.bills) ? billsRes.bills : []
-    const rows = bills.map((b: any) => ({ ...b, src: 'bill' as const }))
+    // Run the same projection the Bills page runs, per account, so each bill row knows
+    // whether the account's balance actually reaches it. That is the useful signal when
+    // ticking rows to log — "has this come out yet" — and it is coverage, not the
+    // calendar: a bill dated the 2nd is only paid if the money stretched that far.
+    const covered = new Map<string, boolean>()
+    for (const a of (billsRes?.accounts ?? [])) {
+      const mine = bills.filter((b: any) => b.account_id === a.id)
+      if (!mine.length || !(Number(a.current_balance) > 0 || a.balance_as_of)) continue
+      const cyc = projectCycle(mine, { current_balance: a.current_balance, balance_as_of: a.balance_as_of, buffer: a.buffer })
+      for (const e of cyc.timeline) covered.set((e.bill as any).id, e.covered)
+    }
+    const rows = bills.map((b: any) => ({ ...b, src: 'bill' as const, covered: covered.get(b.id) }))
     const seen = new Set(rows.map((r: any) => String(r.name).trim().toLowerCase()))
     for (const env of (budgetRes?.envelopes ?? [])) {
       for (const it of (env.items ?? [])) {
@@ -598,14 +610,21 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   }
   // "Oct 15" for a bill row, nothing for a budget line (those have no due day).
   // Dimmed once the day is past: that bill has most likely already left the account.
-  const dueBadge = (r: any) => {
+  // A bill the account's balance still reaches has most likely already come out — that's
+  // the one worth logging. Falls back to the calendar for accounts with no balance on
+  // record, where no projection exists.
+  const isPaid = (r: any) => {
+    if (r.src !== 'bill') return false
+    if (r.covered !== undefined) return r.covered
     const now = new Date()
     const d = dueDateOf(r, now)
+    return d ? d <= now : false
+  }
+  const dueBadge = (r: any) => {
+    const d = dueDateOf(r, new Date())
     if (!d) return null
-    const thisMonth = d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
-    const past = thisMonth ? d.getDate() <= now.getDate() : d < now
     return (
-      <span style={{ flexShrink: 0, width: 46, fontSize: 'var(--fs-2xs)', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: past ? 'var(--text-muted)' : 'var(--text-secondary)' }}>
+      <span style={{ flexShrink: 0, width: 46, fontSize: 'var(--fs-2xs)', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: isPaid(r) ? 'var(--income)' : 'var(--text-muted)' }}>
         {d.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' })}
       </span>
     )
@@ -991,7 +1010,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
                                       come, which is the whole question when ticking rows to log. Muted
                                       once the day has passed (likely already paid), plain while upcoming. */}
                                   {dueBadge(r)}
-                                  <div style={{ flex: 1, minWidth: 0, display: 'grid', gap: 1 }}>
+                                  <div style={{ flex: 1, minWidth: 0, display: 'grid', gap: 1, opacity: r.src === 'bill' && !isPaid(r) ? 0.45 : 1 }}>
                                     <input value={r.name} aria-label="Name" className="rec-inline"
                                       onChange={(e) => setRecLocal(r.id, { name: e.target.value })}
                                       onBlur={(e) => e.target.value.trim() ? patchRec(r.id, { name: e.target.value.trim() }) : reloadRecs()}
