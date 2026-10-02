@@ -1576,6 +1576,27 @@ header.top h1 {
   font-size: var(--fs-sm);
 }
 
+/* iOS Safari sizes <input type="date"> from its own intrinsic content width and
+   ignores `width`, so in a block container the field overflows its parent and the
+   value sits centred inside it (seen in the Bills account sheet on the PWA).
+   -webkit-appearance:none drops that native sizing; the inner spin/edit pseudo
+   elements then need flex and text-align to left-align like every other field. */
+input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+  max-width: 100%;
+  min-width: 0;
+  text-align: left;
+}
+input[type="date"]::-webkit-date-and-time-value {
+  text-align: left;
+  margin: 0;
+}
+input[type="date"]::-webkit-datetime-edit {
+  display: flex;
+  padding: 0;
+}
+
 /* Floating action orbs — aurora gradient, glassy, glow on hover. Shared by the
    Ask-AI chat and the Add-transaction buttons; position set by a modifier class. */
 .fab {

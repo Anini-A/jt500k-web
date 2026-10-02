@@ -328,7 +328,10 @@ function AccountModal({ account, canDelete, onClose, onSaved }: { account: Accou
   const [name, setName] = useState(account?.name || '')
   const [bal, setBal] = useState(account ? String(account.current_balance || '') : '')
   const [asOf, setAsOf] = useState(todayISO()) // default to today — you're stating today's balance
-  const [buffer, setBuffer] = useState(account ? String(account.buffer || '') : '')
+  // Buffer has no field in this sheet any more (it sat at 0 and only added noise), but the
+  // projection still honours it and chat can still set one — so carry the stored value through
+  // a save instead of silently resetting it to 0.
+  const buffer = account ? String(account.buffer || '') : ''
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState('')
   const { confirm, confirmNode } = useConfirm()
@@ -358,7 +361,6 @@ function AccountModal({ account, canDelete, onClose, onSaved }: { account: Accou
       <Field label="Account name"><input style={inp} value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Transpo" autoFocus={isNew} /></Field>
       <Field label="Current balance"><input style={inp} inputMode="decimal" value={bal} onChange={(e) => setBal(e.target.value)} placeholder="0.00" autoFocus={!isNew} /></Field>
       <Field label="As of date"><input style={inp} type="date" value={asOf} onChange={(e) => setAsOf(e.target.value)} /></Field>
-      <Field label="Safety buffer (keep at least this much)"><input style={inp} inputMode="decimal" value={buffer} onChange={(e) => setBuffer(e.target.value)} placeholder="0.00" /></Field>
       {err && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--expense)', fontWeight: 600 }}>{err}</div>}
       <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
         {!isNew && canDelete && <button className="btn btn-secondary" style={{ color: 'var(--expense)', borderColor: 'var(--expense)' }} onClick={del} aria-label="Delete account"><Trash2 size={15} /></button>}
