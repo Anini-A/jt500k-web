@@ -76,7 +76,8 @@
   /* Debt: its own amber lane, so a repayment never reads as ordinary spending. */
   --warning: #c2892f;
   --warning-soft: color-mix(in srgb, #e0a12b 16%, transparent);
-  /* Shortfall / destructive. Was a RED constant in BillRunway and a literal in .btn-warn-red. */
+  /* Destructive-action red. Money leaving an account is --expense, not this — see
+     BillRunway, which used to carry a second red of its own for shortfalls. */
   --danger: #e5484d;
   --danger-soft: color-mix(in srgb, #e5484d 14%, transparent);
 
@@ -1681,15 +1682,15 @@ input[type="date"]::-webkit-datetime-edit {
 @media (prefers-reduced-motion: reduce) { .btn-warn { animation: none; } }
 
 .btn-warn-red {
-  color: var(--danger);
+  color: var(--expense);
   transition: transform .15s ease, box-shadow .24s ease, background .2s ease;
   animation: btnWarnRed 1.8s ease-in-out infinite;
 }
-.btn-warn-red:hover { background: var(--danger-soft); transform: translateY(-1px); }
+.btn-warn-red:hover { background: var(--expense-soft); transform: translateY(-1px); }
 .btn-warn-red:active { transform: translateY(0); }
 @keyframes btnWarnRed {
   0%, 100% { box-shadow: 0 0 0 0 transparent; }
-  50%      { box-shadow: 0 0 0 6px color-mix(in srgb, var(--danger) 24%, transparent); }
+  50%      { box-shadow: 0 0 0 6px color-mix(in srgb, var(--expense) 24%, transparent); }
 }
 @media (prefers-reduced-motion: reduce) { .btn-warn-red { animation: none; } }
 
