@@ -4,7 +4,6 @@ import { useEffect, useState, useCallback } from 'react'
 import { getJSON, cachedValue } from '@/lib/fresh'
 import { today } from '@/lib/date'
 import { projectCycle, nextOccurrences } from '@/lib/billRunway'
-import { ChevronDown } from 'lucide-react'
 import LoadError from './LoadError'
 
 interface Bill { id: string; account_id: string | null; name: string; day: number; amount: number; quarterly?: boolean; next_due?: string | null }
@@ -91,41 +90,34 @@ export default function UpcomingBills() {
 
   const cutoff = cycle?.coveredThroughISO ?? null
 
-  const activeTab = tabs.find((t) => t.id === activeId)
   const dotFor = (t: { id: string; shortFrom: string | null }) =>
     !cycles.has(t.id) ? 'var(--text-muted)' : t.shortFrom ? 'var(--expense)' : 'var(--income)'
 
-  const accountPill = tabs.length > 1 && activeTab && (
-    <span style={{ position: 'relative', display: 'inline-flex', minWidth: 0 }}>
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, minWidth: 0, padding: '3px 7px 3px 8px',
-        borderRadius: 'var(--radius-pill)', border: '1px solid var(--border)', background: 'var(--kpi-bg)',
-        fontSize: 'var(--fs-2xs)', fontWeight: 600, color: 'var(--text-secondary)' }}>
-        <span style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: dotFor(activeTab) }} />
-        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{activeTab.name}</span>
-        <ChevronDown size={11} style={{ flexShrink: 0, opacity: 0.65 }} />
-      </span>
-      {/* the real control sits invisibly on top, so the platform's own picker opens */}
-      <select value={activeId} onChange={(e) => setPicked(e.target.value)} aria-label="Bill account"
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0,
-          appearance: 'none', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 'var(--fs-lg)' }}>
-        {tabs.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-      </select>
-    </span>
+  // Both accounts on screen at once, each with its status dot — one tap to switch instead
+  // of a native picker that covers the thing you're switching. Centred over the card,
+  // iOS-style: recessed track, raised thumb on the active one.
+  const accountSeg = tabs.length > 1 && (
+    <div className="acct-seg" role="tablist" aria-label="Bill account"
+      style={{ alignSelf: 'center', marginBottom: 12 }}>
+      {tabs.map((t) => (
+        <button key={t.id} type="button" role="tab" aria-selected={t.id === activeId}
+          className={t.id === activeId ? 'is-on' : ''} onClick={() => setPicked(t.id)}>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: dotFor(t) }} />
+          {t.name}
+        </button>
+      ))}
+    </div>
   )
 
   const header = (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-      <span style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-        <span className="hdr-label" style={{ flexShrink: 0 }}>Bills</span>
-        {accountPill}
-      </span>
-    </div>
+    <span className="hdr-label">Bills</span>
   )
 
   return (
     <div className="card">
+      {accountSeg}
       {/* Header taps to Bills only when there's no coverage card to carry the tap */}
-      {cycle || accountPill ? header : <a href="/dashboard" onClick={() => goBills(activeId)} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>{header}</a>}
+      {cycle || accountSeg ? header : <a href="/dashboard" onClick={() => goBills(activeId)} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>{header}</a>}
 
       {/* The same two numbers the Bills tab shows, in the same words: what the balance
          reaches, and what to deposit. Home states the position; the Bills tab has the

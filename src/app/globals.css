@@ -91,6 +91,9 @@
   --glass-shadow: 0 8px 32px rgba(24, 26, 30, 0.1);
   --glass-sheen: inset 0 1px 0 rgba(255, 255, 255, 0.7);
   --kpi-bg: rgba(255, 255, 255, 0.4);
+  /* segmented-control track / raised thumb */
+  --seg-track: rgba(11, 11, 11, 0.07);
+  --seg-thumb: #ffffff;
   --header-bg: rgba(244, 244, 243, 0.95);
   /* Liquid-glass polish: specular top highlight + inner light rim */
   --glass-specular: linear-gradient(176deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.34) 12%, rgba(255, 255, 255, 0.06) 34%, rgba(255, 255, 255, 0) 60%);
@@ -167,6 +170,8 @@
     --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
     --glass-sheen: inset 0 1px 0 rgba(255, 255, 255, 0.12);
     --kpi-bg: rgba(255, 255, 255, 0.07);
+    --seg-track: rgba(255, 255, 255, 0.09);
+    --seg-thumb: #3a3d42;
     --header-bg: rgba(14, 15, 16, 0.95);
     --glass-specular: linear-gradient(176deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.12) 12%, rgba(255, 255, 255, 0.03) 34%, rgba(255, 255, 255, 0) 60%);
     --glass-rim: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
@@ -2198,3 +2203,46 @@ input[type="date"]::-webkit-datetime-edit {
   background: currentColor;
   flex-shrink: 0;
 }
+
+/* ── Bill-account switcher ────────────────────────────────────────────────────
+   The iOS segmented control: a recessed grey track with one raised white thumb.
+   Deliberately NOT .tabs — that one is full-width, glass-blurred and page-level;
+   this is a small inline control that sits above a card and sizes to its labels.
+   Two or three accounts fit; past that the caller falls back to a menu. */
+.acct-seg {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--radius-pill);
+  background: var(--seg-track);
+  border: 1px solid var(--border);
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.acct-seg::-webkit-scrollbar { display: none; }
+.acct-seg button {
+  position: relative;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 13px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background .18s ease, color .18s ease, box-shadow .18s ease;
+}
+.acct-seg button.is-on {
+  background: var(--seg-thumb);
+  color: var(--text-primary);
+  box-shadow: 0 1px 3px rgba(20, 22, 26, .16), 0 0 0 .5px rgba(20, 22, 26, .04);
+}
+@media (prefers-reduced-motion: reduce) { .acct-seg button { transition: none; } }

@@ -137,6 +137,33 @@ export default function BillRunway() {
          dropdown of these same accounts (plus Add account) and hands off the pick via
          the jt-bill-account key read above, same as Home's shortfall link always did. */}
 
+      {/* Account switcher — both accounts visible with their status dots, sitting above
+         the card it switches. Previously this was only reachable from the nav's Bills
+         dropdown, which is a long way from the thing it changes. Past three accounts the
+         segments stop fitting a phone, so it falls back to a plain select. */}
+      {accounts.length > 1 && (
+        accounts.length <= 3 ? (
+          <div className="acct-seg" role="tablist" aria-label="Bill account" style={{ display: 'flex', width: 'fit-content', margin: '0 auto 12px' }}>
+            {accounts.map((a) => {
+              const c = a.id === activeId ? proj : project(bills.filter((b) => b.account_id === a.id), a)
+              const dot = !(Number(a.current_balance) > 0 || a.balance_as_of) ? 'var(--text-muted)' : c?.firstShort ? RED : 'var(--income)'
+              return (
+                <button key={a.id} type="button" role="tab" aria-selected={a.id === activeId}
+                  className={a.id === activeId ? 'is-on' : ''} onClick={() => setActiveId(a.id)}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: dot }} />
+                  {a.name}
+                </button>
+              )
+            })}
+          </div>
+        ) : (
+          <select value={activeId} onChange={(e) => setActiveId(e.target.value)} aria-label="Bill account"
+            style={{ ...inp, width: 'fit-content', margin: '0 auto 12px', display: 'block' }}>
+            {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+          </select>
+        )
+      )}
+
       {/* BALANCE + COVERAGE — one card. The balance states what it covers and the top-up
          states exactly what to deposit; neither number is repeated anywhere on the page.
          (This was two tiles that both printed the balance — once as "balance" and once as
@@ -201,6 +228,12 @@ export default function BillRunway() {
             {acctBills.length > 0 ? `${acctBills.length} ${acctBills.length === 1 ? 'bill' : 'bills'} · ${money(monthlyTotal)} this month` : 'No bills yet'}
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+            {/* Add account lives here now, beside Add bill — the switcher above is for
+                switching, and a segmented control has nowhere sensible to hang a "+". */}
+            <button onClick={() => setNewAccount(true)} title="Add account"
+              style={{ height: 30, padding: '0 11px', display: 'inline-flex', alignItems: 'center', gap: 4, borderRadius: 'var(--radius-pill)', border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-muted)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'var(--fs-2xs)', fontWeight: 700, whiteSpace: 'nowrap' }}>
+              <Plus size={13} /> Account
+            </button>
             <button onClick={() => setEditBill('new')} aria-label="Add bill" title="Add bill"
               style={{ width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-muted)', cursor: 'pointer' }}>
               <Plus size={16} />
