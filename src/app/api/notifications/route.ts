@@ -29,7 +29,7 @@ export async function GET() {
     supabaseAdmin.from('budgets').select('name, category, amount, debt_name'),
     supabaseAdmin.from('categories').select('name, type'),
     supabaseAdmin.from('household_profile').select('data').order('updated_at', { ascending: false }).limit(1).maybeSingle(),
-    supabaseAdmin.from('bills').select('account_id, name, day, amount, quarterly, next_due, active').then((r) => r, () => ({ data: null })),
+    supabaseAdmin.from('bills').select('account_id, name, day, amount, quarterly, next_due, active, category, debt_name').then((r) => r, () => ({ data: null })),
     supabaseAdmin.from('bill_accounts').select('*').then((r) => r, () => ({ data: null })),
     supabaseAdmin.from('dismissed_notifs').select('notif_id').then((r) => r, () => ({ data: null })),
     supabaseAdmin.from('category_budgets').select('category, amount').then((r) => r, () => ({ data: null })),
@@ -101,7 +101,12 @@ export async function GET() {
   // logged and stayed quiet about ones that weren't.
   const planRows = (() => {
     const rows = (billsRes?.data ?? []).filter((b: any) => b.active !== false)
-      .map((b: any) => ({ name: b.name as string, category: (b.category as string) ?? null, amount: Number(b.amount), debt_name: null as string | null }))
+      // debt_name matters here: a debt-repayment bill's transaction is described with the
+      // DEBT's name ("HF RBC Loan - Dad support"), never the bill's ("Loan payment (1 of
+      // 2)"), so without it the name match always fails and the row is only ever rescued
+      // by the amount fallback — which can't tell two $141 loan bills apart, so one
+      // payment marked both logged.
+      .map((b: any) => ({ name: b.name as string, category: (b.category as string) ?? null, amount: Number(b.amount), debt_name: (b.debt_name as string) ?? null }))
     const seen = new Set(rows.map((r) => norm(r.name)))
     for (const b of budgetLines ?? []) {
       if (seen.has(norm(b.name as string))) continue
@@ -114,12 +119,24 @@ export async function GET() {
     const curTx = txns.filter((t) => (t.date as string).slice(0, 7) === curMonth)
     // A debt line counts as logged when its DEBT was paid this month — the payment is
     // described with the debt's name, never the plan line's.
-    const isLogged = (r: { name: string; category: string | null; amount: number; debt_name: string | null }) => curTx.some((t) => {
+    // Each transaction can satisfy only ONE plan row. Two "Loan payment" bills of $141
+    // both point at the same debt and log under the same description, so a single $141
+    // payment used to clear both — the month looked done with half of it unlogged.
+    // Claiming matches as they're used means the second bill stays outstanding until a
+    // second payment exists.
+    const claimed = new Set<number>()
+    const matches = (r: { name: string; category: string | null; amount: number; debt_name: string | null }, t: any) => {
       if (r.debt_name) return t.category === 'Debt Repayment' && norm(t.description) === norm(r.debt_name)
       if (r.category && t.category !== r.category) return false
       return norm(t.description) === norm(r.name) ||
         Math.abs(Number(t.amount) - r.amount) <= Math.max(1, r.amount * 0.05)
-    })
+    }
+    const isLogged = (r: { name: string; category: string | null; amount: number; debt_name: string | null }) => {
+      const i = curTx.findIndex((t, idx) => !claimed.has(idx) && matches(r, t))
+      if (i === -1) return false
+      claimed.add(i)
+      return true
+    }
     const missing = planRows.filter((r) => !isLogged(r))
     if (missing.length) {
       const names = missing.slice(0, 6).map((r) => r.name).join(', ')
