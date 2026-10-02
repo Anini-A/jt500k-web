@@ -236,7 +236,14 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
     try {
       const res = await fetch('/api/transactions', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(chosen.map((r) => ({ date: recDate, type: recType(r), category: r.category, amount: recAmount(r), description: recDesc(r) }))),
+        // A bill posts on the day it actually comes out, not on the picker's date: logging
+        // the mortgage and a phone bill together should not stamp both with today. The
+        // picker still chooses the MONTH (and dates every row without a due day), so
+        // logging October's bills on Nov 2 still files them in October.
+        body: JSON.stringify(chosen.map((r) => {
+          const d = dueDateOf(r, new Date(recDate + 'T00:00:00'))
+          return { date: d ? ymd(d) : recDate, type: recType(r), category: r.category, amount: recAmount(r), description: recDesc(r) }
+        })),
       })
       if (res.ok) { setRecOver({}); close(); window.dispatchEvent(new CustomEvent('transaction-added')) }
       else setRecErr((await res.json()).error || 'Could not log.')
@@ -548,6 +555,12 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
   //
   // The default amount is what the plan says, else what you last paid, else nothing —
   // a row with no amount can be typed into but won't log.
+  // Debt-repayment bills come here too. They are bills — they have a due day and come out
+  // of a bill account — and keeping them with the rest is how you log a month in one pass.
+  // They still carry debt_name, so logging one is matched to its debt exactly as before;
+  // what changes is only which group lists it. The Debt group drops the ones that are
+  // bills (see rowsOfGroup) so no payment is loggable from two places.
+  const isBillRow = (r: any) => r.src === 'bill'
   const debtRows = (() => {
     const plannedFor = (name: string) => visibleRecs
       .filter((r) => recGroup(r) === 'debt' && r.debt_name === name)
@@ -562,29 +575,33 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
       }
     })
     // a debt line pointing at nothing yet still needs somewhere to live
-    const unlinked = visibleRecs.filter((r) => recGroup(r) === 'debt' && !r.debt_name)
-    return [...rows.sort((a, b) => b.amount - a.amount || b.remaining - a.remaining), ...unlinked]
+    const unlinked = visibleRecs.filter((r) => recGroup(r) === 'debt' && !r.debt_name && !isBillRow(r))
+    // a debt whose payments are bills is logged from the Bills group, so it isn't offered
+    // here as well — otherwise the same $141 could go in twice
+    const billed = new Set(visibleRecs.filter((r) => isBillRow(r) && r.debt_name).map((r: any) => r.debt_name))
+    return [...rows.filter((r) => !billed.has(r.debt_name)).sort((a, b) => b.amount - a.amount || b.remaining - a.remaining), ...unlinked]
   })()
   // Bills get their own group rather than being scattered through Spending by category.
   // They already arrive here from /api/bills tagged src:'bill' (loadRecs merges bills and
   // Budget lines), so this is a regrouping, not a new data source — editing a bill's
   // amount or adding one shows up with no sync step.
   //
-  // Debt-repayment bills stay OUT: the Debt group lists the debts themselves and carries
-  // the balance, so a loan payment sitting in both groups could be logged twice.
-  const isBillRow = (r: any) => r.src === 'bill' && recGroup(r) !== 'debt'
   const billRows = visibleRecs.filter(isBillRow).sort((a: any, b: any) => (a.day ?? 99) - (b.day ?? 99))
+  // The date a bill actually comes out, in the month being logged. Quarterly bills carry
+  // their own next_due; everything else is its day-of-month, clamped to the month's length
+  // so day 31 doesn't roll into the next month in February.
+  const dueDateOf = (r: any, ref: Date): Date | null => {
+    if (r.src !== 'bill' || !r.day) return null
+    if (r.quarterly && r.next_due) return new Date(r.next_due + 'T00:00:00')
+    const y = ref.getFullYear(), m = ref.getMonth()
+    return new Date(y, m, Math.min(r.day, new Date(y, m + 1, 0).getDate()))
+  }
   // "Oct 15" for a bill row, nothing for a budget line (those have no due day).
   // Dimmed once the day is past: that bill has most likely already left the account.
   const dueBadge = (r: any) => {
-    if (r.src !== 'bill' || !r.day) return null
     const now = new Date()
-    // A quarterly bill carries its own next_due; showing its day-of-month every month
-    // would imply it's due monthly. Show the real date, and grey it in the months it
-    // isn't due at all.
-    const d = r.quarterly && r.next_due
-      ? new Date(r.next_due + 'T00:00:00')
-      : new Date(now.getFullYear(), now.getMonth(), Math.min(r.day, new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()))
+    const d = dueDateOf(r, now)
+    if (!d) return null
     const thisMonth = d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
     const past = thisMonth ? d.getDate() <= now.getDate() : d < now
     return (
