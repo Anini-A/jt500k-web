@@ -94,11 +94,10 @@ export default function UpcomingBills() {
     !cycles.has(t.id) ? 'var(--text-muted)' : t.shortFrom ? 'var(--expense)' : 'var(--income)'
 
   // Both accounts on screen at once, each with its status dot — one tap to switch instead
-  // of a native picker that covers the thing you're switching. Centred over the card,
-  // iOS-style: recessed track, raised thumb on the active one.
+  // of a native picker that covers the thing you're switching. iOS-style: recessed
+  // track, raised thumb on the active one.
   const accountSeg = tabs.length > 1 && (
-    <div className="acct-seg" role="tablist" aria-label="Bill account"
-      style={{ alignSelf: 'center', marginBottom: 12 }}>
+    <div className="acct-seg" role="tablist" aria-label="Bill account">
       {tabs.map((t) => (
         <button key={t.id} type="button" role="tab" aria-selected={t.id === activeId}
           className={t.id === activeId ? 'is-on' : ''} onClick={() => setPicked(t.id)}>
@@ -109,13 +108,24 @@ export default function UpcomingBills() {
     </div>
   )
 
-  const header = (
+  // Switcher centred, BILLS pinned top-right. The spacer is what keeps the switcher
+  // centred on the CARD rather than in the space the label leaves: both sides of the
+  // row flex equally, so the middle stays put whatever the label's width.
+  const header = accountSeg ? (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+      <span style={{ flex: 1, minWidth: 0 }} />
+      {accountSeg}
+      <span style={{ flex: 1, minWidth: 0, display: 'flex', justifyContent: 'flex-end' }}>
+        <span className="hdr-label">Bills</span>
+      </span>
+    </div>
+  ) : (
+    // one account: no switcher to centre, so the label just leads the card as before
     <span className="hdr-label">Bills</span>
   )
 
   return (
     <div className="card">
-      {accountSeg}
       {/* Header taps to Bills only when there's no coverage card to carry the tap */}
       {cycle || accountSeg ? header : <a href="/dashboard" onClick={() => goBills(activeId)} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>{header}</a>}
 

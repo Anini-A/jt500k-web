@@ -113,7 +113,7 @@ export default function Dashboard() {
   // in — picking one both switches the tab AND hands the target section/account to
   // the panel via the same localStorage handoff BillRunway already used for the Home
   // page's shortfall link (consumed once, on that panel's next load).
-  const [dropdown, setDropdown] = useState<{ key: 'household'; rect: DOMRect } | null>(null)
+  const [dropdown, setDropdown] = useState<{ key: 'household' | 'bills'; rect: DOMRect } | null>(null)
   const [billAccounts, setBillAccounts] = useState<{ id: string; name: string }[]>(
     () => cachedValue<{ accounts: { id: string; name: string }[] }>('/api/bills')?.accounts ?? []
   )
@@ -251,7 +251,7 @@ export default function Dashboard() {
   )
   const filterBar = renderFilterBar(preset, setPreset, customFrom, setCustomFrom, customTo, setCustomTo, { from, to }, filtered.length)
 
-  const openSub = (key: 'household', rect: DOMRect) => setDropdown({ key, rect })
+  const openSub = (key: 'household' | 'bills', rect: DOMRect) => setDropdown({ key, rect })
 
   if (loading) {
     return (
@@ -278,13 +278,11 @@ export default function Dashboard() {
           <div className="tabs tabs-scroll">
             {TABS.map((t) => {
               const Icon = t.Icon
-              // Bills used to open a dropdown of accounts; the panel now carries its own
-              // switcher and its own Add account, so the tab just opens the panel.
-              const hasDropdown = t.key === 'household'
+              const hasDropdown = t.key === 'household' || t.key === 'bills'
               return (
                 <button key={t.key} ref={tab === t.key ? activeTabRef : null}
                   onClick={(e) => hasDropdown
-                    ? setDropdown({ key: t.key as 'household', rect: e.currentTarget.getBoundingClientRect() })
+                    ? setDropdown({ key: t.key as 'household' | 'bills', rect: e.currentTarget.getBoundingClientRect() })
                     : selectTab(t.key)}
                   className={`tab ${tab === t.key ? 'tab-active' : ''}`}>
                   <Icon size={16} />{t.label}
@@ -301,7 +299,10 @@ export default function Dashboard() {
           <TabDropdown
             dropdown={dropdown}
             onClose={() => setDropdown(null)}
+            billAccounts={billAccounts}
             onPickHousehold={pickHousehold}
+            onPickBillAccount={pickBillAccount}
+            onPickAddBillAccount={pickAddBillAccount}
           />,
           document.body
         )}
@@ -427,10 +428,13 @@ export default function Dashboard() {
 // closing, so it reads as drilling in one level, not two separate menus. Household
 // lists its fixed sections; Bills lists the real accounts (fetched by the parent)
 // plus "Add account".
-function TabDropdown({ dropdown, onClose, onPickHousehold }: {
-  dropdown: { key: 'household'; rect: DOMRect }
+function TabDropdown({ dropdown, onClose, billAccounts, onPickHousehold, onPickBillAccount, onPickAddBillAccount }: {
+  dropdown: { key: 'household' | 'bills'; rect: DOMRect }
   onClose: () => void
+  billAccounts: { id: string; name: string }[]
   onPickHousehold: (id: string) => void
+  onPickBillAccount: (id: string) => void
+  onPickAddBillAccount: () => void
 }) {
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -453,6 +457,12 @@ function TabDropdown({ dropdown, onClose, onPickHousehold }: {
         const Icon = it.Icon
         return <button key={it.id} onClick={() => onPickHousehold(it.id)}><Icon size={17} /> {it.label}</button>
       })}
+      {key === 'bills' && billAccounts.map((a) => (
+        <button key={a.id} onClick={() => onPickBillAccount(a.id)}>{a.name}</button>
+      ))}
+      {key === 'bills' && (
+        <button onClick={onPickAddBillAccount}><Plus size={17} /> Add account</button>
+      )}
     </div>
   )
 }
@@ -466,7 +476,7 @@ function TabDropdown({ dropdown, onClose, onPickHousehold }: {
 function SectionCarousel({ tab, onSelectTab, onOpenSub }: {
   tab: Tab
   onSelectTab: (key: Tab) => void
-  onOpenSub: (key: 'household', rect: DOMRect) => void
+  onOpenSub: (key: 'household' | 'bills', rect: DOMRect) => void
 }) {
   const trackRef = useRef<HTMLDivElement>(null)
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([])
@@ -508,7 +518,7 @@ function SectionCarousel({ tab, onSelectTab, onOpenSub }: {
   const handleTap = (i: number, e: React.MouseEvent<HTMLButtonElement>) => {
     if (i === centerIdx) {
       const key = TABS[i].key
-      if (key === 'household') onOpenSub(key, e.currentTarget.getBoundingClientRect())
+      if (key === 'household' || key === 'bills') onOpenSub(key, e.currentTarget.getBoundingClientRect())
       return
     }
     itemRefs.current[i]?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
@@ -538,7 +548,7 @@ function SectionCarousel({ tab, onSelectTab, onOpenSub }: {
   )
 }
 
-function DashHeader({ tab, onSelectTab, onOpenSub }: { tab: Tab; onSelectTab: (key: Tab) => void; onOpenSub: (key: 'household', rect: DOMRect) => void }) {
+function DashHeader({ tab, onSelectTab, onOpenSub }: { tab: Tab; onSelectTab: (key: Tab) => void; onOpenSub: (key: 'household' | 'bills', rect: DOMRect) => void }) {
   return (
     <header className="top dash-header">
       <NotificationBell />
