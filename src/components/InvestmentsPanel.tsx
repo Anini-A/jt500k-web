@@ -308,7 +308,7 @@ function OtherAssets({ assets, showOwner, onChange, defaultOwner }: {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
                 <span style={{ fontWeight: 600 }}>{money2(a.value_cad)}</span>
-                <button onClick={() => { setEditing(a.id); setAdding(false) }} aria-label="Edit" style={iconBtn}><Pencil size={15} /></button>
+                <button onClick={() => { setEditing(a.id); setAdding(false) }} aria-label="Edit" className="tap-44" style={iconBtn}><Pencil size={15} /></button>
               </div>
             </div>
           ))}

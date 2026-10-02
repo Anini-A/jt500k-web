@@ -65,9 +65,26 @@ export default function BillRunway() {
         setNewAccount(true)
         want = ''
       }
+      // Same default as Home: the first account in the configured order, unless it is
+      // covered and another account is not — then open on whichever needs the most money.
+      // Ranked by SIZE of the shortfall, not by how soon it starts, so a small account
+      // with an early bill can't outrank the main one (see UpcomingBills for the long
+      // version). Only applies to the initial landing; an explicit pick always wins.
+      const allBills = (d.bills || []).map((b: Bill) => ({ ...b, amount: Number(b.amount) }))
+      const shortOf = (a: Account) => {
+        const mine = allBills.filter((b: Bill) => b.account_id === a.id)
+        if (!mine.length || !(a.current_balance > 0 || a.balance_as_of)) return 0
+        return projectCycle(mine, a).short
+      }
+      const urgentId = (() => {
+        const first = accs[0]
+        if (!first || shortOf(first) > 0) return first?.id || ''
+        const worst = accs.map((a) => ({ a, s: shortOf(a) })).filter((x) => x.s > 0).sort((x, y) => y.s - x.s)[0]
+        return worst?.a.id || first.id
+      })()
       setActiveId((cur) => {
         if (want && accs.some((a) => a.id === want)) return want
-        return (cur && accs.some((a) => a.id === cur)) ? cur : (accs[0]?.id || '')
+        return (cur && accs.some((a) => a.id === cur)) ? cur : urgentId
       })
     }
     setLoading(false)
@@ -202,11 +219,11 @@ export default function BillRunway() {
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
             <button onClick={() => setEditBill('new')} aria-label="Add bill" title="Add bill"
-              style={{ width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-muted)', cursor: 'pointer' }}>
+              className="tap-44" style={{ width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-muted)', cursor: 'pointer' }}>
               <Plus size={16} />
             </button>
             <button onClick={() => setBillsCollapsed((v) => !v)} aria-expanded={!billsCollapsed} aria-label={billsCollapsed ? 'Show bill schedule' : 'Hide bill schedule'} title={billsCollapsed ? 'Show bill schedule' : 'Hide bill schedule'}
-              style={{ width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-muted)', cursor: 'pointer' }}>
+              className="tap-44" style={{ width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-muted)', cursor: 'pointer' }}>
               <ChevronDown size={16} style={{ transform: billsCollapsed ? 'none' : 'rotate(180deg)', transition: 'transform .2s ease' }} />
             </button>
           </div>
@@ -234,7 +251,7 @@ export default function BillRunway() {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                 <span style={{ fontWeight: 700, fontSize: 'var(--fs-md)' }}>{money2(b.amount)}</span>
-                <button onClick={() => setEditBill(b)} aria-label="Edit" style={iconBtn}><Pencil size={15} /></button>
+                <button onClick={() => setEditBill(b)} aria-label="Edit" className="tap-44" style={iconBtn}><Pencil size={15} /></button>
               </div>
             </div>
           ))}

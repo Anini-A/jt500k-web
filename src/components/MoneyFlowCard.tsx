@@ -101,7 +101,7 @@ export default function MoneyFlowCard() {
           {cur ? <>{curLabel}{savedRate !== null ? <> · <b style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>{savedRate}%</b> saved</> : ''}</> : ''}
         </span>
         <button onClick={() => setOpen((v) => !v)} aria-expanded={open} aria-label={open ? 'Hide trend' : 'Show trend'} title={open ? 'Hide trend' : 'Show income / expense trend'}
-          style={{ flexShrink: 0, width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-muted)', cursor: 'pointer' }}>
+          className="tap-44" style={{ flexShrink: 0, width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--radius-pill)', border: '1px solid var(--border)', background: 'var(--kpi-bg)', color: 'var(--text-muted)', cursor: 'pointer' }}>
           <ChevronDown size={16} style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .2s ease' }} />
         </button>
       </div>

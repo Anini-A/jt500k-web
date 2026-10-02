@@ -2259,3 +2259,26 @@ input[type="date"]::-webkit-datetime-edit {
   white-space: nowrap;
   line-height: 1.15;
 }
+
+/* Minimum tap target — Apple's HIG floor is 44x44 and these controls sit at 28-30px.
+   A pseudo-element grows the TOUCHABLE area without touching the painted size, so the
+   buttons look unchanged and nothing reflows; the parent needs no positioning because
+   these are all already inline-flex boxes with their own stacking context.
+   Pointer-only devices keep the tight target — a mouse doesn't need the slack. */
+@media (hover: none) and (pointer: coarse) {
+  .tap-44 { position: relative; }
+  .tap-44::after {
+    content: '';
+    position: absolute;
+    /* Vertical is free — nothing sits directly above or below these. Horizontally the
+       buttons pair up 8px apart (38px centre-to-centre), so a full 44px overlay would
+       overlap its neighbour by 6px and the later one in DOM order would swallow that
+       strip. Inset horizontally to the pitch instead: still a 38px-wide target, up from
+       30, with no stolen taps. */
+    top: 50%;
+    left: 50%;
+    width: 38px;
+    height: 44px;
+    transform: translate(-50%, -50%);
+  }
+}

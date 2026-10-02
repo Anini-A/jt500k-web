@@ -42,7 +42,9 @@ export default function UpcomingBills() {
   // Each account pays its own bills from its own balance, so coverage only means anything
   // within an account. The card shows one at a time rather than interleaving them.
   const cycles = new Map<string, ReturnType<typeof projectCycle<Bill>>>()
+  const asOfById = new Map<string, string | null>()
   for (const a of accounts) {
+    asOfById.set(a.id, a.balance_as_of ?? null)
     const ab = bills.filter((b) => b.account_id === a.id)
     // an account with no balance on record gets no projection — no false alarms, and its
     // bills stay neutral rather than being coloured green on no evidence
@@ -76,6 +78,8 @@ export default function UpcomingBills() {
   })()
   const activeId = picked && tabs.some((t) => t.id === picked) ? picked : fallbackId
 
+  const activeAsOf = asOfById.get(activeId) || today()
+  const staleDays = Math.max(0, Math.round((Date.parse(today()) - Date.parse(activeAsOf)) / 86400000))
   const activeBills = bills.filter((b) => b.account_id === activeId)
   const upcoming = nextOccurrences(activeBills, from)
   const cycle = cycles.get(activeId) ?? null
@@ -152,6 +156,14 @@ export default function UpcomingBills() {
                 : cutoff ? `covers ${cycle.coveredCount} bill${cycle.coveredCount === 1 ? '' : 's'} to ${fmtDay(new Date(cutoff + 'T00:00:00'))}`
                 : 'short from the first bill'}
             </div>
+            {/* The Bills page warns when the balance is a day or more old; Home showed the
+                same figure — and a Top up derived from it — with nothing to say it might be
+                out of date. Dating the number is enough: silent while it's today's. */}
+            {staleDays > 0 && (
+              <div style={{ fontSize: 'var(--fs-2xs)', fontWeight: 700, color: 'var(--expense)', marginTop: 3 }}>
+                as of {fmtDay(new Date(activeAsOf + 'T00:00:00'))} · {staleDays}d ago
+              </div>
+            )}
           </div>
           <div style={{ flex: 1, padding: '10px 12px', borderRadius: 'var(--radius-md)', background: cycle.firstShort ? 'var(--expense-soft)' : 'var(--kpi-bg)', border: cycle.firstShort ? 'none' : '1px solid var(--border)' }}>
             <div style={{ fontSize: 'var(--fs-2xs)', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: cycle.firstShort ? 'var(--expense)' : 'var(--income)' }}>Top up</div>
