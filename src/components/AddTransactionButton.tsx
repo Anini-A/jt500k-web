@@ -356,11 +356,11 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
       const img = new Image()
       const url = URL.createObjectURL(file)
       img.onload = () => {
-        const scale = Math.min(1, 1500 / Math.max(img.width, img.height))
+        const scale = Math.min(1, 1200 / Math.max(img.width, img.height))
         const w = Math.round(img.width * scale), h = Math.round(img.height * scale)
         const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h
         canvas.getContext('2d')?.drawImage(img, 0, 0, w, h)
-        const preview = canvas.toDataURL('image/jpeg', 0.85)
+        const preview = canvas.toDataURL('image/jpeg', 0.7)
         URL.revokeObjectURL(url)
         setImages((prev) => [...prev, { id: Math.random().toString(36).slice(2), data: preview.split(',')[1], mime: 'image/jpeg', preview }])
       }
@@ -377,10 +377,10 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
     if (!raw.trim() && images.length === 0) return
     setParsing(true); setImportErr('')
     try {
-      const res = await fetch('/api/import/parse', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: raw, images: images.map((i) => ({ data: i.data, mime: i.mime })), today: today() }),
-      })
+      const payload = JSON.stringify({ text: raw, images: images.map((i) => ({ data: i.data, mime: i.mime })), today: today() })
+      const send = () => fetch('/api/import/parse', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload })
+      // Safari reports a dropped connection as a bare "Load failed" (flaky mobile network, app switch) — retry once before giving up
+      const res = await send().catch(() => new Promise<Response>((ok, no) => setTimeout(() => send().then(ok, no), 1200)))
       // read as text first: a platform timeout / size-limit page isn't JSON and would otherwise surface as a cryptic parse error
       const body = await res.text()
       let d: any = {}
@@ -395,7 +395,7 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
       const tagged: Row[] = d.rows.map((r: any) => ({ ...r, amount: String(r.amount), card: selectedCard || undefined }))
       setRows((prev) => [...prev, ...tagged])  // append so you can paste multiple cards into one batch
       setRaw(''); setImages([]); setAddOpen(false)
-    } catch (e: any) { setImportErr('Parse failed: ' + (e?.message || e)) } finally { setParsing(false) }
+    } catch (e: any) { setImportErr(/load failed|network|fetch/i.test(String(e?.message)) ? 'Connection dropped. Check your signal, keep this screen open, and tap Format again.' : 'Parse failed: ' + (e?.message || e)) } finally { setParsing(false) }
   }
 
   const showFlash = (m: string) => { setFlash(m); setTimeout(() => setFlash(''), 1800) }
