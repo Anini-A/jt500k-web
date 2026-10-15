@@ -4,7 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase'
 export const dynamic = 'force-dynamic'
 export const fetchCache = 'force-no-store'
 export const revalidate = 0
-export const maxDuration = 30
+export const maxDuration = 60
 
 const GEMINI_KEY = process.env.GEMINI_API_KEY
 // gemini-2.5-flash(-lite) was sunset for new users (404: "no longer available to
@@ -79,10 +79,10 @@ export async function POST(req: NextRequest) {
     for (const model of models) {
       const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_KEY}`,
         { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-      if (!r.ok) { lastErr = (await r.text()).slice(0, 200); continue }
+      if (!r.ok) { lastErr = `${model} ${r.status}: ` + (await r.text()).slice(0, 200); console.error('import/parse', lastErr); continue }
       const d = await r.json()
       const txt = d?.candidates?.[0]?.content?.parts?.map((p: any) => p.text).join('') || ''
-      try { out = JSON.parse(txt); break } catch { lastErr = 'bad JSON from model'; continue }
+      try { out = JSON.parse(txt); break } catch { lastErr = `${model}: unreadable response from AI`; console.error('import/parse', lastErr, txt.slice(0, 200)); continue }
     }
     if (!Array.isArray(out)) return NextResponse.json({ error: lastErr || 'Could not parse.' }, { status: 502 })
 

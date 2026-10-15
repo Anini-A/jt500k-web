@@ -381,8 +381,16 @@ export default function AddTransactionButton({ trigger = true }: { trigger?: boo
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: raw, images: images.map((i) => ({ data: i.data, mime: i.mime })), today: today() }),
       })
-      const d = await res.json()
-      if (!res.ok || !Array.isArray(d.rows)) { setImportErr(d.error || 'Could not read that. Try again.'); return }
+      // read as text first: a platform timeout / size-limit page isn't JSON and would otherwise surface as a cryptic parse error
+      const body = await res.text()
+      let d: any = {}
+      try { d = JSON.parse(body) } catch { /* non-JSON error page */ }
+      if (!res.ok || !Array.isArray(d.rows)) {
+        const why = d.error || (res.status === 504 || res.status === 408 ? 'The AI took too long. Try again, or use fewer/smaller screenshots.'
+          : res.status === 413 ? 'Screenshot is too large. Try a smaller or cropped one.'
+          : `Server error (${res.status}). ${body.slice(0, 120)}`)
+        setImportErr(why); return
+      }
       if (d.rows.length === 0) { setImportErr('No transactions found. Check the screenshot is clear, or edit manually.'); return }
       const tagged: Row[] = d.rows.map((r: any) => ({ ...r, amount: String(r.amount), card: selectedCard || undefined }))
       setRows((prev) => [...prev, ...tagged])  // append so you can paste multiple cards into one batch
